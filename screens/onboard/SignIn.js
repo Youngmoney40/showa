@@ -131,7 +131,7 @@ export default function PhoneNumberScreen({ navigation }) {
         translucent={false}
       />
 
-      {/* Header */}
+     
       <LinearGradient
         colors={[COLORS.primary, COLORS.primary]}
         start={{ x: 0, y: 0 }}
@@ -162,7 +162,7 @@ export default function PhoneNumberScreen({ navigation }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Hero Section */}
+         
           <View style={styles.heroContainer}>
             <LinearGradient
               colors={['rgba(13,100,221,0.1)', 'rgba(74,144,226,0.05)']}
@@ -347,8 +347,6 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-
-  /* Header Styles */
   header: {
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.md,
@@ -413,7 +411,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
       },
       android: {
-        elevation: 6,
+        elevation: 0,
       },
     }),
   },
@@ -543,7 +541,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
       },
       android: {
-        elevation: 6,
+        elevation: 2,
       },
     }),
   },
