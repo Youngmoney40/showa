@@ -3720,7 +3720,7 @@ const styles = StyleSheet.create({
 
   header: {
   paddingBottom: Platform.OS === 'android' ? 16 : 0,
-  paddingTop: Platform.OS === 'android' ? 14 : 0,
+  paddingTop: Platform.OS === 'android' ? 5 : 0,
   borderBottomLeftRadius: Platform.OS === 'android' ? 20 : 0,
   borderBottomRightRadius: Platform.OS === 'android' ? 20 : 0,
   backgroundColor: '#0d64dd',
