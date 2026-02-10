@@ -2277,13 +2277,60 @@ export default function PersonalPrivateChatScreen({ route, navigation }) {
     'VirtualizedLists should never be nested inside plain ScrollViews with the same orientation',
   ]);
   const [chatBackground, setChatBackground] = useState(null);
+const getWallpaperSource = (chatBackground) => {
+  if (!chatBackground) {
+    return require('../assets/images/backroundsplash.png');
+  }
+  
+  if (chatBackground.source === 'gallery' && chatBackground.value) {
+    return { uri: chatBackground.value };
+  } 
+  else if (chatBackground.source === 'default' && chatBackground.uri) {
+    return { uri: chatBackground.uri };
+  } 
+  else if (chatBackground.source === 'default' && chatBackground.index !== undefined) {
+   
+    const defaultWallpapers = [
+      require('../assets/images/backroundsplash.png'),
+      require('../assets/wallpaper/spring-5016266_1280.jpg'),
+      require('../assets/wallpaper/8a91c94c-a725-41fc-b65a-69237c6b12f2.png'),
+      require('../assets/wallpaper/whitebkpattern.jpg'),
+      require('../assets/wallpaper/ggg.jpg'),
+      require('../assets/wallpaper/3013e3495a1ce2ddc938f75fb3c50c86.jpg'),
+      require('../assets/wallpaper/8379d5e75849275387025f8745f7701a.png'),
+      require('../assets/wallpaper/76406.jpg'),
+      require('../assets/wallpaper/b91dc2113881469c07ac99ad9a024a01.jpg'),
+      require('../assets/wallpaper/fon-dlya-vatsap-3.jpg'),
+      require('../assets/wallpaper/whatsapp_bg_chat_img.jpeg'),
+    ];
+    
+    const index = chatBackground.index;
+    if (index >= 0 && index < defaultWallpapers.length) {
+      return defaultWallpapers[index];
+    }
+  }
+  
+  return require('../assets/images/backroundsplash.png');
+};
+
 useEffect(() => {
   const loadBackground = async () => {
-    const background = await AsyncStorage.getItem('chatBackground');
-    if (background) {
-      setChatBackground(JSON.parse(background));
+    try {
+      const background = await AsyncStorage.getItem('chatBackground');
+      console.log('Loaded wallpaper data:', background);
+      
+      if (background) {
+        const parsed = JSON.parse(background);
+        console.log('Parsed wallpaper data:', parsed);
+        setChatBackground(parsed);
+      } else {
+        console.log('No wallpaper saved, using default');
+      }
+    } catch (error) {
+      console.error('Error loading chat background:', error);
     }
   };
+  
   loadBackground();
 }, []);
 useEffect(() => {
@@ -3244,7 +3291,7 @@ useEffect(() => {
                     backgroundColor={Platform.OS === 'android' ? '#0750b5' : undefined}
                   />
             <ImageBackground
-            source={chatBackground ? { uri: chatBackground.value } : require('../assets/images/backroundsplash.png')}
+            source={getWallpaperSource(chatBackground)}
             style={[styles.container, {}]}
             resizeMode="cover"
           >
