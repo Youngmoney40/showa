@@ -1288,7 +1288,7 @@ export default function OfficialSearchScreen({ navigation }) {
         end={{ x: 1, y: 1 }}
       >
         <View style={styles.headerContent}>
-          <Text style={styles.appTitle}>Essential Search</Text>
+          <Text style={styles.appTitle}>E-Search</Text>
           <Text style={styles.appSubtitle}>Nigeria's Largest Business Directory</Text>
         </View>
       </LinearGradient>

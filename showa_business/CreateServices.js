@@ -53,7 +53,7 @@ const CreateServicePostScreen = ({ navigation }) => {
           }
         })
         if (res.status === 200 || res.status === 201) {
-          //console.log('fetch category data', res.data);
+          console.log('fetch category data', res.data);
           setCategories(res.data);
           
         }else{
@@ -181,7 +181,7 @@ navigation.goBack();
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Service Post</Text>
+          <Text style={styles.headerTitle}>Create Service</Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee'
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: '700',
     color: '#333'
   },

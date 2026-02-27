@@ -1737,6 +1737,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Linking,
+  StatusBar,
   ImageBackground,
   ActivityIndicator,
   BackHandler,
@@ -1753,6 +1754,7 @@ import EmojiSelector from 'react-native-emoji-selector';
 import { Swipeable } from 'react-native-gesture-handler';
 import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // const audioRecorderPlayer = new AudioRecorderPlayer();
 
@@ -2553,7 +2555,13 @@ const uniqueMessages = [...new Map(history.map((msg) => [msg.id, msg])).values()
   // }
 
   return (
-    <ImageBackground
+    <SafeAreaView style={{flex:1}}>
+      <StatusBar
+                          barStyle={Platform.OS === 'android'? 'light-content':'dark-content'}
+                          translucent={Platform.OS === 'android'}
+                          backgroundColor={Platform.OS === 'android' ? '#0750b5' : undefined}
+                        />
+       <ImageBackground
       source={chatBackground ? { uri: chatBackground.value } : require('../assets/images/backroundsplash.png')}
       style={[styles.container, {}]}
       resizeMode="cover"
@@ -2574,15 +2582,15 @@ const uniqueMessages = [...new Map(history.map((msg) => [msg.id, msg])).values()
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.headerProfile, { marginTop: -20 }]}
-              onPress={() => setUserPopup({ username: name, avatar: profile_image ? `${API_ROUTE_IMAGE}${profile_image}` : null })}
+              onPress={() => navigation.navigate('OtherUserProfile', { userId: receiverId })}
             >
               <Image
                 source={chatType === 'group' && profile_image ? { uri: `${API_ROUTE_IMAGE}${profile_image}` } : FALLBACK_AVATAR}
                 style={styles.headerAvatar}
               />
               <View>
-                  <Text style={styles.headerName}>{name}</Text>
-                  <Text style={[styles.headerName, {fontSize:12, color:'#f7f7f7ff', fontWeight:'400'}]}>{members_count || '1+'} Members</Text>
+                  <Text style={[styles.headerName,{marginTop:10}]}>{name}</Text>
+                  <Text style={[styles.headerName, {fontSize:12, color:'#f7f7f7ff', fontWeight:'400', marginBottom:10}]}>{members_count || '1+'} Members</Text>
                 
               </View>
             
@@ -2774,7 +2782,7 @@ const uniqueMessages = [...new Map(history.map((msg) => [msg.id, msg])).values()
         <Modal transparent visible={imagePreviewModalVisible} onRequestClose={() => setImagePreviewModalVisible(false)}>
           <View style={styles.imagePreviewModalOverlay}>
             <View style={styles.imagePreviewModalContent}>
-              <View style={styles.imagePreviewHeader}>
+              <View style={[styles.imagePreviewHeader,{marginTop:25}]}>
                 <TouchableOpacity
                   onPress={() => {
                     setImagePreviewModalVisible(false);
@@ -2877,6 +2885,9 @@ const uniqueMessages = [...new Map(history.map((msg) => [msg.id, msg])).values()
         
       {/* </KeyboardAwareScrollView> */}
     </ImageBackground>
+    </SafeAreaView>
+    
+   
   );
 }
 const styles = StyleSheet.create({
@@ -2885,14 +2896,25 @@ const styles = StyleSheet.create({
    // backgroundColor: '#e6ddd3',
     
   },
+  // header: {
+  //   paddingTop: Platform.OS === 'ios' ? 44 : 24,
+  //   paddingHorizontal: 16,
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   justifyContent: 'space-between',
+  //   padding:10
+  // },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 44 : 24,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding:10
-  },
+  paddingBottom: Platform.OS === 'android' ? 16 : 0,
+  paddingTop: Platform.OS === 'android' ? 5 : 10,
+  borderBottomLeftRadius: Platform.OS === 'android' ? 20 : 0,
+  borderBottomRightRadius: Platform.OS === 'android' ? 20 : 0,
+  backgroundColor: '#0d64dd',
+  elevation: 6,
+  margin:0,
+  
+  zIndex: 1000,
+},
   chatScrollContainer: {
     flex: 1,
   },
@@ -2907,6 +2929,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: 8,
+    padding:10
   },
   headerAvatar: {
     width: 40,
@@ -2925,6 +2948,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 12,
+    paddingHorizontal:20,
+    
     textTransform: 'capitalize',
   },
   chatContent: {

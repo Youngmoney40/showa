@@ -1019,7 +1019,7 @@ useEffect(() => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={Platform.OS === 'android'? 'light-content': 'dark-content'}/>
 
       {webrtcReady ? (
        
@@ -1280,7 +1280,7 @@ const styles = StyleSheet.create({
   callScreen: {
     flex: 1,
     justifyContent: 'space-between',
-    padding: 20,
+    padding: 0, 
   },
   preCallScreen: {
     flex: 1,

@@ -184,22 +184,22 @@
 //     </TouchableOpacity>
 //   );
 
-//   // Get gradient colors based on theme
+//   // Get gradient colors - keeping blue for both themes
 //   const getGradientColors = () => {
-//     return isDark ? ['#0d64dd', '#0d64dd'] : ['#0d64dd', '#1a73e8'];
+//     return isDark ? ['#0d64dd', '#1a73e8'] : ['#0d64dd', '#1a73e8']; 
 //   };
 
 //   return (
 //     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
 //       <StatusBar 
-//         barStyle={isDark ? "light-content" : "dark-content"} 
-//         backgroundColor={isDark ? '#0d64dd' : '#0d64dd'} 
+//         barStyle="light-content" 
+//         backgroundColor="#0d64dd" 
 //       />
 //       <KeyboardAvoidingView
 //         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 //         style={[styles.container, { backgroundColor: colors.background }]}
 //       >
-//         {/* Header with gradient */}
+//         {/* Header with gradient - keeping blue for both themes */}
 //         <LinearGradient
 //           colors={getGradientColors()}
 //           style={styles.header}
@@ -213,7 +213,7 @@
 //             <Icon name="close" size={24} color="white" />
 //           </TouchableOpacity>
           
-//           <Text style={styles.headerTitle}>Create New Post</Text>
+//           <Text style={styles.headerTitle}>New Post</Text>
           
 //           <TouchableOpacity
 //             style={[styles.postButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
@@ -293,7 +293,7 @@
 
 //           {/* Selected Hashtag */}
 //           {selectedHashtag && (
-//             <View style={[styles.selectedHashtagContainer, { backgroundColor: colors.primary }]}>
+//             <View style={[styles.selectedHashtagContainer, { backgroundColor: '#0d64dd' }]}>
 //               <Text style={styles.selectedHashtag}>
 //                 #{HASHTAG_CHOICES.find(h => h.value === selectedHashtag)?.label}
 //               </Text>
@@ -312,24 +312,24 @@
 //               style={styles.actionButton}
 //               onPress={selectImage}
 //             >
-//               <Icon name="image" size={20} color={colors.primary} />
-//               <Text style={[styles.actionButtonText, { color: colors.primary }]}>Photo</Text>
+//               <Icon name="image" size={20} color="#0d64dd" />
+//               <Text style={[styles.actionButtonText, { color: '#0d64dd' }]}>Photo</Text>
 //             </TouchableOpacity>
             
 //             <TouchableOpacity
 //               style={styles.actionButton}
 //               onPress={() => setHashtagModalVisible(true)}
 //             >
-//               <Icon name="pricetag" size={20} color={colors.primary} />
-//               <Text style={[styles.actionButtonText, { color: colors.primary }]}>Hashtag</Text>
+//               <Icon name="pricetag" size={20} color="#0d64dd" />
+//               <Text style={[styles.actionButtonText, { color: '#0d64dd' }]}>Hashtag</Text>
 //             </TouchableOpacity>
             
 //             <TouchableOpacity
 //               style={styles.actionButton}
 //               onPress={() => setEmojiModalVisible(true)}
 //             >
-//               <Icon name="happy" size={20} color={colors.primary} />
-//               <Text style={[styles.actionButtonText, { color: colors.primary }]}>Emoji</Text>
+//               <Icon name="happy" size={20} color="#0d64dd" />
+//               <Text style={[styles.actionButtonText, { color: '#0d64dd' }]}>Emoji</Text>
 //             </TouchableOpacity>
 //           </View>
 //         </ScrollView>
@@ -405,7 +405,7 @@
 //               />
               
 //               <TouchableOpacity
-//                 style={[styles.modalSubmitButton, { backgroundColor: colors.primary }]}
+//                 style={[styles.modalSubmitButton, { backgroundColor: '#0d64dd' }]}
 //                 onPress={handlePollSubmit}
 //               >
 //                 <Text style={styles.modalSubmitButtonText}>Add Poll</Text>
@@ -681,7 +681,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
 import LinearGradient from 'react-native-linear-gradient';
-import { useTheme } from '../src/context/ThemeContext'; // Add theme context
+import { useTheme } from '../src/context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -704,21 +704,18 @@ const HASHTAG_CHOICES = [
 ];
 
 export default function CreatePost({ navigation }) {
-  const { colors, isDark } = useTheme(); // Get theme colors
+  const { colors, isDark } = useTheme();
   
   // State management
   const [content, setContent] = useState('');
   const [selectedHashtag, setSelectedHashtag] = useState('');
-  const [image, setImage] = useState(null);
+  const [images, setImages] = useState([]); 
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState('');
   const [userfullname, setFullname] = useState('');
   const [userprofileimage, setUserProfileImage] = useState('');
   const [emojiModalVisible, setEmojiModalVisible] = useState(false);
-  const [pollModalVisible, setPollModalVisible] = useState(false);
   const [hashtagModalVisible, setHashtagModalVisible] = useState(false);
-  const [pollOption1, setPollOption1] = useState('');
-  const [pollOption2, setPollOption2] = useState('');
 
   // Fetch user data
   useEffect(() => {
@@ -749,17 +746,39 @@ export default function CreatePost({ navigation }) {
     fetchUserData();
   }, []);
 
-  const selectImage = async () => {
-    ImagePicker.launchImageLibrary({ mediaType: 'photo' }, (response) => {
-      if (response.assets?.[0]) {
-        const asset = response.assets[0];
-        setImage({
+  const selectImages = async () => {
+    const options = {
+      mediaType: 'photo',
+      selectionLimit: 4, // Allow up to 4 images
+      includeBase64: false,
+    };
+
+    ImagePicker.launchImageLibrary(options, (response) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (response.error) {
+        console.log('ImagePicker Error: ', response.error);
+        Alert.alert('Error', 'Failed to select images');
+      } else if (response.assets) {
+        const selectedImages = response.assets.map(asset => ({
           uri: asset.uri,
-          name: asset.fileName,
-          type: asset.type,
-        });
+          name: asset.fileName || `image_${Date.now()}.jpg`,
+          type: asset.type || 'image/jpeg',
+        }));
+
+        // Check if adding these would exceed 4 images
+        if (images.length + selectedImages.length > 4) {
+          Alert.alert('Limit Reached', 'You can only upload up to 4 images');
+          return;
+        }
+
+        setImages([...images, ...selectedImages]);
       }
     });
+  };
+
+  const removeImage = (index) => {
+    setImages(images.filter((_, i) => i !== index));
   };
 
   const handlePost = async () => {
@@ -782,11 +801,14 @@ export default function CreatePost({ navigation }) {
       if (selectedHashtag) formData.append('hashtags', selectedHashtag);
       formData.append('user_profile_picture', userprofileimage);
       
-      if (image) {
-        formData.append('image', {
-          uri: image.uri,
-          name: image.name,
-          type: image.type,
+      // Append multiple images
+      if (images.length > 0) {
+        images.forEach((image, index) => {
+          formData.append('images', {
+            uri: image.uri,
+            name: image.name,
+            type: image.type,
+          });
         });
       }
 
@@ -799,9 +821,11 @@ export default function CreatePost({ navigation }) {
 
       Alert.alert('Success', 'Your post was published!');
       navigation.navigate('BroadcastHome');
+      
+      // Reset state
       setContent('');
       setSelectedHashtag('');
-      setImage(null);
+      setImages([]);
     } catch (error) {
       console.error('Post error:', error);
       Alert.alert('Error', 'Could not create post');
@@ -816,47 +840,80 @@ export default function CreatePost({ navigation }) {
     setHashtagModalVisible(false);
   };
 
-  const handlePollSubmit = () => {
-    if (!pollOption1.trim() || !pollOption2.trim()) {
-      Alert.alert('Required', 'Please enter both options');
-      return;
-    }
-    const pollText = `Poll: ${pollOption1} vs ${pollOption2}`;
-    setContent(content ? `${content}\n${pollText}` : pollText);
-    setPollOption1('');
-    setPollOption2('');
-    setPollModalVisible(false);
-  };
-
   const renderHashtagItem = ({ item }) => (
     <TouchableOpacity
-      style={[styles.hashtagItem, { 
-        borderBottomColor: colors.border 
-      }]}
+      style={[styles.hashtagItem, { borderBottomColor: colors.border }]}
       onPress={() => selectHashtag(item)}
     >
       <Text style={[styles.hashtagText, { color: colors.text }]}>#{item.label}</Text>
     </TouchableOpacity>
   );
 
-  // Get gradient colors - keeping blue for both themes
-  const getGradientColors = () => {
-    return isDark ? ['#0d64dd', '#1a73e8'] : ['#0d64dd', '#1a73e8']; // Same blue gradient for both
+  // Render image grid
+  const renderImageGrid = () => {
+    if (images.length === 0) return null;
+
+    const getGridStyle = () => {
+      switch (images.length) {
+        case 1:
+          return styles.singleImageContainer;
+        case 2:
+          return styles.doubleImageContainer;
+        case 3:
+          return styles.tripleImageContainer;
+        case 4:
+          return styles.quadImageContainer;
+        default:
+          return styles.singleImageContainer;
+      }
+    };
+
+    return (
+      <View style={[styles.imageGridContainer, { 
+        backgroundColor: isDark ? colors.backgroundSecondary : colors.background,
+        borderColor: colors.border 
+      }]}>
+        <View style={getGridStyle()}>
+          {images.map((image, index) => (
+            <View key={index} style={styles.gridImageWrapper}>
+              <Image 
+                source={{ uri: image.uri }} 
+                style={styles.gridImage} 
+                resizeMode="cover"
+              />
+              <TouchableOpacity
+                style={styles.removeImageButton}
+                onPress={() => removeImage(index)}
+              >
+                <Icon name="close-circle" size={24} color="white" />
+              </TouchableOpacity>
+              
+              {/* Show image counter on first image */}
+              {index === 0 && images.length > 1 && (
+                <View style={styles.imageCounter}>
+                  <Text style={styles.imageCounterText}>+{images.length - 1}</Text>
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+      </View>
+    );
   };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <StatusBar 
-        barStyle="light-content" // Always light content since we keep blue background
-        backgroundColor="#0d64dd" // Fixed blue background
+        barStyle="light-content" 
+        backgroundColor="#0d64dd" 
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={[styles.container, { backgroundColor: colors.background }]}
       >
-        {/* Header with gradient - keeping blue for both themes */}
+        {/* Header with gradient */}
         <LinearGradient
-          colors={getGradientColors()}
+          colors={['#0d64dd', '#1a73e8']}
           style={styles.header}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
@@ -926,25 +983,8 @@ export default function CreatePost({ navigation }) {
             {content.length}/280
           </Text>
 
-          {/* Image Preview */}
-          {image && (
-            <View style={[styles.imagePreviewContainer, { 
-              backgroundColor: isDark ? colors.backgroundSecondary : colors.background,
-              borderColor: colors.border 
-            }]}>
-              <Image 
-                source={{ uri: image.uri }} 
-                style={styles.previewImage} 
-                resizeMode="cover"
-              />
-              <TouchableOpacity
-                style={styles.removeImageButton}
-                onPress={() => setImage(null)}
-              >
-                <Icon name="close-circle" size={24} color="white" />
-              </TouchableOpacity>
-            </View>
-          )}
+          {/* Image Grid Preview */}
+          {renderImageGrid()}
 
           {/* Selected Hashtag */}
           {selectedHashtag && (
@@ -965,10 +1005,12 @@ export default function CreatePost({ navigation }) {
           }]}>
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={selectImage}
+              onPress={selectImages}
             >
-              <Icon name="image" size={20} color="#0d64dd" />
-              <Text style={[styles.actionButtonText, { color: '#0d64dd' }]}>Photo</Text>
+              <Icon name="images" size={20} color="#0d64dd" />
+              <Text style={[styles.actionButtonText, { color: '#0d64dd' }]}>
+                {images.length > 0 ? `${images.length}/4 Photos` : 'Photos'}
+              </Text>
             </TouchableOpacity>
             
             <TouchableOpacity
@@ -1015,60 +1057,6 @@ export default function CreatePost({ navigation }) {
           </View>
         </Modal>
 
-        {/* Poll Modal */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={pollModalVisible}
-          onRequestClose={() => setPollModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Create Poll</Text>
-                <TouchableOpacity onPress={() => setPollModalVisible(false)}>
-                  <Icon name="close" size={24} color={colors.text} />
-                </TouchableOpacity>
-              </View>
-              
-              <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-                Enter two options for your poll
-              </Text>
-              
-              <TextInput
-                placeholder="First option"
-                placeholderTextColor={colors.textSecondary}
-                style={[styles.modalInput, { 
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                  color: colors.text
-                }]}
-                value={pollOption1}
-                onChangeText={setPollOption1}
-              />
-              
-              <TextInput
-                placeholder="Second option"
-                placeholderTextColor={colors.textSecondary}
-                style={[styles.modalInput, { 
-                  backgroundColor: colors.backgroundSecondary,
-                  borderColor: colors.border,
-                  color: colors.text
-                }]}
-                value={pollOption2}
-                onChangeText={setPollOption2}
-              />
-              
-              <TouchableOpacity
-                style={[styles.modalSubmitButton, { backgroundColor: '#0d64dd' }]}
-                onPress={handlePollSubmit}
-              >
-                <Text style={styles.modalSubmitButtonText}>Add Poll</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
         {/* Emoji Modal */}
         <Modal
           animationType="fade"
@@ -1095,13 +1083,10 @@ export default function CreatePost({ navigation }) {
                   columns={8}
                   categoryEmojiSize={24}
                   emojiSize={24}
-                  // Custom theme for EmojiSelector
-                  theme={isDark ? 'dark' : 'light'}
                   placeholder="Search emoji..."
                   searchStyle={{
                     backgroundColor: colors.backgroundSecondary,
                     color: colors.text,
-                    placeholderTextColor: colors.textSecondary,
                   }}
                 />
               </View>
@@ -1113,6 +1098,7 @@ export default function CreatePost({ navigation }) {
   );
 }
 
+// Add these new styles
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -1146,7 +1132,6 @@ const styles = StyleSheet.create({
   },
   postButton: {
     marginRight: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -1194,24 +1179,73 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 8,
   },
-  imagePreviewContainer: {
+  // New image grid styles
+  imageGridContainer: {
     margin: 16,
     borderRadius: 16,
     overflow: 'hidden',
-    position: 'relative',
     borderWidth: 1,
+    padding: 4,
   },
-  previewImage: {
+  singleImageContainer: {
+    flexDirection: 'row',
     width: '100%',
-    height: 200,
+    aspectRatio: 1,
+  },
+  doubleImageContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    aspectRatio: 2,
+  },
+  tripleImageContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    aspectRatio: 1.5,
+  },
+  quadImageContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: '100%',
+    aspectRatio: 1,
+  },
+  gridImageWrapper: {
+    position: 'relative',
+    flex: 1,
+    minWidth: '50%',
+    minHeight: '50%',
+    padding: 2,
+  },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
   },
   removeImageButton: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: 8,
+    right: 8,
     backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 12,
-    padding: 4,
+    padding: 2,
+    zIndex: 10,
+  },
+  imageCounter: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -15 }, { translateY: -15 }],
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 20,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
+  },
+  imageCounterText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   selectedHashtagContainer: {
     flexDirection: 'row',
@@ -1276,10 +1310,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
   },
-  modalSubtitle: {
-    fontSize: 14,
-    marginBottom: 16,
-  },
   hashtagList: {
     paddingBottom: 16,
   },
@@ -1288,24 +1318,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   hashtagText: {
-    fontSize: 16,
-  },
-  modalInput: {
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    borderWidth: 1,
-  },
-  modalSubmitButton: {
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  modalSubmitButtonText: {
-    color: 'white',
-    fontWeight: '600',
     fontSize: 16,
   },
 });

@@ -799,12 +799,12 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.cardFooter}>
           <View style={styles.locationContainer}>
             <Icon name="location-on" size={14} color={colors.textSecondary} />
-            <Text style={[styles.cardLocation, { color: colors.textSecondary }]}>{item.location || 'Lagos'}</Text>
+            <Text style={[styles.cardLocation, { color: colors.textSecondary }]}>{item.location || 'Available on request'}</Text>
           </View>
-          <View style={[styles.ratingContainer, { backgroundColor: colors.backgroundSecondary }]}>
+          {/* <View style={[styles.ratingContainer, { backgroundColor: colors.backgroundSecondary }]}>
             <Icon name="star" size={14} color="#FFD700" />
             <Text style={[styles.ratingText, { color: colors.text }]}>{item.rating || '4.5'}</Text>
-          </View>
+          </View> */}
         </View>
       </View>
     </TouchableOpacity>

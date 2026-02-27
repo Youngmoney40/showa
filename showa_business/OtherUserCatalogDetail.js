@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -27,8 +28,10 @@ const { width } = Dimensions.get('window');
 
 export default function ProductDetailsScreen({ navigation, route }) {
   const { colors, isDark } = useTheme();
-  const { product, businessProfile } = route.params || {};
-  const [loading, setLoading] = useState(!product);
+  const { product: routeProduct, businessProfile } = route.params || {};
+
+  const [product, setProduct] = useState(routeProduct || null);
+  const [loading, setLoading] = useState(!routeProduct);
   const [business, setBusiness] = useState(businessProfile || null);
   const [messageModalVisible, setMessageModalVisible] = useState(false);
   const [message, setMessage] = useState('');
@@ -41,15 +44,50 @@ export default function ProductDetailsScreen({ navigation, route }) {
   const [isProductOwner, setIsProductOwner] = useState(false);
   const [userBusinessAccounts, setUserBusinessAccounts] = useState([]); 
   const [checkingOwnership, setCheckingOwnership] = useState(true);
+  const [productImages, setProductImages] = useState([]);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   useEffect(() => {
     const initializeData = async () => {
       await fetchUserData();
       
-      if (product) {
+      if (routeProduct) {
+        setProduct(routeProduct);
         setLoading(false);
-        if (!businessProfile && product.user) {
-          await fetchBusinessProfile(product.user);
+        
+       
+        const images = [];
+        if (routeProduct.image) {
+          images.push(routeProduct.image);
+        }
+        if (routeProduct.image_url) {
+          images.push(routeProduct.image_url);
+        }
+        if (routeProduct.images && Array.isArray(routeProduct.images)) {
+          images.push(...routeProduct.images.map(img => img.image || img));
+        }
+        setProductImages(images.filter(Boolean));
+        
+        // Fetch business profile if not provided and product has owner
+        if (!businessProfile && routeProduct.owner) {
+          await fetchBusinessProfile(routeProduct.owner);
+        } else if (businessProfile) {
+          setBusiness(businessProfile);
+        }
+      } else if (route.params?.catalogItem) {
+        // Handle if passed as catalogItem
+        const catalogItem = route.params.catalogItem;
+        setProduct(catalogItem);
+        setLoading(false);
+        
+        // Process catalog item images
+        const images = [];
+        if (catalogItem.image) images.push(catalogItem.image);
+        if (catalogItem.image_url) images.push(catalogItem.image_url);
+        setProductImages(images.filter(Boolean));
+        
+        if (catalogItem.owner) {
+          await fetchBusinessProfile(catalogItem.owner);
         }
       } else {
         Alert.alert('Error', 'Product information not available');
@@ -58,7 +96,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
     };
     
     initializeData();
-  }, [product, businessProfile]);
+  }, [routeProduct, businessProfile, route.params?.catalogItem]);
 
   const fetchUserData = async () => {
     try {
@@ -75,10 +113,10 @@ export default function ProductDetailsScreen({ navigation, route }) {
       setUserId(parsed.id);
       setUsername(parsed.name || 'User');
       
-      // Fetch user's business accounts to check ownership
+      
       await fetchUserBusinessAccounts(parsed.id, token);
       
-      // If you have user profile image in userData, set it here
+      
       if (parsed.profile_picture) {
         setUserProfileImage(`${API_ROUTE_IMAGE}${parsed.profile_picture}`);
       }
@@ -93,8 +131,6 @@ export default function ProductDetailsScreen({ navigation, route }) {
 
   const fetchUserBusinessAccounts = async (userId, token) => {
     try {
-      // Assuming you have an API endpoint to get user's business accounts
-      // This endpoint should return an array of business accounts that belong to this user
       const response = await axios.get(
         `${API_ROUTE}/users/${userId}/business-accounts/`,
         {
@@ -108,7 +144,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
         setUserBusinessAccounts(response.data);
         
         // Check if the product owner (business account) is in user's business accounts
-        if (product && product.user && response.data.some(business => business.id === product.user)) {
+        if (product && product.owner && response.data.some(business => business.id === product.owner)) {
           setIsProductOwner(true);
         }
       }
@@ -121,19 +157,17 @@ export default function ProductDetailsScreen({ navigation, route }) {
     }
   };
 
-  // Alternative method: Check if business profile belongs to current user
   const checkOwnershipAlternative = async () => {
     try {
-      if (!product || !product.user) {
+      if (!product || !product.owner) {
         setIsProductOwner(false);
         return;
       }
 
       const token = await AsyncStorage.getItem('userToken');
       
-      // Fetch business profile details
       const response = await axios.get(
-        `${API_ROUTE}/profiles/${product.user}/`,
+        `${API_ROUTE}/profiles/${product.owner}/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -142,22 +176,12 @@ export default function ProductDetailsScreen({ navigation, route }) {
       );
 
       if (response.status === 200) {
-        // Check if business profile has an owner field that matches current user
-        // This depends on your backend structure
         const businessData = response.data;
         
-        // Option 1: If business profile has an "owner" field
         if (businessData.owner === userId) {
           setIsProductOwner(true);
           return;
         }
-        
-        // Option 2: If business profile has a "user" field that matches user's business accounts
-        // You might need to check against a list of user's business account IDs
-        // This would require storing user's business account IDs in AsyncStorage
-        
-        // Option 3: Check by business name/email pattern
-        // (Less reliable but可以作为fallback)
       }
     } catch (error) {
       console.error('Alternative ownership check failed:', error);
@@ -182,7 +206,6 @@ export default function ProductDetailsScreen({ navigation, route }) {
         setBusiness(response.data);
         
         // Also check ownership after fetching business profile
-        // If business profile has an "owner" field that matches current user
         if (userId && response.data.owner === userId) {
           setIsProductOwner(true);
         }
@@ -196,16 +219,26 @@ export default function ProductDetailsScreen({ navigation, route }) {
     if (!product) return;
     
     try {
-      const shareMessage = `Check out "${product.name}" - ₦${product.price?.toLocaleString()}\n\n${product.description || ''}`;
+      const price = product.sale_price && parseFloat(product.sale_price) > 0 
+        ? product.sale_price 
+        : product.price;
+      
+      const shareMessage = `Check out "${product.name}" - ₦${parseFloat(price).toLocaleString()}\n\n${product.description || ''}\n\nSold by: ${product.owner_name || business?.name || 'Business'}`;
       
       await Share.share({
         title: product.name,
         message: shareMessage,
-        url: product.image ? `${API_ROUTE_IMAGE}${product.image}` : '',
+        url: product.image ? getFullImageUrl(product.image) : '',
       });
     } catch (error) {
       console.error('Share error:', error);
     }
+  };
+
+  const getFullImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    return `${API_ROUTE_IMAGE}${imagePath.startsWith('/') ? imagePath : '/' + imagePath}`;
   };
 
   const handleSelectImage = () => {
@@ -236,8 +269,13 @@ export default function ProductDetailsScreen({ navigation, route }) {
   };
 
   const sendMessageToSeller = async () => {
-    if (!business?.user || !userId) {
-      Alert.alert('Error', 'Required information not available');
+    if (!business?.user && !product?.owner) {
+      Alert.alert('Error', 'Seller information not available');
+      return;
+    }
+
+    if (!userId) {
+      Alert.alert('Error', 'Please login to send messages');
       return;
     }
 
@@ -265,19 +303,23 @@ export default function ProductDetailsScreen({ navigation, route }) {
 
       const formData = new FormData();
       
-      // Add message content with product details
+      
       let messageContent = message.trim();
+      const price = product.sale_price && parseFloat(product.sale_price) > 0 
+        ? product.sale_price 
+        : product.price;
+      
       if (product) {
         if (messageContent) {
-          messageContent += `\n\nProduct: ${product.name}`;
-          messageContent += `\nPrice: ₦${product.price?.toLocaleString()}`;
+          messageContent += `\n\n📦 Product: ${product.name}`;
+          messageContent += `\n💰 Price: ₦${parseFloat(price).toLocaleString()}`;
           if (product.description) {
-            messageContent += `\nDescription: ${product.description.substring(0, 100)}...`;
+            messageContent += `\n📝 Description: ${product.description.substring(0, 100)}...`;
           }
         } else {
-          messageContent = `Interested in: ${product.name}\nPrice: ₦${product.price?.toLocaleString()}`;
+          messageContent = `I'm interested in: ${product.name}\n💰 Price: ₦${parseFloat(price).toLocaleString()}`;
           if (product.description) {
-            messageContent += `\nDescription: ${product.description.substring(0, 100)}...`;
+            messageContent += `\n📝 ${product.description.substring(0, 100)}...`;
           }
         }
       }
@@ -286,7 +328,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
         formData.append('content', messageContent.trim());
       }
 
-      // Add selected image if user attached one
+
       if (selectedImage) {
         formData.append('image', {
           uri: selectedImage.uri,
@@ -295,10 +337,10 @@ export default function ProductDetailsScreen({ navigation, route }) {
         });
       }
 
-      // Add chat metadata
+  
       formData.append('chat_type', 'single');
       formData.append('account_mode', 'business');
-      formData.append('receiver', business.user);
+      formData.append('receiver', business?.user || product?.owner);
 
       const response = await axios.post(
         `${API_ROUTE}/chat/`,
@@ -330,9 +372,9 @@ export default function ProductDetailsScreen({ navigation, route }) {
               onPress: () => {
                 navigation.navigate('PersonalPrivateChatScreen', {
                   chatType: 'single',
-                  receiverId: business.user,
-                  name: business.name,
-                  profile_image: business.image,
+                  receiverId: business?.user || product?.owner,
+                  name: business?.name || product?.owner_name,
+                  profile_image: business?.image,
                 });
                 setMessage('');
                 setSelectedImage(null);
@@ -363,12 +405,16 @@ export default function ProductDetailsScreen({ navigation, route }) {
   };
 
   const sendQuickInquiry = (inquiryType) => {
-    // Prevent sending inquiry if user is the product owner
+   
     if (isProductOwner) {
       Alert.alert('Not Allowed', 'You cannot send inquiries about your own product.');
       return;
     }
 
+    const price = product.sale_price && parseFloat(product.sale_price) > 0 
+      ? product.sale_price 
+      : product.price;
+    
     let messageText = '';
     
     switch(inquiryType) {
@@ -376,7 +422,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
         messageText = `Is "${product?.name}" available?`;
         break;
       case 'price':
-        messageText = `Is the price of "${product?.name}" negotiable?`;
+        messageText = `Is the price of ₦${parseFloat(price).toLocaleString()} for "${product?.name}" negotiable?`;
         break;
       case 'details':
         messageText = `Can I get more details about "${product?.name}"?`;
@@ -386,10 +432,10 @@ export default function ProductDetailsScreen({ navigation, route }) {
     }
     
     if (product) {
-      messageText += `\n\nProduct: ${product.name}`;
-      messageText += `\nPrice: ₦${product.price?.toLocaleString()}`;
+      messageText += `\n\n📦 Product: ${product.name}`;
+      messageText += `\n💰 Price: ₦${parseFloat(price).toLocaleString()}`;
       if (product.description) {
-        messageText += `\nDescription: ${product.description.substring(0, 100)}...`;
+        messageText += `\n📝 Description: ${product.description.substring(0, 100)}...`;
       }
     }
     
@@ -436,7 +482,9 @@ export default function ProductDetailsScreen({ navigation, route }) {
   );
 
   const renderImageGallery = () => {
-    if (!product?.image) {
+    const images = productImages.length > 0 ? productImages : [product?.image, product?.image_url].filter(Boolean);
+    
+    if (images.length === 0) {
       return (
         <View style={[styles.productImage, styles.placeholderImage, { backgroundColor: colors.card }]}>
           <Icon name="image" size={50} color={colors.textSecondary} />
@@ -446,131 +494,181 @@ export default function ProductDetailsScreen({ navigation, route }) {
     }
 
     return (
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={[styles.imageGallery, { backgroundColor: colors.card }]}
-      >
-        <Image
-          source={{ uri: product.image.startsWith('http') ? product.image : `${API_ROUTE_IMAGE}${product.image}` }}
-          style={styles.productImage}
-          resizeMode="cover"
-          onError={() => console.log('Image failed to load')}
-        />
-      </ScrollView>
+      <View style={[styles.imageGalleryContainer, { backgroundColor: colors.card }]}>
+        <ScrollView 
+          horizontal 
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(event) => {
+            const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+            setActiveImageIndex(newIndex);
+          }}
+        >
+          {images.map((img, index) => (
+            <Image
+              key={index}
+              source={{ uri: getFullImageUrl(img) }}
+              style={styles.productImage}
+              resizeMode="cover"
+              onError={() => console.log('Image failed to load')}
+            />
+          ))}
+        </ScrollView>
+        
+        {images.length > 1 && (
+          <View style={styles.imagePagination}>
+            {images.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.paginationDot,
+                  { backgroundColor: index === activeImageIndex ? colors.primary : colors.textSecondary },
+                ]}
+              />
+            ))}
+          </View>
+        )}
+      </View>
     );
   };
 
-  const renderProductInfo = () => (
-    <View style={[styles.productInfo, { backgroundColor: colors.card }]}>
-      <Text style={[styles.productName, { color: colors.text }]}>{product?.name || 'Product Name'}</Text>
-      
-      <View style={styles.priceContainer}>
-        {product?.sale_price && parseFloat(product.sale_price) > 0 ? (
-          <>
-            <Text style={styles.productPrice}>
-              ₦{parseFloat(product.sale_price).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              })}
-            </Text>
-            <Text style={[styles.originalPrice, { color: colors.textSecondary }]}>
-              ₦{parseFloat(product.price).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              })}
-            </Text>
-            <View style={styles.discountBadge}>
-              <Text style={styles.discountText}>
-                {Math.round(((product.price - product.sale_price) / product.price) * 100)}% OFF
-              </Text>
-            </View>
-          </>
-        ) : (
+  const renderProductInfo = () => {
+    const price = product?.sale_price && parseFloat(product.sale_price) > 0 
+      ? product.sale_price 
+      : product?.price;
+    
+    const originalPrice = product?.sale_price && parseFloat(product.sale_price) > 0 ? product.price : null;
+    const discountPercent = originalPrice 
+      ? Math.round(((originalPrice - product.sale_price) / originalPrice) * 100) 
+      : 0;
+
+    return (
+      <View style={[styles.productInfo, { backgroundColor: colors.card }]}>
+        <Text style={[styles.productName, { color: colors.text }]}>{product?.name || 'Product Name'}</Text>
+        
+        <View style={styles.priceContainer}>
           <Text style={styles.productPrice}>
-            ₦{parseFloat(product?.price || 0).toLocaleString('en-US', {
+            ₦{parseFloat(price || 0).toLocaleString('en-US', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2
             })}
           </Text>
-        )}
-      </View>
-      
-      {product?.description && (
-        <View style={styles.descriptionContainer}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Description</Text>
-          <Text style={[styles.productDescription, { color: colors.textSecondary }]}>
-            {product.description}
-          </Text>
-        </View>
-      )}
-      
-      {product?.category && (
-        <View style={styles.categoryContainer}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Category</Text>
-          <View style={[styles.categoryChip, { backgroundColor: isDark ? colors.backgroundSecondary : '#F0F4FF' }]}>
-            <Text style={[styles.categoryText, { color: colors.primary }]}>{product.category}</Text>
-          </View>
-        </View>
-      )}
-    </View>
-  );
-
-  const renderBusinessInfo = () => (
-    <TouchableOpacity 
-      style={[styles.businessCard, { backgroundColor: colors.card }]}
-      activeOpacity={0.7}
-      onPress={() => business?.user && navigation.navigate('BusinessProfile', { userId: business.user })}
-      disabled={isProductOwner}
-    >
-      <View style={styles.businessHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Sold By</Text>
-        {!isProductOwner && <Icon name="chevron-right" size={20} color={colors.textSecondary} />}
-      </View>
-      
-      <View style={styles.businessInfo}>
-        <Image
-          source={
-            business?.image 
-              ? { uri: `${API_ROUTE_IMAGE}${business.image}` }
-              : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-          }
-          style={styles.businessAvatar}
-        />
-        <View style={styles.businessDetails}>
-          <Text style={[styles.businessName, { color: colors.text }]}>{business?.name || 'Business Name'}</Text>
-          {business?.description && (
-            <Text style={[styles.businessDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-              {business.description}
-            </Text>
+          {originalPrice && (
+            <>
+              <Text style={[styles.originalPrice, { color: colors.textSecondary }]}>
+                ₦{parseFloat(originalPrice).toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </Text>
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountText}>{discountPercent}% OFF</Text>
+              </View>
+            </>
           )}
-          <View style={styles.ratingContainer}>
-            <Icon name="star" size={16} color="#FFB74D" />
-            <Text style={[styles.ratingText, { color: colors.textSecondary }]}>4.8 • 125 reviews</Text>
+        </View>
+        
+        {product?.description && (
+          <View style={styles.descriptionContainer}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Description</Text>
+            <Text style={[styles.productDescription, { color: colors.textSecondary }]}>
+              {product.description}
+            </Text>
           </View>
+        )}
+        
+        <View style={styles.metaContainer}>
+          <View style={styles.metaItem}>
+            <Icon name="person" size={16} color={colors.textSecondary} />
+            <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+              Seller: {product?.owner_name || business?.name || 'Unknown'}
+            </Text>
+          </View>
+          
+          {product?.created_at && (
+            <View style={styles.metaItem}>
+              <Icon name="calendar-today" size={16} color={colors.textSecondary} />
+              <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                Listed: {new Date(product.created_at).toLocaleDateString()}
+              </Text>
+            </View>
+          )}
+          
+          {product?.slug && (
+            <View style={styles.metaItem}>
+              <Icon name="link" size={16} color={colors.textSecondary} />
+              <Text style={[styles.metaText, { color: colors.textSecondary }]} numberOfLines={1}>
+                ID: {product.slug}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
-      
-      {!isProductOwner && (
-        <TouchableOpacity 
-          style={[styles.messageButton, { borderColor: colors.primary }]}
-          onPress={() => setMessageModalVisible(true)}
-        >
-          <Icon name="chat" size={18} color={colors.primary} />
-          <Text style={[styles.messageButtonText, { color: colors.primary }]}>Message Seller</Text>
-        </TouchableOpacity>
-      )}
-      {isProductOwner && (
-        <View style={[styles.ownerInfoContainer, { 
-          backgroundColor: isDark ? colors.backgroundSecondary : '#F0F4FF',
-          borderColor: colors.primary 
-        }]}>
-          <Icon name="store" size={18} color={colors.primary} />
-          <Text style={[styles.ownerInfoText, { color: colors.primary }]}>Your Business Product</Text>
+    );
+  };
+
+  const renderBusinessInfo = () => {
+    if (!business && !product?.owner_name) return null;
+
+    return (
+      <TouchableOpacity 
+        style={[styles.businessCard, { backgroundColor: colors.card }]}
+        activeOpacity={0.7}
+        onPress={() => {
+          const businessId = business?.user || product?.owner;
+          if (businessId) {
+            navigation.navigate('BusinessProfile', { userId: businessId });
+          }
+        }}
+        disabled={isProductOwner || !(business?.user || product?.owner)}
+      >
+        <View style={styles.businessHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Sold By</Text>
+          {!isProductOwner && <Icon name="chevron-right" size={20} color={colors.textSecondary} />}
         </View>
-      )}
-    </TouchableOpacity>
-  );
+        
+        <View style={styles.businessInfo}>
+          <Image
+            source={
+              business?.image
+                ? { uri: getFullImageUrl(business.image) }
+                : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+            }
+            style={styles.businessAvatar}
+          />
+          <View style={styles.businessDetails}>
+            <Text style={[styles.businessName, { color: colors.text }]}>
+              {business?.name || product?.owner_name || 'Business Name'}
+            </Text>
+            {business?.description && (
+              <Text style={[styles.businessDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                {business.description}
+              </Text>
+            )}
+          </View>
+        </View>
+        
+        {!isProductOwner && (
+          <TouchableOpacity 
+            style={[styles.messageButton, { borderColor: colors.primary }]}
+            onPress={() => setMessageModalVisible(true)}
+          >
+            <Icon name="chat" size={18} color={colors.primary} />
+            <Text style={[styles.messageButtonText, { color: colors.primary }]}>Message Seller</Text>
+          </TouchableOpacity>
+        )}
+        {isProductOwner && (
+          <View style={[styles.ownerInfoContainer, { 
+            backgroundColor: isDark ? colors.backgroundSecondary : '#F0F4FF',
+            borderColor: colors.primary 
+          }]}>
+            <Icon name="store" size={18} color={colors.primary} />
+            <Text style={[styles.ownerInfoText, { color: colors.primary }]}>Your Business Product</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   const renderQuickInquiries = () => {
     if (checkingOwnership) {
@@ -584,6 +682,8 @@ export default function ProductDetailsScreen({ navigation, route }) {
         </View>
       );
     }
+
+    if (!business && !product?.owner) return null;
 
     return (
       <View style={[styles.quickInquiries, { backgroundColor: colors.card }]}>
@@ -621,15 +721,6 @@ export default function ProductDetailsScreen({ navigation, route }) {
               <Text style={[styles.ownerInquiryText, { color: colors.textSecondary }]}>
                 Manage this product from your business dashboard
               </Text>
-              <TouchableOpacity 
-                style={[styles.manageButton, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  // Navigate to business dashboard or product management screen
-                  Alert.alert('Manage Product', 'Redirect to business dashboard to manage this product.');
-                }}
-              >
-                <Text style={styles.manageButtonText}>Manage Product</Text>
-              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -663,10 +754,10 @@ export default function ProductDetailsScreen({ navigation, route }) {
           {isProductOwner && (
             <View style={[styles.warningContainer, { 
               backgroundColor: isDark ? colors.backgroundSecondary : '#FFF3E0',
-              borderColor: colors.warning 
+              borderColor: '#FF9800' 
             }]}>
-              <Icon name="warning" size={24} color={colors.warning} />
-              <Text style={[styles.warningText, { color: colors.warning }]}>
+              <Icon name="warning" size={24} color="#FF9800" />
+              <Text style={[styles.warningText, { color: '#FF9800' }]}>
                 This is your business product. You cannot message yourself.
               </Text>
             </View>
@@ -678,7 +769,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
               borderColor: colors.border 
             }]}>
               <Image 
-                source={{ uri: product.image.startsWith('http') ? product.image : `${API_ROUTE_IMAGE}${product.image}` }}
+                source={{ uri: getFullImageUrl(product.image_url) }}
                 style={styles.productPreviewImage}
               />
               <View style={styles.productPreviewInfo}>
@@ -686,7 +777,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
                   {product.name}
                 </Text>
                 <Text style={styles.productPreviewPrice}>
-                  ₦{product.price?.toLocaleString()}
+                  ₦{parseFloat(product.sale_price && parseFloat(product.sale_price) > 0 ? product.sale_price : product.price || 0).toLocaleString()}
                 </Text>
               </View>
             </View>
@@ -722,7 +813,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
           />
           
           <View style={styles.modalActions}>
-            <TouchableOpacity 
+            {/* <TouchableOpacity 
               style={[styles.attachButton, { 
                 backgroundColor: colors.backgroundSecondary 
               }, isProductOwner && [styles.disabledButton, { backgroundColor: colors.background }]]}
@@ -731,7 +822,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
             >
               <Icon name="attach-file" size={20} color={colors.textSecondary} />
               <Text style={[styles.attachButtonText, { color: colors.textSecondary }]}>Attach Image</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             
             <View style={styles.sendButtons}>
               <TouchableOpacity 
@@ -843,31 +934,12 @@ export default function ProductDetailsScreen({ navigation, route }) {
       >
         {renderImageGallery()}
         {renderProductInfo()}
-        {/* {renderBusinessInfo()} */}
-        {/* {renderQuickInquiries()} */}
-        
-        {/* <View style={[styles.featuresContainer, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Features</Text>
-          <View style={styles.featuresList}>
-            <View style={styles.featureItem}>
-              <Icon name="local-shipping" size={20} color={colors.primary} />
-              <Text style={[styles.featureText, { color: colors.textSecondary }]}>Free Delivery</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Icon name="verified" size={20} color={colors.primary} />
-              <Text style={[styles.featureText, { color: colors.textSecondary }]}>Quality Guaranteed</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Icon name="refresh" size={20} color={colors.primary} />
-              <Text style={[styles.featureText, { color: colors.textSecondary }]}>14-Day Returns</Text>
-            </View>
-          </View>
-        </View> */}
-        
-        {/* <View style={{ height: 40 }} /> */}
+        {renderBusinessInfo()}
+        {renderQuickInquiries()}
+        <View style={{ height: 20 }} />
       </ScrollView>
 
-      {/* {!isProductOwner && (
+      {!isProductOwner && (
         <View style={[styles.floatingAction, { 
           backgroundColor: colors.card,
           borderTopColor: colors.border,
@@ -885,7 +957,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
             <Text style={styles.messageActionText}>Message Seller</Text>
           </TouchableOpacity>
         </View>
-      )} */}
+      )}
 
       {renderMessageModal()}
       {renderImagePickerModal()}
@@ -1001,13 +1073,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  imageGallery: {
-    // backgroundColor handled inline
+  imageGalleryContainer: {
+    
+    position: 'relative',
   },
   productImage: {
     width: width,
     height: 350,
     backgroundColor: '#F5F5F5',
+  },
+  imagePagination: {
+    flexDirection: 'row',
+    position: 'absolute',
+    bottom: 16,
+    alignSelf: 'center',
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+    // backgroundColor handled inline
   },
   placeholderImage: {
     alignItems: 'center',
@@ -1075,20 +1161,21 @@ const styles = StyleSheet.create({
     // color handled inline
     lineHeight: 22,
   },
-  categoryContainer: {
-    marginBottom: 20,
+  metaContainer: {
+    marginTop: 8,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
   },
-  categoryChip: {
-    // backgroundColor handled inline
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    alignSelf: 'flex-start',
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  categoryText: {
-    fontSize: 14,
-    // color handled inline
-    fontWeight: '500',
+  metaText: {
+    fontSize: 13,
+    marginLeft: 8,
+    flex: 1,
   },
   businessCard: {
     // backgroundColor handled inline
@@ -1129,15 +1216,6 @@ const styles = StyleSheet.create({
     // color handled inline
     marginBottom: 8,
     lineHeight: 18,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    fontSize: 14,
-    // color handled inline
-    marginLeft: 4,
   },
   messageButton: {
     flexDirection: 'row',
@@ -1210,39 +1288,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 12,
-  },
-  manageButton: {
-    // backgroundColor handled inline
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginTop: 8,
-  },
-  manageButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  featuresContainer: {
-    // backgroundColor handled inline
-    padding: 20,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  featuresList: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  featureItem: {
-    alignItems: 'center',
-    flex: 1,
-    paddingHorizontal: 8,
-  },
-  featureText: {
-    fontSize: 12,
-    // color handled inline
-    marginTop: 8,
-    textAlign: 'center',
   },
   floatingAction: {
     position: 'absolute',

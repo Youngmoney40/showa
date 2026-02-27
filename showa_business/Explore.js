@@ -341,8 +341,11 @@ const ExploreScreen = ({ navigation }) => {
                 </View>
               ))}
             </View>
-            <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#FFD700' }]} onPress={() => navigation.navigate('ContactUs')}>
-              <Text style={[styles.modalButtonText, { color: '#000' }]}>Upgrade Now</Text>
+            <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#FFD700' }]} onPress={()=>{
+              navigation.navigate('ContactUs');
+              setActiveModal(false)
+            }}>
+              <Text style={[styles.modalButtonText, { color: '#000' }]}>Contact for Upgrade</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.modalButton2, { borderTopWidth: 1, borderTopColor: colors.border }]} 

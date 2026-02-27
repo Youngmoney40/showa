@@ -1,173 +1,4 @@
-// import React, { useState } from 'react';
-// import {
-//   View,
-//   Text,
-//   TextInput,
-//   TouchableOpacity,
-//   Image,
-//   ScrollView,
-//   ActivityIndicator,
-//   Alert,
-// } from 'react-native';
-// import * as ImagePicker from 'react-native-image-picker';
-// import axios from 'axios';
-// import Colors from '../theme/colors';
-// import { API_ROUTE } from '../api_routing/api';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// export default function CreateListingScreen() {
-//   const [title, setTitle] = useState('');
-//   const [price, setPrice] = useState('');
-//   const [description, setDescription] = useState('');
-//   const [images, setImages] = useState([]);
-//   const [loading, setLoading] = useState(false);
-
-//   const pickImages = () => {
-//     ImagePicker.launchImageLibrary({ mediaType: 'photo', selectionLimit: 5 }, (response) => {
-//       if (!response.didCancel && response.assets) {
-//         setImages(response.assets);
-//       }
-//     });
-//   };
-
-//   const uploadListing = async () => {
-//     if (!title || !price || !description || images.length === 0) {
-//       Alert.alert('All fields are required.');
-//       return;
-//     }
-//     setLoading(true);
-//     const formData = new FormData();
-//     formData.append('title', title);
-//     formData.append('price', price);
-//     formData.append('description', description);
-
-//     images.forEach((img, index) => {
-//       formData.append('images', {
-//         uri: img.uri,
-//         type: img.type,
-//         name: img.fileName || `image_${index}.jpg`,
-//       });
-//     });
-
-//     try {
-//       const token = await AsyncStorage.getItem('userToken');
-//       await axios.post(`${API_ROUTE}/listings/create/`, formData, {
-//         headers: {
-//           'Content-Type': 'multipart/form-data',
-//           Authorization: `Bearer ${token}`,
-//         },
-//       });
-//       Alert.alert('Listing uploaded successfully!');
-//       setTitle('');
-//       setPrice('');
-//       setDescription('');
-//       setImages([]);
-//     } catch (err) {
-//       //console.log(err);
-//       Alert.alert('Failed to upload. Try again.');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <ScrollView style={{ flex: 1, backgroundColor: '#f9f9f9', padding: 16 }}>
-//       <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: Colors.primary }}>
-//         Create New Listing
-//       </Text>
-
-//       <Text style={styles.label}>Title</Text>
-//       <TextInput
-//         style={styles.input}
-//         placeholder="Product Title"
-//         value={title}
-//         placeholderTextColor='#555'
-//         onChangeText={setTitle}
-//       />
-
-//       <Text style={styles.label}>Price</Text>
-//       <TextInput
-//         style={styles.input}
-//         placeholder="Enter Price"
-//         value={price}
-//         onChangeText={setPrice}
-//         keyboardType="decimal-pad"
-//          placeholderTextColor='#555'
-//       />
-
-//       <Text style={styles.label}>Description</Text>
-//       <TextInput
-//         style={[styles.input, { height: 100 }]} 
-//         placeholder="Product Description"
-//          placeholderTextColor='#555'
-//         value={description}
-//         onChangeText={setDescription}
-//         multiline
-//       />
-
-//       <Text style={styles.label}>Product Images</Text>
-//       <TouchableOpacity style={styles.imagePickerButton} onPress={pickImages}>
-//         <Text style={{ color: '#fff', fontWeight: 'bold' }}>Select Images</Text>
-//       </TouchableOpacity>
-
-//       <ScrollView horizontal style={{ marginVertical: 10 }}>
-//         {images.map((img, index) => (
-//           <Image
-//             key={index}
-//             source={{ uri: img.uri }}
-//             style={{ width: 100, height: 100, marginRight: 8, borderRadius: 8 }}
-//           />
-//         ))}
-//       </ScrollView>
-
-//       <TouchableOpacity
-//         style={styles.uploadButton}
-//         onPress={uploadListing}
-//         disabled={loading}
-//       >
-//         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.uploadText}>Upload Listing</Text>}
-//       </TouchableOpacity>
-//     </ScrollView>
-//   );
-// }
-
-// const styles = {
-//   label: {
-//     fontSize: 16,
-//     fontWeight: '600',
-//     color: '#555',
-//     marginBottom: 6,
-//   },
-//   input: {
-//     borderWidth: 1,
-//     borderColor: '#ccc',
-//     borderRadius: 10,
-//     padding: 12,
-//     marginBottom: 12,
-//     color:'#555',
-//     backgroundColor: '#fff',
-//   },
-//   imagePickerButton: {
-//     backgroundColor: Colors.primary,
-//     paddingVertical: 10,
-//     borderRadius: 10,
-//     alignItems: 'center',
-//   },
-//   uploadButton: {
-//     backgroundColor: '#27ae60',
-//     paddingVertical: 14,
-//     borderRadius: 14,
-//     marginTop: 20,
-//     alignItems: 'center',
-//   },
-//   uploadText: {
-//     color: '#fff',
-//     fontSize: 16,
-//     fontWeight: '700',
-//   },
-// };
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -181,7 +12,8 @@ import {
   KeyboardAvoidingView,
   SafeAreaView,
   StyleSheet,
-  Dimensions,
+  Modal,
+  FlatList,
 } from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Feather';
@@ -190,14 +22,54 @@ import Colors from '../theme/colors';
 import { API_ROUTE } from '../api_routing/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const { width } = Dimensions.get('window');
-
 export default function CreateListingScreen({ navigation }) {
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    setLoadingCategories(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      console.log('Fetching categories from:', `${API_ROUTE}/listing-categories/`);
+      
+      const response = await axios.get(`${API_ROUTE}/listing-categories/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      console.log('Categories response:', response.data);
+      
+      // Handle the response structure
+      if (response.data.success) {
+        setCategories(response.data.categories);
+      } else if (Array.isArray(response.data)) {
+        setCategories(response.data);
+      } else if (response.data.categories) {
+        setCategories(response.data.categories);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      Alert.alert(
+        'Error',
+        'Failed to load categories. Please try again.'
+      );
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
 
   const pickImages = () => {
     const options = {
@@ -227,6 +99,11 @@ export default function CreateListingScreen({ navigation }) {
       return;
     }
 
+    if (!selectedCategory) {
+      Alert.alert('Missing Category', 'Please select a category for your listing.');
+      return;
+    }
+
     if (parseFloat(price) <= 0) {
       Alert.alert('Invalid Price', 'Please enter a valid price.');
       return;
@@ -237,6 +114,8 @@ export default function CreateListingScreen({ navigation }) {
     formData.append('title', title.trim());
     formData.append('price', parseFloat(price).toFixed(2));
     formData.append('description', description.trim());
+    formData.append('location', location.trim());
+    formData.append('category', selectedCategory.id);
 
     images.forEach((img, index) => {
       formData.append('images', {
@@ -269,6 +148,8 @@ export default function CreateListingScreen({ navigation }) {
               setTitle('');
               setPrice('');
               setDescription('');
+              setLocation('');
+              setSelectedCategory(null);
               setImages([]);
             },
           },
@@ -281,6 +162,34 @@ export default function CreateListingScreen({ navigation }) {
       setLoading(false);
     }
   };
+
+  const renderCategoryItem = ({ item }) => (
+    <TouchableOpacity
+      style={[
+        styles.categoryItem,
+        selectedCategory?.id === item.id && styles.categoryItemSelected
+      ]}
+      onPress={() => {
+        setSelectedCategory(item);
+        setModalVisible(false);
+      }}
+    >
+      <View style={styles.categoryItemContent}>
+        {item.icon && (
+          <Text style={styles.categoryIcon}>{item.icon}</Text>
+        )}
+        <Text style={[
+          styles.categoryName,
+          selectedCategory?.id === item.id && styles.categoryNameSelected
+        ]}>
+          {item.name}
+        </Text>
+      </View>
+      {selectedCategory?.id === item.id && (
+        <Icon name="check" size={20} color={Colors.primary || '#007AFF'} />
+      )}
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -300,7 +209,7 @@ export default function CreateListingScreen({ navigation }) {
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <Icon name="arrow-left" size={24} color={Colors.text} />
+              <Icon name="arrow-left" size={24} color={Colors.text || '#333'} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Create Listing</Text>
             <View style={{ width: 40 }} />
@@ -337,6 +246,57 @@ export default function CreateListingScreen({ navigation }) {
               </View>
             </View>
 
+            {/* Category */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Category</Text>
+              <TouchableOpacity
+                style={styles.categorySelector}
+                onPress={() => setModalVisible(true)}
+                disabled={loadingCategories}
+              >
+                {loadingCategories ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color={Colors.primary || '#007AFF'} />
+                    <Text style={styles.loadingText}>Loading categories...</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={selectedCategory ? styles.categorySelectedText : styles.categoryPlaceholder}>
+                      {selectedCategory ? selectedCategory.name : 'Select a category'}
+                    </Text>
+                    <Icon name="chevron-down" size={20} color="#999" />
+                  </>
+                )}
+              </TouchableOpacity>
+              
+              {/* Show selected category info */}
+              {selectedCategory && (
+                <View style={styles.selectedCategoryInfo}>
+                  {selectedCategory.icon && (
+                    <Text style={styles.selectedCategoryIcon}>{selectedCategory.icon}</Text>
+                  )}
+                  <Text style={styles.selectedCategoryName}>
+                    Selected: {selectedCategory.name}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Location */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Location</Text>
+              <View style={styles.locationContainer}>
+                <Icon name="map-pin" size={20} color="#999" style={styles.locationIcon} />
+                <TextInput
+                  style={[styles.input, styles.locationInput]}
+                  placeholder="City, State or Address"
+                  placeholderTextColor="#999"
+                  value={location}
+                  onChangeText={setLocation}
+                />
+              </View>
+            </View>
+
             {/* Description */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Description</Text>
@@ -364,7 +324,7 @@ export default function CreateListingScreen({ navigation }) {
                 disabled={images.length >= 5}
               >
                 <View style={styles.imagePickerContent}>
-                  <Icon name="image" size={24} color={Colors.primary} />
+                  <Icon name="image" size={24} color={Colors.primary || '#007AFF'} />
                   <Text style={styles.imagePickerText}>
                     {images.length === 0 ? 'Add Photos' : 'Add More Photos'}
                   </Text>
@@ -401,7 +361,7 @@ export default function CreateListingScreen({ navigation }) {
                       style={styles.addMoreButton}
                       onPress={pickImages}
                     >
-                      <Icon name="plus" size={24} color={Colors.primary} />
+                      <Icon name="plus" size={24} color={Colors.primary || '#007AFF'} />
                     </TouchableOpacity>
                   )}
                 </ScrollView>
@@ -411,11 +371,11 @@ export default function CreateListingScreen({ navigation }) {
             <TouchableOpacity
               style={[
                 styles.createButton,
-                (!title || !price || !description || images.length === 0) && 
+                (!title || !price || !description || images.length === 0 || !selectedCategory) && 
                 styles.createButtonDisabled
               ]}
               onPress={uploadListing}
-              disabled={loading || !title || !price || !description || images.length === 0}
+              disabled={loading || !title || !price || !description || images.length === 0 || !selectedCategory}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
@@ -434,6 +394,51 @@ export default function CreateListingScreen({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Category Selection Modal */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Category</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Icon name="x" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            
+            {loadingCategories ? (
+              <View style={styles.modalLoading}>
+                <ActivityIndicator size="large" color={Colors.primary || '#007AFF'} />
+                <Text style={styles.modalLoadingText}>Loading categories...</Text>
+              </View>
+            ) : categories.length > 0 ? (
+              <FlatList
+                data={categories}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderCategoryItem}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.categoryList}
+              />
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Icon name="folder" size={50} color="#ccc" />
+                <Text style={styles.emptyText}>No categories available</Text>
+                <TouchableOpacity 
+                  style={styles.retryButton}
+                  onPress={fetchCategories}
+                >
+                  <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -441,7 +446,7 @@ export default function CreateListingScreen({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background || '#f8f9fa',
+    backgroundColor: '#f8f9fa',
   },
   container: {
     flex: 1,
@@ -450,7 +455,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40, // Ensures button has space
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
@@ -468,7 +473,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.text || '#333',
+    color: '#333',
   },
   formContainer: {
     padding: 20,
@@ -479,7 +484,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.text || '#333',
+    color: '#333',
     marginBottom: 8,
   },
   input: {
@@ -490,7 +495,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: Colors.text || '#333',
+    color: '#333',
   },
   priceContainer: {
     flexDirection: 'row',
@@ -499,11 +504,74 @@ const styles = StyleSheet.create({
   currencySymbol: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text || '#333',
+    color: '#333',
     marginRight: 12,
   },
   priceInput: {
     flex: 1,
+  },
+  categorySelector: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 50,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  loadingText: {
+    marginLeft: 10,
+    color: '#999',
+    fontSize: 14,
+  },
+  categoryPlaceholder: {
+    color: '#999',
+    fontSize: 16,
+  },
+  categorySelectedText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  selectedCategoryInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    padding: 10,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 8,
+  },
+  selectedCategoryIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  selectedCategoryName: {
+    color: Colors.primary || '#007AFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+  },
+  locationIcon: {
+    marginLeft: 16,
+  },
+  locationInput: {
+    flex: 1,
+    borderWidth: 0,
   },
   textArea: {
     height: 120,
@@ -613,5 +681,93 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 16,
     lineHeight: 18,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    minHeight: '50%',
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eaeaea',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalLoading: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  modalLoadingText: {
+    marginTop: 10,
+    color: '#999',
+    fontSize: 14,
+  },
+  categoryList: {
+    padding: 20,
+  },
+  categoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  categoryItemSelected: {
+    backgroundColor: '#f0f8ff',
+  },
+  categoryItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  categoryIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  categoryName: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+  },
+  categoryNameSelected: {
+    color: Colors.primary || '#007AFF',
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    marginTop: 10,
+    color: '#999',
+    fontSize: 16,
+  },
+  retryButton: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: Colors.primary || '#007AFF',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

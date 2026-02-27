@@ -7,7 +7,7 @@ import {
   ScrollView,
   Linking,
   Image,
-  Platform,
+  Alert
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
@@ -17,11 +17,21 @@ import { useTheme } from '../src/context/ThemeContext';
 const GlobalIssueReport = () => {
   const { colors, isDark } = useTheme(); 
 
-  const handleReportNow = () => {
-    Linking.openURL(`{${API_E_REPORT}}`).catch(err => 
-      console.error('Could not open the reporting website:', err)
-    );
-  };
+const handleReportNow = async () => {
+  const url = `${API_E_REPORT}`;
+
+  try {
+    const supported = await Linking.canOpenURL(url);
+
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('Error', 'Cannot open this URL');
+    }
+  } catch (error) {
+    console.error('Could not open the reporting website:', error);
+  }
+};
 
   const FeatureCard = ({ icon, title, description }) => (
     <View style={styles.featureCard}>
@@ -205,8 +215,6 @@ const GlobalIssueReport = () => {
           You will be redirected to our secure reporting portal
         </Text>
       </View>
-
-      {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>Global Issue Reporting System</Text>
         <Text style={styles.footerNote}>

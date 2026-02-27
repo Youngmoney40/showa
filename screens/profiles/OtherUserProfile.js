@@ -1,866 +1,1366 @@
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  Image,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
-  FlatList,
+  Image,
+  TouchableOpacity,
+  TextInput,
   Modal,
-  Animated,
-  Dimensions,
-  Pressable,
   Alert,
+  Platform,
   ActivityIndicator,
-  StatusBar
+  Dimensions,
+  StatusBar,
+  FlatList,
+  Animated,
+  KeyboardAvoidingView,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../../api_routing/api';
-import Video from 'react-native-video';
+import { useTheme } from '../../src/context/ThemeContext';
+import CatalogComponent from '../../showa_business/OthersUserCatalog';
 
-const { height, width } = Dimensions.get('window');
 
-const OtherUserProfile = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { userId } = route.params;
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-  const [selectedTab, setSelectedTab] = useState('marketplace');
+const UserProfile = ({ navigation, route }) => {
+  const { colors, isDark } = useTheme();
+  const userIdFromParams = route.params?.userId;
+  
+  const [selectedTab, setSelectedTab] = useState('posts');
   const [marketplacePosts, setMarketplacePosts] = useState([]);
   const [tweets, setTweets] = useState([]);
   const [userVideos, setUserVideos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [playingVideo, setPlayingVideo] = useState(null);
   const [loading, setLoading] = useState(true);
-  const slideAnim = useRef(new Animated.Value(height)).current;
-  const videoRefs = useRef({});
+  const [productModalVisible, setProductModalVisible] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState({});
+  const [fullScreenImage, setFullScreenImage] = useState({
+    visible: false,
+    src: '',
+    type: 'profile',
+  });
+  const [followersModalVisible, setFollowersModalVisible] = useState(false);
+  const [followingModalVisible, setFollowingModalVisible] = useState(false);
+  const [followersList, setFollowersList] = useState([]);
+  const [followingList, setFollowingList] = useState([]);
+  const [loadingFollowers, setLoadingFollowers] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followId, setFollowId] = useState(null);
 
-  const [userData, setUserData] = useState(null);
+  const [profileData, setProfileData] = useState({
+    user: null,
+    recent_content: {
+      listings: [],
+      posts: [],
+      videos: []
+    },
+    stats: {
+      followers_count: 0,
+      following_count: 0,
+      is_following: false,
+      listings_count: 0,
+      posts_count: 0,
+      videos_count: 0
+    }
+  });
+
   const [userProfileImage, setUserProfileImage] = useState('');
+  const [userCoverImage, setUserCoverImage] = useState('');
   const [businessProfile, setBusinessProfile] = useState(null);
-  const [businessHours, setBusinessHours] = useState([]);
   const [catalogData, setCatalogData] = useState([]);
   const [showBusinessInfo, setShowBusinessInfo] = useState(false);
   const [businessLoading, setBusinessLoading] = useState(false);
-
-  // Follow state
   const [followStats, setFollowStats] = useState({
     followers_count: 0,
-    following_count: 0,
-    followers: [],
-    following: []
+    following_count: 0
   });
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
 
-  // Fetch user data by ID
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [coverPhotoFile, setCoverPhotoFile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [dateLockMessage, setDateLockMessage] = useState('');
+  const [catalogsCount, setCatalogsCount] = useState(0);
+
+  const scrollViewRef = useRef(null);
+  const catalogRef = useRef(null);
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath || imagePath === 'null' || imagePath === 'undefined' || imagePath === '') {
+      return null;
+    }
+    
+    if (typeof imagePath === 'string' && imagePath.startsWith('http')) {
+      let url = imagePath;
+      if (url.includes('showa.essential.com.ngmedia')) {
+        url = url.replace('showa.essential.com.ngmedia', 'showa.essential.com.ng/media');
+      }
+      if (url.startsWith('http://')) {
+        url = url.replace('http://', 'https://');
+      }
+      if (url.includes('showa.essential.com.ng/') && 
+          !url.includes('showa.essential.com.ng/media/') &&
+          (url.includes('profile_pics') || url.includes('cover_photos') ||
+           url.includes('catalog_images') || url.includes('marketplace_images') ||
+           url.includes('post_images'))) {
+        url = url.replace('showa.essential.com.ng/', 'showa.essential.com.ng/media/');
+      }
+      return url;
+    }
+    
+    if (typeof imagePath === 'object') {
+      if (imagePath.image) return getImageUrl(imagePath.image);
+      if (imagePath.url) return getImageUrl(imagePath.url);
+      if (imagePath.media) return getImageUrl(imagePath.media);
+      return null;
+    }
+    
+    if (typeof imagePath === 'string') {
+      let cleanPath = imagePath;
+      if (cleanPath.startsWith('/')) {
+        cleanPath = cleanPath.substring(1);
+      }
+      if (!cleanPath.startsWith('media/')) {
+        if (cleanPath.includes('profile_pics') || cleanPath.includes('cover_photos') ||
+            cleanPath.includes('catalog_images') || cleanPath.includes('marketplace_images') ||
+            cleanPath.includes('post_images') || cleanPath.includes('image_') ||
+            cleanPath.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+          cleanPath = 'media/' + cleanPath;
+        }
+      }
+      let baseUrl = API_ROUTE_IMAGE;
+      if (!baseUrl.endsWith('/')) {
+        baseUrl = baseUrl + '/';
+      }
+      return `${baseUrl}${cleanPath}`;
+    }
+    return null;
+  };
+
   const fetchUserData = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      
+      const targetUserId = userIdFromParams || (await AsyncStorage.getItem('userId'));
+
       if (!token) {
         navigation.navigate('Login');
         return;
       }
 
-      const response = await axios.get(`${API_ROUTE}/users/${userId}/profile/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      let response;
+      try {
+        response = await axios.get(`${API_ROUTE}/users/${targetUserId}/profile/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        console.log('User profile fetch response:', response.data);
+      } catch (error) {
+        // Fallback to profile profile
+        if (!userIdFromParams) {
+          response = await axios.get(`${API_ROUTE}/profile/`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        }
+      }
 
-      if (response.status === 200) {
-        setUserData(response.data);
-        const baseURL = `${API_ROUTE_IMAGE}`;
-        const profilePicture = response.data.profile_picture
-          ? `${baseURL}${response.data.profile_picture}`
-          : null;
-        setUserProfileImage(profilePicture);
+      if (response?.status === 200) {
+        const data = response.data;
+        setProfileData(data);
+        
+        // Update follow stats from the data
+        if (data.stats) {
+          setFollowStats({
+            followers_count: data.stats.followers_count || 0,
+            following_count: data.stats.following_count || 0
+          });
+          setIsFollowing(data.stats.is_following || false);
+        }
+
+        // Set user images
+        if (data.user?.profile_picture) {
+          const profileImageUrl = getImageUrl(data.user.profile_picture);
+          setUserProfileImage(profileImageUrl);
+        }
+
+        if (data.user?.cover_photo) {
+          const coverImageUrl = getImageUrl(data.user.cover_photo);
+          setUserCoverImage(coverImageUrl);
+        }
+
+        // Process recent content
+        if (data.recent_content) {
+          // Process marketplace listings
+          if (data.recent_content.listings) {
+            const processedListings = data.recent_content.listings.map(item => ({
+              ...item,
+              images: Array.isArray(item.images)
+                ? item.images.map(img => ({ ...img, image: getImageUrl(img.image) }))
+                : []
+            }));
+            setMarketplacePosts(processedListings);
+          }
+
+          // Process posts
+          if (data.recent_content.posts) {
+            const processedPosts = data.recent_content.posts.map(item => ({
+              ...item,
+              image_url: getImageUrl(item.image_url || item.image)
+            }));
+            setTweets(processedPosts);
+          }
+
+          // Process videos
+          if (data.recent_content.videos) {
+            const processedVideos = data.recent_content.videos.map(item => ({
+              ...item,
+              video_url: getImageUrl(item.video_url || item.video),
+              thumbnail_url: getImageUrl(item.thumbnail_url || item.thumbnail)
+            }));
+            setUserVideos(processedVideos);
+          }
+        }
+
+        const lastUpdated = data.last_profile_update ? new Date(data.last_profile_update) : null;
+        if (lastUpdated && !userIdFromParams) {
+          const nextUpdateDate = new Date(lastUpdated);
+          nextUpdateDate.setDate(nextUpdateDate.getDate() + 90);
+          const today = new Date();
+          const daysLeft = Math.ceil((nextUpdateDate - today) / (1000 * 60 * 60 * 24));
+          if (daysLeft > 0) {
+            setDateLockMessage(`Birthday can be changed in ${daysLeft} days`);
+          }
+        }
       }
     } catch (error) {
-      console.error('Error fetching user data:', error.response?.data || error.message);
-      if (error.response?.status === 401) {
-        navigation.navigate('Login');
-      } else if (error.response?.status === 404) {
-        Alert.alert('Error', 'User not found');
-        navigation.goBack();
-      }
+      console.error('Error fetching user:', error);
+      setError('Failed to load user data');
     }
   };
 
-  // Fetch follow stats for other user
   const fetchFollowStats = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      const response = await axios.get(`${API_ROUTE}/users/${userId}/follow-stats/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      const targetUserId = userIdFromParams || (await AsyncStorage.getItem('userId'));
+      
+      const response = await axios.get(`${API_ROUTE}/users/${targetUserId}/follow-stats/`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.status === 200) {
         setFollowStats(response.data);
-        checkIfFollowing();
       }
     } catch (error) {
-      console.error('Error fetching follow stats:', error.response?.data || error.message);
+      console.error('Error fetching follow stats:', error);
+      // Use stats from profile data if available
+      if (profileData.stats) {
+        setFollowStats({
+          followers_count: profileData.stats.followers_count || 0,
+          following_count: profileData.stats.following_count || 0
+        });
+      }
     }
   };
 
-  // Check if current user is following this user
-  const checkIfFollowing = async () => {
+  const checkFollowStatus = async () => {
+    if (!userIdFromParams) return;
     try {
       const token = await AsyncStorage.getItem('userToken');
-      const currentUserId = await AsyncStorage.getItem('userId');
+      const targetUserId = userIdFromParams;
       
-      const response = await axios.get(`${API_ROUTE}/me/follow-stats/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      const response = await axios.get(`${API_ROUTE}/users/${targetUserId}/follow-status/`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.status === 200) {
-        const isUserFollowing = response.data.following.some(
-          follow => follow.following_user.id === parseInt(userId)
-        );
-        setIsFollowing(isUserFollowing);
+        setIsFollowing(response.data.is_following);
+        setFollowId(response.data.follow_id);
       }
     } catch (error) {
-      console.error('Error checking follow status:', error.response?.data || error.message);
+      console.error('Error checking follow status:', error);
+      // Use is_following from profile data if available
+      if (profileData.stats) {
+        setIsFollowing(profileData.stats.is_following || false);
+      }
     }
   };
 
-  // Follow user
+  const fetchFollowersList = async () => {
+    setLoadingFollowers(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const targetUserId = userIdFromParams || (await AsyncStorage.getItem('userId'));
+      
+      const response = await axios.get(`${API_ROUTE}/users/${targetUserId}/followers/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.status === 200) {
+        setFollowersList(response.data.followers || []);
+      }
+    } catch (error) {
+      console.error('Error fetching followers:', error);
+      setFollowersList([]);
+    } finally {
+      setLoadingFollowers(false);
+    }
+  };
+
+  const fetchFollowingList = async () => {
+    setLoadingFollowers(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const targetUserId = userIdFromParams || (await AsyncStorage.getItem('userId'));
+      
+      const response = await axios.get(`${API_ROUTE}/users/${targetUserId}/following/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.status === 200) {
+        setFollowingList(response.data.following || []);
+      }
+    } catch (error) {
+      console.error('Error fetching following:', error);
+      setFollowingList([]);
+    } finally {
+      setLoadingFollowers(false);
+    }
+  };
+
   const handleFollow = async () => {
     try {
-      setFollowLoading(true);
       const token = await AsyncStorage.getItem('userToken');
       const response = await axios.post(`${API_ROUTE}/follow/`, {
-        following_user: userId,
-        follow_type: 'user'
+        following_user: userIdFromParams
       }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.status === 201) {
         setIsFollowing(true);
-        fetchFollowStats(); // Refresh follow stats
-        Alert.alert('Success', `You are now following ${userData?.name}`);
+        setFollowId(response.data.follow_id);
+        await fetchFollowStats();
+        // Update profile data stats
+        setProfileData(prev => ({
+          ...prev,
+          stats: {
+            ...prev.stats,
+            followers_count: (prev.stats?.followers_count || 0) + 1,
+            is_following: true
+          }
+        }));
       }
     } catch (error) {
-      console.error('Error following user:', error.response?.data || error.message);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to follow user');
-    } finally {
-      setFollowLoading(false);
+      console.error('Error following user:', error);
+      Alert.alert('Error', error.response?.data?.error || 'Failed to follow user');
     }
   };
 
-  // Unfollow user
   const handleUnfollow = async () => {
     try {
-      setFollowLoading(true);
       const token = await AsyncStorage.getItem('userToken');
       
-      // Find the follow relationship ID
-      const myFollowStats = await axios.get(`${API_ROUTE}/me/follow-stats/`, {
+      const response = await axios.post(`${API_ROUTE}/unfollow/`, {
+        following_user: userIdFromParams
+      }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      const follow = myFollowStats.data.following.find(
-        f => f.following_user.id === parseInt(userId)
-      );
 
-      if (follow) {
-        await axios.delete(`${API_ROUTE}/follow/${follow.id}/`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
+      if (response.status === 200) {
         setIsFollowing(false);
-        fetchFollowStats(); // Refresh follow stats
-        Alert.alert('Success', `You have unfollowed ${userData?.name}`);
+        setFollowId(null);
+        await fetchFollowStats();
+        // Update profile data stats
+        setProfileData(prev => ({
+          ...prev,
+          stats: {
+            ...prev.stats,
+            followers_count: Math.max(0, (prev.stats?.followers_count || 0) - 1),
+            is_following: false
+          }
+        }));
       }
     } catch (error) {
-      console.error('Error unfollowing user:', error.response?.data || error.message);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to unfollow user');
-    } finally {
-      setFollowLoading(false);
+      console.error('Error unfollowing user:', error);
+      Alert.alert('Error', error.response?.data?.error || 'Failed to unfollow user');
     }
   };
 
-  // Fetch business profile data for other user
-  const fetchBusinessProfile = async () => {
+  const fetchUserPosts = async () => {
     try {
-      setBusinessLoading(true);
       const token = await AsyncStorage.getItem('userToken');
-      const response = await axios.get(`${API_ROUTE}/profiles/user/${userId}/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const targetUserId = userIdFromParams || (await AsyncStorage.getItem('userId'));
 
-      if (response.status === 200) {
-        const profile = Array.isArray(response.data) ? response.data[0] : response.data;
-        setBusinessProfile(profile);
-        
-        if (profile?.id) {
-          await fetchBusinessHours(profile.id);
-          await fetchBusinessCatalog(profile.id);
+      // For other users' profiles, use the user-specific endpoints
+      if (userIdFromParams) {
+        // Fetch posts for other user
+        const tweetsEndpoint = `${API_ROUTE}/user-posts/${targetUserId}/`;
+        console.log('Fetching posts from:', tweetsEndpoint);
+        try {
+          const tweetsRes = await axios.get(tweetsEndpoint, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          let postsData = tweetsRes.data?.data || 
+                         (Array.isArray(tweetsRes.data) ? tweetsRes.data : 
+                         tweetsRes.data?.results || tweetsRes.data || []);
+          const processedTweets = postsData.map(item => ({
+            ...item,
+            image_url: getImageUrl(item.image_url || item.image)
+          }));
+          setTweets(processedTweets);
+        } catch (error) {
+          console.error('Error fetching posts:', error);
+          // Use posts from profile data if available
+          if (profileData.recent_content?.posts) {
+            setTweets(profileData.recent_content.posts);
+          }
         }
-        
-        setShowBusinessInfo(!!(profile?.name || profile?.description));
+
+        // Fetch videos for other user
+        const videosEndpoint = `${API_ROUTE}/user-shorts/${targetUserId}/`;
+        console.log('Fetching videos from:', videosEndpoint);
+        try {
+          const videosRes = await axios.get(videosEndpoint, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          let videosData = videosRes.data?.data || 
+                          (Array.isArray(videosRes.data) ? videosRes.data : 
+                          videosRes.data?.results || videosRes.data || []);
+          const processedVideos = videosData.map(item => ({
+            ...item,
+            video_url: getImageUrl(item.video_url || item.video),
+            thumbnail_url: getImageUrl(item.thumbnail_url || item.thumbnail)
+          }));
+          setUserVideos(processedVideos);
+        } catch (error) {
+          console.error('Error fetching videos:', error);
+          // Use videos from profile data if available
+          if (profileData.recent_content?.videos) {
+            setUserVideos(profileData.recent_content.videos);
+          }
+        }
+
+        // Fetch marketplace listings for other user
+        const marketplaceEndpoint = `${API_ROUTE}/user-listings/${targetUserId}/`;
+        console.log('Fetching listings from:', marketplaceEndpoint);
+        try {
+          const marketplaceRes = await axios.get(marketplaceEndpoint, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          let listingsData = marketplaceRes.data?.data || 
+                            (Array.isArray(marketplaceRes.data) ? marketplaceRes.data : 
+                            marketplaceRes.data?.results || marketplaceRes.data || []);
+          const processedPosts = listingsData.map(item => ({
+            ...item,
+            images: Array.isArray(item.images)
+              ? item.images.map(img => ({ ...img, image: getImageUrl(img.image) }))
+              : []
+          }));
+          setMarketplacePosts(processedPosts);
+        } catch (error) {
+          console.error('Error fetching listings:', error);
+          // Use listings from profile data if available
+          if (profileData.recent_content?.listings) {
+            setMarketplacePosts(profileData.recent_content.listings);
+          }
+        }
       } else {
-        setBusinessProfile(null);
-        setShowBusinessInfo(false);
+        // Fetch own posts
+        const tweetsEndpoint = `${API_ROUTE}/my-posts/`;
+        try {
+          const tweetsRes = await axios.get(tweetsEndpoint, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          let postsData = tweetsRes.data?.data || 
+                         (Array.isArray(tweetsRes.data) ? tweetsRes.data : 
+                         tweetsRes.data?.results || tweetsRes.data || []);
+          const processedTweets = postsData.map(item => ({
+            ...item,
+            image_url: getImageUrl(item.image_url || item.image)
+          }));
+          setTweets(processedTweets);
+        } catch (error) {
+          console.error('Error fetching own posts:', error);
+          setTweets([]);
+        }
+        const videosEndpoint = `${API_ROUTE}/my-shorts/`;
+        try {
+          const videosRes = await axios.get(videosEndpoint, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          let videosData = videosRes.data?.data || 
+                          (Array.isArray(videosRes.data) ? videosRes.data : 
+                          videosRes.data?.results || videosRes.data || []);
+          const processedVideos = videosData.map(item => ({
+            ...item,
+            video_url: getImageUrl(item.video_url || item.video),
+            thumbnail_url: getImageUrl(item.thumbnail_url || item.thumbnail)
+          }));
+          setUserVideos(processedVideos);
+        } catch (error) {
+          console.error('Error fetching own videos:', error);
+          setUserVideos([]);
+        }
+
+        // Fetch own marketplace posts
+        const marketplaceEndpoint = `${API_ROUTE}/my-listings/`;
+        try {
+          const marketplaceRes = await axios.get(marketplaceEndpoint, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          let listingsData = marketplaceRes.data?.data || 
+                            (Array.isArray(marketplaceRes.data) ? marketplaceRes.data : 
+                            marketplaceRes.data?.results || marketplaceRes.data || []);
+          const processedPosts = listingsData.map(item => ({
+            ...item,
+            images: Array.isArray(item.images)
+              ? item.images.map(img => ({ ...img, image: getImageUrl(img.image) }))
+              : []
+          }));
+          setMarketplacePosts(processedPosts);
+        } catch (error) {
+          console.error('Error fetching own listings:', error);
+          setMarketplacePosts([]);
+        }
       }
-    } catch (err) {
-      console.error('Failed to load business profile', err);
-      setBusinessProfile(null);
-      setShowBusinessInfo(false);
-    } finally {
-      setBusinessLoading(false);
-    }
-  };
-
-  const fetchBusinessHours = async (profileId) => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      const res = await fetch(`${API_ROUTE}/business-hours/${profileId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setBusinessHours(data || []);
-    } catch (err) {
-      console.error('Error fetching business hours:', err);
-      setBusinessHours([]);
-    }
-  };
-
-  const fetchBusinessCatalog = async (profileId) => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      const response = await axios.get(`${API_ROUTE}/catalogs/user/${profileId}/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.status === 200) {
-        setCatalogData(response.data || []);
-      }
     } catch (error) {
-      console.error('Error fetching catalog:', error);
-      setCatalogData([]);
+      console.error('Error in fetchUserPosts:', error);
     }
   };
 
-  // Fetch user's posts
-  const fetchMarketplace = async () => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      const res = await axios.get(`${API_ROUTE}/user-listings/${userId}/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMarketplacePosts(res.data || []);
-    } catch (error) {
-      setMarketplacePosts([]);
-      console.error('Error fetching marketplace posts:', error);
-    }
-  };
-
-  const fetchTweets = async () => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      const res = await axios.get(`${API_ROUTE}/user-posts/${userId}/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setTweets(res.data || []);
-    } catch (error) {
-      setTweets([]);
-      console.error('Error fetching tweets:', error);
-    }
-  };
-
-  const fetchVideos = async () => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      const res = await axios.get(`${API_ROUTE}/user-shorts/${userId}/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setUserVideos(res.data || []);
-    } catch (error) {
-      setUserVideos([]);
-      console.error('Error fetching videos:', error);
-    }
-  };
-
-  // Refresh data when screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      const fetchData = async () => {
-        setLoading(true);
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError('');
+      try {
         await fetchUserData();
         await fetchFollowStats();
-        await fetchBusinessProfile();
-        await Promise.all([fetchMarketplace(), fetchTweets(), fetchVideos()]);
+        await fetchUserPosts();
+        if (userIdFromParams) {
+          await checkFollowStatus();
+        }
+      } catch (error) {
+        setError('Failed to load data. Please try again.');
+      } finally {
         setLoading(false);
+      }
+    };
+    
+    if (userIdFromParams || true) {
+      fetchData();
+    }
+  }, [userIdFromParams]);
+
+  const calculateAge = (dateString) => {
+    if (!dateString) return null;
+    const today = new Date();
+    const birthDate = new Date(dateString);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatNumber = (num) => {
+    if (!num) return '0';
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
+  };
+
+  const FollowItem = ({ item, type }) => {
+    const [isFollowingUser, setIsFollowingUser] = useState(item.is_following || false);
+    const [currentUserId, setCurrentUserId] = useState(null);
+
+    useEffect(() => {
+      const getCurrentUser = async () => {
+        const userId = await AsyncStorage.getItem('userId');
+        setCurrentUserId(userId ? parseInt(userId) : null);
       };
-      
-      if (userId) {
-        fetchData();
+      getCurrentUser();
+    }, []);
+
+    const handleFollowAction = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (isFollowingUser) {
+          await axios.post(`${API_ROUTE}/unfollow/`, {
+            following_user: item.id
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setIsFollowingUser(false);
+        } else {
+          await axios.post(`${API_ROUTE}/follow/`, {
+            following_user: item.id
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setIsFollowingUser(true);
+        }
+        // Refresh the lists
+        if (type === 'followers') await fetchFollowersList();
+        if (type === 'following') await fetchFollowingList();
+      } catch (error) {
+        console.error('Error in follow action:', error);
       }
-    }, [userId])
-  );
+    };
 
-  const toggleModal = (item = null) => {
-    setSelectedItem(item);
-    if (item) {
-      setModalVisible(true);
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: height,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => setModalVisible(false));
-    }
-  };
-
-  const toggleVideoPlayback = (id) => {
-    if (playingVideo === id) {
-      setPlayingVideo(null);
-    } else {
-      setPlayingVideo(id);
-    }
-  };
-
-  // Navigation to followers/following screens
-  const navigateToFollowers = () => {
-    navigation.navigate('Followers', { 
-      userId: userId,
-      followers: followStats.followers 
-    });
-  };
-
-  const navigateToFollowing = () => {
-    navigation.navigate('Following', { 
-      userId: userId,
-      following: followStats.following 
-    });
-  };
-
-  const handleBusinessAction = (action) => {
-    if (action === 'contact') {
-      if (businessProfile?.phone) {
-        Alert.alert('Contact Business', `Call ${businessProfile.phone}?`, [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Call', onPress: () => console.log('Calling:', businessProfile.phone) }
-        ]);
-      } else if (businessProfile?.email) {
-        Alert.alert('Contact Business', `Email ${businessProfile.email}?`, [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Email', onPress: () => console.log('Emailing:', businessProfile.email) }
-        ]);
-      }
-    } else if (action === 'website' && businessProfile?.website) {
-      Alert.alert('Visit Website', `Open ${businessProfile.website}?`, [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Open', onPress: () => console.log('Opening:', businessProfile.website) }
-      ]);
-    }
-  };
-
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Icon name="document-text-outline" size={60} color="#d1d5db" />
-      <Text style={styles.emptyText}>
-        This user hasn't posted anything yet.
-      </Text>
-    </View>
-  );
-
-  const currentData = () => {
-    switch(selectedTab) {
-      case 'marketplace': return marketplacePosts;
-      case 'tweets': return tweets;
-      case 'videos': return userVideos;
-      default: return [];
-    }
-  };
-
-  // Render Business Info Section
-  const renderBusinessInfo = () => {
-    if (!showBusinessInfo || !businessProfile) return null;
+    const showFollowButton = () => {
+      if (currentUserId && item.id === currentUserId) return false;
+      return true;
+    };
 
     return (
-      <View style={styles.businessContainer}>
-        <View style={styles.businessHeader}>
-          <Text style={styles.businessTitle}>Business Information</Text>
-          {businessProfile.logo && (
-            <Image 
-              source={{ uri: `${API_ROUTE_IMAGE}${businessProfile.logo}` }} 
-              style={styles.businessLogo}
-            />
-          )}
-        </View>
-
-        {businessProfile.name && (
-          <Text style={styles.businessName}>{businessProfile.name}</Text>
-        )}
-
-        {businessProfile.categories?.length > 0 && (
-          <View style={styles.businessCategory}>
-            <Icon name="business-outline" size={16} color="#666" />
-            <Text style={styles.categoryText}>
-              {businessProfile.categories.map(cat => cat.name).join(', ')}
-            </Text>
-          </View>
-        )}
-
-        {businessProfile.description && (
-          <Text style={styles.businessDescription} numberOfLines={3}>
-            {businessProfile.description}
-          </Text>
-        )}
-
-        {businessHours.length > 0 && (
-          <View style={styles.businessHours}>
-            <Text style={styles.sectionSubtitle}>Business Hours</Text>
-            {businessHours.slice(0, 3).map((hour, idx) => (
-              <Text key={idx} style={styles.hourText}>
-                {hour.day}: {hour.open_time} - {hour.close_time}
+      <View style={[styles.followItem, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity 
+          style={styles.followItemLeft}
+          onPress={() => {
+            if (type === 'followers') setFollowersModalVisible(false);
+            if (type === 'following') setFollowingModalVisible(false);
+            navigation.push('UserProfile', { userId: item.id });
+          }}
+        >
+          <Image
+            source={item.profile_picture ? { uri: getImageUrl(item.profile_picture) } : require('../../assets/images/avatar/blank-profile-picture-973460_1280.png')}
+            style={styles.followAvatar}
+          />
+          <View style={styles.followInfo}>
+            <Text style={[styles.followName, { color: colors.text }]}>{item.name}</Text>
+            
+            {item.username && (
+              <Text style={[styles.followUsername, { color: colors.textSecondary }]}>
+                {`@${item.username || ''}`}
               </Text>
-            ))}
-            {businessHours.length > 3 && (
-              <Text style={styles.moreText}>+{businessHours.length - 3} more days</Text>
+            )}
+            {item.bio && (
+              <Text style={[styles.followBio, { color: colors.textSecondary }]} numberOfLines={1}>
+                {item.bio}
+              </Text>
             )}
           </View>
-        )}
-
-        {catalogData.length > 0 && (
-          <View style={styles.productsPreview}>
-            <Text style={styles.sectionSubtitle}>Products ({catalogData.length})</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.productsScroll}>
-              {catalogData.slice(0, 5).map((item, index) => (
-                <View key={index} style={styles.productItem}>
-                  <Image
-                    source={{ uri: `${API_ROUTE_IMAGE}${item.image}` }}
-                    style={styles.productImage}
-                    resizeMode="cover"
-                  />
-                  <Text style={styles.productName} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text style={styles.productPrice}>
-                    ₦{parseFloat(item.price).toFixed(2)}
-                  </Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        <View style={styles.contactInfo}>
-          {businessProfile.address && (
-            <View style={styles.contactItem}>
-              <Icon name="location-outline" size={16} color="#666" />
-              <Text style={styles.contactText}>{businessProfile.address}</Text>
-            </View>
-          )}
-          
-          {businessProfile.email && (
-            <View style={styles.contactItem}>
-              <Icon name="mail-outline" size={16} color="#666" />
-              <Text style={styles.contactText}>{businessProfile.email}</Text>
-            </View>
-          )}
-          
-          {businessProfile.phone && (
-            <View style={styles.contactItem}>
-              <Icon name="call-outline" size={16} color="#666" />
-              <Text style={styles.contactText}>{businessProfile.phone}</Text>
-            </View>
-          )}
-          
-          {businessProfile.website && (
-            <View style={styles.contactItem}>
-              <Icon name="globe-outline" size={16} color="#666" />
-              <Text style={[styles.contactText, styles.websiteText]}>
-                {businessProfile.website}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.businessActions}>
-          <TouchableOpacity 
-            style={styles.businessButton}
-            onPress={() => handleBusinessAction('contact')}
+        </TouchableOpacity>
+        
+        {showFollowButton() && (
+          <TouchableOpacity
+            style={[
+              styles.followActionButton, 
+              isFollowingUser ? styles.followingButton : styles.followButtonn
+            ]}
+            onPress={handleFollowAction}
           >
-            <Icon name="call-outline" size={18} color="#fff" />
-            <Text style={styles.businessButtonText}>Contact Business</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.businessButton, styles.secondaryButton]}
-            onPress={() => handleBusinessAction('website')}
-          >
-            <Icon name="navigate-outline" size={18} color="#0d64dd" />
-            <Text style={[styles.businessButtonText, styles.secondaryButtonText]}>
-              Visit Website
+            <Text style={[styles.followActionText, { color: isFollowingUser ? colors.text : '#fff' }]}>
+              {isFollowingUser ? 'Following' : type === 'followers' ? 'Follow Back' : 'Follow'}
             </Text>
           </TouchableOpacity>
-        </View>
+        )}
       </View>
+    );
+  };
+
+  const renderVideo = ({ item }) => {
+    return (
+      <TouchableOpacity
+        style={[styles.videoCard, { backgroundColor: colors.card }]}
+        onPress={() => {
+          if (item.video_url || item.video) {
+            navigation.navigate('VideoPlayer', { 
+              videoUrl: item.video_url || item.video,
+              videoData: item 
+            });
+          }
+        }}
+        activeOpacity={0.9}
+      >
+        <View style={styles.videoThumbnailContainer}>
+          {item.thumbnail_url || item.thumbnail ? (
+            <Image
+              source={{ uri: item.thumbnail_url || item.thumbnail }}
+              style={styles.videoThumbnail}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.videoPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
+              <Icon name="videocam-outline" size={40} color={colors.textSecondary} />
+            </View>
+          )}
+          <View style={styles.playButtonOverlay}>
+            <View style={[styles.playButton, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+              <Icon name="play" size={24} color="#fff" />
+            </View>
+          </View>
+          {item.duration && (
+            <View style={[styles.durationBadge, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+              <Text style={styles.durationText}>{item.duration}</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.videoInfo}>
+          <Text style={[styles.videoCaption, { color: colors.text }]} numberOfLines={2}>
+            {item.caption || 'Untitled Video'}
+          </Text>
+          <View style={styles.videoStats}>
+            <View style={styles.statItem}>
+              <Icon name="heart-outline" size={14} color={colors.textSecondary} />
+              <Text style={[styles.statText, { color: colors.textSecondary }]}>
+                {item.like_count || 0}
+              </Text>
+            </View>
+            <View style={styles.statItem}>
+              <Icon name="chatbubble-outline" size={14} color={colors.textSecondary} />
+              <Text style={[styles.statText, { color: colors.textSecondary }]}>
+                {item.comment_count || 0}
+              </Text>
+            </View>
+            <View style={styles.statItem}>
+              <Icon name="eye-outline" size={14} color={colors.textSecondary} />
+              <Text style={[styles.statText, { color: colors.textSecondary }]}>
+                {item.view_count || 0}
+              </Text>
+            </View>
+          </View>
+          <Text style={[styles.videoDate, { color: colors.textSecondary }]}>
+            {formatDate(item.created_at)}
+          </Text>
+        </View>
+      </TouchableOpacity>
     );
   };
 
   const renderMarketplacePost = ({ item }) => (
-    <View style={styles.card}>
-      <Image 
-        source={{ uri: item.images?.[0]?.image }} 
-        style={styles.postImage}
-      />
-      <View style={styles.postContent}>
-        <View style={styles.postHeader}>
-          <Text style={styles.postTitle}>{item.title}</Text>
-        </View>
-        <Text style={styles.postPrice}>${item.price}</Text>
-        <Text style={styles.postDate}>{item.date}</Text>
+    <TouchableOpacity
+      style={[styles.marketplaceCard, { backgroundColor: colors.card }]}
+      onPress={() => {
+        setSelectedProduct(item);
+        setProductModalVisible(true);
+      }}
+      activeOpacity={0.9}
+    >
+      <View style={styles.marketplaceImageContainer}>
+        {item.images?.[0]?.image ? (
+          <Image
+            source={{ uri: item.images[0].image }}
+            style={styles.marketplaceImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.marketplaceImagePlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
+            <Icon name="cube-outline" size={40} color={colors.textSecondary} />
+          </View>
+        )}
+        {item.category_name && (
+          <View style={[styles.categoryBadge, { backgroundColor: colors.primary }]}>
+            <Text style={styles.categoryBadgeText}>{item.category_name}</Text>
+          </View>
+        )}
       </View>
-    </View>
+      <View style={styles.marketplaceContent}>
+        <Text style={[styles.marketplaceTitle, { color: colors.text }]} numberOfLines={2}>
+          {item.title || 'No Title'}
+        </Text>
+        <Text style={[styles.marketplacePrice, { color: colors.primary }]}>
+          ₦{parseFloat(item.price || 0).toLocaleString()}
+        </Text>
+        {item.location && (
+          <View style={styles.locationContainer}>
+            <Icon name="location-outline" size={12} color={colors.textSecondary} />
+            <Text style={[styles.locationText, { color: colors.textSecondary }]} numberOfLines={1}>
+              {item.location}
+            </Text>
+          </View>
+        )}
+        <Text style={[styles.sellerName, { color: colors.textSecondary }]}>
+          {item.seller_name || 'Unknown Seller'}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 
   const renderTweet = ({ item }) => (
-    <View style={styles.card}>
-      {item.image && (
-        <Image source={{ uri: item.image }} style={styles.postImage} />
-      )}
-      <View style={styles.postContent}>
-        <View style={styles.postHeader}>
-          <Text style={styles.postText} numberOfLines={3}>{item.content}</Text>
-        </View>
-        <View style={styles.postStats}>
-          <Text style={styles.postStat}>{item.likes} likes</Text>
-          <Text style={styles.postStat}>{item.comments} comments</Text>
-          <Text style={styles.postDate}>{item.date}</Text>
-        </View>
-      </View>
-    </View>
-  );
-
-  const renderVideo = ({ item }) => (
-    <View style={styles.card}>
-      <TouchableOpacity 
-        activeOpacity={0.9}
-        onPress={() => toggleVideoPlayback(item.id)}
-        style={styles.videoContainer}
-      >
-        <Video
-          ref={(ref) => (videoRefs.current[item.id] = ref)}
-          source={{ uri: item.video }}
-          style={styles.postImage}
-          resizeMode="cover"
-          paused={playingVideo !== item.id}
-          repeat={true}
-          onError={(error) => console.log('Video error:', error)}
+    <View style={[styles.tweetCard, { backgroundColor: colors.card }]}>
+      <View style={styles.tweetHeader}>
+        <Image
+          source={userProfileImage ? { uri: userProfileImage } : require('../../assets/images/avatar/blank-profile-picture-973460_1280.png')}
+          style={styles.tweetAvatar}
         />
-        {playingVideo !== item.id && (
-          <View style={styles.playButton}>
-            <Icon name="play" size={48} color="rgba(255,255,255,0.8)" />
-          </View>
-        )}
-      </TouchableOpacity>
-      <View style={styles.postContent}>
-        <View style={styles.postHeader}>
-          <Text style={styles.postTitle}>{item.caption}</Text>
-        </View>
-        <View style={styles.postStats}>
-          <Text style={styles.postStat}>{item.like_count} likes</Text>
-          <Text style={styles.postStat}>{item.comment_count} comments</Text>
-          <Text style={styles.postDate}>
-            {new Date(item.created_at).toLocaleDateString()}
+        <View style={styles.tweetHeaderInfo}>
+          <Text style={[styles.tweetUserName, { color: colors.text }]}>
+            {profileData.user?.name || 'User'}
+          </Text>
+          <Text style={[styles.tweetTimestamp, { color: colors.textSecondary }]}>
+            {formatDate(item.created_at)}
           </Text>
         </View>
       </View>
+      <Text style={[styles.tweetContent, { color: colors.text }]}>
+        {item.content || 'No content'}
+      </Text>
+      {item.image_url && (
+        <TouchableOpacity onPress={() => setFullScreenImage({ visible: true, src: item.image_url, type: 'post' })}>
+          <Image
+            source={{ uri: item.image_url }}
+            style={styles.tweetImage}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+      )}
+      <View style={styles.tweetActions}>
+        <TouchableOpacity style={styles.tweetAction}>
+          <Icon name="heart-outline" size={20} color={colors.textSecondary} />
+          <Text style={[styles.tweetActionText, { color: colors.textSecondary }]}>{item.like_count || 0}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tweetAction}>
+          <Icon name="chatbubble-outline" size={20} color={colors.textSecondary} />
+          <Text style={[styles.tweetActionText, { color: colors.textSecondary }]}>{item.comment_count || 0}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tweetAction}>
+          <Icon name="repeat-outline" size={20} color={colors.textSecondary} />
+          <Text style={[styles.tweetActionText, { color: colors.textSecondary }]}>{item.share_count || 0}</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
+  const handleCatalogDataLoaded = (data) => {
+    setCatalogsCount(data.catalogs.length);
+  };
+
+  const handleViewAllCatalogs = () => {
+  
+    setSelectedTab('catalogs');
+    navigation.navigate('AllCatalogs', { userId: userIdFromParams });
+  };
+
+  const renderProfileHeader = () => (
+    <Animated.View style={[styles.profileHeader, { backgroundColor: colors.card, opacity: fadeAnim }]}>
+      <TouchableOpacity
+        onPress={() => userCoverImage && setFullScreenImage({ visible: true, src: userCoverImage, type: 'cover' })}
+        activeOpacity={0.9}
+      >
+        <ImageBackground
+          source={userCoverImage ? { uri: userCoverImage } : require('../../assets/images/_gluster_2024_3_5_241efce82619d6785221985f79b3edf3_original.53958 (1).jpg')}
+          style={styles.coverImage}
+          resizeMode="cover"
+        >
+          {!userIdFromParams && !userCoverImage && (
+            <TouchableOpacity
+              style={[styles.addCoverButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.6)' }]}
+              onPress={() => handleImageSelection('cover')}
+            >
+              <Icon name="camera-outline" size={24} color="#fff" />
+              <Text style={styles.addCoverText}>Add Cover</Text>
+            </TouchableOpacity>
+          )}
+        </ImageBackground>
+      </TouchableOpacity>
+
+      <View style={styles.profileInfoContainer}>
+        <View style={styles.profileImageSection}>
+          <TouchableOpacity
+            onPress={() => userProfileImage && setFullScreenImage({ visible: true, src: userProfileImage, type: 'profile' })}
+            style={styles.profileImageWrapper}
+          >
+            <Image
+              source={userProfileImage ? { uri: userProfileImage } : require('../../assets/images/avatar/blank-profile-picture-973460_1280.png')}
+              style={[styles.profileImage, { borderColor: colors.card }]}
+            />
+            {!userIdFromParams && (
+              <TouchableOpacity
+                style={[styles.changePhotoButton, { backgroundColor: colors.primary }]}
+                onPress={() => handleImageSelection('profile')}
+              >
+                <Icon name="camera" size={16} color="#fff" />
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+          
+          <View style={styles.profileTextInfo}>
+            <View style={styles.nameRow}>
+              <Text style={[styles.profileName, { color: colors.text }]}>
+                {profileData.user?.name || ''}
+              </Text>
+              {profileData.user?.is_verified && (
+                <Icon name="checkmark-circle" size={20} color="#4CAF50" style={styles.verifiedBadge} />
+              )}
+            </View>
+            <Text style={[styles.profileUsername, { color: colors.textSecondary }]}>
+              @{profileData.user?.username || profileData.user?.name.toLocaleString()}
+            </Text>
+          </View>
+        </View>
+
+        {profileData.user?.bio && (
+          <Text style={[styles.profileBio, { color: colors.text }]}>
+            {profileData.user.bio}
+          </Text>
+        )}
+
+        <View style={[styles.statsContainer, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }]}>
+          <TouchableOpacity 
+            style={styles.statItem}
+            onPress={() => {
+              fetchFollowingList();
+              setFollowingModalVisible(true);
+            }}
+          >
+            <Text style={[styles.statNumber, { color: colors.text }]}>
+              {formatNumber(followStats.following_count || profileData.stats?.following_count || 0)}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              Following
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.statItem}
+            onPress={() => {
+              fetchFollowersList();
+              setFollowersModalVisible(true);
+            }}
+          >
+            <Text style={[styles.statNumber, { color: colors.text }]}>
+              {formatNumber(followStats.followers_count || profileData.stats?.followers_count || 0)}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              Followers
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.statItem}>
+            <Text style={[styles.statNumber, { color: colors.text }]}>
+              {formatNumber(
+                (profileData.stats?.posts_count || 0) + 
+                (profileData.stats?.videos_count || 0) + 
+                (profileData.stats?.listings_count || 0)
+              )}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+              Posts
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.actionButtons}>
+          {!userIdFromParams ? (
+            <>
+              <TouchableOpacity
+                style={[styles.editButton, { backgroundColor: colors.primary }]}
+                onPress={() => setIsEditing(true)}
+              >
+                <Icon name="create-outline" size={18} color="#fff" />
+                <Text style={styles.editButtonText}>Edit Profile</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.settingsButton, { borderColor: colors.border }]}
+                onPress={() => navigation.navigate('Settings')}
+              >
+                <Icon name="settings-outline" size={18} color={colors.text} />
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              {profileData.user?.active_mode === 'business' ? (
+                <TouchableOpacity
+                  style={[styles.messageButton, { backgroundColor: colors.primary }]}
+                  onPress={() => navigation.navigate('BPrivateChat', {
+                    receiverId: userIdFromParams,
+                    name: profileData.user?.name,
+                    profile_image: userProfileImage
+                  })}
+                >
+                  <Icon name="chatbubble-outline" size={18} color="#fff" />
+                  <Text style={styles.messageButtonText}>Message</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.messageButton, { backgroundColor: colors.primary }]}
+                  onPress={() => navigation.navigate('PrivateChat', {
+                    receiverId: userIdFromParams,
+                    name: profileData.user?.name,
+                    profile_image: userProfileImage
+                  })}
+                >
+                  <Icon name="chatbubble-outline" size={18} color="#fff" />
+                  <Text style={styles.messageButtonText}>Message</Text>
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity
+                style={[
+                  styles.followButton, 
+                  isFollowing ? styles.followingButton : { borderColor: colors.primary }
+                ]}
+                onPress={isFollowing ? handleUnfollow : handleFollow}
+              >
+                <Icon 
+                  name={isFollowing ? 'person-remove-outline' : 'person-add-outline'} 
+                  size={18} 
+                  color={isFollowing ? colors.text : colors.primary} 
+                />
+                <Text style={[
+                  styles.followButtonText, 
+                  { color: isFollowing ? colors.text : colors.primary }
+                ]}>
+                  {isFollowing ? 'Unfollow' : 'Follow'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+
+        <View style={styles.additionalInfo}>
+          {profileData.user?.country && (
+            <View style={styles.infoItem}>
+              <Icon name="location-outline" size={16} color={colors.textSecondary} />
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                {profileData.user.country}
+              </Text>
+            </View>
+          )}
+          {profileData.user?.date_of_birth && (
+            <View style={styles.infoItem}>
+              <Icon name="calendar-outline" size={16} color={colors.textSecondary} />
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                Birthday: {formatDate(profileData.user.date_of_birth)}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </Animated.View>
+  );
+
+  //============== Catalog section display ==================
+
+  const renderCatalogSection = () => (
+    <View style={[styles.catalogSection, { backgroundColor: colors.card }]}>
+      {profileData.user?.active_mode === 'business' && (
+        <View style={styles.catalogHeader}>
+        <View style={styles.catalogTitleContainer}>
+          <Icon name="folder-outline" size={20} color={colors.primary} />
+          <Text style={[styles.catalogTitle, { color: colors.text }]}>Catalogs</Text>
+        </View>
+        {catalogsCount > 0 && (
+          <TouchableOpacity onPress={handleViewAllCatalogs} style={styles.viewAllButton}>
+            <Text style={[styles.viewAllText, { color: colors.primary }]}>View All</Text>
+            <Icon name="chevron-forward" size={16} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+      </View>
+      
+      )}
+      {profileData.user?.active_mode === 'business' && (
+        <CatalogComponent
+            ref={catalogRef}
+            userId={userIdFromParams}
+            businessId={userIdFromParams}
+            horizontal={true}
+            showHeader={false}
+            showBusinessInfo={false}
+            maxItems={5}
+            navigation={navigation}
+            containerStyle={styles.catalogContainer}
+            onDataLoaded={handleCatalogDataLoaded}
+        />
+
+      )}
+       
+     
+    </View>
+  );
+
+  const renderContent = () => {
+    switch (selectedTab) {
+      case 'catalogs':
+        return (
+          <View style={styles.fullCatalogSection}>
+            <CatalogComponent
+              ref={catalogRef}
+              userId={userIdFromParams}
+              businessId={userIdFromParams}
+              horizontal={false}
+              showHeader={false}
+              showBusinessInfo={false}
+              navigation={navigation}
+              containerStyle={styles.fullCatalogContainer}
+            />
+          </View>
+        );
+      
+      case 'posts':
+        if (tweets.length === 0) {
+          return (
+            <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
+              <Icon name="chatbubble-outline" size={60} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {userIdFromParams ? "This user hasn't posted anything yet." : "You haven't posted anything yet."}
+              </Text>
+            </View>
+          );
+        }
+        return (
+          <FlatList
+            key="posts-list"
+            data={tweets}
+            renderItem={renderTweet}
+            keyExtractor={(item) => `posts-${item.id}`}
+            contentContainerStyle={styles.contentList}
+            showsVerticalScrollIndicator={false}
+            initialNumToRender={6}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+          />
+        );
+      
+      case 'videos':
+        if (userVideos.length === 0) {
+          return (
+            <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
+              <Icon name="videocam-outline" size={60} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {userIdFromParams ? "This user hasn't uploaded any videos yet." : "You haven't uploaded any videos yet."}
+              </Text>
+            </View>
+          );
+        }
+        return (
+          <FlatList
+            key="videos-list"
+            data={userVideos}
+            renderItem={renderVideo}
+            keyExtractor={(item) => `videos-${item.id}`}
+            contentContainerStyle={styles.contentList}
+            showsVerticalScrollIndicator={false}
+            initialNumToRender={6}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+          />
+        );
+      
+      case 'marketplace':
+        if (marketplacePosts.length === 0) {
+          return (
+            <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
+              <Icon name="cart-outline" size={60} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {userIdFromParams ? "This user hasn't listed any items yet." : "You haven't listed any items yet."}
+              </Text>
+            </View>
+          );
+        }
+        return (
+          <FlatList
+            key="marketplace-grid"
+            data={marketplacePosts}
+            renderItem={renderMarketplacePost}
+            keyExtractor={(item) => `marketplace-${item.id}`}
+            numColumns={2}
+            contentContainerStyle={styles.contentList}
+            showsVerticalScrollIndicator={false}
+            initialNumToRender={6}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+          />
+        );
+      
+      default:
+        return null;
+    }
+  };
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle,{color:'#333'}]}>Profile</Text>
-          <View style={styles.headerRight} />
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0d64dd" />
-          <Text style={styles.loadingText}>Loading profile...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!userData) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle,{color:'#333'}]}>Profile</Text>
-          <View style={styles.headerRight} />
-        </View>
-        <View style={styles.errorContainer}>
-          <Icon name="person-outline" size={60} color="#d1d5db" />
-          <Text style={styles.errorText}>User not found</Text>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.retryButtonText}>Go Back</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading profile...</Text>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.iconButton} onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#333" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+          <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle,{color:'#333'}]}>Profile</Text>
-        <TouchableOpacity style={styles.iconButton}>
-          <Icon name="ellipsis-vertical" size={24} color="#333" />
+        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
+          {profileData.user?.name || 'Profile'}
+        </Text>
+        <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+          <Icon name="close" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Profile Section */}
-        <View style={styles.profileContainer}>
-          <Image
-            source={
-              userProfileImage
-                ? { uri: userProfileImage }
-                : require('../../assets/images/dad.jpg')
-            }
-            style={styles.profileImage}
-          />
-          <Text style={styles.contactName}>{userData.name}</Text>
-          <Text style={styles.contactPhone}>{userData.phone}</Text>
-          
-          {/* Business Badge */}
-          {showBusinessInfo && (
-            <View style={styles.businessBadge}>
-              <Icon name="business" size={16} color="#fff" />
-              <Text style={styles.businessBadgeText}>Business Account</Text>
-            </View>
-          )}
-          
-          {/* Following/Followers Section */}
-          <View style={styles.statsContainer}>
-            <TouchableOpacity style={styles.statItem} onPress={navigateToFollowing}>
-              <Text style={styles.statNumber}>{followStats.following_count}</Text>
-              <Text style={styles.statLabel}>Following</Text>
-            </TouchableOpacity>
-            <View style={styles.statDivider} />
-            <TouchableOpacity style={styles.statItem} onPress={navigateToFollowers}>
-              <Text style={styles.statNumber}>{followStats.followers_count}</Text>
-              <Text style={styles.statLabel}>Followers</Text>
-            </TouchableOpacity>
-            <View style={styles.statDivider} />
-            <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statNumber}>{currentData().length}</Text>
-              <Text style={styles.statLabel}>Posts</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Follow Button */}
-          <TouchableOpacity 
-            style={[
-              styles.followButton,
-              isFollowing ? styles.unfollowButton : styles.followButtonActive
-            ]}
-            onPress={isFollowing ? handleUnfollow : handleFollow}
-            disabled={followLoading}
+      <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false} style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {renderProfileHeader()}
+        
+        {/* Catalog Section - Displayed prominently at the top */}
+        {renderCatalogSection()}
+        
+        {/* Tab Navigation */}
+        <View style={[styles.tabContainer, { backgroundColor: colors.card }]}>
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'posts' && styles.tabActive, selectedTab === 'posts' && { borderBottomColor: colors.primary }]}
+            onPress={() => setSelectedTab('posts')}
           >
-            {followLoading ? (
-              <ActivityIndicator size="small" color={isFollowing ? "#666" : "#fff"} />
-            ) : (
-              <Text style={[
-                styles.followButtonText,
-                isFollowing && styles.unfollowButtonText
-              ]}>
-                {isFollowing ? 'Unfollow' : 'Follow'}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Business Information Section */}
-        {businessLoading ? (
-          <View style={styles.businessLoading}>
-            <ActivityIndicator size="small" color="#0d64dd" />
-            <Text style={styles.loadingText}>Loading business information...</Text>
-          </View>
-        ) : (
-          renderBusinessInfo()
-        )}
-
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.quickAction}>
-            <Icon style={styles.quickActionIcon} name="chatbubble-outline" size={24} color="#fff" />
-            <Text style={styles.quickActionText}>Message</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction}>
-            <Icon style={styles.quickActionIcon} name="call-outline" size={24} color="#fff" />
-            <Text style={styles.quickActionText}>Call</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction}>
-            <Icon style={styles.quickActionIcon} name="notifications-off-outline" size={24} color="#fff" />
-            <Text style={styles.quickActionText}>Mute</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Posts Section Header */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            {userData.name}'s Posts
-          </Text>
-        </View>
-
-        {/* Tab Bar */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity 
-            onPress={() => {
-              setSelectedTab('marketplace');
-              setPlayingVideo(null);
-            }} 
-            style={[styles.tab, selectedTab === 'marketplace' && styles.activeTab]}
-          >
-            <Icon 
-              name="cart-outline" 
-              size={20} 
-              color={selectedTab === 'marketplace' ? '#fff' : '#0d64dd'} 
-            />
-            <Text style={[styles.tabText, selectedTab === 'marketplace' && styles.activeTabText]}>
-              Marketplace
+            <Icon name="chatbubble-outline" size={20} color={selectedTab === 'posts' ? colors.primary : colors.textSecondary} />
+            <Text style={[styles.tabText, { color: selectedTab === 'posts' ? colors.primary : colors.textSecondary }]}>
+              Posts ({tweets.length || profileData.stats?.posts_count || 0})
             </Text>
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            onPress={() => {
-              setSelectedTab('tweets');
-              setPlayingVideo(null);
-            }} 
-            style={[styles.tab, selectedTab === 'tweets' && styles.activeTab]}
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'videos' && styles.tabActive, selectedTab === 'videos' && { borderBottomColor: colors.primary }]}
+            onPress={() => setSelectedTab('videos')}
           >
-            <Icon 
-              name="chatbubble-outline" 
-              size={20} 
-              color={selectedTab === 'tweets' ? '#fff' : '#0d64dd'} 
-            />
-            <Text style={[styles.tabText, selectedTab === 'tweets' && styles.activeTabText]}>
-              Broadcast
+            <Icon name="videocam-outline" size={20} color={selectedTab === 'videos' ? colors.primary : colors.textSecondary} />
+            <Text style={[styles.tabText, { color: selectedTab === 'videos' ? colors.primary : colors.textSecondary }]}>
+              Videos ({userVideos.length || profileData.stats?.videos_count || 0})
             </Text>
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            onPress={() => {
-              setSelectedTab('videos');
-            }} 
-            style={[styles.tab, selectedTab === 'videos' && styles.activeTab]}
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'marketplace' && styles.tabActive, selectedTab === 'marketplace' && { borderBottomColor: colors.primary }]}
+            onPress={() => setSelectedTab('marketplace')}
           >
-            <Icon 
-              name="videocam-outline" 
-              size={20} 
-              color={selectedTab === 'videos' ? '#fff' : '#0d64dd'} 
-            />
-            <Text style={[styles.tabText, selectedTab === 'videos' && styles.activeTabText]}>
-              Videos
+            <Icon name="cart-outline" size={20} color={selectedTab === 'marketplace' ? colors.primary : colors.textSecondary} />
+            <Text style={[styles.tabText, { color: selectedTab === 'marketplace' ? colors.primary : colors.textSecondary }]}>
+              Listings ({marketplacePosts.length || profileData.stats?.listings_count || 0})
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Posts Content */}
-        {currentData().length === 0 ? (
-          renderEmptyState()
-        ) : (
-          <FlatList
-            data={currentData()}
-            renderItem={
-              selectedTab === 'marketplace'
-                ? renderMarketplacePost
-                : selectedTab === 'tweets'
-                ? renderTweet
-                : renderVideo
-            }
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.listContent}
-            scrollEnabled={false}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
+        {renderContent()}
       </ScrollView>
 
-      {/* Bottom Sheet Modal */}
-      <Modal
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={toggleModal}
-        animationType="none"
-      >
-        <View style={styles.modalOverlay}>
-          <Pressable 
-            style={styles.modalBackdrop} 
-            onPress={toggleModal}
-          />
-          
-          <Animated.View 
-            style={[
-              styles.modalContainer,
-              { transform: [{ translateY: slideAnim }] }
-            ]}
-          >
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Post Options</Text>
-            
-            <TouchableOpacity 
-              style={styles.modalOption}
-              onPress={() => setModalVisible(false)}
-            >
-              <Icon name="close-circle-outline" size={24} color="#3498db" />
-              <Text style={styles.modalOptionText}>Cancel</Text>
+      <Modal visible={fullScreenImage.visible} transparent animationType="fade" onRequestClose={() => setFullScreenImage({ visible: false, src: '', type: '' })}>
+        <View style={[styles.fullScreenModal, { backgroundColor: '#000' }]}>
+          <TouchableOpacity style={[styles.fullScreenClose, { backgroundColor: 'rgba(0,0,0,0.5)' }]} onPress={() => setFullScreenImage({ visible: false, src: '', type: '' })}>
+            <Icon name="close" size={30} color="#fff" />
+          </TouchableOpacity>
+          <Image source={{ uri: fullScreenImage.src }} style={styles.fullScreenImage} resizeMode="contain" />
+          <View style={[styles.fullScreenLabel, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+            <Text style={styles.fullScreenLabelText}>
+              {fullScreenImage.type === 'profile' ? 'Profile Picture' : 
+               fullScreenImage.type === 'cover' ? 'Cover Photo' : 'Post Image'}
+            </Text>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
+        <TouchableOpacity style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]} activeOpacity={1} onPress={() => setModalVisible(false)}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            {!userIdFromParams && (
+              <>
+                <TouchableOpacity style={styles.modalOption} onPress={() => { setModalVisible(false); setIsEditing(true); }}>
+                  <Icon name="create-outline" size={22} color={colors.text} />
+                  <Text style={[styles.modalOptionText, { color: colors.text }]}>Edit Profile</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalOption} onPress={() => navigation.navigate('Settings')}>
+                  <Icon name="settings-outline" size={22} color={colors.text} />
+                  <Text style={[styles.modalOptionText, { color: colors.text }]}>Settings</Text>
+                </TouchableOpacity>
+                <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
+              </>
+            )}
+            <TouchableOpacity style={styles.modalOption} onPress={() => setModalVisible(false)}>
+              <Icon name="close" size={22} color={colors.text} />
+              <Text style={[styles.modalOptionText, { color: colors.text }]}>Cancel</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={followersModalVisible} transparent animationType="slide" onRequestClose={() => setFollowersModalVisible(false)}>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[styles.followModal, { backgroundColor: colors.card }]}>
+            <View style={[styles.followModalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.followModalTitle, { color: colors.text }]}>Followers</Text>
+              <TouchableOpacity onPress={() => setFollowersModalVisible(false)}>
+                <Icon name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            {loadingFollowers ? (
+              <ActivityIndicator size="large" color={colors.primary} style={styles.followLoader} />
+            ) : (
+              <FlatList
+                data={followersList}
+                renderItem={({ item }) => <FollowItem item={item} type="followers" />}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={styles.followList}
+                ListEmptyComponent={
+                  <View style={styles.emptyFollow}>
+                    <Text style={[styles.emptyFollowText, { color: colors.textSecondary }]}>No followers yet</Text>
+                  </View>
+                }
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={followingModalVisible} transparent animationType="slide" onRequestClose={() => setFollowingModalVisible(false)}>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[styles.followModal, { backgroundColor: colors.card }]}>
+            <View style={[styles.followModalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.followModalTitle, { color: colors.text }]}>Following</Text>
+              <TouchableOpacity onPress={() => setFollowingModalVisible(false)}>
+                <Icon name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            {loadingFollowers ? (
+              <ActivityIndicator size="large" color={colors.primary} style={styles.followLoader} />
+            ) : (
+              <FlatList
+                data={followingList}
+                renderItem={({ item }) => <FollowItem item={item} type="following" />}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={styles.followList}
+                ListEmptyComponent={
+                  <View style={styles.emptyFollow}>
+                    <Text style={[styles.emptyFollowText, { color: colors.textSecondary }]}>Not following anyone yet</Text>
+                  </View>
+                }
+              />
+            )}
+          </View>
         </View>
       </Modal>
     </SafeAreaView>
@@ -868,566 +1368,662 @@ const OtherUserProfile = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
+  container: { 
+    flex: 1 
   },
-  scrollContainer: {
-    flex: 1,
+  
+  loadingContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
   },
-  header: {
+  loadingText: { 
+    marginTop: 16, 
+    fontSize: 16, 
+    fontWeight: '500' 
+  },
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 16, 
+    paddingVertical: 12, 
+    borderBottomWidth: 1 
+  },
+  headerButton: { 
+    padding: 8 
+  },
+  headerTitle: { 
+    fontSize: 18, 
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'center'
+  },
+  scrollView: { 
+    flex: 1 
+  },
+  scrollContent: { 
+    flexGrow: 1 
+  },
+  profileHeader: { 
+    marginBottom: 8 
+  },
+  coverImage: { 
+    width: '100%', 
+    height: 180, 
+    justifyContent: 'flex-end', 
+    alignItems: 'center' 
+  },
+  addCoverButton: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 10, 
+    borderRadius: 20, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 16,
+  },
+  addCoverText: { 
+    color: '#fff', 
+    marginLeft: 8, 
+    fontSize: 14, 
+    fontWeight: '500'
+  },
+  profileInfoContainer: { 
+    padding: 20, 
+    marginTop:-40
+  },
+  profileImageSection: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 20 
+  },
+  profileImageWrapper: { 
+    position: 'relative', 
+    marginRight: 16 
+  },
+  profileImage: { 
+    width: 100, 
+    height: 100, 
+    borderRadius: 50, 
+    borderWidth: 4, 
+    backgroundColor: '#f0f0f0' 
+  },
+  changePhotoButton: { 
+    position: 'absolute', 
+    bottom: 0, 
+    right: 0, 
+    width: 36, 
+    height: 36, 
+    borderRadius: 18, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderWidth: 3, 
+    borderColor: '#fff', 
+    elevation: 3, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.2, 
+    shadowRadius: 4 
+  },
+  profileTextInfo: { 
+    flex: 1 
+  },
+  nameRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    flexWrap: 'wrap' 
+  },
+  profileName: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    marginRight: 8, 
+  },
+  verifiedBadge: { 
+    marginLeft: 4 
+  },
+  profileUsername: { 
+    fontSize: 16, 
+    marginTop: 4 
+  },
+  modeBadge: { 
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8, 
+    paddingVertical: 4, 
+    borderRadius: 4, 
+    marginTop: 4 
+  },
+  modeText: { 
+    fontSize: 11, 
+    fontWeight: '500' 
+  },
+  profileBio: { 
+    fontSize: 15, 
+    lineHeight: 22, 
+    marginBottom: 20 
+  },
+  statsContainer: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-around', 
+    marginBottom: 24, 
+    paddingVertical: 16, 
+    borderTopWidth: 1, 
+    borderBottomWidth: 1 
+  },
+  statItem: { 
+    alignItems: 'center', 
+    flex: 1 
+  },
+  statNumber: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    marginBottom: 6 
+  },
+  statLabel: { 
+    fontSize: 13 
+  },
+  actionButtons: { 
+    flexDirection: 'row', 
+    gap: 12, 
+    marginBottom: 20 
+  },
+  editButton: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 14, 
+    borderRadius: 25, 
+    gap: 8, 
+    elevation: 2, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 4 
+  },
+  editButtonText: { 
+    color: '#fff', 
+    fontSize: 15, 
+    fontWeight: '600' 
+  },
+  settingsButton: { 
+    width: 52, 
+    height: 52, 
+    borderRadius: 26, 
+    borderWidth: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  messageButton: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 14, 
+    borderRadius: 25, 
+    gap: 8, 
+    elevation: 2, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 4 
+  },
+  messageButtonText: { 
+    color: '#fff', 
+    fontSize: 15, 
+    fontWeight: '600' 
+  },
+  followButton: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 14, 
+    borderRadius: 25, 
+    borderWidth: 1.5,
+    gap: 8 
+  },
+  followButtonn: {
+    backgroundColor: '#0653f8ff', 
+    borderWidth: 0 
+  },
+  followingButton: { 
+    backgroundColor: '#E1E1E1', 
+    borderWidth: 0 
+  },
+  followButtonText: { 
+    fontSize: 15, 
+    fontWeight: '600' 
+  },
+  additionalInfo: { 
+    gap: 12 
+  },
+  infoItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 10 
+  },
+  infoText: { 
+    fontSize: 14, 
+    flex: 1 
+  },
+  ageText: { 
+    fontSize: 13, 
+    opacity: 0.8 
+  },
+  // Catalog Section Styles
+  catalogSection: {
+    marginVertical: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  catalogHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: '#ffffffff',
-    paddingTop: 10,
-    marginBottom:20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  iconButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-    fontFamily: 'Lato-Bold',
-  },
-  headerRight: {
-    width: 24,
-  },
-  profileContainer: {
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 60,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    marginBottom: 12,
+    paddingHorizontal: 4,
   },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: '#fff',
-    backgroundColor: '#eee',
-    marginTop: -60,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  contactName: {
-    marginTop: 16,
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#2c3e50',
-    fontFamily: 'Lato-Bold',
-  },
-  contactPhone: {
-    fontSize: 16,
-    color: '#6c757d',
-    marginBottom: 16,
-    fontFamily: 'Lato-Regular',
-  },
-  statsContainer: {
+  catalogTitleContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     alignItems: 'center',
-    width: '100%',
-    marginVertical: 16,
-    paddingHorizontal: 20,
+    gap: 8,
   },
-  statItem: {
+  catalogTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  viewAllButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
+  },
+  viewAllText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  catalogContainer: {
+    minHeight: 180,
+  },
+  fullCatalogSection: {
+    flex: 1,
+    minHeight: 400,
+    padding: 8,
+  },
+  fullCatalogContainer: {
     flex: 1,
   },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    fontFamily: 'Lato-Bold',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginTop: 4,
-    fontFamily: 'Lato-Regular',
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#e9ecef',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 20,
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  quickAction: {
-    alignItems: 'center',
-  },
-  quickActionIcon: {
-    backgroundColor: '#0d64dd',
-    padding: 15,
-    borderRadius: 50,
-    shadowColor: '#0d64dd',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  quickActionText: {
+  tabContainer: { 
+    flexDirection: 'row', 
     marginTop: 8,
-    fontSize: 14,
-    color: '#2c3e50',
-    fontWeight: '600',
-    fontFamily: 'Lato-SemiBold',
+    paddingHorizontal: 8
   },
-  sectionHeader: {
-    padding: 20,
-    paddingBottom: 10,
+  tab: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 12, 
+    gap: 6, 
+    borderBottomWidth: 2, 
+    borderBottomColor: 'transparent' 
   },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#2c3e50',
-    fontFamily: 'Lato-Bold',
+  tabActive: { 
+    borderBottomWidth: 2 
   },
-  tabContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 12,
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+  tabText: { 
+    fontSize: 13, 
+    fontWeight: '500' 
   },
-  tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
+  contentList: { 
+    padding: 8 
   },
-  activeTab: {
-    backgroundColor: '#0d64dd',
-    shadowColor: '#0d64dd',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+  marketplaceCard: { 
+    flex: 1, 
+    margin: 6, 
+    borderRadius: 12, 
+    overflow: 'hidden', 
+    elevation: 2, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 4 
   },
-  tabText: {
-    marginLeft: 6,
-    color: '#0d64dd',
-    fontWeight: '600',
-    fontSize: 14,
-    fontFamily: 'Lato-SemiBold',
+  marketplaceImageContainer: { 
+    height: 140,
+    position: 'relative'
   },
-  activeTabText: {
+  marketplaceImage: { 
+    width: '100%', 
+    height: '100%' 
+  },
+  marketplaceImagePlaceholder: { 
+    width: '100%', 
+    height: '100%', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  categoryBadge: { 
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4 
+  },
+  categoryBadgeText: { 
     color: '#fff',
+    fontSize: 10,
+    fontWeight: '600' 
   },
-  listContent: {
-    paddingHorizontal: 16,
+  marketplaceContent: { 
+    padding: 12 
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 16,
+  marketplaceTitle: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    marginBottom: 6 
+  },
+  marketplacePrice: { 
+    fontSize: 15, 
+    fontWeight: 'bold' 
+  },
+  locationContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginTop: 4 
+  },
+  locationText: { 
+    fontSize: 11, 
+    marginLeft: 4 
+  },
+  sellerName: { 
+    fontSize: 11, 
+    marginTop: 4 
+  },
+  tweetCard: { 
+    padding: 16, 
+    borderRadius: 12, 
+    margin: 8, 
+    elevation: 1, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 1 }, 
+    shadowOpacity: 0.05, 
+    shadowRadius: 2 
+  },
+  tweetHeader: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 12 
+  },
+  tweetAvatar: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    marginRight: 12 
+  },
+  tweetHeaderInfo: { 
+    flex: 1 
+  },
+  tweetUserName: { 
+    fontSize: 15, 
+    fontWeight: '600', 
+    marginBottom: 2 
+  },
+  tweetTimestamp: { 
+    fontSize: 12 
+  },
+  tweetContent: { 
+    fontSize: 15, 
+    lineHeight: 22, 
+    marginBottom: 12 
+  },
+  tweetImage: { 
+    width: '100%', 
+    height: 200, 
+    borderRadius: 8 
+  },
+  tweetActions: { 
+    flexDirection: 'row', 
+    marginTop: 12, 
+    paddingTop: 12, 
+    borderTopWidth: 1, 
+    borderTopColor: 'rgba(0,0,0,0.05)' 
+  },
+  tweetAction: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginRight: 24 
+  },
+  tweetActionText: { 
+    fontSize: 13, 
+    marginLeft: 6 
+  },
+  videoCard: {
+    margin: 8,
+    borderRadius: 12,
     overflow: 'hidden',
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 4,
   },
-  postImage: {
-    width: '100%',
-    height: 200,
-    backgroundColor: '#f8f9fa',
-  },
-  videoContainer: {
+  videoThumbnailContainer: {
     position: 'relative',
+    height: 180,
+    backgroundColor: '#f0f0f0',
+  },
+  videoThumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  videoPlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playButtonOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },
   playButton: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  postContent: {
-    padding: 16,
-  },
-  postHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  postTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-    flex: 1,
-    marginRight: 8,
-    fontFamily: 'Lato-SemiBold',
-  },
-  postText: {
-    fontSize: 15,
-    color: '#495057',
-    flex: 1,
-    marginRight: 8,
-    lineHeight: 22,
-    fontFamily: 'Lato-Regular',
-  },
-  postPrice: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#27ae60',
-    marginBottom: 4,
-    fontFamily: 'Lato-Bold',
-  },
-  postStats: {
-    flexDirection: 'row',
-    marginTop: 8,
-    flexWrap: 'wrap',
-  },
-  postStat: {
-    fontSize: 13,
-    color: '#6c757d',
-    marginRight: 16,
-    fontFamily: 'Lato-Regular',
-  },
-  postDate: {
-    fontSize: 12,
-    color: '#adb5bd',
-    fontFamily: 'Lato-Regular',
-  },
-  emptyContainer: {
-    padding: 40,
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginTop: 16,
-    lineHeight: 22,
-    fontFamily: 'Lato-Regular',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#6b7280',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: '#0d64dd',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  retryButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-
-  // Follow Button Styles
-  followButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginTop: 12,
-    minWidth: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  followButtonActive: {
-    backgroundColor: '#0d64dd',
-  },
-  unfollowButton: {
-    backgroundColor: '#e0e0e0',
-  },
-  followButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  unfollowButtonText: {
-    color: '#666',
-  },
-
-  // Business Profile Styles (same as UserProfile)
-  businessContainer: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  businessHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  businessTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2c3e50',
-    flex: 1,
-  },
-  businessLogo: {
     width: 50,
     height: 50,
-    borderRadius: 8,
-    marginLeft: 12,
-  },
-  businessName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2c3e50',
-    marginBottom: 8,
-  },
-  businessCategory: {
-    flexDirection: 'row',
+    borderRadius: 25,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
   },
-  categoryText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 6,
+  durationBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
   },
-  businessDescription: {
-    fontSize: 14,
-    color: '#555',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  businessHours: {
-    marginBottom: 16,
-  },
-  sectionSubtitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 8,
-  },
-  hourText: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 4,
-  },
-  moreText: {
+  durationText: {
+    color: '#fff',
     fontSize: 12,
-    color: '#0d64dd',
-    fontStyle: 'italic',
+    fontWeight: '500',
   },
-  productsPreview: {
-    marginBottom: 16,
+  videoInfo: {
+    padding: 12,
   },
-  productsScroll: {
-    marginTop: 8,
+  videoCaption: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
   },
-  productItem: {
-    width: 100,
-    marginRight: 12,
-    alignItems: 'center',
-  },
-  productImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
+  videoStats: {
+    flexDirection: 'row',
     marginBottom: 6,
   },
-  productName: {
+  statText: {
     fontSize: 12,
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  productPrice: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#27ae60',
-  },
-  contactInfo: {
-    marginBottom: 16,
-  },
-  contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  contactText: {
-    fontSize: 14,
-    color: '#555',
-    marginLeft: 8,
-    flex: 1,
-  },
-  websiteText: {
-    color: '#0d64dd',
-  },
-  businessActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  businessButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0d64dd',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginHorizontal: 4,
-  },
-  businessButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#0d64dd',
-  },
-  secondaryButtonText: {
-    color: '#0d64dd',
-  },
-  businessBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0d64dd',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginTop: 8,
-  },
-  businessBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
     marginLeft: 4,
   },
-  businessLoading: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
+  videoDate: {
+    fontSize: 11,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  emptyContainer: { 
+    padding: 40, 
+    alignItems: 'center', 
+    borderRadius: 12, 
+    margin: 16, 
+    elevation: 1, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 1 }, 
+    shadowOpacity: 0.05, 
+    shadowRadius: 2 
   },
-  modalBackdrop: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
+  emptyText: { 
+    marginTop: 16, 
+    fontSize: 16, 
+    textAlign: 'center', 
+    lineHeight: 24 
   },
-  modalContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    paddingBottom: 40,
+  fullScreenModal: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
   },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
+  fullScreenClose: { 
+    position: 'absolute', 
+    top: Platform.OS === 'ios' ? 60 : 40, 
+    right: 20, 
+    zIndex: 1, 
+    width: 44, 
+    height: 44, 
+    borderRadius: 22, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 24,
-    textAlign: 'center',
-    fontFamily: 'Lato-SemiBold',
+  fullScreenImage: { 
+    width: screenWidth, 
+    height: screenHeight * 0.7 
   },
-  modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+  fullScreenLabel: { 
+    position: 'absolute', 
+    bottom: 40, 
+    paddingHorizontal: 20, 
+    paddingVertical: 10, 
+    borderRadius: 20 
   },
-  modalOptionText: {
-    fontSize: 16,
-    color: '#2c3e50',
-    marginLeft: 16,
-    fontFamily: 'Lato-Regular',
+  fullScreenLabelText: { 
+    color: '#fff', 
+    fontSize: 14, 
+    fontWeight: '500' 
   },
+  modalOverlay: { 
+    flex: 1, 
+    justifyContent: 'flex-end' 
+  },
+  modalContent: { 
+    borderTopLeftRadius: 20, 
+    borderTopRightRadius: 20, 
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20 
+  },
+  modalOption: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 18, 
+    gap: 16 
+  },
+  modalOptionText: { 
+    fontSize: 16, 
+    fontWeight: '500', 
+    flex: 1 
+  },
+  modalDivider: { 
+    height: 1, 
+    marginHorizontal: 16 
+  },
+  followModal: { 
+    height: '80%', 
+    marginTop: 'auto', 
+    borderTopLeftRadius: 20, 
+    borderTopRightRadius: 20, 
+    overflow: 'hidden' 
+  },
+  followModalHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    padding: 16, 
+    borderBottomWidth: 1 
+  },
+  followModalTitle: { 
+    fontSize: 18, 
+    fontWeight: '600' 
+  },
+  followList: { 
+    padding: 16 
+  },
+  followItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingVertical: 12, 
+    borderBottomWidth: 1 
+  },
+  followItemLeft: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    flex: 1 
+  },
+  followAvatar: { 
+    width: 50, 
+    height: 50, 
+    borderRadius: 25, 
+    marginRight: 12 
+  },
+  followInfo: { 
+    flex: 1 
+  },
+  followName: { 
+    fontSize: 16, 
+    fontWeight: '600', 
+    marginBottom: 2 
+  },
+  followUsername: { 
+    fontSize: 13 
+  },
+  followBio: { 
+    fontSize: 12, 
+    marginTop: 2 
+  },
+  followActionButton: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 8, 
+    borderRadius: 20, 
+    minWidth: 100, 
+    alignItems: 'center' 
+  },
+  followActionText: { 
+    fontSize: 14, 
+    fontWeight: '600' 
+  },
+  followLoader: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  emptyFollow: { 
+    padding: 40, 
+    alignItems: 'center' 
+  },
+  emptyFollowText: { 
+    fontSize: 16 
+  }
 });
 
-export default OtherUserProfile;
+export default UserProfile;

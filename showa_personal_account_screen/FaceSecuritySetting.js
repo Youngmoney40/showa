@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -22,6 +23,19 @@ import axios from 'axios';
 import { API_ROUTE } from '../api_routing/api';
 import { useTheme } from '../src/context/ThemeContext';
 
+
+export const checkPinStatus = async (token) => {
+  try {
+    const response = await axios.get(`${API_ROUTE}/pin-status/`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error checking PIN status:', error);
+    return null;
+  }
+};
+
 const PrivacySettings = ({ navigation }) => {
   const { colors, isDark } = useTheme();
   const [settings, setSettings] = useState({
@@ -35,7 +49,6 @@ const PrivacySettings = ({ navigation }) => {
   const [step, setStep] = useState(1);
   const [showPin, setShowPin] = useState(false);
   const pinInputRef = useRef(null);
-  
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -48,7 +61,7 @@ const PrivacySettings = ({ navigation }) => {
           faceRecognition: biometricEnabled === 'true',
         });
       } catch (error) {
-       // console.error('Error loading settings:', error);
+        
       }
     };
     
@@ -61,20 +74,30 @@ const PrivacySettings = ({ navigation }) => {
       return;
     }
     
-    if (step === 1) {setStep(2); return;}
+    if (step === 1) {
+      setStep(2);
+      return;
+    }
     
-    if (pin !== confirmPin) {Alert.alert('PIN Mismatch', 'The PINs you entered do not match');
-      return;}
+    if (pin !== confirmPin) {
+      Alert.alert('PIN Mismatch', 'The PINs you entered do not match');
+      return;
+    }
 
     setLoading(true);
     const token = await AsyncStorage.getItem('userToken');
     
     try {
-      const response = await axios.post(`${API_ROUTE}/set-pin/`, { pin }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.post(`${API_ROUTE}/set-pin/`, 
+        { pin }, 
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
 
       
+
+      if (response.data.success) {
         await AsyncStorage.setItem('pin_enabled', 'true');
         setSettings(prev => ({ ...prev, pinSecurity: true }));
         setModalVisible(false);
@@ -82,15 +105,19 @@ const PrivacySettings = ({ navigation }) => {
         setConfirmPin('');
         setStep(1);
         Alert.alert("Success", "PIN set successfully");
-     
-      
+      }
     } catch (error) {
-      //console.log('Error setting PIN:', error);
-      Alert.alert("Error", "Failed to set PIN");
+      console.log('Error setting PIN:', error.response?.data || error);
+      Alert.alert(
+        "Error", 
+        error.response?.data?.message || "Failed to set PIN"
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  // You can remove the internal checkPinStatus function since it's now outside
 
   const toggleSwitch = async (key) => {
     if (key === 'faceRecognition') {
@@ -170,7 +197,6 @@ const PrivacySettings = ({ navigation }) => {
 
   return (
     <>
-     
       <StatusBar
         barStyle={Platform.OS === 'ios' ? 'light-content' : 'light-content'}
         backgroundColor="#0d64dd"
@@ -428,7 +454,7 @@ const PrivacySettings = ({ navigation }) => {
 };
 
 const createStyles = (colors, isDark) => StyleSheet.create({
-  safeArea: {
+   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
   },
@@ -709,6 +735,7 @@ const createStyles = (colors, isDark) => StyleSheet.create({
   modalBackButtonText: {
     fontSize: 14,
   },
+
 });
 
 export default PrivacySettings;

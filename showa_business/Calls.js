@@ -577,15 +577,7 @@ const CallsScreen = ({ navigation }) => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
-      {/* Floating Action Button for starting calls */}
-      {/* {!modalVisible && (
-        <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary }]} onPress={openModal}>
-          <Icon name="add-call" size={24} color={colors.textInverse} />
-        </TouchableOpacity>
-      )} */}
-
-      <EarnFloatingButton navigation={navigation} />
+  
     </View>
     </View>
    

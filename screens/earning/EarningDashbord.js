@@ -153,25 +153,105 @@ const EarnTasksScreen = ({ navigation }) => {
     }
   };
 
-  const fetchEarnData = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/earn/enhanced/');
-      setTasks(response.data.tasks);
-      setStats(response.data.stats);
+  // const fetchEarnData = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const response = await api.get('/earn/enhanced/');
+  //     setTasks(response.data.tasks);
+  //     setStats(response.data.stats);
       
-      if (response.data.stats) {
-        setDailyProgress((response.data.stats.coins_today / response.data.stats.daily_cap) * 100);
-        setWeeklyProgress((response.data.stats.coins_this_week / response.data.stats.weekly_cap) * 100);
-      }
-    } catch (error) {
-      console.error('Error fetching earn data:', error);
-      Alert.alert('Error', 'Failed to load earn tasks. Please try again.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  //     if (response.data.stats) {
+  //       setDailyProgress((response.data.stats.coins_today / response.data.stats.daily_cap) * 100);
+  //       setWeeklyProgress((response.data.stats.coins_this_week / response.data.stats.weekly_cap) * 100);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching earn data:', error);
+  //     Alert.alert('Error', 'Failed to load earn tasks. Please try again.');
+  //   } finally {
+  //     setLoading(false);
+  //     setRefreshing(false);
+  //   }
+  // };
+
+  const fetchEarnData = async () => {
+  try {
+    setLoading(true);
+    const response = await api.get('/earn/enhanced/');
+    setTasks(response.data.tasks || []);
+  
+    const statsData = response.data.stats || {
+      coins_total: 0,
+      usd_total: 0,
+      streak: 0,
+      coins_today: 0,
+      daily_cap: 50,
+      exchange_rate: 0.01,
+      usd_available: 0,
+    };
+    
+    
+    let coinsThisWeek = 0;
+    const storedEarnings = await AsyncStorage.getItem('dailyEarnings');
+    
+    if (storedEarnings) {
+      const earningsHistory = JSON.parse(storedEarnings);
+      const today = new Date().toDateString();
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      coinsThisWeek = earningsHistory
+        .filter(day => new Date(day.date) >= sevenDaysAgo)
+        .reduce((sum, day) => sum + day.earned, 0);
+    } else {
+     
+      coinsThisWeek = statsData.coins_today;
     }
-  };
+    
+    const enhancedStats = {
+      ...statsData,
+      weekly_cap: 250,
+      coins_this_week: coinsThisWeek,
+    };
+    
+    setStats(enhancedStats);
+    setDailyProgress((enhancedStats.coins_today / enhancedStats.daily_cap) * 100);
+    setWeeklyProgress((enhancedStats.coins_this_week / enhancedStats.weekly_cap) * 100);
+    
+    await updateDailyEarnings(statsData.coins_today);
+    
+  } catch (error) {
+    console.error('Error fetching earn data:', error);
+    Alert.alert('Error', 'Failed to load earn tasks. Please try again.');
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
+
+const updateDailyEarnings = async (todayEarned) => {
+  try {
+    const stored = await AsyncStorage.getItem('dailyEarnings');
+    let history = stored ? JSON.parse(stored) : [];
+    
+    const today = new Date().toDateString();
+    const todayIndex = history.findIndex(day => day.date === today);
+    
+    if (todayIndex >= 0) {
+      history[todayIndex].earned = todayEarned;
+    } else {
+      history.push({
+        date: today,
+        earned: todayEarned
+      });
+    }
+    
+    history = history.slice(-30);
+    
+    await AsyncStorage.setItem('dailyEarnings', JSON.stringify(history));
+  } catch (error) {
+    console.error('Error updating daily earnings:', error);
+  }
+};
 
   const onRefresh = () => {
     setRefreshing(true);

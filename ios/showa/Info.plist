@@ -92,6 +92,9 @@
 	<key>NSContactsUsageDescription</key>
 	<string>This app needs access to contacts.</string>
 
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+
 	<!-- Location (Safe & Approved) -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app uses your location to provide location-based features.</string>
@@ -143,6 +146,8 @@
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
 		<true/>
 	</dict>
+
+	
 
 	<!-- React Native New Architecture -->
 	<key>RCTNewArchEnabled</key>

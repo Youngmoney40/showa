@@ -17,15 +17,16 @@ import {
   TouchableWithoutFeedback,
   Keyboard
 } from 'react-native';
+
 import Icon from 'react-native-vector-icons/FontAwesome';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LottieView from 'lottie-react-native';
-import { useTheme } from '../src/context/ThemeContext'; // Import ThemeContext
+import { useTheme } from '../src/context/ThemeContext'; 
 
 const ContactUsScreen = ({ navigation }) => {
-  const { colors, isDark } = useTheme(); // Get theme colors
+  const { colors, isDark } = useTheme(); 
   const [isStoryModalVisible, setIsStoryModalVisible] = useState(false);
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [storyForm, setStoryForm] = useState({
@@ -37,7 +38,7 @@ const ContactUsScreen = ({ navigation }) => {
   });
 
   const handleEmailPress = () => {
-    Linking.openURL('mailto:support@example.com?subject=App Support');
+    Linking.openURL('mailto:sinfo@showapp.ng?subject=App Support');
   };
 
   const handlePhonePress = () => {
@@ -45,14 +46,14 @@ const ContactUsScreen = ({ navigation }) => {
   };
 
   const handleWebsitePress = () => {
-    Linking.openURL('https://www.example.com');
+    Linking.openURL('https://showapp.ng');
   };
 
   const handleSocialMediaPress = (platform) => {
     const urls = {
-      facebook: 'https://facebook.com/example',
-      twitter: 'https://twitter.com/example',
-      instagram: 'https://instagram.com/example',
+      facebook: 'https://facebook.com/showa',
+      twitter: 'https://twitter.com/showa',
+      instagram: 'https://instagram.com/showa',
     };
     Linking.openURL(urls[platform]);
   };
@@ -62,7 +63,7 @@ const ContactUsScreen = ({ navigation }) => {
   };
 
   const handleSubmitStory = () => {
-    // Validate form
+   
     if (!storyForm.name || !storyForm.title || !storyForm.story) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
@@ -142,13 +143,13 @@ const ContactUsScreen = ({ navigation }) => {
             </View>
             <View style={styles.contactText}>
               <Text style={[styles.contactLabel, { color: colors.text }]}>Email Support</Text>
-              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>info@essential.com</Text>
+              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>info@showapp.ng</Text>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
 
           {/* Phone */}
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={[styles.contactMethod, { borderBottomColor: colors.border }]} 
             onPress={handlePhonePress}
           >
@@ -160,7 +161,7 @@ const ContactUsScreen = ({ navigation }) => {
               <Text style={[styles.contactValue, { color: colors.textSecondary }]}>+234 9785 745</Text>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Website */}
           <TouchableOpacity 
@@ -172,14 +173,14 @@ const ContactUsScreen = ({ navigation }) => {
             </View>
             <View style={styles.contactText}>
               <Text style={[styles.contactLabel, { color: colors.text }]}>Visit Website</Text>
-              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>https://www.showa.ng</Text>
+              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>https://showa.ng</Text>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
         {/* Social Media */}
-        <View style={[styles.section, { 
+        {/* <View style={[styles.section, { 
           backgroundColor: colors.card,
           shadowColor: isDark ? '#000' : '#000',
           shadowOpacity: isDark ? 0.1 : 0.05,
@@ -208,7 +209,7 @@ const ContactUsScreen = ({ navigation }) => {
               <Icon name="instagram" size={20} color="#e1306c" />
             </TouchableOpacity>
           </View>
-        </View>
+        </View> */}
 
         {/* Office Address */}
         <View style={[styles.section, { 
@@ -262,8 +263,6 @@ const ContactUsScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Story Submission Modal */}
       <Modal
         visible={isStoryModalVisible}
         animationType="slide"

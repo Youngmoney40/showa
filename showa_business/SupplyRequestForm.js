@@ -168,7 +168,7 @@ export default function SupplyRequestFormScreen({navigation}) {
   }, [showSuccessModal]);
 
   const handleSubmit = async () => {
-    if (!category || !request || !note || !address) {
+    if (!category || !request) {
       alert("Please fill all required fields.");
       return;
     }
@@ -193,7 +193,7 @@ export default function SupplyRequestFormScreen({navigation}) {
 
 
     try {
-  // Simulate API call
+  
   await new Promise(resolve => setTimeout(resolve, 1500));
    const token = await AsyncStorage.getItem('userToken');
       const response = await fetch(`${API_ROUTE}/request-supply/`, {        
@@ -217,8 +217,8 @@ export default function SupplyRequestFormScreen({navigation}) {
   // Show success modal after all suppliers are "notified"
   setTimeout(() => {
     setShowSuccessModal(true);
-    resetForm();
-    navigation.goBack();
+    // resetForm();
+    // navigation.goBack();
   }, 5000 + suppliers.length * 3000 + 2000); 
 
 
@@ -248,27 +248,32 @@ export default function SupplyRequestFormScreen({navigation}) {
     <SafeAreaView style={styles.container}>
       {/* Notification Badges */}
      
-          {sendingSuppliers.length > 0 && (
-        <View style={styles.notificationContainer}>
-          {sendingSuppliers.slice(0, 7).map((supplier) => (
-            <View key={supplier.id} style={styles.notificationBadge}>
-              <Image source={supplier.image} style={{width:50,height:50, borderRadius:50}}/>
-              <Text style={styles.notificationText}>
-                Sending to 
-                {supplier.name}
-              </Text>
-              <ActivityIndicator size="small" color="#332bc9ff" />
-            </View>
-          ))}
-          {sendingSuppliers.length > 3 && (
-            <View style={styles.moreNotificationBadge}>
-              <Text style={styles.moreNotificationText}>
-                +{sendingSuppliers.length - 3} more
-              </Text>
-            </View>
-          )}
-        </View>
-      )}
+        {/* Notification Badges */}
+{sendingSuppliers.length > 0 && (
+  <View 
+    style={styles.notificationContainer}
+    pointerEvents="none" // Add this line
+  >
+    {sendingSuppliers.slice(0, 7).map((supplier) => (
+      <View key={supplier.id} style={styles.notificationBadge}>
+        <Image source={supplier.image} style={{width:50,height:50, borderRadius:50}}/>
+        <Text style={styles.notificationText}>
+          Sending to {supplier.name}
+        </Text>
+        <ActivityIndicator size="small" color="#332bc9ff" />
+      </View>
+    ))}
+    {sendingSuppliers.length > 3 && (
+      <View style={styles.moreNotificationBadge}>
+        <Text style={styles.moreNotificationText}>
+          +{sendingSuppliers.length - 3} more
+        </Text>
+      </View>
+    )}
+  </View>
+)}
+        
+      
     
 
       {/* Header */}

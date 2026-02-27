@@ -2119,7 +2119,7 @@ import Video from 'react-native-video';
 import { useTheme } from '../src/context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PinUnlockModal from '../screens/PinUnlockModal'; 
-
+import EarningsSlideInManager from '../components/EarningsSlideInManager';
 const HomeScreen = ({ navigation }) => {
 
   const { colors, theme, toggleTheme, isDark  } = useTheme(); 
@@ -3798,7 +3798,9 @@ useEffect(()=>{
       >
         <Icon name="add" size={24} color="#0d64dd" />
       </TouchableOpacity>
-      {/* <PinUnlockModal navigation={navigation} /> */}
+
+      <EarningsSlideInManager />
+      <PinUnlockModal navigation={navigation} />
       {/* <EarningFloatingButton navigation={navigation} /> */}
     </View>
   );

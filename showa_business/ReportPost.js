@@ -3,15 +3,15 @@ import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } fro
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { API_ROUTE } from '../api_routing/api';
-import colors from '../theme/colors';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../src/context/ThemeContext';
 const ReportPostScreen = ({ route, navigation }) => {
   const { postId } = route.params;
 
   const [reason, setReason] = useState('spam');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const { colors, theme, isDark } = useTheme(); 
   const reportReasons = [
     { value: 'spam', label: 'Spam or misleading' },
     { value: 'abuse', label: 'Abusive or harmful' },
@@ -46,10 +46,10 @@ const ReportPostScreen = ({ route, navigation }) => {
   };
 
   return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 15, color:'#000' }}>Report Post</Text>
-
-      <Text style={{ fontWeight: '600', marginBottom: 8 }}>Reason</Text>
+    <SafeAreaView style={{ flex: 1, padding: 20 }}>
+      <View >
+      <Text style={{ fontSize: 25, fontWeight: 'bold', marginBottom: 15, marginTop:20, color:colors.text }}>Report Post</Text>
+      <Text style={{ fontWeight: '600', marginBottom: 8, color:colors.text }}>Reason</Text>
       {reportReasons.map(r => (
         <TouchableOpacity
           key={r.value}
@@ -67,12 +67,13 @@ const ReportPostScreen = ({ route, navigation }) => {
         </TouchableOpacity>
       ))}
 
-      <Text style={{ fontWeight: '600', marginBottom: 8 }}>Message (optional)</Text>
+      <Text style={{ fontWeight: '600', marginBottom: 8, color:colors.text }}>Message (optional)</Text>
       <TextInput
         value={message}
         onChangeText={setMessage}
         placeholder="Add any extra details..."
         multiline
+        placeholderTextColor={colors.text}
         numberOfLines={4}
         style={{
           borderWidth: 1,
@@ -81,13 +82,14 @@ const ReportPostScreen = ({ route, navigation }) => {
           padding: 10,
           textAlignVertical: 'top',
           marginBottom: 20,
+         
         }}
       />
 
       <TouchableOpacity
         onPress={handleSubmit}
         style={{
-          backgroundColor: colors.primary,
+          backgroundColor: '#0d64dd',
           padding: 15,
           borderRadius: 8,
           alignItems: 'center',
@@ -101,6 +103,8 @@ const ReportPostScreen = ({ route, navigation }) => {
         )}
       </TouchableOpacity>
     </View>
+    </SafeAreaView>
+    
   );
 };
 

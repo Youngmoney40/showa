@@ -3214,12 +3214,7 @@ export default function PersonalPrivateChatScreen({ route, navigation }) {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.headerProfile}
-                  onPress={() => {
-                    setUserPopup({
-                      username: name,
-                      avatar: profile_image ? `${API_ROUTE_IMAGE}${profile_image}` : null,
-                    });
-                  }}
+                  onPress={() => navigation.navigate('OtherUserProfile', { userId: receiverId })}
                 >
                   <Image
                     source={
@@ -3755,6 +3750,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 12,
+    
     textTransform: 'capitalize',
   },
   chatContent: {

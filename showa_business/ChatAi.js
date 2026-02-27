@@ -18,13 +18,13 @@ import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Image } from 'react-native-animatable';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GEMINI_API_KEY } from '../api_routing/api';
+
 
 
 const { width, height } = Dimensions.get('window');
-
-// Storage keys
 const CHAT_STORAGE_KEY = '@showa_ai_chat_history';
-const MAX_CHAT_HISTORY = 50; // Limit stored messages to prevent storage issues
+const MAX_CHAT_HISTORY = 50; 
 
 const AnimatedMessageBubble = ({ msg, pulseAnim }) => {
   const translateY = useRef(new Animated.Value(20)).current;
@@ -138,21 +138,17 @@ const AIChatScreen = ({ route }) => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
   
-  const tok = "t";
 
-  // Load chat history on component mount
   useEffect(() => {
     loadChatHistory();
   }, []);
 
-  // Save messages whenever they change
   useEffect(() => {
     if (!isLoadingHistory && messages.length > 0) {
       saveChatHistory();
     }
   }, [messages, isLoadingHistory]);
 
-  // Load chat history from AsyncStorage
   const loadChatHistory = async () => {
     try {
       const storedChat = await AsyncStorage.getItem(CHAT_STORAGE_KEY);
@@ -167,7 +163,6 @@ const AIChatScreen = ({ route }) => {
     }
   };
 
-  // Save chat history to AsyncStorage
   const saveChatHistory = async () => {
     try {
       // Limit the number of stored messages to prevent storage issues
@@ -213,32 +208,53 @@ const AIChatScreen = ({ route }) => {
 
     try {
       const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
         {
-          model: "gpt-4o-mini",
-          messages: [
+          contents: [
             {
-              role: "system",
-              content: "You are a helpful business assistant specializing in business strategy, marketing, operations, finance, and growth. Provide concise, actionable advice for business owners. Be professional yet approachable."
-            },
-            {
-              role: "user",
-              content: autoMessage
+              parts: [
+                {
+                  text: `You are a helpful business assistant specializing in business strategy, marketing, operations, finance, and growth. Provide concise, actionable advice for business owners. Be professional yet approachable.
+                  
+                  User query: ${autoMessage}`
+                }
+              ]
             }
           ],
-          max_tokens: 500,
-          temperature: 0.7
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 500,
+          },
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            }
+          ]
         },
         {
+          timeout: 30000,
           headers: {
-            'Authorization': `Bearer ${tok}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 30000
+            'Content-Type': 'application/json',
+            'X-goog-api-key': GEMINI_API_KEY  // Using the correct header format
+          }
         }
       );
 
-      const aiResponse = response.data?.choices?.[0]?.message?.content || 
+      // Extract the AI response from Gemini's response structure
+      const aiResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || 
                         "I received your message and I'm processing your business inquiry.";
 
       setTimeout(() => {
@@ -252,14 +268,16 @@ const AIChatScreen = ({ route }) => {
       }, 800);
 
     } catch (error) {
-      console.error('API Error:', error);
+      console.error('Gemini API Error:', error);
       
       let errorMessage = "I'm experiencing high demand. Please try again in a moment.";
       
-      if (error.response?.status === 401) {
-        errorMessage = "Service configuration issue. Please contact support.";
+      if (error.response?.status === 403) {
+        errorMessage = "API key error. Please check your Gemini API configuration.";
       } else if (error.response?.status === 429) {
         errorMessage = "Too many requests. Please wait a moment before trying again.";
+      } else if (error.response?.status === 400) {
+        errorMessage = "Invalid request. Please try rephrasing your question.";
       }
 
       setTimeout(() => {
@@ -297,32 +315,53 @@ const AIChatScreen = ({ route }) => {
 
     try {
       const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
         {
-          model: "gpt-4o-mini",
-          messages: [
+          contents: [
             {
-              role: "system",
-              content: "You are a helpful business assistant specializing in business strategy, marketing, operations, finance, and growth. Provide concise, actionable advice for business owners. Be professional yet approachable."
-            },
-            {
-              role: "user",
-              content: userMessage
+              parts: [
+                {
+                  text: `You are a helpful business assistant specializing in business strategy, marketing, operations, finance, and growth. Provide concise, actionable advice for business owners. Be professional yet approachable.
+                  
+                  User query: ${userMessage}`
+                }
+              ]
             }
           ],
-          max_tokens: 500,
-          temperature: 0.7
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 500,
+          },
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            }
+          ]
         },
         {
+          timeout: 30000,
           headers: {
-            'Authorization': `Bearer ${tok}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 30000
+            'Content-Type': 'application/json',
+            'X-goog-api-key': GEMINI_API_KEY  // Using the correct header format
+          }
         }
       );
 
-      const aiResponse = response.data?.choices?.[0]?.message?.content || 
+      // Extract the AI response from Gemini's response structure
+      const aiResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || 
                         "I received your message and I'm processing your business inquiry.";
 
       setTimeout(() => {
@@ -336,14 +375,16 @@ const AIChatScreen = ({ route }) => {
       }, 800);
 
     } catch (error) {
-      console.error('API Error:', error);
+      console.error('Gemini API Error:', error);
       
       let errorMessage = "I'm experiencing high demand. Please try again in a moment.";
       
-      if (error.response?.status === 401) {
-        errorMessage = "Service configuration issue. Please contact support.";
+      if (error.response?.status === 403) {
+        errorMessage = "API key error. Please check your Gemini API configuration.";
       } else if (error.response?.status === 429) {
         errorMessage = "Too many requests. Please wait a moment before trying again.";
+      } else if (error.response?.status === 400) {
+        errorMessage = "Invalid request. Please try rephrasing your question.";
       }
 
       setTimeout(() => {

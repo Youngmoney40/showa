@@ -607,8 +607,8 @@ const ContactsScreen = ({ navigation }) => {
     >
       <Text style={[
         styles.tabText, 
-        { color: colors.textSecondary },
-        activeTab === tabName && [styles.activeTabText, { color: colors.text }]
+        { color: '#fff' },
+        activeTab === tabName && [styles.activeTabText, { color: '#fff' }]
       ]}>
         {title}
       </Text>
@@ -633,10 +633,10 @@ const ContactsScreen = ({ navigation }) => {
             <Icon 
               name="arrow-back" 
               size={24} 
-              color={colors.text} 
+              color='#fff' 
               onPress={() => navigation.goBack()}
             />
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Contacts</Text>
+            <Text style={[styles.headerTitle, { color: '#fff' }]}>Contacts</Text>
           </View>
         </View>
         

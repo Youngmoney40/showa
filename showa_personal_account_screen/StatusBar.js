@@ -4156,7 +4156,7 @@ const StatusScreen = () => {
           </View>
         </LinearGradient>
 
-        {/* Combined Status and Live Streams Section  */}
+        {/* Combining Status and Live Streams Section  */}
         <View style={{ marginTop: 10, marginBottom: 20 }}>
           <Text style={[styles.sectionTitle, { color: colors.text, fontWeight: '600', fontSize: 20 }]}>
             Live updates
@@ -4542,7 +4542,8 @@ const StatusScreen = () => {
                         translucent={Platform.OS === 'android'}
                         backgroundColor={Platform.OS === 'android' ? '#0750b5' : undefined}
                       />
-          <View style={[styles.addStatusHeader,{margin:20}]}>
+          <View style={[styles.addStatusHeader,{margin:20, marginTop:50}]}>
+            
             <TouchableOpacity onPress={() => setAddStatusModalVisible(false)}>
               <Icon name="close" size={28} color='black' />
             </TouchableOpacity>
@@ -4641,7 +4642,7 @@ const styles = StyleSheet.create({
 },
 
   headerTop: {
-    paddingTop:60,
+    paddingTop:80,
     paddingHorizontal: Platform.OS === 'android'? 20: 20,
     paddingVertical:Platform.OS === 'android'? 0 : 0,
     flexDirection: 'row',
