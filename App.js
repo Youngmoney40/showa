@@ -1447,6 +1447,7 @@ import BPrivateChat from './showa_business/BusinessChat';
 import BusinessGroupChat from './showa_business/BusinessGroupChat';
 import SupplierNotificationScreen from './showa_business/SupplierNotificationScreen';
 import RequesterPostHistory from './showa_business/RequesterPostHistory';
+import GroupMembers from './showa_business/GroupMembers';
 
 // Social Media Screens
 import SocialHome from './showa_social/Home';
@@ -1763,6 +1764,13 @@ function ThemedNavigator() {
           {(props) => (
             <ScreenWrapper>
               <ProceedOptions {...props} />
+            </ScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="GroupMembers">
+          {(props) => (
+            <ScreenWrapper>
+              <GroupMembers {...props} />
             </ScreenWrapper>
           )}
         </Stack.Screen>

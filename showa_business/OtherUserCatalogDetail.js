@@ -13,6 +13,7 @@ import {
   Alert,
   Share,
   Modal,
+  KeyboardAvoidingView,
   TextInput,
   Dimensions,
 } from 'react-native';
@@ -46,27 +47,28 @@ export default function ProductDetailsScreen({ navigation, route }) {
   const [checkingOwnership, setCheckingOwnership] = useState(true);
   const [productImages, setProductImages] = useState([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [buttonLoading, setButtonLoading] = useState(false); // New state for button loading
+  
+  const [mainImage, setMainImage] = useState(null);
 
   useEffect(() => {
     const initializeData = async () => {
+      console.log('user seller detailsss', product);
+      console.log('user seller detailsss for businessss', businessProfile);
       await fetchUserData();
       
       if (routeProduct) {
         setProduct(routeProduct);
         setLoading(false);
         
-       
-        const images = [];
-        if (routeProduct.image) {
-          images.push(routeProduct.image);
+        // Single image handling - only use the product image
+        const productImage = routeProduct.image_url || routeProduct.image || null;
+        setProductImages(productImage ? [productImage] : []);
+        
+        // Set the main image to the product image
+        if (productImage) {
+          setMainImage(productImage);
         }
-        if (routeProduct.image_url) {
-          images.push(routeProduct.image_url);
-        }
-        if (routeProduct.images && Array.isArray(routeProduct.images)) {
-          images.push(...routeProduct.images.map(img => img.image || img));
-        }
-        setProductImages(images.filter(Boolean));
         
         // Fetch business profile if not provided and product has owner
         if (!businessProfile && routeProduct.owner) {
@@ -80,11 +82,14 @@ export default function ProductDetailsScreen({ navigation, route }) {
         setProduct(catalogItem);
         setLoading(false);
         
-        // Process catalog item images
-        const images = [];
-        if (catalogItem.image) images.push(catalogItem.image);
-        if (catalogItem.image_url) images.push(catalogItem.image_url);
-        setProductImages(images.filter(Boolean));
+        // Single image handling - only use the catalog item image
+        const catalogImage = catalogItem.image_url || catalogItem.image || null;
+        setProductImages(catalogImage ? [catalogImage] : []);
+        
+        // Set the main image to the catalog image
+        if (catalogImage) {
+          setMainImage(catalogImage);
+        }
         
         if (catalogItem.owner) {
           await fetchBusinessProfile(catalogItem.owner);
@@ -98,6 +103,222 @@ export default function ProductDetailsScreen({ navigation, route }) {
     initializeData();
   }, [routeProduct, businessProfile, route.params?.catalogItem]);
 
+  const sendMessageToSeller = async (id) => {
+    setButtonLoading(true); 
+    
+    const message = 'Hi there! 👋 I\'m interested in this item. Is it still available?';
+    // Get the product image URL
+    const productImageUrl = product?.image_url || product?.image || '';
+    
+    // Log the complete product object to see all available fields
+    console.log('Complete product object:', JSON.stringify(product, null, 2));
+    console.log('Business object:', JSON.stringify(business, null, 2));
+    
+    // Get seller information with more options and debugging
+    const sellerId = business?.user || product?.owner || product?.owner_id || product?.business_id || product?.seller_id || id;
+    const sellerName = product?.owner_name || product?.business_name || product?.seller_name || business?.name || business?.business_name || 'Seller';
+    
+    console.log('Extracted seller info:', {
+      sellerId,
+      sellerName,
+      fromBusiness: business?.user,
+      fromProductOwner: product?.owner,
+      fromProductOwnerId: product?.owner_id,
+      fromProductBusinessId: product?.business_id,
+      fromProductSellerId: product?.seller_id,
+      passedId: id
+    });
+    
+    if (!sellerId) {
+      Alert.alert('Error', 'Seller information not available');
+      setButtonLoading(false);
+      return;
+    }
+
+    if (!userId) {
+      Alert.alert('Error', 'Please login to send messages');
+      setButtonLoading(false);
+      return;
+    }
+
+    // Check if user is trying to message themselves
+    if (isProductOwner) {
+      Alert.alert(
+        'Cannot Send Message',
+        'You cannot send messages to yourself. This is your own product listing.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setMessageModalVisible(false);
+              setButtonLoading(false);
+            }
+          }
+        ]
+      );
+      return;
+    }
+
+    setButtonLoading(false); 
+    
+    
+    Alert.alert(
+      'Confirm Message Recipient',
+      `You are about to send a message to:\n\n👤 Seller: ${sellerName}\n🆔 ID: ${product?.owner}ertgfdd45snskww8j\n\nProduct: ${product?.name || 'Unknown'}\n\nDo you want to continue?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => {
+            console.log('Message cancelled');
+          }
+        },
+        {
+          text: 'Send Message',
+          onPress: () => sendMessageWithImage(product?.owner, productImageUrl, message)
+        }
+      ]
+    );
+  };
+
+
+  // Separate function to handle the actual message sending
+  const sendMessageWithImage = async (sellerId, productImageUrl, messageText) => {
+    setSendingMessage(true);
+
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      
+      if (!token) {
+        Alert.alert('Error', 'Please login to send messages');
+        setSendingMessage(false);
+        return;
+      }
+
+      const formData = new FormData();
+      
+      let messageContent = messageText.trim();
+      const price = product.sale_price && parseFloat(product.sale_price) > 0 
+        ? product.sale_price 
+        : product.price;
+      
+      if (product) {
+        if (messageContent) {
+          messageContent += `\n\n Product: ${product.name}`;
+          messageContent += `\n💰 Price: ₦${parseFloat(price).toLocaleString()}`;
+          if (product.description) {
+            messageContent += `\nDescription: ${product.description.substring(0, 100)}...`;
+          }
+        } else {
+          messageContent = `I'm interested in: ${product.name}\n💰 Price: ₦${parseFloat(price).toLocaleString()}`;
+          if (product.description) {
+            messageContent += `\n ${product.description.substring(0, 100)}...`;
+          }
+        }
+      }
+      
+      if (messageContent.trim()) {
+        formData.append('content', messageContent.trim());
+      }
+
+      // Attach the product image to the message
+      if (productImageUrl) {
+        try {
+          const fullImageUrl = getFullImageUrl(productImageUrl);
+          const fileName = productImageUrl.split('/').pop() || `product_${Date.now()}.jpg`;
+          
+          formData.append('image', {
+            uri: fullImageUrl,
+            type: 'image/jpeg',
+            name: fileName,
+          });
+        } catch (imageError) {
+          console.error('Error attaching product image:', imageError);
+        }
+      }
+
+      formData.append('chat_type', 'single');
+      formData.append('account_mode', 'business');
+      formData.append('receiver', product?.owner);
+
+      console.log('Sending message with data:', {
+        receiverId: product?.owner,
+        receiverType: typeof product?.owner,
+        messageContent: messageContent.substring(0, 50) + '...',
+        hasImage: !!productImageUrl
+      });
+
+      const response = await axios.post(
+        `${API_ROUTE}/api/chat/`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (response.status === 201) {
+        Alert.alert(
+          '✅ Message Sent!',
+          `Your message has been sent to ${product?.owner_name || 'the seller'}.`,
+          [
+            {
+              text: 'Continue Shopping',
+              style: 'cancel',
+              onPress: () => {
+                setMessage('');
+                setSelectedImage(null);
+                setMessageModalVisible(false);
+              }
+            },
+            {
+              text: 'View Chat',
+              onPress: () => {
+                navigation.navigate('BPrivateChat', {
+                  chatType: 'single',
+                  receiverId: product?.owner,
+                  name: product?.owner_name,
+                  profile_image: product?.image,
+                });
+                setMessage('');
+                setSelectedImage(null);
+                setMessageModalVisible(false);
+              }
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Send message error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      let errorMessage = 'Failed to send message';
+      if (error.response?.status === 401) {
+        errorMessage = 'Session expired. Please login again.';
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Invalid message data.';
+        if (error.response?.data?.receiver) {
+          errorMessage = `Receiver error: ${error.response.data.receiver}`;
+        }
+      } else if (error.message?.includes('Network Error')) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response?.data?.non_field_errors) {
+        errorMessage = error.response.data.non_field_errors[0];
+      }
+      
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+  
   const fetchUserData = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
@@ -113,9 +334,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
       setUserId(parsed.id);
       setUsername(parsed.name || 'User');
       
-      
       await fetchUserBusinessAccounts(parsed.id, token);
-      
       
       if (parsed.profile_picture) {
         setUserProfileImage(`${API_ROUTE_IMAGE}${parsed.profile_picture}`);
@@ -143,14 +362,14 @@ export default function ProductDetailsScreen({ navigation, route }) {
       if (response.status === 200 && response.data) {
         setUserBusinessAccounts(response.data);
         
-        // Check if the product owner (business account) is in user's business accounts
+        
         if (product && product.owner && response.data.some(business => business.id === product.owner)) {
           setIsProductOwner(true);
         }
       }
     } catch (error) {
-      console.error('Error fetching business accounts:', error);
-      // Alternative approach if API endpoint doesn't exist
+      //console.error('Error fetching business accounts:', error);
+      
       checkOwnershipAlternative();
     } finally {
       setCheckingOwnership(false);
@@ -223,7 +442,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
         ? product.sale_price 
         : product.price;
       
-      const shareMessage = `Check out "${product.name}" - ₦${parseFloat(price).toLocaleString()}\n\n${product.description || ''}\n\nSold by: ${product.owner_name || business?.name || 'Business'}`;
+      const shareMessage = `Check out "${product.name}" - ₦${parseFloat(price).toLocaleString()}\n\n${product.description || ''}\n\nSold by: ${product?.owner_name || product|| 'Business'}`;
       
       await Share.share({
         title: product.name,
@@ -235,11 +454,44 @@ export default function ProductDetailsScreen({ navigation, route }) {
     }
   };
 
-  const getFullImageUrl = (imagePath) => {
-    if (!imagePath) return null;
-    if (imagePath.startsWith('http')) return imagePath;
-    return `${API_ROUTE_IMAGE}${imagePath.startsWith('/') ? imagePath : '/' + imagePath}`;
-  };
+  // const getFullImageUrl = (imagePath) => {
+  //   if (!imagePath) return null;
+  //   if (imagePath.startsWith('http')) return imagePath;
+  //   return `${API_ROUTE_IMAGE}${imagePath.startsWith('/') ? imagePath : '/' + imagePath}`;
+  // };
+
+
+  // utils/imageUtils.js or add this in your ProductDetailsScreen
+
+const convertToHttps = (url) => {
+  if (!url) return null;
+  if (typeof url !== 'string') return url;
+  
+  // Convert http to https
+  if (url.startsWith('http://')) {
+    return url.replace('http://', 'https://');
+  }
+  
+  // Handle // protocol-relative URLs
+  if (url.startsWith('//')) {
+    return 'https:' + url;
+  }
+  
+  return url;
+};
+
+// Then use it in your getFullImageUrl function:
+const getFullImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  
+  let url = imagePath;
+  if (!url.startsWith('http')) {
+    url = `${API_ROUTE_IMAGE}${url.startsWith('/') ? url : '/' + url}`;
+  }
+  
+  // Convert to HTTPS
+  return convertToHttps(url);
+};
 
   const handleSelectImage = () => {
     launchImageLibrary(
@@ -268,146 +520,34 @@ export default function ProductDetailsScreen({ navigation, route }) {
     setSelectedImage(null);
   };
 
-  const sendMessageToSeller = async () => {
-    if (!business?.user && !product?.owner) {
-      Alert.alert('Error', 'Seller information not available');
-      return;
-    }
-
-    if (!userId) {
-      Alert.alert('Error', 'Please login to send messages');
-      return;
-    }
-
-    if (!message.trim() && !selectedImage) {
-      Alert.alert('Error', 'Please enter a message or attach an image');
-      return;
-    }
-
-    // Prevent sending message if user is the product owner
-    if (isProductOwner) {
-      Alert.alert('Not Allowed', 'You cannot send messages to your own business. This is your product listing.');
-      return;
-    }
-
-    setSendingMessage(true);
-
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      
-      if (!token) {
-        Alert.alert('Error', 'Please login to send messages');
-        setSendingMessage(false);
-        return;
-      }
-
-      const formData = new FormData();
-      
-      
-      let messageContent = message.trim();
-      const price = product.sale_price && parseFloat(product.sale_price) > 0 
-        ? product.sale_price 
-        : product.price;
-      
-      if (product) {
-        if (messageContent) {
-          messageContent += `\n\n📦 Product: ${product.name}`;
-          messageContent += `\n💰 Price: ₦${parseFloat(price).toLocaleString()}`;
-          if (product.description) {
-            messageContent += `\n📝 Description: ${product.description.substring(0, 100)}...`;
-          }
-        } else {
-          messageContent = `I'm interested in: ${product.name}\n💰 Price: ₦${parseFloat(price).toLocaleString()}`;
-          if (product.description) {
-            messageContent += `\n📝 ${product.description.substring(0, 100)}...`;
-          }
-        }
-      }
-      
-      if (messageContent.trim()) {
-        formData.append('content', messageContent.trim());
-      }
-
-
-      if (selectedImage) {
-        formData.append('image', {
-          uri: selectedImage.uri,
-          type: selectedImage.type,
-          name: selectedImage.name,
-        });
-      }
-
+  const convertWebpToJpg = (imagePath) => {
+  if (!imagePath) return imagePath;
   
-      formData.append('chat_type', 'single');
-      formData.append('account_mode', 'business');
-      formData.append('receiver', business?.user || product?.owner);
-
-      const response = await axios.post(
-        `${API_ROUTE}/chat/`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      if (response.status === 201) {
-        Alert.alert(
-          'Message Sent!',
-          'Your message has been sent to the seller.',
-          [
-            {
-              text: 'Continue Shopping',
-              style: 'cancel',
-              onPress: () => {
-                setMessage('');
-                setSelectedImage(null);
-                setMessageModalVisible(false);
-              }
-            },
-            {
-              text: 'View Chat',
-              onPress: () => {
-                navigation.navigate('PersonalPrivateChatScreen', {
-                  chatType: 'single',
-                  receiverId: business?.user || product?.owner,
-                  name: business?.name || product?.owner_name,
-                  profile_image: business?.image,
-                });
-                setMessage('');
-                setSelectedImage(null);
-                setMessageModalVisible(false);
-              }
-            }
-          ]
-        );
-      }
-    } catch (error) {
-      console.error('Send message error:', error.response?.data || error.message);
-      
-      let errorMessage = 'Failed to send message';
-      if (error.response?.status === 401) {
-        errorMessage = 'Session expired. Please login again.';
-      } else if (error.response?.status === 400) {
-        errorMessage = 'Invalid message data.';
-      } else if (error.message?.includes('Network Error')) {
-        errorMessage = 'Network error. Please check your connection.';
-      } else if (error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
-      }
-      
-      Alert.alert('Error', errorMessage);
-    } finally {
-      setSendingMessage(false);
-    }
-  };
-
-  const sendQuickInquiry = (inquiryType) => {
+  
+  if (imagePath.toLowerCase().endsWith('.webp')) {
    
+    return imagePath.replace(/\.webp$/i, '.jpg');
+  }
+  
+  return imagePath;
+};
+
+ 
+  const sendQuickInquiry = (inquiryType) => {
+    
     if (isProductOwner) {
-      Alert.alert('Not Allowed', 'You cannot send inquiries about your own product.');
+      Alert.alert(
+        'Cannot Send Inquiry',
+        'You cannot send inquiries about your own product. This is your business listing.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+             
+            }
+          }
+        ]
+      );
       return;
     }
 
@@ -482,9 +622,10 @@ export default function ProductDetailsScreen({ navigation, route }) {
   );
 
   const renderImageGallery = () => {
-    const images = productImages.length > 0 ? productImages : [product?.image, product?.image_url].filter(Boolean);
+    // Get the first available image
+    const imageUrl = product?.image_url || product?.image || null;
     
-    if (images.length === 0) {
+    if (!imageUrl) {
       return (
         <View style={[styles.productImage, styles.placeholderImage, { backgroundColor: colors.card }]}>
           <Icon name="image" size={50} color={colors.textSecondary} />
@@ -493,41 +634,15 @@ export default function ProductDetailsScreen({ navigation, route }) {
       );
     }
 
+   
     return (
       <View style={[styles.imageGalleryContainer, { backgroundColor: colors.card }]}>
-        <ScrollView 
-          horizontal 
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={(event) => {
-            const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-            setActiveImageIndex(newIndex);
-          }}
-        >
-          {images.map((img, index) => (
-            <Image
-              key={index}
-              source={{ uri: getFullImageUrl(img) }}
-              style={styles.productImage}
-              resizeMode="cover"
-              onError={() => console.log('Image failed to load')}
-            />
-          ))}
-        </ScrollView>
-        
-        {images.length > 1 && (
-          <View style={styles.imagePagination}>
-            {images.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.paginationDot,
-                  { backgroundColor: index === activeImageIndex ? colors.primary : colors.textSecondary },
-                ]}
-              />
-            ))}
-          </View>
-        )}
+        <Image
+          source={{ uri: getFullImageUrl(imageUrl) }}
+          style={styles.productImage}
+          resizeMode="cover"
+          onError={() => console.log('Image failed to load')}
+        />
       </View>
     );
   };
@@ -553,19 +668,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
               maximumFractionDigits: 2
             })}
           </Text>
-          {originalPrice && (
-            <>
-              <Text style={[styles.originalPrice, { color: colors.textSecondary }]}>
-                ₦{parseFloat(originalPrice).toLocaleString('en-US', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2
-                })}
-              </Text>
-              <View style={styles.discountBadge}>
-                <Text style={styles.discountText}>{discountPercent}% OFF</Text>
-              </View>
-            </>
-          )}
+          
         </View>
         
         {product?.description && (
@@ -617,32 +720,41 @@ export default function ProductDetailsScreen({ navigation, route }) {
         onPress={() => {
           const businessId = business?.user || product?.owner;
           if (businessId) {
-            navigation.navigate('BusinessProfile', { userId: businessId });
+            navigation.navigate('OtherUserProfile', { userId: product?.owner })
           }
         }}
         disabled={isProductOwner || !(business?.user || product?.owner)}
       >
         <View style={styles.businessHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Sold By</Text>
-          {!isProductOwner && <Icon name="chevron-right" size={20} color={colors.textSecondary} />}
+          {!isProductOwner && 
+          
+            <Icon name="chevron-right" size={20} color={colors.textSecondary} 
+         
+         
+          />}
         </View>
         
         <View style={styles.businessInfo}>
           <Image
             source={
-              business?.image
-                ? { uri: getFullImageUrl(business.image) }
+              product?.owner_profile_picture
+               ? { uri: getFullImageUrl(product.owner_profile_picture) }
                 : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
             }
             style={styles.businessAvatar}
           />
           <View style={styles.businessDetails}>
             <Text style={[styles.businessName, { color: colors.text }]}>
-              {business?.name || product?.owner_name || 'Business Name'}
+              {product?.owner_name 
+                ? product.owner_name.charAt(0).toUpperCase() + product.owner_name.slice(1)
+                : product?.owner_bio 
+                  ? product.owner_bio.charAt(0).toUpperCase() + product.owner_bio.slice(1)
+                  : 'Business Name'}
             </Text>
-            {business?.description && (
+            {product?.owner_name && (
               <Text style={[styles.businessDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                {business.description}
+                {product?.owner_bio}
               </Text>
             )}
           </View>
@@ -651,20 +763,23 @@ export default function ProductDetailsScreen({ navigation, route }) {
         {!isProductOwner && (
           <TouchableOpacity 
             style={[styles.messageButton, { borderColor: colors.primary }]}
-            onPress={() => setMessageModalVisible(true)}
+            onPress={() => {
+              const sellerId = business?.user || product?.owner;
+              const sellerName = product?.owner_name || business?.name || 'Seller';
+              console.log('Preparing to message seller:', { id: sellerId, name: sellerName });
+              sendMessageToSeller(sellerId);
+            }}
+            disabled={buttonLoading || sendingMessage}
           >
-            <Icon name="chat" size={18} color={colors.primary} />
-            <Text style={[styles.messageButtonText, { color: colors.primary }]}>Message Seller</Text>
+            {buttonLoading ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <>
+                <Icon name="chat" size={18} color={colors.primary} />
+                <Text style={[styles.messageButtonText, { color: colors.primary }]}>Message Seller</Text>
+              </>
+            )}
           </TouchableOpacity>
-        )}
-        {isProductOwner && (
-          <View style={[styles.ownerInfoContainer, { 
-            backgroundColor: isDark ? colors.backgroundSecondary : '#F0F4FF',
-            borderColor: colors.primary 
-          }]}>
-            <Icon name="store" size={18} color={colors.primary} />
-            <Text style={[styles.ownerInfoText, { color: colors.primary }]}>Your Business Product</Text>
-          </View>
         )}
       </TouchableOpacity>
     );
@@ -728,42 +843,51 @@ export default function ProductDetailsScreen({ navigation, route }) {
     );
   };
 
-  const renderMessageModal = () => (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={messageModalVisible}
-      onRequestClose={() => setMessageModalVisible(false)}
+ const renderMessageModal = () => (
+  <Modal
+    animationType="slide"
+    transparent={true}
+    visible={messageModalVisible}
+    onRequestClose={() => setMessageModalVisible(false)}
+  >
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.modalOverlay}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
     >
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <View>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Message Seller</Text>
-              {product?.name && (
-                <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-                  About: {product.name}
-                </Text>
-              )}
-            </View>
-            <TouchableOpacity onPress={() => setMessageModalVisible(false)}>
-              <Icon name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-          
-          {isProductOwner && (
-            <View style={[styles.warningContainer, { 
-              backgroundColor: isDark ? colors.backgroundSecondary : '#FFF3E0',
-              borderColor: '#FF9800' 
-            }]}>
-              <Icon name="warning" size={24} color="#FF9800" />
-              <Text style={[styles.warningText, { color: '#FF9800' }]}>
-                This is your business product. You cannot message yourself.
+      <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+        <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+          <View>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Message Seller</Text>
+            {product?.name && (
+              <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+                About: {product.name}
               </Text>
-            </View>
-          )}
-          
-          {product?.image && (
+            )}
+          </View>
+          <TouchableOpacity onPress={() => setMessageModalVisible(false)}>
+            <Icon name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+        
+        {isProductOwner && (
+          <View style={[styles.warningContainer, { 
+            backgroundColor: isDark ? colors.backgroundSecondary : '#FFF3E0',
+            borderColor: '#FF9800' 
+          }]}>
+            <Icon name="warning" size={24} color="#FF9800" />
+            <Text style={[styles.warningText, { color: '#FF9800' }]}>
+              This is your business product. You cannot message yourself.
+            </Text>
+          </View>
+        )}
+        
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.modalScrollContent}
+        >
+          {product?.image_url && (
             <View style={[styles.productPreview, { 
               backgroundColor: colors.backgroundSecondary,
               borderColor: colors.border 
@@ -811,53 +935,43 @@ export default function ProductDetailsScreen({ navigation, route }) {
             textAlignVertical="top"
             editable={!isProductOwner}
           />
-          
-          <View style={styles.modalActions}>
-            {/* <TouchableOpacity 
-              style={[styles.attachButton, { 
-                backgroundColor: colors.backgroundSecondary 
-              }, isProductOwner && [styles.disabledButton, { backgroundColor: colors.background }]]}
-              onPress={() => !isProductOwner && setShowImagePicker(true)}
-              disabled={isProductOwner}
+        </ScrollView>
+        
+        <View style={[styles.modalActions, { borderTopColor: colors.border }]}>
+          <View style={styles.sendButtons}>
+            <TouchableOpacity 
+              style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.backgroundSecondary }]}
+              onPress={() => setMessageModalVisible(false)}
             >
-              <Icon name="attach-file" size={20} color={colors.textSecondary} />
-              <Text style={[styles.attachButtonText, { color: colors.textSecondary }]}>Attach Image</Text>
-            </TouchableOpacity> */}
+              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+            </TouchableOpacity>
             
-            <View style={styles.sendButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.backgroundSecondary }]}
-                onPress={() => setMessageModalVisible(false)}
-              >
-                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.sendButton, { 
-                  backgroundColor: colors.primary,
-                  shadowColor: colors.primary,
-                  shadowOpacity: isDark ? 0.3 : 0.2,
-                }, isProductOwner && [styles.disabledButton, { backgroundColor: colors.backgroundSecondary }]]}
-                onPress={() => !isProductOwner && sendMessageToSeller()}
-                disabled={isProductOwner || (!message.trim() && !selectedImage) || sendingMessage}
-              >
-                {sendingMessage ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Icon name="send" size={18} color="#FFFFFF" style={styles.sendIcon} />
-                    <Text style={styles.sendButtonText}>
-                      {isProductOwner ? 'Your Business' : 'Send Message'}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={[styles.modalButton, styles.sendButton, { 
+                backgroundColor: colors.primary,
+                shadowColor: colors.primary,
+                shadowOpacity: isDark ? 0.3 : 0.2,
+              }, isProductOwner && [styles.disabledButton, { backgroundColor: colors.backgroundSecondary }]]}
+              onPress={() => !isProductOwner && sendMessageToSeller(product?.owner)}
+              disabled={isProductOwner || (!message.trim() && !selectedImage) || sendingMessage}
+            >
+              {sendingMessage ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Icon name="send" size={18} color="#FFFFFF" style={styles.sendIcon} />
+                  <Text style={styles.sendButtonText}>
+                    {isProductOwner ? 'Your Business' : 'Send Message'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
       </View>
-    </Modal>
-  );
+    </KeyboardAvoidingView>
+  </Modal>
+);
 
   const renderImagePickerModal = () => (
     <Modal
@@ -936,7 +1050,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
         {renderProductInfo()}
         {renderBusinessInfo()}
         {renderQuickInquiries()}
-        <View style={{ height: 20 }} />
+        <View style={{ height: 70, marginBottom:70}} />
       </ScrollView>
 
       {!isProductOwner && (
@@ -951,10 +1065,22 @@ export default function ProductDetailsScreen({ navigation, route }) {
               shadowColor: colors.primary,
               shadowOpacity: isDark ? 0.4 : 0.3,
             }]}
-            onPress={() => setMessageModalVisible(true)}
+            onPress={() => {
+              const sellerId = business?.user || product?.owner;
+              const sellerName = product?.owner_name || business?.name || 'Seller';
+              console.log('Preparing to message seller:', { id: sellerId, name: sellerName });
+              sendMessageToSeller(sellerId);
+            }}
+            disabled={buttonLoading || sendingMessage}
           >
-            <Icon name="chat" size={20} color="#FFFFFF" style={styles.actionIcon} />
-            <Text style={styles.messageActionText}>Message Seller</Text>
+            {buttonLoading || sendingMessage ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Icon name="chat" size={20} color="#FFFFFF" style={styles.actionIcon} />
+                <Text style={styles.messageActionText}>Message Seller</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -978,14 +1104,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    // backgroundColor handled inline
     borderBottomWidth: 1,
-    // borderBottomColor handled inline
     elevation: 2,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
+  modalContent: {
+  flex: 1,
+  paddingHorizontal: 20,
+  paddingTop: 10,
+},
   backButton: {
     width: 40,
     height: 40,
@@ -1074,26 +1203,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   imageGalleryContainer: {
-    
     position: 'relative',
   },
   productImage: {
     width: width,
     height: 350,
     backgroundColor: '#F5F5F5',
-  },
-  imagePagination: {
-    flexDirection: 'row',
-    position: 'absolute',
-    bottom: 16,
-    alignSelf: 'center',
-  },
-  paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
-    // backgroundColor handled inline
   },
   placeholderImage: {
     alignItems: 'center',
@@ -1452,20 +1567,6 @@ const styles = StyleSheet.create({
   modalActions: {
     paddingHorizontal: 20,
     paddingBottom: 20,
-  },
-  attachButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    // backgroundColor handled inline
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    marginBottom: 16,
-  },
-  attachButtonText: {
-    fontSize: 14,
-    // color handled inline
-    marginLeft: 8,
   },
   sendButtons: {
     flexDirection: 'row',

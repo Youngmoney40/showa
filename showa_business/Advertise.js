@@ -60,6 +60,14 @@ export default function AdvertisementScreen({navigation}) {
     navigation.navigate('CreateAdForm');
   };
 
+const redirectback = () => {
+  console.log('✅ Back button clicked!');
+  navigation.goBack();
+}
+
+// In your header:
+
+
   const openLearnMore = () => {
     Linking.openURL('https://showapp.ng/');
   };
@@ -79,12 +87,18 @@ export default function AdvertisementScreen({navigation}) {
             styles.header,
             Platform.OS === 'android' && { paddingTop: StatusBar.currentHeight }
           ]}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+
+            <TouchableOpacity 
+              onPress={redirectback} 
+              style={styles.backButton}
+              activeOpacity={0.7} 
+            >
               <Icon name="arrow-left" size={22} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.headerText}>Advertise on Showa</Text>
             <Divider style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
           </View>
+          
           
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
             <View style={styles.body}>
@@ -206,13 +220,13 @@ export default function AdvertisementScreen({navigation}) {
                 </View>
               </View>
 
-              <TouchableOpacity 
+              {/* <TouchableOpacity 
                 style={styles.learnMoreButton}
                 onPress={openLearnMore}
               >
                 <Text style={styles.learnMoreText}>Learn more about advertising</Text>
                 <Icon name="open-in-new" size={16} color="#1976D2" />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </ScrollView>
 
             <View style={styles.modalFooter}>
@@ -378,6 +392,11 @@ const createStyles = (colors, isDark) => StyleSheet.create({
     borderWidth: isDark ? 1 : 0,
     borderColor: colors.border,
   },
+  backButton: {
+  padding: 12, 
+  marginRight: 10,
+  zIndex: 10,
+},
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -644,6 +644,8 @@ const UserProfile = ({ navigation, route }) => {
       return true;
     };
 
+
+
     return (
       <View style={[styles.followItem, { borderBottomColor: colors.border }]}>
         <TouchableOpacity 
@@ -651,7 +653,7 @@ const UserProfile = ({ navigation, route }) => {
           onPress={() => {
             if (type === 'followers') setFollowersModalVisible(false);
             if (type === 'following') setFollowingModalVisible(false);
-            navigation.push('UserProfile', { userId: item.id });
+            navigation.push('OtherUserProfile', { userId: item.id });
           }}
         >
           <Image
@@ -1076,8 +1078,8 @@ const UserProfile = ({ navigation, route }) => {
         </View>
         {catalogsCount > 0 && (
           <TouchableOpacity onPress={handleViewAllCatalogs} style={styles.viewAllButton}>
-            <Text style={[styles.viewAllText, { color: colors.primary }]}>View All</Text>
-            <Icon name="chevron-forward" size={16} color={colors.primary} />
+            <Text style={[styles.viewAllText, { color: colors.primary }]}>See All Bellow</Text>
+            <Icon name="chevron-down" size={16} color={colors.primary} />
           </TouchableOpacity>
         )}
       </View>

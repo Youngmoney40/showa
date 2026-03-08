@@ -322,7 +322,7 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
               {/* Header */}
               <View style={styles.headerContainer}>
                 <LottieView
-                  source={successAnimation}
+                  source='assets/animations/Sucess.json'
                   loop={true}
                   autoPlay={true}
                   style={styles.lottieAnimation}
@@ -626,8 +626,6 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
     </Modal>
   );
 };
-
-// Manager Component
 const EarningsSlideInManager = () => {
   const [showEarnings, setShowEarnings] = useState(false);
   const [hasShownToday, setHasShownToday] = useState(false);
@@ -635,15 +633,16 @@ const EarningsSlideInManager = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const token = AsyncStorage.getItem('userToken');
-    
-    if (!token) {
-      return;
-    }
-    
-    setIsLoggedIn(true);
-
-    const fetchUserData = async () => {
+  const initializeEarnings = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      console.log('token', token);
+      
+      if (!token) {
+        return;
+      }
+      
+      setIsLoggedIn(true);
       try {
         const response = await axios.get(`${API_ROUTE}/user/profile/`, {
           headers: { 
@@ -654,34 +653,45 @@ const EarningsSlideInManager = () => {
         setUserData(response.data);
       } catch (err) {
         console.error('Error fetching user data:', err);
+        if (err.response?.status === 401) {
+          await AsyncStorage.removeItem('userToken');
+          setIsLoggedIn(false);
+        }
       }
-    };
-    
-    fetchUserData();
 
-    const lastShownDate = AsyncStorage.getItem('earningsLastShown');
-    const today = new Date().toDateString();
-    
-    if (lastShownDate && lastShownDate === today) {
-      setHasShownToday(true);
-      return;
-    }
-
-    const timerDuration = 3600000; // 1 hour before trigger
-
-    const timer = setTimeout(() => {
-      const currentLastShown = AsyncStorage.getItem('earningsLastShown');
-      const currentToday = new Date().toDateString();
+      // Check last shown date
+      const lastShownDate = await AsyncStorage.getItem('earningsLastShown');
+      const today = new Date().toDateString();
       
-      if ((!currentLastShown || currentLastShown !== currentToday) && isLoggedIn) {
-        setShowEarnings(true);
-        AsyncStorage.setItem('earningsLastShown', currentToday);
+      if (lastShownDate && lastShownDate === today) {
+        setHasShownToday(true);
+        return;
       }
-    }, timerDuration);
 
-    return () => clearTimeout(timer);
-  }, [isLoggedIn]);
+      const timerDuration = 3600000; 
+      const timer = setTimeout(() => {
+        const checkAndShow = async () => {
+          const currentLastShown = await AsyncStorage.getItem('earningsLastShown');
+          const currentToday = new Date().toDateString();
+          const currentToken = await AsyncStorage.getItem('userToken');
+          
+          if ((!currentLastShown || currentLastShown !== currentToday) && currentToken) {
+            setShowEarnings(true);
+            await AsyncStorage.setItem('earningsLastShown', currentToday);
+          }
+        };
+        
+        checkAndShow();
+      }, timerDuration);
 
+      return () => clearTimeout(timer);
+    } catch (error) {
+      console.error('Error in initializeEarnings:', error);
+    }
+  };
+
+  initializeEarnings();
+}, []);
   const handleClose = () => {
     setShowEarnings(false);
   };

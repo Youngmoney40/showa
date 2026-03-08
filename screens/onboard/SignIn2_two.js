@@ -1000,7 +1000,7 @@ export default function EmailScreen({ navigation, route }) {
       console.error('Error sending OTP:', error);
       Alert.alert(
         'Sending Failed',
-        'Unable to send verification code. Please check your email address and try again.'
+        'Unable to send verification code. Please check your network and try again.'
       );
     } finally {
       setLoading(false);

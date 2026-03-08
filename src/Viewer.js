@@ -177,7 +177,7 @@ export default function Viewer({ route, navigation }) {
         ) : (
           <View style={[styles.videoStream, styles.placeholder]}>
             <Icon name="videocam-off" size={48} color="#666" />
-            <Text style={styles.placeholderText}>Connecting to stream...</Text>
+            <Text style={[styles.placeholderText,{marginTop:30}]}></Text>
           </View>
         )}
 
@@ -188,21 +188,21 @@ export default function Viewer({ route, navigation }) {
             onPress={() => navigation.goBack()}
           >
             <Icon name="chevron-back" size={24} color="white" />
-            <Text style={styles.backText}>Back</Text>
+            
           </TouchableOpacity>
           
           <View style={styles.streamInfo}>
             <Text style={styles.streamTitle} numberOfLines={1}>
-              Live Stream - {roomName}
+              Live Stream 
             </Text>
             <Text style={styles.viewerCount}>
               <Icon name="people" size={12} color="#FF3B30" /> 0 watching
             </Text>
           </View>
 
-          <TouchableOpacity style={styles.iconButton} onPress={hideUI}>
+          {/* <TouchableOpacity style={styles.iconButton} onPress={hideUI}>
             <Icon name="ellipsis-vertical" size={20} color="white" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </Animated.View>
 
         {/* Chat Sidebar */}
@@ -279,7 +279,7 @@ export default function Viewer({ route, navigation }) {
             </View>
           </View>
 
-          <View style={styles.bottomIcons}>
+          {/* <View style={styles.bottomIcons}>
             <TouchableOpacity 
               style={styles.iconButton} 
               onPress={toggleChat}
@@ -312,7 +312,7 @@ export default function Viewer({ route, navigation }) {
             <TouchableOpacity style={styles.iconButton}>
               <MaterialIcon name="more-vert" size={24} color="white" />
             </TouchableOpacity>
-          </View>
+          </View> */}
         </Animated.View>
 
         {/* Chat Toggle Button when hidden */}
@@ -333,7 +333,7 @@ export default function Viewer({ route, navigation }) {
         {!remoteStream && (
           <View style={styles.connectionStatus}>
             <Icon name="wifi" size={16} color="#FFA500" />
-            <Text style={styles.connectionText}>Connecting...</Text>
+            <Text style={styles.connectionText}>Connecting to stream...</Text>
           </View>
         )}
       </KeyboardAvoidingView>
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    minWidth: 80,
+    minWidth: 0,
   },
   backText: {
     color: 'white',

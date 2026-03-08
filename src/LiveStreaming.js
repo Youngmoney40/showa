@@ -92,6 +92,7 @@ const LivePage = ({ navigation }) => {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       
       const data = await response.json();
+      console.log('live-stream', data)
       setLiveStreams(data);
       setFilteredStreams(data);
 
@@ -182,158 +183,174 @@ const LivePage = ({ navigation }) => {
 
 
   const headerHeight = 200;
-  const StreamCard = React.memo(({ item, index }) => {
-    const scaleAnim = useRef(new Animated.Value(1)).current;
-    const glowAnim = useRef(new Animated.Value(0)).current;
+ const StreamCard = React.memo(({ item, index }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
 
-    const handlePressIn = useCallback(() => {
-      Animated.spring(scaleAnim, {
-        toValue: 0.97,
-        tension: 150,
-        friction: 3,
-        useNativeDriver: true,
-      }).start();
-    }, [scaleAnim]);
+  const handlePressIn = useCallback(() => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.97,
+      tension: 150,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
+  }, [scaleAnim]);
 
-    const handlePressOut = useCallback(() => {
-      Animated.spring(scaleAnim, {
+  const handlePressOut = useCallback(() => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      tension: 150,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
+  }, [scaleAnim]);
+
+  const startGlow = useCallback(() => {
+    Animated.sequence([
+      Animated.timing(glowAnim, {
         toValue: 1,
-        tension: 150,
-        friction: 3,
+        duration: 400,
         useNativeDriver: true,
-      }).start();
-    }, [scaleAnim]);
+      }),
+      Animated.timing(glowAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [glowAnim]);
 
-    const startGlow = useCallback(() => {
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, [glowAnim]);
+  useEffect(() => {
+    if (item.updated) {
+      startGlow();
+      setTimeout(() => {
+        setLiveStreams(prev => prev.map(stream =>
+          stream.stream_id === item.stream_id ? { ...stream, updated: false } : stream
+        ));
+      }, 800);
+    }
+  }, [item.updated, item.stream_id]);
 
-    useEffect(() => {
-      if (item.updated) {
-        startGlow();
-        setTimeout(() => {
-          setLiveStreams(prev => prev.map(stream =>
-            stream.stream_id === item.stream_id ? { ...stream, updated: false } : stream
-          ));
-        }, 800);
-      }
-    }, [item.updated, item.stream_id]);
+  const broadcasterInitial = item.broadcaster_name?.charAt(0).toUpperCase() || 'U';
 
-    const broadcasterInitial = item.broadcaster_name?.charAt(0).toUpperCase() || 'U';
+ 
+  const getSecureUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http://')) {
+      return url.replace('http://', 'https://');
+    }
+    return url;
+  };
 
-    return (
-      <Animated.View
-        style={[
-          styles.streamCard,
-          {
-            transform: [{ scale: scaleAnim }],
-            opacity: fadeAnim,
-            marginLeft: index % 2 === 0 ? 0 : 8,
-          },
-        ]}>
-        <TouchableOpacity
-          activeOpacity={0.95}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          onPress={() => navigateToViewer(item.broadcaster_name)}>
-          {/* Glow Effect */}
-          <Animated.View
-            style={[
-              styles.glowEffect,
-              {
-                opacity: glowAnim,
-              },
-            ]}
-          />
+  return (
+    <Animated.View
+      style={[
+        styles.streamCard,
+        {
+          transform: [{ scale: scaleAnim }],
+          opacity: fadeAnim,
+          marginLeft: index % 2 === 0 ? 0 : 8,
+        },
+      ]}>
+      <TouchableOpacity
+        activeOpacity={0.95}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={() => navigateToViewer(item.broadcaster_name)}>
+        
+        <Animated.View
+          style={[
+            styles.glowEffect,
+            {
+              opacity: glowAnim,
+            },
+          ]}
+        />
 
-          <View style={styles.cardContainer}>
-            {/* Stream Preview */}
-            <View style={styles.previewContainer}>
+        <View style={styles.cardContainer}>
+         
+          <View style={styles.previewContainer}>
+            {item.broadcaster_image ? (
+              <Image
+                source={{ uri: getSecureUrl(item.broadcaster_image) }}
+                style={styles.previewImage}
+                resizeMode="cover"
+              />
+            ) : (
               <LinearGradient
                 colors={[BRAND_COLORS.primary, BRAND_COLORS.primaryLight]}
                 style={styles.previewGradient}>
                 <Icon name="videocam" size={32} color="rgba(255,255,255,0.9)" />
               </LinearGradient>
-              
-              {/* Live Badge */}
-              <LinearGradient
-                colors={[BRAND_COLORS.danger, '#f62a2aff']}
-                style={styles.liveBadge}>
-                <View style={styles.livePulse} />
-                <Text style={styles.liveText}>LIVE</Text>
-              </LinearGradient>
+            )}
+            
+           
+            <LinearGradient
+              colors={[BRAND_COLORS.danger, '#f62a2aff']}
+              style={styles.liveBadge}>
+              <View style={styles.livePulse} />
+              <Text style={styles.liveText}>LIVE</Text>
+            </LinearGradient>
 
-              {/* Viewer Count */}
-              <View style={styles.viewerBadge}>
-                <Icon name="people" size={12} color="#FFFFFF" />
-                <Text style={styles.viewerCount}>
-                  {item.viewer_count ? formatNumber(item.viewer_count) : '0'}
+           
+            <View style={styles.viewerBadge}>
+              <Icon name="people" size={12} color="#FFFFFF" />
+              <Text style={styles.viewerCount}>
+                {item.viewer_count ? formatNumber(item.viewer_count) : '0'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Stream Info ===========================*/}
+          <View style={styles.streamInfo}>
+            <View style={styles.broadcasterRow}>
+              {item.broadcaster_image ? (
+                <Image
+                  source={{ uri: getSecureUrl(item.broadcaster_image) }}
+                  style={styles.broadcasterAvatar}
+                />
+              ) : (
+                <LinearGradient
+                  colors={[BRAND_COLORS.primary, BRAND_COLORS.secondary]}
+                  style={styles.broadcasterAvatar}>
+                  <Text style={styles.avatarText}>{broadcasterInitial}</Text>
+                </LinearGradient>
+              )}
+              <View style={styles.broadcasterInfo}>
+                <Text style={styles.broadcasterName} numberOfLines={1}>
+                  {item.broadcaster_name}
+                </Text>
+                <Text style={styles.streamTitle} numberOfLines={1}>
+                  {item.title || 'Just Chatting'}
                 </Text>
               </View>
             </View>
 
-            {/* Stream Info */}
-            <View style={styles.streamInfo}>
-              <View style={styles.broadcasterRow}>
-                {item.broadcaster_image ? (
-                  <Image
-                    source={{ uri: item.broadcaster_image }}
-                    style={styles.broadcasterAvatar}
-                  />
-                ) : (
-                  <LinearGradient
-                    colors={[BRAND_COLORS.primary, BRAND_COLORS.secondary]}
-                    style={styles.broadcasterAvatar}>
-                    <Text style={styles.avatarText}>{broadcasterInitial}</Text>
-                  </LinearGradient>
-                )}
-                <View style={styles.broadcasterInfo}>
-                  <Text style={styles.broadcasterName} numberOfLines={1}>
-                    {item.broadcaster_name}
-                  </Text>
-                  <Text style={styles.streamTitle} numberOfLines={1}>
-                    {item.title || 'Just Chatting'}
-                  </Text>
-                </View>
+            {/* Stats Row */}
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Icon name="heart" size={14} color={BRAND_COLORS.danger} />
+                <Text style={styles.statText}>
+                  {item.likes && (
+                    <Text>{formatNumber(item.likes)}</Text>
+                  )}
+                
+                </Text>
               </View>
-
-              {/* Stats Row */}
-              <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <Icon name="heart" size={14} color={BRAND_COLORS.danger} />
-                  <Text style={styles.statText}>
-                    {item.likes ? formatNumber(item.likes) : '0'}
-                  </Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Icon name="chatbubble" size={14} color={BRAND_COLORS.secondary} />
-                  <Text style={styles.statText}>
-                    {item.comments ? formatNumber(item.comments) : '0'}
-                  </Text>
-                </View>
-                <View style={[styles.statItem, styles.categoryBadge]}>
-                  <Text style={styles.categoryText}>
-                    {item.category || 'General'}
-                  </Text>
-                </View>
-              </View>
+              {/* <View style={styles.statItem}>
+                <Icon name="chatbubble" size={14} color={BRAND_COLORS.secondary} />
+                <Text style={styles.statText}>
+                  {item.comments ? formatNumber(item.comments) : '0'}
+                </Text>
+              </View> */}
+              
             </View>
           </View>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  });
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+});
 
   // Loading Skeleton
   const LoadingSkeleton = () => (
@@ -656,6 +673,15 @@ const styles = StyleSheet.create({
     color: BRAND_COLORS.textPrimary,
     letterSpacing: -0.3,
   },
+  previewImage: {
+  width: '100%',
+  height: '100%',
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+},
   streamCard: {
     flex: 1,
     marginBottom: 16,
@@ -691,13 +717,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BRAND_COLORS.surfaceLight,
   },
-  previewContainer: {
-    height: 160,
-    backgroundColor: BRAND_COLORS.primaryDark,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
+ previewContainer: {
+  height: 160,
+  backgroundColor: BRAND_COLORS.primaryDark,
+  justifyContent: 'center',
+  alignItems: 'center',
+  position: 'relative',
+  overflow: 'hidden',
+},
   previewGradient: {
     width: '100%',
     height: '100%',

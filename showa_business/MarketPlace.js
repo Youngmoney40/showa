@@ -657,7 +657,7 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2; 
 
 const categories = [
-  { name: 'All', icon: 'grid', color: '#4A90E2' },
+  { name: 'All', icon: 'th', color: '#4A90E2' },
   { name: 'Gadgets', icon: 'mobile', color: '#4A90E2' },
   { name: 'Fashion', icon: 'shopping-bag', color: '#FF6B6B' },
   { name: 'Electronics', icon: 'tv', color: '#45B7D1' },
@@ -789,9 +789,9 @@ export default function HomeScreen({ navigation }) {
             resizeMode="cover"
           />
         )}
-        <View style={[styles.favoriteButton, { backgroundColor: 'rgba(0,0,0,0.3)' }]}>
+        {/* <View style={[styles.favoriteButton, { backgroundColor: 'rgba(0,0,0,0.3)' }]}>
           <Icon name="favorite-border" size={20} color="#fff" />
-        </View>
+        </View> */}
       </View>
       <View style={styles.cardContent}>
         <Text style={[styles.cardPrice, { color: colors.text }]}>₦{item.price.toLocaleString()}</Text>
@@ -847,10 +847,10 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.card} />
       <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
-        {/* Header */}
+     
         <View style={{display:'flex',flexDirection:'row', alignContent:'center',alignItems:'center', justifyContent:'flex-start'}}>
            <TouchableOpacity onPress={()=>navigation.goBack()}>
-             <Icon name="arrow-back" size={28} color={colors.primary} />
+             <Icon style={{marginTop:20}} name="arrow-back" size={28} color={colors.primary} />
            </TouchableOpacity>
            
          <Text style={[styles.sectionHeader,{
@@ -904,7 +904,7 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Filter Status */}
+        {/* Filter Status ============*/}
         {(searchQuery !== '' || selectedCategory !== 'All') && (
           <View style={[styles.filterStatusContainer, { backgroundColor: colors.backgroundSecondary }]}>
             <Text style={[styles.filterStatusText, { color: colors.text }]}>
@@ -1032,7 +1032,7 @@ export default function HomeScreen({ navigation }) {
           />
         )}
 
-        {/* Daily Deals */}
+       
         <View style={styles.sectionHeaderContainer}>
           <Text style={[styles.sectionHeader, { color: colors.text }]}>
             Daily Deals {filteredListings.length !== listings.length && `(${dailyDeals.length})`}
@@ -1059,9 +1059,9 @@ export default function HomeScreen({ navigation }) {
                 }]}
                 onPress={() => navigation.navigate('ListingDetails', { item: item.id })}
               >
-                <View style={[styles.discountBadge, { backgroundColor: colors.primary }]}>
+                {/* <View style={[styles.discountBadge, { backgroundColor: colors.primary }]}>
                   <Text style={styles.discountText}>-20%</Text>
-                </View>
+                </View> */}
                 <Image 
                   source={{ uri: `${API_ROUTE_IMAGE}${item.images?.[0]?.image}` }} 
                   style={styles.horizontalImage}
@@ -1080,7 +1080,6 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-// Helper function to lighten colors
 function lightenColor(color, percent) {
   const num = parseInt(color.replace("#", ""), 16);
   const amt = Math.round(2.55 * percent);

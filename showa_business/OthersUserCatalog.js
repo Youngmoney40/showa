@@ -229,7 +229,7 @@ const handleCatalogPress = (catalog) => {
     );
   }
 
-  // Vertical list layout
+  
   return (
     <View style={[styles.container, containerStyle]}>
       {showHeader && renderBusinessHeader()}

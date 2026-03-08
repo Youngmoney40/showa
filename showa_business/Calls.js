@@ -363,7 +363,7 @@ const CallsScreen = ({ navigation }) => {
         >
           <Icon name="call" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={() =>
             navigation.navigate('VideoCalls', {
               targetUserId: receiverId,
@@ -376,7 +376,7 @@ const CallsScreen = ({ navigation }) => {
           style={styles.callButton}
         >
           <Icon name="videocam" size={24} color={colors.primary} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity
           onPress={() => deleteCallHistoryItem(item.id)}
@@ -761,3 +761,167 @@ const styles = StyleSheet.create({
 });
 
 export default CallsScreen;
+
+// import React, { useState } from 'react';
+// import {
+//   View,
+//   Text,
+//   StyleSheet,
+//   TouchableOpacity,
+//   Alert,
+//   ActivityIndicator,
+// } from 'react-native';
+// import Icon from 'react-native-vector-icons/MaterialIcons';
+
+// // ✅ NEW IMPORT (MIGRATED)
+// import { pick, keepLocalCopy } from '@react-native-documents/picker';
+
+// const FileUploadScreen = () => {
+//   const [selectedFile, setSelectedFile] = useState(null);
+//   const [loading, setLoading] = useState(false);
+
+//   const handlePickFile = async () => {
+//     try {
+//       // ✅ REPLACED pickSingle WITH pick()
+//       const [file] = await pick({
+//         type: ['*/*'], // allow all file types
+//       });
+
+//       if (!file) return;
+
+//       // ✅ REPLACED copyTo WITH keepLocalCopy
+//       const [localCopy] = await keepLocalCopy({
+//         files: [
+//           {
+//             uri: file.uri,
+//             fileName: file.name ?? 'uploaded_file',
+//           },
+//         ],
+//         destination: 'documentDirectory',
+//       });
+
+//       setSelectedFile({
+//         ...file,
+//         localUri: localCopy.uri,
+//       });
+
+//       Alert.alert('Success', 'File selected successfully!');
+//     } catch (error) {
+//       if (error?.message?.includes('cancel')) {
+//         console.log('User cancelled picker');
+//       } else {
+//         console.log('Pick error:', error);
+//         Alert.alert('Error', 'Something went wrong');
+//       }
+//     }
+//   };
+
+//   const handleUpload = async () => {
+//     if (!selectedFile) {
+//       Alert.alert('No File', 'Please select a file first.');
+//       return;
+//     }
+
+//     try {
+//       setLoading(true);
+
+//       const formData = new FormData();
+//       formData.append('file', {
+//         uri: selectedFile.localUri,
+//         type: selectedFile.type || 'application/octet-stream',
+//         name: selectedFile.name || 'upload.file',
+//       });
+
+//       const response = await fetch('https://your-api.com/upload/', {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'multipart/form-data',
+//         },
+//         body: formData,
+//       });
+
+//       const result = await response.json();
+
+//       setLoading(false);
+//       Alert.alert('Uploaded', 'File uploaded successfully!');
+//       console.log(result);
+//     } catch (error) {
+//       setLoading(false);
+//       console.log(error);
+//       Alert.alert('Upload Failed', 'Could not upload file.');
+//     }
+//   };
+
+//   return (
+//     <View style={styles.container}>
+//       <Icon name="cloud-upload" size={80} color="#4A90E2" />
+
+//       <Text style={styles.title}>Upload Document</Text>
+
+//       {selectedFile && (
+//         <Text style={styles.fileName}>
+//           Selected: {selectedFile.name}
+//         </Text>
+//       )}
+
+//       <TouchableOpacity style={styles.pickButton} onPress={handlePickFile}>
+//         <Icon name="attach-file" size={20} color="#fff" />
+//         <Text style={styles.buttonText}> Pick File</Text>
+//       </TouchableOpacity>
+
+//       <TouchableOpacity style={styles.uploadButton} onPress={handleUpload}>
+//         {loading ? (
+//           <ActivityIndicator color="#fff" />
+//         ) : (
+//           <>
+//             <Icon name="file-upload" size={20} color="#fff" />
+//             <Text style={styles.buttonText}> Upload File</Text>
+//           </>
+//         )}
+//       </TouchableOpacity>
+//     </View>
+//   );
+// };
+
+// export default FileUploadScreen;
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     padding: 20,
+//     backgroundColor: '#f4f6f8',
+//   },
+//   title: {
+//     fontSize: 22,
+//     fontWeight: 'bold',
+//     marginVertical: 15,
+//     color: '#333',
+//   },
+//   fileName: {
+//     marginVertical: 10,
+//     fontSize: 14,
+//     color: '#666',
+//   },
+//   pickButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: '#4A90E2',
+//     padding: 12,
+//     borderRadius: 8,
+//     marginTop: 15,
+//   },
+//   uploadButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: '#28A745',
+//     padding: 12,
+//     borderRadius: 8,
+//     marginTop: 15,
+//   },
+//   buttonText: {
+//     color: '#fff',
+//     fontWeight: 'bold',
+//   },
+// });

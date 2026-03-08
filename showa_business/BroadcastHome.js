@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import {
   StyleSheet,
@@ -14,6 +11,10 @@ import {
   RefreshControl,
   Image,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
   Share,
   StatusBar,
   ImageBackground,
@@ -47,12 +48,10 @@ dayjs.extend(relativeTime);
 
 const { width, height } = Dimensions.get('window');
 
-// Cache configuration ============
-
 
 
 // Cache configuration
-const POSTS_CACHE_KEY = 'posts_cache_v2'; // Change version to clear old cache
+const POSTS_CACHE_KEY = 'posts_cache_v2'; 
 const ALL_POSTS_CACHE_KEY = 'all_posts_cache_v2';
 const VIEWS_CACHE_KEY = 'post_views_cache';
 const SHARES_CACHE_KEY = 'post_shares_cache';
@@ -217,92 +216,128 @@ const ImageModal = memo(({ visible, post, onClose, onView, colors, isDark }) => 
           <Icon name="close" size={30} color="#fff" />
         </TouchableOpacity>
         
-        {images.length > 1 && (
-          <FlatList
-            ref={flatListRef}
-            data={images}
-            renderItem={renderImageItem}
-            keyExtractor={(item, index) => index.toString()}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(event) => {
-              const index = Math.floor(event.nativeEvent.contentOffset.x / width);
-              setCurrentIndex(index);
-            }}
-            getItemLayout={(data, index) => ({
-              length: width,
-              offset: width * index,
-              index,
-            })}
-            onScrollToIndexFailed={onScrollToIndexFailed}
-            initialScrollIndex={post.selectedIndex}
-          />
-        )}
-        
-        {images.length === 1 && (
-          <View style={styles.imageModalContent}>
-            {imageLoading && (
-              <View style={styles.modalLoadingOverlay}>
-                <View style={styles.modalCameraIconContainer}>
-                  <Ionicons name="camera" size={48} color="#fff" />
-                  <ActivityIndicator size="large" color="#fff" style={styles.modalLoadingIndicator} />
-                  <Text style={styles.modalLoadingText}>Loading image...</Text>
+        {/* Image Section - Takes 60% of screen */}
+        <View style={styles.imageModalImageSection}>
+          {images.length > 1 ? (
+            <FlatList
+              ref={flatListRef}
+              data={images}
+              renderItem={renderImageItem}
+              keyExtractor={(item, index) => index.toString()}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(event) => {
+                const index = Math.floor(event.nativeEvent.contentOffset.x / width);
+                setCurrentIndex(index);
+              }}
+              getItemLayout={(data, index) => ({
+                length: width,
+                offset: width * index,
+                index,
+              })}
+              onScrollToIndexFailed={onScrollToIndexFailed}
+              initialScrollIndex={post.selectedIndex}
+            />
+          ) : (
+            <View style={styles.imageModalContent}>
+              {imageLoading && (
+                <View style={styles.modalLoadingOverlay}>
+                  <View style={styles.modalCameraIconContainer}>
+                    <Ionicons name="camera" size={48} color="#fff" />
+                    <ActivityIndicator size="large" color="#fff" style={styles.modalLoadingIndicator} />
+                    <Text style={styles.modalLoadingText}>Loading image...</Text>
+                  </View>
                 </View>
-              </View>
-            )}
-            
-            <Image
-              source={{ uri: images[0].url }}
-              style={styles.fullSizeImage}
-              resizeMode="contain"
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-              fadeDuration={500}
-            />
-          </View>
-        )}
+              )}
+              
+              <Image
+                source={{ uri: images[0]?.url }}
+                style={styles.fullSizeImage}
+                resizeMode="contain"
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+                fadeDuration={500}
+              />
+            </View>
+          )}
+        </View>
         
-        <View style={[styles.imageModalInfo, { backgroundColor: colors.card }]}>
-          <View style={styles.imageModalUserInfo}>
-            <Image
-              source={
-                post.user_profile_picture
-                  ? { uri: post.user_profile_picture }
-                  : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-              }
-              style={styles.imageModalAvatar}
-            />
-            <View style={styles.imageModalUserText}>
-              <Text style={[styles.imageModalUsername, { color: colors.text }]}>
-                {post.username}
-              </Text>
-              <Text style={[styles.imageModalTime, { color: colors.textSecondary }]}>
-                {dayjs(post.created_at).fromNow()}
-              </Text>
-            </View>
-          </View>
-          
-          <Text style={[styles.imageModalCaption, { color: colors.text }]}>
-            {post.content}
-          </Text>
-          
-          <View style={styles.imageModalStats}>
-            <View style={styles.imageModalStat}>
-              <Ionicons name="eye-outline" size={16} color={colors.textSecondary} />
-              <Text style={[styles.imageModalStatText, { color: colors.textSecondary }]}>
-                {viewsCount} views
-              </Text>
-            </View>
-            {images.length > 1 && (
-              <View style={styles.imageModalStat}>
-                <Ionicons name="images-outline" size={16} color={colors.textSecondary} />
-                <Text style={[styles.imageModalStatText, { color: colors.textSecondary }]}>
-                  {images.length} photos
+        {/* Bottom Info Section - Scrollable and takes remaining space */}
+        <View style={[styles.imageModalInfoContainer, { backgroundColor: colors.card }]}>
+          <ScrollView 
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={styles.imageModalInfoScrollContent}
+            bounces={false}
+          >
+            {/* User Info */}
+            <View style={styles.imageModalUserInfo}>
+              <Image
+                source={
+                  post.user_profile_picture
+                    ? { uri: post.user_profile_picture }
+                    : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+                }
+                style={styles.imageModalAvatar}
+              />
+              <View style={styles.imageModalUserText}>
+                <Text style={[styles.imageModalUsername, { color: colors.text }]}>
+                  {post.username}
+                </Text>
+                <Text style={[styles.imageModalTime, { color: colors.textSecondary }]}>
+                  {dayjs(post.created_at).fromNow()}
                 </Text>
               </View>
-            )}
-          </View>
+            </View>
+            
+            {/* Caption */}
+            {post.content ? (
+              <Text style={[styles.imageModalCaption, { color: colors.text }]}>
+                {post.content}
+              </Text>
+            ) : null}
+            
+            {/* Stats */}
+            <View style={styles.imageModalStats}>
+              <View style={styles.imageModalStat}>
+                <Ionicons name="eye-outline" size={16} color={colors.textSecondary} />
+                <Text style={[styles.imageModalStatText, { color: colors.textSecondary }]}>
+                  {viewsCount} {viewsCount === 1 ? 'view' : 'views'}
+                </Text>
+              </View>
+              {images.length > 1 && (
+                <View style={styles.imageModalStat}>
+                  <Ionicons name="images-outline" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.imageModalStatText, { color: colors.textSecondary }]}>
+                    {images.length} {images.length === 1 ? 'photo' : 'photos'}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+           
+            <View style={styles.imageModalStats}>
+              {post.like_count > 0 && (
+                <View style={styles.imageModalStat}>
+                  <Ionicons name="heart-outline" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.imageModalStatText, { color: colors.textSecondary }]}>
+                    {post.like_count}
+                  </Text>
+                </View>
+              )}
+              {post.comment_count > 0 && (
+                <View style={styles.imageModalStat}>
+                  <Ionicons name="chatbubble-outline" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.imageModalStatText, { color: colors.textSecondary }]}>
+                    {post.comment_count}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+           
+            <View style={{ height: 20 }} />
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -667,7 +702,7 @@ const MemoizedTweetItem = memo(({
           >
             <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
             <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
-              {post.views || 0}
+              {post.views || ''}
             </Text>
           </TouchableOpacity>
         </View>
@@ -862,12 +897,143 @@ export default function HomePage({ navigation }) {
             const userId = userData?.id || 'unknown';
             const username = userData?.name || 'unknown';
             setUserName(username)
+            console.log('login_user_data', username)
           } catch (error) {
             console.error('Error fetching user data:', error);
           }
         }
         fetUserdata()
   },[])
+
+  // ==================== COMMENT DELETE ====================
+
+const handleDeleteComment = useCallback(async (commentId) => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    
+    Alert.alert(
+      'Delete Comment',
+      'Are you sure you want to delete this comment?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await axios.delete(
+                `${API_ROUTE}/comment/${commentId}/delete/`,
+                {
+                  headers: { Authorization: `Bearer ${token}` }
+                }
+              );
+              
+              if (response.data.success) {
+                // Update comments state - handle both top-level comments and replies
+                setPostsComment(prev => {
+                  // First, check if this is a top-level comment
+                  const isTopLevelComment = prev.some(c => c.id === commentId && !c.parent_comment);
+                  
+                  if (isTopLevelComment) {
+                    // If it's a top-level comment, remove it completely
+                    return prev.filter(c => c.id !== commentId);
+                  } else {
+                    // If it's a reply, find its parent and remove only that reply
+                    return prev.map(comment => {
+                      if (comment.replies && comment.replies.some(r => r.id === commentId)) {
+                        return {
+                          ...comment,
+                          replies: comment.replies.filter(r => r.id !== commentId),
+                          reply_count: (comment.reply_count || 0) - 1
+                        };
+                      }
+                      return comment;
+                    });
+                  }
+                });
+                
+                // Update comment count in posts
+                setPosts(prev => prev.map(post => 
+                  post.id === response.data.post_id 
+                    ? { ...post, comment_count: response.data.comment_count }
+                    : post
+                ));
+                
+                setAllPosts(prev => prev.map(post => 
+                  post.id === response.data.post_id 
+                    ? { ...post, comment_count: response.data.comment_count }
+                    : post
+                ));
+                
+                setSnackbarVisible(true);
+              }
+            } catch (error) {
+              console.error('Error deleting comment:', error);
+              Alert.alert('Error', error.response?.data?.error || 'Failed to delete comment');
+            }
+          }
+        }
+      ]
+    );
+  } catch (error) {
+    console.error('Error in delete confirmation:', error);
+  }
+}, []);
+
+const handleDeleteReply = useCallback(async (replyId, parentCommentId) => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    
+    Alert.alert(
+      'Delete Reply',
+      'Delete this reply?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await axios.delete(
+                `${API_ROUTE}/comment-reply/${replyId}/delete/`,
+                {
+                  headers: { Authorization: `Bearer ${token}` }
+                }
+              );
+              
+              if (response.data.success) {
+                // Update the comment's replies in state
+                setPostsComment(prev => prev.map(comment => {
+                  if (comment.id === parentCommentId) {
+                    // Filter out the deleted reply
+                    const updatedReplies = comment.replies 
+                      ? comment.replies.filter(r => r.id !== replyId)
+                      : [];
+                    
+                    return {
+                      ...comment,
+                      replies: updatedReplies,
+                      reply_count: (comment.reply_count || 0) - 1
+                    };
+                  }
+                  return comment;
+                }));
+                
+                setSnackbarVisible(true);
+              }
+            } catch (error) {
+              console.error('Error deleting reply:', error);
+              Alert.alert('Error', 'Failed to delete reply');
+            }
+          }
+        }
+      ]
+    );
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}, []);
+
 
   // ==================== COMMENT LIKES ====================
 
@@ -1003,7 +1169,7 @@ const handleReplyToComment = useCallback(async (commentId, replyText) => {
     }
   } catch (error) {
     console.error('Error replying to comment:', error);
-    // Remove optimistic reply on error
+   
     setPostsComment(prev => 
       prev.map(comment => 
         comment.id === commentId 
@@ -1031,7 +1197,9 @@ const fetchCommentsWithReplies = useCallback(async (postId) => {
     console.log('Comments with replies:', response.data);
 
     if (response.status === 200) {
-      setPostsComment(response.data.comments);
+      // Make sure we're storing the comments array correctly
+      const comments = response.data.comments || response.data;
+      setPostsComment(comments);
     }
   } catch (error) {
     console.error('Error fetching comments:', error);
@@ -1736,6 +1904,7 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSnackbarVisible(true);
+      console.log('save')
       setIsOptionsBottomSheetVisible(false);
     } catch (error) {
       console.error('Error bookmarking post:', error);
@@ -1812,76 +1981,113 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
     }
   }, [showSuggestedFriends, hasShownLiveModal, liveStreams.length]);
 
- const onCommentSubmitPost = useCallback(async () => {
+
+const onCommentSubmitPost = useCallback(async () => {
   if (!newComment.trim() || !selectedPostId) {
     return;
   }
 
   try {
     const token = await AsyncStorage.getItem('userToken');
-    if (!token) {
-      return;
-    }
+    if (!token) return;
 
     const userData = await AsyncStorage.getItem('userData');
     const parsedUser = userData ? JSON.parse(userData) : null;
     const loginUserId = parsedUser?.id;
+    const userName = parsedUser?.name || parsedUser?.username || 'User';
 
     if (!loginUserId) {
       console.warn('User ID not found in stored data.');
       return;
     }
 
-    // Store previous comment count for rollback
-    const previousPosts = [...posts];
-    const previousAllPosts = [...allposts];
+    // Determine if this is a reply
+    const isReply = replyToCommentId !== null;
+    const parentCommentId = replyToCommentId;
 
-    // Optimistic update
-    const tempCommentId = `temp_${Date.now()}`;
-    const newCommentData = {
-      id: tempCommentId,
-      post: selectedPostId,
-      user: {
-        id: loginUserId,
-        username: username,
-        image: userprofileimage,
-      },
+    // Optimistic update with complete user data
+    const tempId = `temp_${Date.now()}`;
+    const optimisticData = {
+      id: tempId,
       text: newComment.trim(),
       created_at: new Date().toISOString(),
-      image: userprofileimage,
-      replies: [],
+      user: {
+        id: loginUserId,
+        username: userName,
+        name: userName,
+        profile_picture: userprofileimage,
+        is_verified: false
+      },
+      user_details: {
+        id: loginUserId,
+        username: userName,
+        profile_picture: userprofileimage,
+        is_verified: false
+      },
+      username: userName,
+      like_count: 0,
+      is_liked: false,
+      replies: []
     };
 
-    // Update comment count optimistically
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === selectedPostId 
-          ? { ...post, comment_count: (post.comment_count || 0) + 1 } 
-          : post
-      )
-    );
-    
-    setAllPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === selectedPostId 
-          ? { ...post, comment_count: (post.comment_count || 0) + 1 } 
-          : post
-      )
-    );
+    if (isReply) {
+      // Add reply-specific data
+      optimisticData.parent = parentCommentId;
+      optimisticData.parent_comment_id = parentCommentId;
+    }
 
-    setPostsComment((prev) => {
-      const updatedComments = [newCommentData, ...prev.filter((c) => c.post === selectedPostId)];
-      return [...prev.filter((c) => c.post !== selectedPostId), ...updatedComments];
-    });
+    // Optimistic update
+    if (isReply) {
+      // For replies, add to parent comment's replies array
+      setPostsComment(prev => prev.map(comment => {
+        if (comment.id === parentCommentId) {
+          return {
+            ...comment,
+            replies: [...(comment.replies || []), optimisticData],
+            reply_count: (comment.reply_count || 0) + 1
+          };
+        }
+        return comment;
+      }));
+    } else {
+      // For top-level comments, add to main list
+      setPostsComment(prev => [optimisticData, ...prev.filter(c => c.post === selectedPostId)]);
+      
+      // Update comment count optimistically
+      setPosts(prev => prev.map(post => 
+        post.id === selectedPostId 
+          ? { ...post, comment_count: (post.comment_count || 0) + 1 } 
+          : post
+      ));
+      
+      setAllPosts(prev => prev.map(post => 
+        post.id === selectedPostId 
+          ? { ...post, comment_count: (post.comment_count || 0) + 1 } 
+          : post
+      ));
+    }
+
+    // Clear input and reply state
+    setNewComment('');
+    if (isReply) {
+      setReplyToCommentId(null);
+    }
+
+    // Make API call
+    const endpoint = isReply 
+      ? `${API_ROUTE}/comment/${parentCommentId}/reply/`
+      : `${API_ROUTE}/posts-comment/${selectedPostId}/comments/`;
 
     const response = await axios.post(
-      `${API_ROUTE}/posts-comment/${selectedPostId}/comments/`,
-      {
-        text: newComment.trim(),
-        post: selectedPostId,
-        user: loginUserId,
-        image: userprofileimage,
-      },
+      endpoint,
+      isReply 
+        ? { text: newComment.trim() }
+        : {
+            text: newComment.trim(),
+            post: selectedPostId,
+            user: loginUserId,
+            image: userprofileimage,
+          },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1890,66 +2096,77 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
       }
     );
 
-    console.log('Comment response:', response.data);
-
     if (response.status === 200 || response.status === 201) {
-      // Update with actual comment count from server
-      if (response.data.comment_count !== undefined) {
-        setPosts(prevPosts => 
-          prevPosts.map(post => 
+      // Replace optimistic data with actual data
+      if (isReply) {
+        setPostsComment(prev => prev.map(comment => {
+          if (comment.id === parentCommentId) {
+            return {
+              ...comment,
+              replies: comment.replies.map(reply => 
+                reply.id === tempId ? response.data : reply
+              )
+            };
+          }
+          return comment;
+        }));
+      } else {
+        setPostsComment(prev => prev.map(comment => 
+          comment.id === tempId ? response.data : comment
+        ));
+
+        // Update with actual comment count
+        if (response.data.comment_count !== undefined) {
+          setPosts(prev => prev.map(post => 
             post.id === selectedPostId 
               ? { ...post, comment_count: response.data.comment_count } 
               : post
-          )
-        );
-        
-        setAllPosts(prevPosts => 
-          prevPosts.map(post => 
+          ));
+          
+          setAllPosts(prev => prev.map(post => 
             post.id === selectedPostId 
               ? { ...post, comment_count: response.data.comment_count } 
               : post
-          )
-        );
+          ));
+        }
       }
 
-      setPostsComment((prev) => {
-        const updatedComments = prev.map((comment) =>
-          comment.id === tempCommentId
-            ? {
-                ...comment,
-                id: response.data.id,
-              }
-            : comment
-        );
-        return updatedComments;
-      });
-      
-      setNewComment('');
       setSnackbarVisible(true);
       
       // Show reward if any
       if (response.data.reward) {
         Alert.alert(
-          '💬 Comment Reward!',
-          `You earned ${response.data.reward.coins} coins for your comment!`,
+          '💬 Reward!',
+          `You earned ${response.data.reward.coins} coins!`,
           [{ text: 'OK' }]
         );
       }
-    } else {
-      // Rollback on error
-      setPosts(previousPosts);
-      setAllPosts(previousAllPosts);
-      setPostsComment((prev) => {
-        const updatedComments = prev.filter((comment) => comment.id !== tempCommentId);
-        return updatedComments;
-      });
     }
   } catch (error) {
-    console.error('Failed to post comment:', error);
-    // Refresh to get correct state
-    onRefresh();
+    console.error('Failed to post:', error);
+    // Remove optimistic data on error
+    if (replyToCommentId) {
+      setPostsComment(prev => prev.map(comment => {
+        if (comment.id === replyToCommentId) {
+          return {
+            ...comment,
+            replies: comment.replies?.filter(r => r.id.toString().startsWith('temp_'))
+          };
+        }
+        return comment;
+      }));
+    } else {
+      setPostsComment(prev => prev.filter(c => !c.id.toString().startsWith('temp_')));
+      // Revert comment count
+      setPosts(prev => prev.map(post => 
+        post.id === selectedPostId 
+          ? { ...post, comment_count: Math.max(0, (post.comment_count || 0) - 1) } 
+          : post
+      ));
+    }
+    Alert.alert('Error', 'Failed to post. Please try again.');
   }
-}, [newComment, selectedPostId, username, userprofileimage, posts, allposts]);
+}, [newComment, selectedPostId, replyToCommentId, username, userprofileimage, posts, allposts]);
 
   const onCommentSubmitReply = useCallback(async () => {
     if (!replyText.trim() || !selectedCommentId) {
@@ -2217,9 +2434,16 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
             <TouchableOpacity 
               key={liveStream.id}
               style={styles.liveStreamWrapper}
-              onPress={() => {
-                navigation.navigate('LiveStreamViewer', { streamId: liveStream.stream_id });
-              }}
+              // onPress={() => {
+                
+              //   navigation.navigate('LiveStreamViewer', { streamId: liveStream.stream_id });
+              // }}
+
+              onPress={() => navigation.navigate('Viewer', {
+                roomName: 'match-123',
+                    streamId: liveStream.stream_id,
+                      viewerId: 'viewer-1',
+              })}
             >
               <View style={styles.liveStreamContainer}>
                 <Image
@@ -2238,9 +2462,9 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
                   <Text style={styles.liveStreamName} numberOfLines={1}>
                     {liveStream.broadcaster_name}
                   </Text>
-                  <Text style={styles.liveStreamStats}>
+                  {/* <Text style={styles.liveStreamStats}>
                     {liveStream.likes} likes
-                  </Text>
+                  </Text> */}
                 </View>
               </View>
             </TouchableOpacity>
@@ -2360,19 +2584,65 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
     </Modal>
   );
 
-  const renderComment = useCallback(({ item }) => {
-  const replyCount = item.replies?.length || 0;
+ const renderComment = useCallback(({ item }) => {
+  // Helper function to extract user data from different comment structures
+  const extractUserData = (comment) => {
+    let userId = null;
+    let username = 'Anonymous';
+    let userProfilePic = null;
+    let isVerified = false;
+
+    // Try to get user from user object
+    if (comment.user && typeof comment.user === 'object') {
+      userId = comment.user.id || null;
+      username = comment.user.username || comment.user.name || 'Anonymous';
+      userProfilePic = comment.user.profile_picture || comment.user.image || null;
+      isVerified = comment.user.is_verified || false;
+    } 
+    // Try to get from user_details
+    else if (comment.user_details) {
+      userId = comment.user_details.id || null;
+      username = comment.user_details.username || comment.user_details.name || 'Anonymous';
+      userProfilePic = comment.user_details.profile_picture || null;
+      isVerified = comment.user_details.is_verified || false;
+    }
+    // Try to get from root level
+    else {
+      userId = comment.user_id || comment.userId || null;
+      username = comment.username || comment.userName || 'Anonymous';
+      userProfilePic = comment.user_profile_picture || comment.userImage || null;
+      isVerified = comment.is_verified || false;
+    }
+
+    return { userId, username, userProfilePic, isVerified };
+  };
+
+  const { 
+    userId: commentUserId, 
+    username: commentUsername, 
+    userProfilePic: commentUserProfilePic, 
+    isVerified: commentIsVerified 
+  } = extractUserData(item);
+
+  const isOwnComment = commentUserId === currentUserId;
   const isLiked = item.is_liked || false;
   const likeCount = item.like_count || 0;
+  const replyCount = item.reply_count || item.replies?.length || 0;
 
   return (
     <View style={styles.commentContainer}>
       <View style={styles.commentRow}>
-        <TouchableOpacity onPress={() => navigation.navigate('OtherUserProfile', { userId: item.user?.id })}>
+        {/* Avatar */}
+        <TouchableOpacity 
+          onPress={() => commentUserId && navigation.navigate('OtherUserProfile', { userId: commentUserId })}
+          disabled={!commentUserId}
+        >
           <Image
             source={
-              item.user?.profile_picture
-                ? { uri: item.user.profile_picture }
+              commentUserProfilePic
+                ? { uri: commentUserProfilePic.startsWith('http') 
+                    ? commentUserProfilePic 
+                    : `${API_ROUTE_IMAGE}${commentUserProfilePic}`}
                 : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
             }
             style={styles.commentAvatar}
@@ -2380,26 +2650,52 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
         </TouchableOpacity>
         
         <View style={styles.commentContent}>
+          {/* Comment Header */}
           <View style={styles.commentHeader}>
-            <TouchableOpacity onPress={() => navigation.navigate('OtherUserProfile', { userId: item.user?.id })}>
-              <Text style={[styles.commentUsername, { color: colors.text }]}>
-                {item.user?.username || item.username || 'Anonymous'}
+            <View style={styles.commentUserInfo}>
+              <TouchableOpacity 
+                onPress={() => commentUserId && navigation.navigate('OtherUserProfile', { userId: commentUserId })}
+                disabled={!commentUserId}
+              >
+                <Text style={[styles.commentUsername, { color: colors.text }]}>
+                  {commentUsername}
+                </Text>
+              </TouchableOpacity>
+              {commentIsVerified && (
+                <View style={styles.commentVerifiedBadge}>
+                  <Icontt name="check-bold" size={10} color="#fff" />
+                </View>
+              )}
+              <Text style={[styles.commentTimestamp, { color: colors.textSecondary }]}>
+                {dayjs(item.created_at).fromNow()}
               </Text>
-            </TouchableOpacity>
-            {item.user?.is_verified && (
-              <View style={styles.commentVerifiedBadge}>
-                <Icontt name="check-bold" size={10} color="#fff" />
-              </View>
+            </View>
+            
+            {/* Delete button for own comments/replies */}
+            {isOwnComment && (
+              <TouchableOpacity
+                onPress={() => {
+                  if (item.parent_comment_id || item.parent) {
+                    // This is a reply
+                    handleDeleteReply(item.id, item.parent_comment_id || item.parent);
+                  } else {
+                    // This is a top-level comment
+                    handleDeleteComment(item.id);
+                  }
+                }}
+                style={styles.commentDeleteButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="trash-outline" size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
             )}
           </View>
           
+          {/* Comment text */}
           <Text style={[styles.commentText, { color: colors.text }]}>{item.text}</Text>
           
+          {/* Comment Actions */}
           <View style={styles.commentActions}>
-            <Text style={[styles.commentTimestamp, { color: colors.textSecondary }]}>
-              {dayjs(item.created_at).fromNow()}
-            </Text>
-            
             <TouchableOpacity 
               style={styles.commentActionButton}
               onPress={() => handleCommentLike(item.id)}
@@ -2409,117 +2705,122 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
                 size={14} 
                 color={isLiked ? colors.primary : colors.textSecondary} 
               />
-              <Text style={[styles.commentActionText, { color: colors.textSecondary }]}>
-                {likeCount > 0 ? likeCount : ''}
-              </Text>
+              {likeCount > 0 && (
+                <Text style={[styles.commentActionText, { color: colors.textSecondary }]}>
+                  {likeCount}
+                </Text>
+              )}
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.commentActionButton}
               onPress={() => {
                 setReplyToCommentId(item.id);
-                setReplyText('');
+                setReplyText(`@${commentUsername} `); // Pre-fill with mention
               }}
             >
               <Ionicons name="chatbubble-outline" size={14} color={colors.textSecondary} />
-              <Text style={[styles.commentActionText, { color: colors.textSecondary }]}>Reply</Text>
+              <Text style={[styles.commentActionText, { color: colors.textSecondary }]}>
+                Reply
+              </Text>
             </TouchableOpacity>
           </View>
 
           {/* Replies */}
           {item.replies && item.replies.length > 0 && (
             <View style={styles.repliesWrapper}>
-              {item.replies.map((reply, index) => (
-                <View key={reply.id || index} style={styles.replyContainer}>
-                  <TouchableOpacity onPress={() => navigation.navigate('OtherUserProfile', { userId: reply.user?.id })}>
-                    <Image
-                      source={
-                        reply.user?.profile_picture
-                          ? { uri: reply.user.profile_picture }
-                          : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-                      }
-                      style={styles.replyAvatar}
-                    />
-                  </TouchableOpacity>
-                  
-                  <View style={styles.replyContent}>
-                    <View style={styles.replyHeader}>
-                      <TouchableOpacity onPress={() => navigation.navigate('OtherUserProfile', { userId: reply.user?.id })}>
-                        <Text style={[styles.replyUsername, { color: colors.text }]}>
-                          {reply.user?.username || reply.username || 'Anonymous'}
-                        </Text>
-                      </TouchableOpacity>
-                      {reply.user?.is_verified && (
-                        <View style={styles.replyVerifiedBadge}>
-                          <Icontt name="check-bold" size={8} color="#fff" />
+              {item.replies.map((reply, index) => {
+                const { 
+                  userId: replyUserId, 
+                  username: replyUsername, 
+                  userProfilePic: replyUserProfilePic, 
+                  isVerified: replyIsVerified 
+                } = extractUserData(reply);
+                
+                const isOwnReply = replyUserId === currentUserId;
+                
+                return (
+                  <View key={reply.id || `reply-${index}`} style={styles.replyContainer}>
+                    <TouchableOpacity 
+                      onPress={() => replyUserId && navigation.navigate('OtherUserProfile', { userId: replyUserId })}
+                      disabled={!replyUserId}
+                    >
+                      <Image
+                        source={
+                          replyUserProfilePic
+                            ? { uri: replyUserProfilePic.startsWith('http')
+                                ? replyUserProfilePic
+                                : `${API_ROUTE_IMAGE}${replyUserProfilePic}`}
+                            : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+                        }
+                        style={styles.replyAvatar}
+                      />
+                    </TouchableOpacity>
+                    
+                    <View style={[styles.replyContent, { backgroundColor: colors.backgroundSecondary }]}>
+                      <View style={styles.replyHeader}>
+                        <View style={styles.replyUserInfo}>
+                          <TouchableOpacity 
+                            onPress={() => replyUserId && navigation.navigate('OtherUserProfile', { userId: replyUserId })}
+                            disabled={!replyUserId}
+                          >
+                            <Text style={[styles.replyUsername, { color: colors.text }]}>
+                              {replyUsername}
+                            </Text>
+                          </TouchableOpacity>
+                          {replyIsVerified && (
+                            <View style={styles.replyVerifiedBadge}>
+                              <Icontt name="check-bold" size={8} color="#fff" />
+                            </View>
+                          )}
+                          <Text style={[styles.replyTimestamp, { color: colors.textSecondary }]}>
+                            {dayjs(reply.created_at).fromNow()}
+                          </Text>
                         </View>
-                      )}
-                    </View>
-                    
-                    <Text style={[styles.replyText, { color: colors.text }]}>{reply.text}</Text>
-                    
-                    <View style={styles.replyActions}>
-                      <Text style={[styles.replyTimestamp, { color: colors.textSecondary }]}>
-                        {dayjs(reply.created_at).fromNow()}
-                      </Text>
+                        
+                        {/* Delete button for reply */}
+                        {isOwnReply && (
+                          <TouchableOpacity
+                            onPress={() => handleDeleteReply(reply.id, item.id)}
+                            style={styles.replyDeleteButton}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <Ionicons name="trash-outline" size={12} color={colors.textSecondary} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
                       
-                      <TouchableOpacity 
-                        style={styles.replyActionButton}
-                        onPress={() => handleCommentLike(reply.id)}
-                      >
-                        <Ionicons 
-                          name={reply.is_liked ? "heart" : "heart-outline"} 
-                          size={12} 
-                          color={reply.is_liked ? colors.primary : colors.textSecondary} 
-                        />
-                        <Text style={[styles.replyActionText, { color: colors.textSecondary }]}>
-                          {reply.like_count || 0}
-                        </Text>
-                      </TouchableOpacity>
+                      <Text style={[styles.replyText, { color: colors.text }]}>{reply.text}</Text>
                     </View>
                   </View>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Reply Input */}
-          {replyToCommentId === item.id && (
-            <View style={[styles.replyInputContainer, { backgroundColor: colors.backgroundSecondary }]}>
-              <TextInput
-                placeholder={`Replying to ${item.user?.username || 'user'}...`}
-                placeholderTextColor={colors.textSecondary}
-                value={replyText}
-                onChangeText={setReplyText}
-                style={[styles.replyInput, { color: colors.text }]}
-                multiline
-                autoFocus
-              />
-              <View style={styles.replyInputActions}>
-                <TouchableOpacity
-                  onPress={() => setReplyToCommentId(null)}
-                  style={[styles.replyCancelButton]}
+                );
+              })}
+              
+              {/* Show more replies button if needed */}
+              {replyCount > 3 && (
+                <TouchableOpacity 
+                  onPress={() => {
+                    // You can implement pagination here
+                    console.log('Load more replies');
+                  }}
+                  style={styles.viewMoreReplies}
                 >
-                  <Text style={[styles.replyCancelText, { color: colors.textSecondary }]}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleReplyToComment(item.id, replyText)}
-                  style={[styles.replySendButton, { backgroundColor: colors.primary }]}
-                  disabled={!replyText.trim()}
-                >
-                  <Text style={[styles.replySendButtonText, !replyText.trim() && styles.replySendButtonDisabled]}>
-                    Reply
+                  <Text style={[styles.viewMoreRepliesText, { color: colors.primary }]}>
+                    View all {replyCount} replies
                   </Text>
                 </TouchableOpacity>
-              </View>
+              )}
             </View>
           )}
         </View>
       </View>
     </View>
   );
-}, [replyToCommentId, replyText, handleCommentLike, handleReplyToComment, colors, navigation]);
-  const renderSuggestedFriend = useCallback(({ item }) => (
+}, [replyToCommentId, replyText, handleCommentLike, handleReplyToComment, handleDeleteComment, handleDeleteReply, colors, navigation, currentUserId]); 
+
+
+
+const renderSuggestedFriend = useCallback(({ item }) => (
     <SuggestedFriendItem item={item} onFollow={handleFollow} colors={colors} />
   ), [handleFollow, colors]);
 
@@ -2732,7 +3033,7 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
         barStyle={isDark ? "light-content" : "dark-content"} 
       />
       
-      {/* Header */}
+    
       <View style={[styles.header, { 
         backgroundColor: colors.card,
         borderBottomColor: colors.border 
@@ -2779,7 +3080,7 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
         {renderContent()}
       </ScrollView>
 
-      {/* Floating Action Button */}
+      
       <TouchableOpacity 
         style={[styles.fab, { backgroundColor: colors.primary }]}
         onPress={() => navigation.navigate('CreateBroadcastPost')}
@@ -2787,7 +3088,7 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
         <Icon name="add" size={24} color="#fff" />
       </TouchableOpacity>
 
-      {/* Image Modal */}
+      
       <ImageModal
         visible={imageModalVisible}
         post={selectedImagePost}
@@ -2797,105 +3098,142 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
         isDark={isDark}
       />
 
-      {/* Live Modal */}
+     
       {renderLiveModal()}
 
-      {/* Viewers Modal */}
+      {/* Viewers Modal ===========================*/}
       {renderViewersModal()}
 
-      {/* Comment Modal */}
+      {/* Comment Modal ======================*/}
       <Modal visible={isBottomSheetVisible} animationType="slide" transparent>
-        <View style={styles.overlay}>
-          <View style={[styles.commentModal, { backgroundColor: colors.card }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Comments</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setIsBottomSheetVisible(false);
-                  setReplyToCommentId(null);
-                  setNewComment('');
-                }}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={26} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.modalContent}>
-              {postById && (
-                <View style={styles.postPreview}>
-                  <View style={styles.postHeader}>
-                    <Image
-                      source={
-                        postById.user_profile_picture
-                          ? { uri: postById.user_profile_picture }
-                          : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-                      }
-                      style={styles.postAvatar}
-                    />
-                    <View style={styles.postInfo}>
-                      <Text style={[styles.postUsername, { color: colors.text }]}>
-                        {postById.username || 'Anonymous'}
-                      </Text>
-                      <Text style={[styles.postTimestamp, { color: colors.textSecondary }]}>
-                        {dayjs(postById.created_at).fromNow()}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={[styles.postContent, { color: colors.text }]}>{postById.content}</Text>
-                  {postById.image && (
-                    <Image
-                      source={{ uri: `${API_ROUTE_IMAGE}${postById.image}` }}
-                      style={styles.postImagePreview}
-                      resizeMode="cover"
-                    />
-                  )}
-                </View>
-              )}
-
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-              {/* Comments List */}
-              <FlatList
-                data={commentsss.filter((c) => c.post === selectedPostId && !c.parent)}
-                keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-                scrollEnabled={false}
-                renderItem={renderComment}
-                ListEmptyComponent={
-                  <View style={styles.emptyComments}>
-                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                      No comments yet. Be the first to comment!
-                    </Text>
-                  </View>
-                }
-              />
-
-              {/* Comment Input */}
-              <View style={[styles.commentInputContainer, { borderTopColor: colors.border }]}>
-                <TextInput
-                  placeholder="Write a comment..."
-                  placeholderTextColor={colors.textSecondary}
-                  value={newComment}
-                  onChangeText={setNewComment}
-                  style={[styles.commentInput, { 
-                    backgroundColor: colors.backgroundSecondary,
-                    color: colors.text
-                  }]}
-                  multiline
-                />
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView 
+            style={styles.overlay}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+          >
+            <View style={[styles.commentModal, { backgroundColor: colors.card }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Comments</Text>
                 <TouchableOpacity
-                  onPress={onCommentSubmitPost}
-                  style={[styles.sendButton, { backgroundColor: colors.primary }]}
-                  disabled={!newComment.trim()}
+                  onPress={() => {
+                    setIsBottomSheetVisible(false);
+                    setReplyToCommentId(null);
+                    setNewComment('');
+                    Keyboard.dismiss();
+                  }}
+                  style={styles.closeButton}
                 >
-                  <Text style={[styles.sendButtonText, !newComment.trim() && styles.sendButtonDisabled]}>
-                    Post
-                  </Text>
+                  <Ionicons name="close" size={26} color={colors.text} />
                 </TouchableOpacity>
               </View>
-            </ScrollView>
-          </View>
-        </View>
+
+              <ScrollView 
+                contentContainerStyle={styles.modalContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                {postById && (
+                  <View style={styles.postPreview}>
+                    <View style={styles.postHeader}>
+                      <Image
+                        source={
+                          postById.user_profile_picture
+                            ? { uri: postById.user_profile_picture }
+                            : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+                        }
+                        style={styles.postAvatar}
+                      />
+                      <View style={styles.postInfo}>
+                        <Text style={[styles.postUsername, { color: colors.text }]}>
+                          {postById.username || 'Anonymous'}
+                        </Text>
+                        <Text style={[styles.postTimestamp, { color: colors.textSecondary }]}>
+                          {dayjs(postById.created_at).fromNow()}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.postContent, { color: colors.text }]}>{postById.content}</Text>
+                    {/* {postById.image && (
+                      <Image
+                        source={{ uri: `${API_ROUTE_IMAGE}${postById.image}` }}
+                        style={styles.postImagePreview}
+                        resizeMode="cover"
+                      />
+                    )} */}
+                  </View>
+                )}
+
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+                {/* Comments List */}
+                <FlatList
+                  data={commentsss.filter((c) => c.post === selectedPostId && !c.parent)}
+                  keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+                  scrollEnabled={false}
+                  renderItem={renderComment}
+                  ListEmptyComponent={
+                    <View style={styles.emptyComments}>
+                      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                        No comments yet. Be the first to comment!
+                      </Text>
+                    </View>
+                  }
+                />
+
+              
+                {Platform.OS === 'ios' && <View style={{ height: 20 }} />}
+              </ScrollView>
+
+            
+              <View style={[styles.commentInputContainer, { borderTopColor: colors.border }]}>
+                {/* {replyToCommentId && (
+                  <View style={[styles.replyingBar, { backgroundColor: colors.backgroundSecondary }]}>
+                    <Text style={[styles.replyingText, { color: colors.textSecondary }]}>
+                      Replying to comment
+                    </Text>
+                    <TouchableOpacity 
+                      onPress={() => {
+                        setReplyToCommentId(null);
+                        setNewComment('');
+                      }}
+                    >
+                      <Ionicons name="close" size={18} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                )} */}
+                
+                <View style={styles.inputRow}>
+                  <TextInput
+                    placeholder={replyToCommentId ? "Write a reply..." : "Write a comment..."}
+                    placeholderTextColor={colors.textSecondary}
+                    value={newComment}
+                    onChangeText={setNewComment}
+                    style={[styles.commentInput, { 
+                      backgroundColor: colors.backgroundSecondary,
+                      color: colors.text
+                    }]}
+                    multiline
+                    returnKeyType="default"
+                    blurOnSubmit={false}
+                  />
+                  <TouchableOpacity
+                    onPress={() => {
+                      onCommentSubmitPost();
+                      Keyboard.dismiss();
+                    }}
+                    style={[styles.sendButton, { backgroundColor: colors.primary }]}
+                    disabled={!newComment.trim()}
+                  >
+                    <Text style={[styles.sendButtonText, !newComment.trim() && styles.sendButtonDisabled]}>
+                      Post
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
       </Modal>
 
       {/* Reply Modal */}
@@ -3108,6 +3446,91 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
+  // Add these styles to your existing StyleSheet
+imageModalImageSection: {
+  height: '60%', // Takes 60% of screen height
+  width: '100%',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+imageModalInfoContainer: {
+  height: '40%', // Takes 40% of screen height
+  width: '100%',
+  borderTopLeftRadius: 20,
+  borderTopRightRadius: 20,
+  paddingTop: 16,
+  paddingHorizontal: 20,
+},
+
+imageModalInfoScrollContent: {
+  flexGrow: 1,
+  paddingBottom: 16,
+},
+
+// Update existing styles or add if missing
+imageModalUserInfo: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 12,
+},
+
+imageModalAvatar: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  marginRight: 12,
+},
+
+imageModalUserText: {
+  flex: 1,
+},
+
+imageModalUsername: {
+  fontSize: 16,
+  fontWeight: '600',
+  marginBottom: 2,
+},
+
+imageModalTime: {
+  fontSize: 12,
+},
+
+imageModalCaption: {
+  fontSize: 15,
+  lineHeight: 22,
+  marginBottom: 12,
+},
+
+imageModalStats: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginTop: 4,
+  flexWrap: 'wrap',
+},
+
+imageModalStat: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginRight: 20,
+  marginBottom: 8,
+},
+
+imageModalStatText: {
+  fontSize: 14,
+  marginLeft: 6,
+},
+fullSizeImage: {
+  width: '100%',
+  height: '100%',
+},
+
+modalImagePage: {
+  width: width,
+  height: '100%',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
   emptyStateText: {
     fontSize: 16,
     textAlign: 'center',
@@ -3302,6 +3725,144 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
     padding: 4,
   },
+  commentUserInfo: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  flex: 1,
+  flexWrap: 'wrap',
+},
+
+commentUserInfo: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  flex: 1,
+  flexWrap: 'wrap',
+  gap: 6,
+},
+
+commentTimestamp: {
+  fontSize: 11,
+  color: colors.textSecondary,
+},
+
+commentActions: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginTop: 8,
+  gap: 16,
+},
+
+commentActionButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 4,
+  paddingVertical: 2,
+  paddingHorizontal: 4,
+},
+
+commentActionText: {
+  fontSize: 12,
+  color: colors.textSecondary,
+},
+
+repliesWrapper: {
+  marginTop: 12,
+  paddingLeft: 12,
+  borderLeftWidth: 2,
+  borderLeftColor: colors.border,
+},
+
+replyContainer: {
+  flexDirection: 'row',
+  marginBottom: 12,
+},
+
+replyAvatar: {
+  width: 24,
+  height: 24,
+  borderRadius: 12,
+  marginRight: 8,
+},
+
+replyContent: {
+  flex: 1,
+  padding: 10,
+  borderRadius: 12,
+},
+
+replyHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: 4,
+},
+
+replyUserInfo: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  flex: 1,
+  flexWrap: 'wrap',
+  gap: 4,
+},
+
+replyUsername: {
+  fontWeight: '600',
+  fontSize: 12,
+},
+
+replyTimestamp: {
+  fontSize: 10,
+},
+
+replyText: {
+  fontSize: 12,
+  lineHeight: 16,
+},
+
+replyDeleteButton: {
+  padding: 4,
+  marginLeft: 4,
+},
+
+viewMoreReplies: {
+  marginTop: 8,
+  paddingVertical: 4,
+},
+
+viewMoreRepliesText: {
+  fontSize: 12,
+  fontWeight: '500',
+},
+
+commentDeleteButton: {
+  padding: 4,
+  marginLeft: 8,
+},
+
+commentHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: 4,
+  width: '100%',
+},
+
+commentDeleteButton: {
+  padding: 4,
+  marginLeft: 8,
+},
+
+commentActions: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginTop: 8,
+  gap: 16,
+  flexWrap: 'wrap',
+},
+commentContent: {
+  flex: 1,
+  marginLeft: 12,
+},
   fab: {
     position: "absolute",
     bottom: 30,
@@ -3620,6 +4181,66 @@ verifiedBadge: {
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
+  replyingBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  
+  replyingText: {
+    fontSize: 12,
+  },
+  
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    padding: 12,
+    gap: 8,
+  },
+  
+  commentInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    maxHeight: 100,
+    minHeight: 40,
+    textAlignVertical: 'center',
+  },
+  
+  sendButton: {
+    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 60,
+  },
+  
+  sendButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  
+  sendButtonDisabled: {
+    opacity: 0.5,
+  },
+  
+  emptyComments: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  
+  emptyText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
   statusNameText: {
     color: '#fff',
     fontSize: 12,
@@ -3715,6 +4336,16 @@ verifiedBadge: {
     alignItems: 'center',
     marginBottom: 15,
   },
+  commentDeleteButton: {
+  padding: 4,
+  marginLeft: 'auto',
+},
+commentHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 2,
+  flex: 1,
+},
   liveModalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -3897,7 +4528,7 @@ commentActions: {
   flexDirection: 'row',
   alignItems: 'center',
   marginTop: 6,
-  gap: 16,
+  gap: 20,
 },
 commentActionButton: {
   flexDirection: 'row',
@@ -4142,11 +4773,11 @@ replySendButtonDisabled: {
     marginTop: 4,
     lineHeight: 18,
   },
-  commentActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
+  // commentActions: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   marginTop: 8,
+  // },
   commentTimestamp: {
     fontSize: 12,
     marginRight: 16,
@@ -4174,7 +4805,7 @@ replySendButtonDisabled: {
   },
   replyContent: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: colors.background,
     padding: 8,
     borderRadius: 12,
   },

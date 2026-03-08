@@ -143,7 +143,7 @@ const ContactUsScreen = ({ navigation }) => {
             </View>
             <View style={styles.contactText}>
               <Text style={[styles.contactLabel, { color: colors.text }]}>Email Support</Text>
-              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>info@showapp.ng</Text>
+              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>info@showaapp.com</Text>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -173,7 +173,7 @@ const ContactUsScreen = ({ navigation }) => {
             </View>
             <View style={styles.contactText}>
               <Text style={[styles.contactLabel, { color: colors.text }]}>Visit Website</Text>
-              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>https://showa.ng</Text>
+              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>https://showaapp.com</Text>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -224,8 +224,8 @@ const ContactUsScreen = ({ navigation }) => {
             </View>
             <View style={styles.contactText}>
               <Text style={[styles.contactLabel, { color: colors.text }]}>Headquarters</Text>
-              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>128 Iyala Lagos State</Text>
-              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>Nigeria</Text>
+              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>Lagos State, Nigeria</Text>
+              
             </View>
           </View>
         </View>

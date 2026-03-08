@@ -414,10 +414,10 @@ const HomePageShortsRow = ({navigation}) => {
           {/* Only show minimal info */}
           <View style={styles.minimalInfo}>
             <View style={styles.minimalStats}>
-              <View style={styles.statItem}>
+              {/* <View style={styles.statItem}>
                 <Icon name="eye" size={12} color="rgba(255,255,255,0.9)" />
                 <Text style={styles.miniStatText}>{formatViews(item.views || 0)}</Text>
-              </View>
+              </View> */}
               {isPlaying && (
                 <View style={[styles.playingIndicator, { backgroundColor: colors.primary }]}>
                   <Text style={styles.playingText}>LIVE</Text>
@@ -514,18 +514,18 @@ const HomePageShortsRow = ({navigation}) => {
                 </View>
                 
                 {/* Volume control */}
-                <TouchableOpacity 
+                {/* <TouchableOpacity 
                   onPress={toggleModalMute}
                   style={[styles.volumeButton, { backgroundColor: colors.card + 'CC' }]}
                 >
                   <Icon name={isMuted ? "volume-x" : "volume-2"} size={20} color={colors.text} />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
             </View>
             
             {/* Right side - Content and reactions */}
-            <View style={[styles.rightPanel, { backgroundColor: colors.card }]}>
-              {/* User info */}
+            {/* <View style={[styles.rightPanel, { backgroundColor: colors.card }]}>
+             
               <View style={[styles.userInfo, { borderBottomColor: colors.border }]}>
                 <View style={styles.userHeader}>
                   <View style={styles.userDetails}>
@@ -569,7 +569,7 @@ const HomePageShortsRow = ({navigation}) => {
                   </TouchableOpacity>
                 </View>
                 
-                {/* Caption */}
+               
                 {selectedShort.caption && (
                   <Text style={[styles.caption, { color: colors.text }]}>
                     {selectedShort.caption}
@@ -577,10 +577,10 @@ const HomePageShortsRow = ({navigation}) => {
                 )}
               </View>
               
-              {/* Reactions section */}
+             
               <View style={[styles.reactions, { borderBottomColor: colors.border }]}>
                 <View style={styles.reactionsGrid}>
-                  {/* Like */}
+                 
                   <View style={styles.reactionItem}>
                     <TouchableOpacity
                       onPress={() => likeShort(selectedShort.id)}
@@ -600,7 +600,7 @@ const HomePageShortsRow = ({navigation}) => {
                     </Text>
                   </View>
 
-                  {/* Comment */}
+                 
                   <View style={styles.reactionItem}>
                     <TouchableOpacity
                       onPress={() => {
@@ -621,7 +621,7 @@ const HomePageShortsRow = ({navigation}) => {
 
                  
 
-                  {/* Share */}
+                 
                   <View style={styles.reactionItem}>
                     <TouchableOpacity
                       onPress={() => shareShort(selectedShort)}
@@ -640,7 +640,7 @@ const HomePageShortsRow = ({navigation}) => {
               </View>
               
               
-            </View>
+            </View> */}
           </View>
         </View>
       </Modal>
@@ -737,7 +737,7 @@ const HomePageShortsRow = ({navigation}) => {
                         </View>
                       </View>
                       
-                      <TouchableOpacity
+                      {/* <TouchableOpacity
                         onPress={() => likeComment(cmt.id)}
                         style={styles.commentLike}
                       >
@@ -749,7 +749,7 @@ const HomePageShortsRow = ({navigation}) => {
                         <Text style={[styles.commentLikeCount, { color: colors.textSecondary }]}>
                           {cmt.likes_count || 0}
                         </Text>
-                      </TouchableOpacity>
+                      </TouchableOpacity> */}
                     </View>
 
                     <Text style={[styles.commentText, { color: colors.text }]}>
@@ -901,10 +901,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   
-  // Video card container
   videoCardContainer: {
     width: width * 0.7,
-    height: 400,
+    height: 300,
     borderRadius: 16,
     borderWidth: 1,
     overflow: 'hidden',
@@ -922,8 +921,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 12,
   },
-  
-  // Video player
+
   videoPlayerContainer: {
     flex: 1,
     backgroundColor: '#000',

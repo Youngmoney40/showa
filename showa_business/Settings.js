@@ -26,7 +26,7 @@ const ContactProfile = ({ navigation }) => {
   const [profileData, setProfileData] = useState({});
   const [logo, setLogo] = useState(null);
 
-  // Log theme state for debugging
+  
   useEffect(() => {
     console.log('Theme state in ContactProfile:', { theme, isDark, isAuto });
   }, [theme, isDark, isAuto]);
@@ -40,10 +40,11 @@ const ContactProfile = ({ navigation }) => {
 
       if (response.status === 200 || response.status === 201) {
         const profile = Array.isArray(response.data) ? response.data[0] : response.data;
+        console.log('user_pixxxxxxxx',profile)
         setProfileData(profile);
         console.log('user business data', response.data);
-        if (profile.logo) {
-          setLogo({ uri: `${API_ROUTE_IMAGE}${profile.logo}` });
+        if (profile.image) {
+          setLogo({ uri: `${API_ROUTE_IMAGE}${profile.image}` });
         }
       }
     } catch (err) {
@@ -113,6 +114,7 @@ const ContactProfile = ({ navigation }) => {
       });
 
       if (response.status === 200) {
+
         setUserData(response.data);
         const baseURL = `${API_ROUTE_IMAGE}`;
         const profilePicture = response.data.profile_picture
@@ -137,7 +139,6 @@ const ContactProfile = ({ navigation }) => {
     fetchUserData();
   }, []);
 
-  // Create dynamic styles based on theme
   const dynamicStyles = {
     container: { flex: 1, backgroundColor: colors.background },
     header: { 

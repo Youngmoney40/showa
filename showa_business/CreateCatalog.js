@@ -251,14 +251,7 @@ export default function CatalogScreen({ navigation }) {
               maximumFractionDigits: 2
             })}
           </Text>
-          {item.sale_price && parseFloat(item.sale_price) > 0 ? (
-            <Text style={[styles.itemSalePrice, { color: colors.textSecondary }]}>
-              ₦{parseFloat(item.sale_price).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              })}
-            </Text>
-          ) : null}
+          
         </View>
       </View>
       <Icon name="chevron-right" size={24} color={colors.textSecondary} />

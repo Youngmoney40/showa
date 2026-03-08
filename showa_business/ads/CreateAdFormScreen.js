@@ -50,6 +50,17 @@ const AUDIENCE_INTERESTS = [
   'Music', 'Gaming', 'Business', 'Education', 'Sports'
 ];
 
+const NIGERIA_STATES = [
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+  'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa',
+  'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger',
+  'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
+  'FCT (Abuja)'
+].sort();
+
+
+const AGE_RANGES = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
+
 const BUDGET_PRESETS = [500, 1000, 5000, 10000];
 
 export default function CreateAdForm({ onClose, onAdCreated }) {
@@ -66,7 +77,7 @@ export default function CreateAdForm({ onClose, onAdCreated }) {
     profileImage: ''
   });
 
-  // Ad Content
+
   const [adContent, setAdContent] = useState({
     headline: '',
     description: '',
@@ -80,7 +91,7 @@ export default function CreateAdForm({ onClose, onAdCreated }) {
     customHashtag: ''
   });
 
-  // Ad Settings
+  
   const [adSettings, setAdSettings] = useState({
     objective: 'AWARENESS',
     cta: '',
@@ -93,17 +104,65 @@ export default function CreateAdForm({ onClose, onAdCreated }) {
     scheduledTimeString: ''
   });
 
-  // Targeting
   const [targeting, setTargeting] = useState({
     location: '',
-    locations: [],
-    ageRange: [18, 65],
+    locations: [], 
+    ageRanges: [], 
     gender: 'all',
     interests: [],
-    customInterest: ''
+    customInterest: '',
+    showLocationDropdown: false,
+    locationSearch: ''
   });
 
-  // Advanced Options
+  const toggleLocation = (state) => {
+    setTargeting(prev => {
+      const newLocations = prev.locations.includes(state)
+        ? prev.locations.filter(l => l !== state)
+        : [...prev.locations, state];
+      
+      return {
+        ...prev,
+        locations: newLocations,
+        location: newLocations.length > 0 ? newLocations.join(', ') : ''
+      };
+    });
+  };
+
+  const selectAllLocations = () => {
+  setTargeting(prev => ({
+    ...prev,
+    locations: NIGERIA_STATES,
+    location: 'All Nigeria',
+    showLocationDropdown: false
+  }));
+};
+
+const clearLocations = () => {
+  setTargeting(prev => ({
+    ...prev,
+    locations: [],
+    location: '',
+    showLocationDropdown: false
+  }));
+};
+
+const filteredStates = NIGERIA_STATES.filter(state =>
+  state.toLowerCase().includes(targeting.locationSearch.toLowerCase())
+);
+
+
+const toggleAgeRange = (range) => {
+  setTargeting(prev => ({
+    ...prev,
+    ageRanges: prev.ageRanges.includes(range)
+      ? prev.ageRanges.filter(r => r !== range)
+      : [...prev.ageRanges, range]
+  }));
+};
+
+
+
   const [advanced, setAdvanced] = useState({
     rewardEnabled: false,
     rewardAmount: '',
@@ -294,7 +353,7 @@ export default function CreateAdForm({ onClose, onAdCreated }) {
         });
       }
 
-      // Ad Settings
+     
       formData.append('objective', adSettings.objective);
       formData.append('cta', adSettings.cta || '');
 
@@ -313,10 +372,17 @@ export default function CreateAdForm({ onClose, onAdCreated }) {
         }
       }
 
-      // Targeting
+      
+      // formData.append('targeting', JSON.stringify({
+      //   location: targeting.location,
+      //   ageRange: targeting.ageRange,
+      //   gender: targeting.gender,
+      //   interests: targeting.interests
+      // }));
+
       formData.append('targeting', JSON.stringify({
-        location: targeting.location,
-        ageRange: targeting.ageRange,
+        locations: targeting.locations, //  locations array
+        ageRanges: targeting.ageRanges, //ageRanges array
         gender: targeting.gender,
         interests: targeting.interests
       }));
@@ -609,145 +675,292 @@ export default function CreateAdForm({ onClose, onAdCreated }) {
     </View>
   );
 
-  const renderAudienceStep = () => (
-    <View style={styles.stepContainer}>
-      <Text style={styles.stepTitle}>
-        <Icon name="target" size={24} color="#3b82f6" /> Target Audience
-      </Text>
+ const renderAudienceStep = () => (
+  <View style={styles.stepContainer}>
+    <Text style={styles.stepTitle}>
+      <Icon name="target" size={24} color="#3b82f6" /> Target Audience
+    </Text>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Location</Text>
-        <TextInput
-          style={styles.input}
-          value={targeting.location}
-          onChangeText={(text) => setTargeting({ ...targeting, location: text })}
-          placeholder="Country, city, or region"
-        />
-        <Text style={styles.hint}>Leave empty to target globally</Text>
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>
-          Age Range: {targeting.ageRange[0]} - {targeting.ageRange[1]} years
+    {/* Location Selection */}
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>Location</Text>
+      <TouchableOpacity
+        style={styles.locationSelector}
+        onPress={() => setTargeting(prev => ({ ...prev, showLocationDropdown: !prev.showLocationDropdown }))}
+      >
+        <Text style={[styles.locationText, !targeting.locations.length && styles.placeholderText]}>
+          {targeting.locations.length > 0 
+            ? targeting.locations.length === NIGERIA_STATES.length 
+              ? 'All Nigeria'
+              : `${targeting.locations.length} state${targeting.locations.length > 1 ? 's' : ''} selected`
+            : 'Select states to target'}
         </Text>
-        <View style={styles.ageRangeContainer}>
-          <Text style={styles.ageLabel}>Min: {targeting.ageRange[0]}</Text>
-          <View style={styles.sliderContainer}>
-            <View style={styles.sliderTrack} />
-          </View>
-          <View style={styles.ageButtons}>
-            {[18, 25, 35, 45, 55].map((age) => (
-              <TouchableOpacity
-                key={age}
-                style={styles.ageButton}
-                onPress={() => updateAgeRange(0, age)}
-              >
-                <Text style={styles.ageButtonText}>{age}</Text>
-              </TouchableOpacity>
+        <Icon name="chevron-down" size={20} color="#6b7280" />
+      </TouchableOpacity>
+
+      {/* Selected Locations Display */}
+      {targeting.locations.length > 0 && targeting.locations.length < NIGERIA_STATES.length && (
+        <View style={styles.selectedLocationsContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {targeting.locations.map((state, idx) => (
+              <View key={idx} style={styles.locationTag}>
+                <Text style={styles.locationTagText}>{state}</Text>
+                <TouchableOpacity onPress={() => toggleLocation(state)}>
+                  <Icon name="x" size={12} color="#1e40af" />
+                </TouchableOpacity>
+              </View>
             ))}
-          </View>
+          </ScrollView>
         </View>
-        <View style={styles.ageRangeContainer}>
-          <Text style={styles.ageLabel}>Max: {targeting.ageRange[1]}</Text>
-          <View style={styles.sliderContainer}>
-            <View style={styles.sliderTrack} />
-          </View>
-          <View style={styles.ageButtons}>
-            {[25, 35, 45, 55, 65].map((age) => (
-              <TouchableOpacity
-                key={age}
-                style={styles.ageButton}
-                onPress={() => updateAgeRange(1, age)}
-              >
-                <Text style={styles.ageButtonText}>{age}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+      )}
+
+      {/* Location Dropdown Modal */}
+      <Modal
+  visible={targeting.showLocationDropdown}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setTargeting(prev => ({ ...prev, showLocationDropdown: false }))}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.locationModalContent}>
+      <View style={styles.locationModalHeader}>
+        <Text style={styles.locationModalTitle}>Select States to Target</Text>
+        <TouchableOpacity 
+          onPress={() => setTargeting(prev => ({ ...prev, showLocationDropdown: false }))}
+          style={styles.closeButton}
+        >
+          <Icon name="x" size={26} color="#4b5563" />
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Gender</Text>
-        <View style={styles.genderContainer}>
-          {['all', 'male', 'female'].map((gender) => (
+      {/* Search Input */}
+      <View style={styles.searchContainer}>
+        <Icon name="search" size={20} color="#9ca3af" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search Nigerian states..."
+          placeholderTextColor="#9ca3af"
+          value={targeting.locationSearch}
+          onChangeText={(text) => setTargeting(prev => ({ ...prev, locationSearch: text }))}
+        />
+        {targeting.locationSearch.length > 0 && (
+          <TouchableOpacity 
+            onPress={() => setTargeting(prev => ({ ...prev, locationSearch: '' }))}
+            style={styles.clearSearchButton}
+          >
+            <Icon name="x-circle" size={18} color="#9ca3af" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Selection Stats */}
+      <View style={styles.selectionStats}>
+        <Text style={styles.selectionStatsText}>
+          {targeting.locations.length} of {NIGERIA_STATES.length} states selected
+        </Text>
+        {targeting.locations.length > 0 && (
+          <TouchableOpacity onPress={clearLocations}>
+            <Text style={styles.clearAllText}>Clear All</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Action Buttons */}
+      <View style={styles.locationActions}>
+        <TouchableOpacity style={styles.actionButton} onPress={selectAllLocations}>
+          <Icon name="map-pin" size={16} color="#2563eb" />
+          <Text style={styles.actionButtonText}>All States</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.clearButton]} 
+          onPress={clearLocations}
+        >
+          <Icon name="trash-2" size={16} color="#ef4444" />
+          <Text style={styles.clearButtonText}>Clear</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* States List */}
+      <ScrollView 
+        style={styles.statesList}
+        showsVerticalScrollIndicator={true}
+        contentContainerStyle={styles.statesListContent}
+      >
+        {filteredStates.length > 0 ? (
+          filteredStates.map((state) => (
             <TouchableOpacity
-              key={gender}
+              key={state}
               style={[
-                styles.genderButton,
-                targeting.gender === gender && styles.genderButtonActive
+                styles.stateItem,
+                targeting.locations.includes(state) && styles.stateItemSelected
               ]}
-              onPress={() => setTargeting({ ...targeting, gender })}
+              onPress={() => toggleLocation(state)}
+            >
+              <View style={styles.stateItemLeft}>
+                <Icon 
+                  name="map-pin" 
+                  size={16} 
+                  color={targeting.locations.includes(state) ? "#2563eb" : "#9ca3af"} 
+                  style={styles.stateIcon}
+                />
+                <Text style={[
+                  styles.stateItemText,
+                  targeting.locations.includes(state) && styles.stateItemTextSelected
+                ]}>
+                  {state}
+                </Text>
+              </View>
+              {targeting.locations.includes(state) && (
+                <View style={styles.checkmarkContainer}>
+                  <Icon name="check-circle" size={22} color="#2563eb" />
+                </View>
+              )}
+            </TouchableOpacity>
+          ))
+        ) : (
+          <View style={styles.noResultsContainer}>
+            <Icon name="search" size={40} color="#d1d5db" />
+            <Text style={styles.noResultsText}>No states found</Text>
+            <Text style={styles.noResultsSubtext}>Try a different search term</Text>
+          </View>
+        )}
+      </ScrollView>
+
+
+      {targeting.locations.length > 0 && (
+        <View style={styles.selectedSummary}>
+          <Text style={styles.selectedSummaryText}>
+            Selected: {targeting.locations.slice(0, 3).join(', ')}
+            {targeting.locations.length > 3 && ` +${targeting.locations.length - 3} more`}
+          </Text>
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={styles.doneButton}
+        onPress={() => setTargeting(prev => ({ ...prev, showLocationDropdown: false }))}
+      >
+        <Text style={styles.doneButtonText}>Done</Text>
+       
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
+    </View>
+
+  
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>
+        Age Range {targeting.ageRanges.length > 0 ? `(${targeting.ageRanges.join(', ')})` : ''}
+      </Text>
+      <View style={styles.ageRangesContainer}>
+        {AGE_RANGES.map((range) => (
+          <TouchableOpacity
+            key={range}
+            style={[
+              styles.ageRangeChip,
+              targeting.ageRanges.includes(range) && styles.ageRangeChipActive
+            ]}
+            onPress={() => toggleAgeRange(range)}
+          >
+            <Text style={[
+              styles.ageRangeChipText,
+              targeting.ageRanges.includes(range) && styles.ageRangeChipTextActive
+            ]}>
+              {range}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <Text style={styles.hint}>Select multiple age groups to target</Text>
+    </View>
+
+    
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>Gender</Text>
+      <View style={styles.genderContainer}>
+        {['all', 'male', 'female'].map((gender) => (
+          <TouchableOpacity
+            key={gender}
+            style={[
+              styles.genderButton,
+              targeting.gender === gender && styles.genderButtonActive
+            ]}
+            onPress={() => setTargeting({ ...targeting, gender })}
+          >
+            <Text style={[
+              styles.genderText,
+              targeting.gender === gender && styles.genderTextActive
+            ]}>
+              {gender === 'all' ? 'All' : gender.charAt(0).toUpperCase() + gender.slice(1)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+
+    {/* Interests Selection - Keep as is */}
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>Interests</Text>
+      <View style={styles.row}>
+        <TextInput
+          style={[styles.input, styles.flex1]}
+          value={targeting.customInterest}
+          onChangeText={(text) => setTargeting({ ...targeting, customInterest: text })}
+          placeholder="Add custom interest"
+          onSubmitEditing={addInterest}
+        />
+        <TouchableOpacity style={styles.addButton} onPress={addInterest}>
+          <Text style={styles.addButtonText}>Add</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.interestsScroll}>
+        <View style={styles.interestsContainer}>
+          {AUDIENCE_INTERESTS.map((interest) => (
+            <TouchableOpacity
+              key={interest}
+              style={[
+                styles.interestChip,
+                targeting.interests.includes(interest) && styles.interestChipActive
+              ]}
+              onPress={() => {
+                if (targeting.interests.includes(interest)) {
+                  removeInterest(interest);
+                } else {
+                  setTargeting({
+                    ...targeting,
+                    interests: [...targeting.interests, interest]
+                  });
+                }
+              }}
             >
               <Text style={[
-                styles.genderText,
-                targeting.gender === gender && styles.genderTextActive
+                styles.interestChipText,
+                targeting.interests.includes(interest) && styles.interestChipTextActive
               ]}>
-                {gender === 'all' ? 'All' : gender.charAt(0).toUpperCase() + gender.slice(1)}
+                {interest}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
-      </View>
+      </ScrollView>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Interests</Text>
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.flex1]}
-            value={targeting.customInterest}
-            onChangeText={(text) => setTargeting({ ...targeting, customInterest: text })}
-            placeholder="Add custom interest"
-            onSubmitEditing={addInterest}
-          />
-          <TouchableOpacity style={styles.addButton} onPress={addInterest}>
-            <Text style={styles.addButtonText}>Add</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.interestsScroll}>
-          <View style={styles.interestsContainer}>
-            {AUDIENCE_INTERESTS.map((interest) => (
-              <TouchableOpacity
-                key={interest}
-                style={[
-                  styles.interestChip,
-                  targeting.interests.includes(interest) && styles.interestChipActive
-                ]}
-                onPress={() => {
-                  if (targeting.interests.includes(interest)) {
-                    removeInterest(interest);
-                  } else {
-                    setTargeting({
-                      ...targeting,
-                      interests: [...targeting.interests, interest]
-                    });
-                  }
-                }}
-              >
-                <Text style={[
-                  styles.interestChipText,
-                  targeting.interests.includes(interest) && styles.interestChipTextActive
-                ]}>
-                  {interest}
-                </Text>
-              </TouchableOpacity>
-            ))}
+      <View style={styles.tagsContainer}>
+        {targeting.interests.map((interest, idx) => (
+          <View key={idx} style={styles.tag}>
+            <Text style={styles.tagText}>{interest}</Text>
+            <TouchableOpacity onPress={() => removeInterest(interest)}>
+              <Icon name="x" size={12} color="#1e40af" />
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-
-        <View style={styles.tagsContainer}>
-          {targeting.interests.map((interest, idx) => (
-            <View key={idx} style={styles.tag}>
-              <Text style={styles.tagText}>{interest}</Text>
-              <TouchableOpacity onPress={() => removeInterest(interest)}>
-                <Icon name="x" size={12} color="#1e40af" />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
+        ))}
       </View>
     </View>
-  );
+  </View>
+);
+
 
   const renderBudgetStep = () => (
     <View style={styles.stepContainer}>
@@ -1375,6 +1588,169 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  locationSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: '#fff',
+  },
+  locationText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  placeholderText: {
+    color: '#9ca3af',
+  },
+  selectedLocationsContainer: {
+    marginTop: 8,
+    paddingVertical: 4,
+  },
+  locationTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginRight: 6,
+    gap: 4,
+  },
+  locationTagText: {
+    fontSize: 11,
+    color: '#1e40af',
+  },
+  locationModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  locationModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  locationModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  locationActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 8,
+    backgroundColor: '#eff6ff',
+    borderRadius: 20,
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    color: '#2563eb',
+    fontWeight: '500',
+  },
+  clearButton: {
+    backgroundColor: '#fee2e2',
+  },
+  clearButtonText: {
+    color: '#ef4444',
+    fontWeight: '500',
+  },
+  statesList: {
+    maxHeight: 400,
+  },
+  stateItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  stateItemSelected: {
+    backgroundColor: '#eff6ff',
+  },
+  stateItemText: {
+    fontSize: 14,
+    color: '#4b5563',
+  },
+  stateItemTextSelected: {
+    color: '#2563eb',
+    fontWeight: '500',
+  },
+  doneButton: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 14,
+    borderRadius: 25,
+    alignItems: 'center',
+    marginTop: 16,
+    display:'flex',
+    flexDirection:'row',
+    justifyContent:'center',
+    alignSelf:'center',
+   
+    
+  },
+  doneButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+    textAlign:'center',
+    justifyContent:'center',
+    alignItems:'center',
+     width:'80%',
+  },
+  ageRangesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 4,
+  },
+  ageRangeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#fff',
+  },
+  ageRangeChipActive: {
+    borderColor: '#2563eb',
+    backgroundColor: '#2563eb',
+  },
+  ageRangeChipText: {
+    fontSize: 12,
+    color: '#4b5563',
+  },
+  ageRangeChipTextActive: {
+    color: '#fff',
+  },
   addButtonText: {
     color: '#4b5563',
     fontWeight: '600',
@@ -1543,6 +1919,72 @@ const styles = StyleSheet.create({
   ctaTextActive: {
     color: '#2563eb',
     fontWeight: '600',
+  },
+  closeButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+  },
+  selectionStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  selectionStatsText: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  clearAllText: {
+    fontSize: 13,
+    color: '#ef4444',
+    fontWeight: '600',
+  },
+  clearSearchButton: {
+    padding: 8,
+  },
+  statesListContent: {
+    paddingBottom: 10,
+  },
+  stateItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  stateIcon: {
+    width: 20,
+  },
+  checkmarkContainer: {
+    padding: 4,
+  },
+  noResultsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  noResultsText: {
+    fontSize: 16,
+    color: '#4b5563',
+    fontWeight: '600',
+    marginTop: 12,
+  },
+  noResultsSubtext: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginTop: 4,
+  },
+  selectedSummary: {
+    backgroundColor: '#f3f4f6',
+    padding: 12,
+    borderRadius: 12,
+    marginVertical: 10,
+  },
+  selectedSummaryText: {
+    fontSize: 13,
+    color: '#4b5563',
+    fontStyle: 'italic',
   },
   budgetInputContainer: {
     flexDirection: 'row',
@@ -1849,6 +2291,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+   
+  },
+  modalOverlaystate: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+   
   },
   modalContent: {
     width: '80%',

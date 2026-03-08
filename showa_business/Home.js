@@ -820,7 +820,7 @@ const HomeScreen = ({ navigation }) => {
       
       <View style={styles.sectionTabs}>
         <Text style={[styles.sectionTab, { fontWeight: '600', color: colors.primary }]}>
-          {searchQuery ? 'SEARCH RESULTS' : 'ALL CHATS'}
+          {searchQuery ? 'SEARCH RESULTS' : 'ALL BUSINESS CHATS'}
         </Text>
         {!searchQuery && <Text style={styles.sectionTab}></Text>}
       </View>

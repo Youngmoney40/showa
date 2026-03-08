@@ -98,7 +98,7 @@ export default function ChannelAdminScreen({ route, navigation }) {
       const parsed = json ? JSON.parse(json) : null;
 
       if (!token || !parsed?.id) {
-        //console.error('Missing token or userId');
+      
         return null;
       }
 
@@ -126,14 +126,14 @@ export default function ChannelAdminScreen({ route, navigation }) {
       const response = await axiosInstance.get(
         `/api/chat/?chat_type=channel&account_mode=${accountMode}&channel_slug=${channelSlug}`,
         { 
-          // headers: { Authorization: `Bearer ${token}` } 
+        
            headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
         }
       );
-     // console.log('Fetched channel messages:', response.data.results);
+     console.log('Fetched channel messages:', response.data.results);
 
       const messagesWithReactions = await Promise.all(
         response.data.results?.map(async (msg) => {
@@ -188,7 +188,7 @@ export default function ChannelAdminScreen({ route, navigation }) {
       try {
         const userId = await fetchUserData();
         if (!userId) {
-          //navigation.navigate('Login');
+       
           return;
         }
         const messages = await fetchChannelMessages(userId);
@@ -213,7 +213,7 @@ export default function ChannelAdminScreen({ route, navigation }) {
     const connectWebSocket = async () => {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
-        //navigation.navigate('Login');
+       
         return;
       }
 
@@ -302,7 +302,7 @@ export default function ChannelAdminScreen({ route, navigation }) {
     } catch (error) {
       setIsImageLoading(false);
      // console.error('Error picking image:', error.message);
-      alert('Failed to pick image');
+      Alert.alert('Failed to pick image');
     }
   };
 
@@ -342,89 +342,58 @@ export default function ChannelAdminScreen({ route, navigation }) {
     sendMessage('');
   };
 
-//   const sendMessage = async (caption = '') => {
-//     if (!caption.trim() && !selectedImage && !selectedFile && !selectedEmoji) return;
 
-//     const formData = new FormData();
-//     if (caption.trim()) formData.append('content', caption.trim());
-//     if (selectedEmoji) formData.append('emoji', selectedEmoji);
-//     if (selectedImage) {
-//       formData.append('image', {
-//         uri: selectedImage.uri,
-//         type: selectedImage.type,
-//         name: selectedImage.fileName || 'image.jpg',
-//       });
-//     }
-//     if (selectedFile) {
-//       formData.append('file', {
-//         uri: selectedFile.uri,
-//         type: selectedFile.type,
-//         name: selectedFile.name,
-//       });
-//     }
-//     formData.append('chat_type', 'channel');
-//     formData.append('account_mode', accountMode);
+// Fix the deleteChannel function
+const deleteChannel = async (channelSlugParam) => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    
+    const response = await axios.delete(
+      `${API_ROUTE}/channels/${channelSlugParam}/delete/`, 
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (response.status === 200) {
+      Alert.alert('Success', response.data.message);
+      // Navigate back or refresh channel list
+      navigation.goBack();
+    }
+  } catch (error) {
+    if (error.response) {
+      // Server responded with error
+      Alert.alert('Error', error.response.data.error || 'Failed to delete channel');
+    } else if (error.request) {
+      // Request made but no response
+      Alert.alert('Error', 'Network error. Please check your connection.');
+    } else {
+      // Something else happened
+      Alert.alert('Error', 'An unexpected error occurred');
+    }
+  }
+};
 
-//  formData.append('channel_slug', channelSlug);
 
-//     const tempId = 'm' + Date.now();
-//     if (caption.trim() || selectedImage || selectedFile || selectedEmoji) {
-//       setPendingMessages((prev) => [
-//         {
-//           id: tempId,
-//           user: username,
-//           user_id: userId,
-//           content: caption.trim() || null,
-//           image: selectedImage ? selectedImage.uri : null,
-//           file: selectedFile ? selectedFile.uri : null,
-//           emoji: selectedEmoji || null,
-//           is_deleted: false,
-//           timestamp: new Date().toISOString(),
-//           avatar: userProfileImage || null,
-//           is_channel_post: true,
-//           reactions: [],
-//           reaction_count: 0,
-//         },
-//         ...prev,
-//       ]);
-//     }
+const handleDeleteChannel = () => {
+  Alert.alert(
+    'Delete Channel',
+    'Are you sure you want to delete this channel? This action cannot be undone.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      { 
+        text: 'Delete', 
+        style: 'destructive',
+        onPress: () => deleteChannel(channelSlug) 
+      }
+    ]
+  );
+};
 
-//     try {
-//       const token = await AsyncStorage.getItem('userToken');
-//       if (!token) throw new Error('No access token');
 
-//       if (selectedImage || selectedFile || (!caption.trim() && !selectedEmoji)) {
-//         await axiosInstance.post(`/api/chat/`, formData, {
-//           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
-//         });
-//       } else if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-//         ws.current.send(JSON.stringify({
-//           action: 'send',
-//           content: caption.trim() || null,
-//           emoji: selectedEmoji || null,
-//           chat_type: 'channel',
-//           channel_slug: channelSlug,
-//           user_id: userId,
-//           account_mode: accountMode,
-//         }));
-//       } else {
-//         await axiosInstance.post(`/api/chat/`, formData, {
-//           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
-//         });
-//       }
-
-//       setText('');
-//       setSelectedImage(null);
-//       setSelectedFile(null);
-//       setSelectedEmoji(null);
-//       setImagePreviewModalVisible(false);
-//       setPendingMessages((prev) => prev.filter((msg) => msg.id !== tempId));
-//     } catch (error) {
-//       console.error('Error sending message:', error.response?.data || error.message);
-//       setPendingMessages((prev) => prev.filter((msg) => msg.id !== tempId));
-//       alert(`Failed to send message: ${error.message}`);
-//     }
-//   };
 const sendMessage = async (caption = '') => {
     if (!caption.trim() && !selectedImage && !selectedFile && !selectedEmoji) return;
 
@@ -478,7 +447,7 @@ const sendMessage = async (caption = '') => {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) throw new Error('No access token');
 
-      // Always use the API endpoint for both text and files
+     
       const response = await axiosInstance.post(`/api/chat/`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -525,36 +494,12 @@ const sendMessage = async (caption = '') => {
       ));
 
     } catch (error) {
-      //console.error('Error adding reaction:', error);
+     
       Alert.alert('Error', 'Failed to add reaction');
     }
   };
 
-  // const fetchChannelReaction = async (messageId) => {
-  //   try {
-  //     const token = await AsyncStorage.getItem('userToken');
-  //     if (!token) throw new Error('No access token');
-
-  //     const response = await axiosInstance.get(
-  //       `/get-messages-reactions/${messageId}/`,
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
-
-  //     setMessages(prev => prev.map(msg => 
-  //       msg.id === messageId.toString() ? {
-  //         ...msg,
-  //         reactions: Array.isArray(response.data) ? response.data : [],
-  //         reaction_count: Array.isArray(response.data) ? response.data.length : 0
-  //       } : msg
-  //     ));
-      
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error('Error fetching reaction:', error.response?.data || error.message);
-  //     Alert.alert('Error', 'Failed to fetch reaction');
-  //     return null;
-  //   }
-  // };
+ 
 
 const deleteMessage = async (messageId) => {
   try {
@@ -798,19 +743,18 @@ const deleteMessage = async (messageId) => {
                 >
                   <Text style={styles.menuItemText}>Share Channel</Text>
                 </TouchableOpacity>
-                <View style={styles.menuDivider} />
                 <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
-                    closeMenu();
-                    Alert.alert('Leave Room', 'Are you sure you want to leave this channel?', [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Leave', onPress: () => navigation.goBack() }
-                    ]);
+                   handleDeleteChannel();
+                   
                   }}
                 >
-                  <Text style={[styles.menuItemText, styles.leaveText]}>Leave Room</Text>
+                    <Text style={[styles.menuItemText, styles.leaveText]}>Delete Channel</Text>
+                 
                 </TouchableOpacity>
+                <View style={styles.menuDivider} />
+                
               </View>
             </View>
           </TouchableWithoutFeedback>

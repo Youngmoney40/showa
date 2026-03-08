@@ -1419,12 +1419,12 @@ import axios from "axios";
 import Icon from 'react-native-vector-icons/Ionicons';
 import { API_ROUTE, API_ROUTE_IMAGE } from "../api_routing/api";
 import colors from "../theme/colors";
-import { useTheme } from '../src/context/ThemeContext'; // Import ThemeContext
+import { useTheme } from '../src/context/ThemeContext'; 
 
 const { width } = Dimensions.get('window');
 
 export default function ListingDetails({ navigation, route }) {
-  const { colors: themeColors, isDark } = useTheme(); // Get theme colors
+  const { colors: themeColors, isDark } = useTheme(); 
   const { item } = route.params;
   const [listData, setListing] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -1573,7 +1573,7 @@ export default function ListingDetails({ navigation, route }) {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={themeColors.card} />
       
-      {/* Header */}
+      
       <View style={[styles.header, { backgroundColor: themeColors.card }]}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -1582,16 +1582,7 @@ export default function ListingDetails({ navigation, route }) {
           <Icon name="chevron-back" size={28} color={themeColors.text} />
         </TouchableOpacity>
         
-        <TouchableOpacity 
-          style={styles.favoriteHeaderButton}
-          onPress={toggleFavorite}
-        >
-          <Icon 
-            name={isFavorite ? "heart" : "heart-outline"} 
-            size={26} 
-            color={isFavorite ? themeColors.primary : themeColors.textSecondary} 
-          />
-        </TouchableOpacity>
+        
       </View>
 
       <ScrollView 
@@ -1599,7 +1590,7 @@ export default function ListingDetails({ navigation, route }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
       >
-        {/* Image Gallery */}
+       
         <View style={styles.imageGallery}>
           <Image 
             source={{ uri: getImageUrl(listData.images[activeImageIndex]?.image) }}
@@ -1607,7 +1598,7 @@ export default function ListingDetails({ navigation, route }) {
             resizeMode="cover"
           />
           
-          {/* Image Indicators */}
+         
           <View style={styles.imageIndicators}>
             {listData.images.map((_, index) => (
               <View 
@@ -1622,7 +1613,6 @@ export default function ListingDetails({ navigation, route }) {
           </View>
         </View>
 
-        {/* Thumbnail Scroll */}
         {listData.images.length > 1 && (
           <ScrollView 
             horizontal 
@@ -1650,7 +1640,7 @@ export default function ListingDetails({ navigation, route }) {
           </ScrollView>
         )}
 
-        {/* Product Info Card */}
+       
         <View style={[styles.productCard, { backgroundColor: themeColors.card }]}>
           <View style={styles.priceRow}>
             <Text style={[styles.price, { color: themeColors.text }]}>₦{parseFloat(listData.price).toLocaleString()}</Text>
@@ -1684,7 +1674,7 @@ export default function ListingDetails({ navigation, route }) {
           </View>
         </View>
 
-        {/* Description Card */}
+      
         <View style={[styles.sectionCard, { backgroundColor: themeColors.card }]}>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Description</Text>
           <Text style={[styles.description, { color: themeColors.textSecondary }]}>{listData.description}</Text>
@@ -1703,7 +1693,7 @@ export default function ListingDetails({ navigation, route }) {
           )}
         </View>
 
-        {/* Seller Info Card */}
+        {/* Seller Info Card =====================*/}
         {userData && (
           <View style={[styles.sellerCard, { backgroundColor: themeColors.card }]}>
             <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Seller Information</Text>
@@ -1725,13 +1715,8 @@ export default function ListingDetails({ navigation, route }) {
                     <Icon name="checkmark-circle" size={20} color={themeColors.success || '#4CAF50'} />
                   )}
                 </View>
-                
-                <Text style={[styles.sellerRating, { color: themeColors.textSecondary }]}>
-                  <Icon name="star" size={16} color="#FFC107" /> 
-                  {' Excellent in delivery'}
-                </Text>
-                
-                <View style={styles.verificationBadge}>
+
+                {/* <View style={styles.verificationBadge}>
                   <Icon 
                     name={userData.is_verified ? "shield-checkmark" : "shield-outline"} 
                     size={16} 
@@ -1740,11 +1725,16 @@ export default function ListingDetails({ navigation, route }) {
                   <Text style={[styles.verificationText, { color: themeColors.textSecondary }]}>
                     {userData.is_verified ? 'Verified Seller' : 'Not Verified'}
                   </Text>
-                </View>
+                </View> */}
+                 {userData.bio && (
+                    <Text style={[styles.sellerRating, { color: themeColors.textSecondary }]}>
+                    <Text>{userData.bio ? userData.bio.slice(0, 150) + '...' : ''}</Text></Text>
+                  )}
+
               </View>
             </View>
 
-            {/* Contact Buttons */}
+           
             <View style={styles.contactButtons}>
               <TouchableOpacity 
                 style={[styles.contactButton, { backgroundColor: themeColors.primary }]}
@@ -1763,7 +1753,7 @@ export default function ListingDetails({ navigation, route }) {
               </TouchableOpacity>
             </View>
 
-            {/* Location Section */}
+           
             {listData.location && (
               <View style={[styles.locationSection, { backgroundColor: themeColors.backgroundSecondary }]}>
                 <View style={styles.locationHeader}>
@@ -1784,7 +1774,7 @@ export default function ListingDetails({ navigation, route }) {
         )}
       </ScrollView>
 
-      {/* Fixed Action Button */}
+      
       <View style={[styles.actionBar, { 
         backgroundColor: themeColors.card,
         borderTopColor: themeColors.border 
@@ -1808,42 +1798,41 @@ export default function ListingDetails({ navigation, route }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    // backgroundColor handled inline
+   
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    // backgroundColor handled inline
+   
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    // color handled inline
+   
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    // backgroundColor handled inline
+    
     padding: 20,
   },
   errorTitle: {
     fontSize: 24,
     fontWeight: '700',
-    // color handled inline
+   
     marginTop: 16,
     marginBottom: 8,
   },
   errorText: {
     fontSize: 16,
-    // color handled inline
+   
     textAlign: 'center',
     marginBottom: 30,
   },
   retryButton: {
-    // backgroundColor handled inline
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -1858,7 +1847,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    // backgroundColor handled inline
+   
   },
   contentContainer: {
     paddingBottom: 100,
@@ -1869,7 +1858,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    // backgroundColor handled inline
+   
   },
   backButton: {
     padding: 8,
@@ -1885,7 +1874,6 @@ const styles = StyleSheet.create({
   mainImage: {
     width: '100%',
     height: '100%',
-    // backgroundColor handled inline
   },
   imageIndicators: {
     position: 'absolute',
@@ -1898,16 +1886,16 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    // backgroundColor handled inline
+    
     marginHorizontal: 4,
   },
   activeIndicator: {
-    // backgroundColor handled inline
+   
     width: 24,
   },
   thumbnailScroll: {
     marginTop: 12,
-    // backgroundColor handled inline
+   
   },
   thumbnailContainer: {
     paddingHorizontal: 16,
@@ -1918,19 +1906,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 10,
     borderWidth: 2,
-    // borderColor handled inline
     overflow: 'hidden',
   },
   activeThumbnail: {
-    // borderColor handled inline
+  
   },
   thumbnailImage: {
     width: '100%',
     height: '100%',
-    // backgroundColor handled inline
+   
   },
   productCard: {
-    // backgroundColor handled inline
     padding: 20,
     marginTop: 8,
   },
@@ -1943,10 +1929,9 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 32,
     fontWeight: '700',
-    // color handled inline
+   
   },
   categoryTag: {
-    // backgroundColor handled inline
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -1954,12 +1939,10 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 14,
     fontWeight: '600',
-    // color handled inline
   },
   title: {
     fontSize: 24,
     fontWeight: '600',
-    // color handled inline
     lineHeight: 32,
     marginBottom: 16,
   },
@@ -1978,28 +1961,24 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 15,
-    // color handled inline
+   
   },
   sectionCard: {
-    // backgroundColor handled inline
     padding: 20,
     marginTop: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    // color handled inline
     marginBottom: 16,
   },
   description: {
     fontSize: 16,
     lineHeight: 24,
-    // color handled inline
     marginBottom: 20,
   },
   divider: {
     height: 1,
-    // backgroundColor handled inline
     marginVertical: 20,
   },
   featureItem: {
@@ -2011,11 +1990,10 @@ const styles = StyleSheet.create({
   featureText: {
     fontSize: 16,
     lineHeight: 22,
-    // color handled inline
+
     flex: 1,
   },
   sellerCard: {
-    // backgroundColor handled inline
     padding: 20,
     marginTop: 8,
     marginBottom: 20,
@@ -2029,7 +2007,6 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    // backgroundColor handled inline
   },
   sellerInfo: {
     flex: 1,
@@ -2044,11 +2021,9 @@ const styles = StyleSheet.create({
   sellerName: {
     fontSize: 18,
     fontWeight: '600',
-    // color handled inline
   },
   sellerRating: {
     fontSize: 14,
-    // color handled inline
     marginBottom: 8,
   },
   verificationBadge: {
@@ -2058,7 +2033,6 @@ const styles = StyleSheet.create({
   },
   verificationText: {
     fontSize: 14,
-    // color handled inline
   },
   contactButtons: {
     flexDirection: 'row',
@@ -2067,7 +2041,7 @@ const styles = StyleSheet.create({
   },
   contactButton: {
     flex: 1,
-    // backgroundColor handled inline
+   
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2076,7 +2050,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   messageButton: {
-    // backgroundColor handled inline
+    
   },
   contactButtonText: {
     color: '#fff',
@@ -2084,7 +2058,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   locationSection: {
-    // backgroundColor handled inline
+    
     padding: 16,
     borderRadius: 12,
   },
@@ -2097,11 +2071,11 @@ const styles = StyleSheet.create({
   locationTitle: {
     fontSize: 16,
     fontWeight: '600',
-    // color handled inline
+  
   },
   locationText: {
     fontSize: 15,
-    // color handled inline
+   
     marginBottom: 12,
     lineHeight: 22,
   },
@@ -2114,21 +2088,21 @@ const styles = StyleSheet.create({
   mapButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    // color handled inline
+    
   },
   actionBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    // backgroundColor handled inline
+   
     padding: 16,
     borderTopWidth: 1,
-    // borderTopColor handled inline
+   
     paddingBottom: Platform.OS === 'ios' ? 34 : 16,
   },
   actionButton: {
-    // backgroundColor handled inline
+   
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
