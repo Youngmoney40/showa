@@ -14,77 +14,53 @@ jobs:
       GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=1g
 
     steps:
+
       # 1️⃣ Checkout repository
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node.js
-      - name: Setup Node.js
+      # 2️⃣ Setup Node
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'  # This caches ~/.npm
+          cache: npm
 
-      # 3️⃣ Cache node_modules
-      - name: Cache Node Modules
-        id: cache-node-modules
-        uses: actions/cache@v3
-        with:
-          path: |
-            node_modules
-            **/node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            node-modules-${{ runner.os }}-
-
-      # 4️⃣ Install dependencies (only if cache miss)
+      # 3️⃣ Install dependencies (always run)
       - name: Install dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
-      # 5️⃣ Set up keystore
-      - name: Set up keystore
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/showa-release-key.keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-
-      # 6️⃣ Setup Java
+      # 4️⃣ Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: 17
 
-      # 7️⃣ Cache Gradle dependencies + wrapper
+      # 5️⃣ Cache Gradle
       - name: Cache Gradle
         uses: actions/cache@v3
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-            !~/.gradle/caches/build-cache-*  # Exclude build cache if you want fresh builds
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/gradle.properties') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*','**/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      # 8️⃣ Cache React Native build artifacts (optional but helpful)
-      - name: Cache React Native Build
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ github.workspace }}/android/app/build
-            !${{ github.workspace }}/android/app/build/outputs  # Don't cache APK outputs
-          key: react-native-build-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/package-lock.json', 'index.js', '**/*.js', '**/*.json') }}
-          restore-keys: |
-            react-native-build-${{ runner.os }}-
+      # 6️⃣ Setup keystore
+      - name: Setup Keystore
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
-      # 9️⃣ Make gradlew executable
+      # 7️⃣ Make gradlew executable
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      # 🔟 Generate React Native JS bundle
-      - name: Bundle React Native JS
+      # 8️⃣ Generate React Native bundle
+      - name: Generate JS bundle
         run: |
           mkdir -p android/app/src/main/assets
           npx react-native bundle \
@@ -94,16 +70,23 @@ jobs:
             --bundle-output android/app/src/main/assets/index.android.bundle \
             --assets-dest android/app/src/main/res
 
-      # 1️⃣1️⃣ Build Release APK
-      - name: Build Release APK
+      # 9️⃣ Clean Gradle
+      - name: Clean Gradle
         run: |
           cd android
-          ./gradlew assembleRelease --no-daemon  # Removed clean for faster builds
+          ./gradlew clean
 
-      # 1️⃣2️⃣ Upload APK
-      - name: Upload APK
+      # 🔟 Build Release APK
+      - name: Build APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+
+      # 1️⃣1️⃣ Upload APK
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
