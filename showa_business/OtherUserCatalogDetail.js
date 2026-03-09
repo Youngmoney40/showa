@@ -47,8 +47,7 @@ export default function ProductDetailsScreen({ navigation, route }) {
   const [checkingOwnership, setCheckingOwnership] = useState(true);
   const [productImages, setProductImages] = useState([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [buttonLoading, setButtonLoading] = useState(false); // New state for button loading
-  
+  const [buttonLoading, setButtonLoading] = useState(false); 
   const [mainImage, setMainImage] = useState(null);
 
   useEffect(() => {

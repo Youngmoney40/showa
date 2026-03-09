@@ -2911,6 +2911,20 @@ const sendMessage = async (caption = '', emoji = null) => {
                 >
                   <Icon name="call" size={24} color="#FFF" />
                 </TouchableOpacity>
+                <TouchableOpacity
+                  
+                   onPress={() => navigation.navigate('VideoCalls', {
+                      targetUserId: receiverId,
+                      name: name,
+                      profile_image: profile_image,
+                      roomId: 'unique-room-id',
+                      isInitiator: true
+                    })}
+                  style={styles.headerButton}
+                >
+           
+                  <Icon name="videocam" size={24} color="#FFF" />
+                </TouchableOpacity>
               </View>
             </View>
           </LinearGradient>
