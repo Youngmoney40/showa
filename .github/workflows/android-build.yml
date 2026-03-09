@@ -11,7 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # Extra safety: force Gradle memory in CI
       GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=1g
 
     steps:
@@ -24,32 +23,67 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: 'npm'  # This caches ~/.npm
 
-       # 3 initialize keystore
+      # 3️⃣ Cache node_modules
+      - name: Cache Node Modules
+        id: cache-node-modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            **/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
+      # 4️⃣ Install dependencies (only if cache miss)
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      # 5️⃣ Set up keystore
       - name: Set up keystore
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/showa-release-key.keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
-
-      # 3️⃣ Install JS dependencies
-      - name: Install dependencies
-        run: npm install
-
-      # 4️⃣ Setup Java (required for Android)
+      # 6️⃣ Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: 17
 
-      # 5️⃣ Ensure gradlew is executable
+      # 7️⃣ Cache Gradle dependencies + wrapper
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            !~/.gradle/caches/build-cache-*  # Exclude build cache if you want fresh builds
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/gradle.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      # 8️⃣ Cache React Native build artifacts (optional but helpful)
+      - name: Cache React Native Build
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/android/app/build
+            !${{ github.workspace }}/android/app/build/outputs  # Don't cache APK outputs
+          key: react-native-build-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/package-lock.json', 'index.js', '**/*.js', '**/*.json') }}
+          restore-keys: |
+            react-native-build-${{ runner.os }}-
+
+      # 9️⃣ Make gradlew executable
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      # 6️⃣ Generate React Native JS bundle (CRITICAL)
+      # 🔟 Generate React Native JS bundle
       - name: Bundle React Native JS
         run: |
           mkdir -p android/app/src/main/assets
@@ -60,30 +94,16 @@ jobs:
             --bundle-output android/app/src/main/assets/index.android.bundle \
             --assets-dest android/app/src/main/res
 
-       
-      # 7️⃣ Build Release APK
-      # - name: Build Release Bundle (AAB)
-      #   run: |
-      #     cd android
-      #     ./gradlew clean
-      #     ./gradlew bundleRelease --no-daemon
-
+      # 1️⃣1️⃣ Build Release APK
       - name: Build Release APK
         run: |
           cd android
-          ./gradlew clean
-          ./gradlew assembleRelease --no-daemon
-      
+          ./gradlew assembleRelease --no-daemon  # Removed clean for faster builds
 
-      # 8️⃣ Upload AAB artifact
-      # - name: Upload Release Bundle
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: app-release-aab
-      #     path: android/app/build/outputs/bundle/release/app-release.aab
-
+      # 1️⃣2️⃣ Upload APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
