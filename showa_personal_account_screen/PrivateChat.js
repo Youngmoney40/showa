@@ -2937,19 +2937,19 @@ const sendMessage = async (caption = '', emoji = null) => {
           )}
 
           <FlatList
-  ref={flatListRef}
-  data={messages}
-  renderItem={renderMessage}
-  keyExtractor={(item) => item.id.toString()}
-  inverted
-  contentContainerStyle={styles.chatContent}
-  keyboardShouldPersistTaps="handled"
-  scrollEnabled={true}
-  initialNumToRender={15}
-  maxToRenderPerBatch={10}
-  windowSize={5}
-  removeClippedSubviews={true}
-/>
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id.toString()}
+            inverted
+            contentContainerStyle={styles.chatContent}
+            keyboardShouldPersistTaps="handled"
+            scrollEnabled={true}
+            initialNumToRender={15}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            removeClippedSubviews={true}
+          />
 
           {replyToMessage && (
             <View style={styles.replyPreview}>
