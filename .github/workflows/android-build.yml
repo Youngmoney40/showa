@@ -11,46 +11,56 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # Extra safety: force Gradle memory in CI
       GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=1g
 
     steps:
+
       # 1️⃣ Checkout repository
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node.js
-      - name: Setup Node.js
+      # 2️⃣ Setup Node
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: npm
 
-       # 3 initialize keystore
-      - name: Set up keystore
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/showa-release-key.keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-
-
-      # 3️⃣ Install JS dependencies
+      # 3️⃣ Install dependencies (always run)
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      # 4️⃣ Setup Java (required for Android)
+      # 4️⃣ Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: 17
 
-      # 5️⃣ Ensure gradlew is executable
+      # 5️⃣ Cache Gradle
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*','**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      # 6️⃣ Setup keystore
+      - name: Setup Keystore
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      # 7️⃣ Make gradlew executable
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      # 6️⃣ Generate React Native JS bundle (CRITICAL)
-      - name: Bundle React Native JS
+      # 8️⃣ Generate React Native bundle
+      - name: Generate JS bundle
         run: |
           mkdir -p android/app/src/main/assets
           npx react-native bundle \
@@ -60,30 +70,23 @@ jobs:
             --bundle-output android/app/src/main/assets/index.android.bundle \
             --assets-dest android/app/src/main/res
 
-       
-      # 7️⃣ Build Release APK
-      # - name: Build Release Bundle (AAB)
-      #   run: |
-      #     cd android
-      #     ./gradlew clean
-      #     ./gradlew bundleRelease --no-daemon
-
-      - name: Build Release APK
+      # 9️⃣ Clean Gradle
+      - name: Clean Gradle
         run: |
           cd android
           ./gradlew clean
-          ./gradlew assembleRelease --no-daemon
-      
 
-      # 8️⃣ Upload AAB artifact
-      # - name: Upload Release Bundle
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: app-release-aab
-      #     path: android/app/build/outputs/bundle/release/app-release.aab
+      # 🔟 Build Release APK
+      - name: Build APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
 
-      - name: Upload APK
+
+      # 1️⃣1️⃣ Upload APK
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
