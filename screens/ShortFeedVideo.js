@@ -24,6 +24,7 @@ import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../src/context/ThemeContext';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
+import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,7 +32,7 @@ const API_URL = API_ROUTE;
 const PLAYBACK_RATE = 1;
 
 // Video Player Component
-const VideoPlayer = ({ uri, isPlaying, onPress, style }) => {
+const VideoPlayer = ({ uri, isPlaying, onPress, style, navigation }) => {
   const videoRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -91,7 +92,8 @@ const VideoPlayer = ({ uri, isPlaying, onPress, style }) => {
 };
 
 // Main HomePage Component
-const HomePageShortsRow = ({navigation}) => {
+const HomePageShortsRow = () => {
+   const navigation = useNavigation();
   const { colors, isDark } = useTheme();
   const [shorts, setShorts] = useState([]);
   const [selectedShort, setSelectedShort] = useState(null);
@@ -104,6 +106,7 @@ const HomePageShortsRow = ({navigation}) => {
   const [isMuted, setIsMuted] = useState(false);
   const [playingVideoId, setPlayingVideoId] = useState(null);
   const [viewableItems, setViewableItems] = useState([]);
+ 
   
   const scrollViewRef = useRef(null);
   const modalVideoRef = useRef(null);
@@ -112,7 +115,7 @@ const HomePageShortsRow = ({navigation}) => {
     minimumViewTime: 500,
   });
 
-  // Handle viewable items change
+
   const onViewableItemsChanged = useCallback(({ viewableItems: items }) => {
     if (items.length > 0) {
       // Get the most centered item
@@ -131,7 +134,7 @@ const HomePageShortsRow = ({navigation}) => {
     { viewabilityConfig: viewabilityConfig.current, onViewableItemsChanged }
   ]);
 
-  // Get auth header
+
   const getAuthHeader = async () => {
     const token = await AsyncStorage.getItem('userToken');
     if (!token) throw new Error('No access token found');
@@ -507,140 +510,17 @@ const HomePageShortsRow = ({navigation}) => {
               />
               
               {/* Video controls */}
-              <View style={styles.videoControls}>
-                {/* Progress bar */}
+              {/* <View style={styles.videoControls}>
+              
                 <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
                   <View style={[styles.progressFill, { backgroundColor: colors.primary }]} />
                 </View>
                 
-                {/* Volume control */}
-                {/* <TouchableOpacity 
-                  onPress={toggleModalMute}
-                  style={[styles.volumeButton, { backgroundColor: colors.card + 'CC' }]}
-                >
-                  <Icon name={isMuted ? "volume-x" : "volume-2"} size={20} color={colors.text} />
-                </TouchableOpacity> */}
-              </View>
+                
+              </View> */}
             </View>
             
-            {/* Right side - Content and reactions */}
-            {/* <View style={[styles.rightPanel, { backgroundColor: colors.card }]}>
-             
-              <View style={[styles.userInfo, { borderBottomColor: colors.border }]}>
-                <View style={styles.userHeader}>
-                  <View style={styles.userDetails}>
-                    {profilePic ? (
-                      <Image
-                        source={{ uri: profilePic }}
-                        style={styles.profilePic}
-                      />
-                    ) : (
-                      <View style={[styles.profilePicPlaceholder, { backgroundColor: colors.primary }]}>
-                        <Text style={styles.profilePicText}>
-                          {username[0]?.toUpperCase()}
-                        </Text>
-                      </View>
-                    )}
-                    <View style={styles.userInfoText}>
-                      <Text style={[styles.username, { color: colors.text }]}>@{username}</Text>
-                      <View style={styles.stats}>
-                        <View style={styles.statItem}>
-                          <Icon name="eye" size={14} color={colors.textSecondary} />
-                          <Text style={[styles.statText, { color: colors.textSecondary }]}>
-                            {formatViews(selectedShort.views || 0)} views
-                          </Text>
-                        </View>
-                        {selectedShort.created_at && (
-                          <View style={styles.statItem}>
-                            <Icon name="clock" size={14} color={colors.textSecondary} />
-                            <Text style={[styles.statText, { color: colors.textSecondary }]}>
-                              {createdDate}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                  
-                  <TouchableOpacity 
-                    style={[styles.followButton, { backgroundColor: colors.primary }]}
-                  >
-                    <Text style={[styles.followText, { color: '#fff' }]}>Follow</Text>
-                  </TouchableOpacity>
-                </View>
-                
-               
-                {selectedShort.caption && (
-                  <Text style={[styles.caption, { color: colors.text }]}>
-                    {selectedShort.caption}
-                  </Text>
-                )}
-              </View>
-              
-             
-              <View style={[styles.reactions, { borderBottomColor: colors.border }]}>
-                <View style={styles.reactionsGrid}>
-                 
-                  <View style={styles.reactionItem}>
-                    <TouchableOpacity
-                      onPress={() => likeShort(selectedShort.id)}
-                      style={[styles.reactionButton, { backgroundColor: colors.backgroundSecondary }]}
-                    >
-                      <IonicIcon 
-                        name={isLiked ? "heart" : "heart-outline"}
-                        size={24} 
-                        color={isLiked ? "#ff0050" : colors.textSecondary}
-                      />
-                    </TouchableOpacity>
-                    <Text style={[styles.reactionCount, { color: colors.text }]}>
-                      {selectedShort.like_count || 0}
-                    </Text>
-                    <Text style={[styles.reactionLabel, { color: colors.textSecondary }]}>
-                      Likes
-                    </Text>
-                  </View>
-
-                 
-                  <View style={styles.reactionItem}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setReplyModalVisible(true);
-                        fetchCommentsForShort(selectedShort.id);
-                      }}
-                      style={[styles.reactionButton, { backgroundColor: colors.backgroundSecondary }]}
-                    >
-                      <Icon name="message-circle" size={24} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                    <Text style={[styles.reactionCount, { color: colors.text }]}>
-                      {selectedShort.comment_count || 0}
-                    </Text>
-                    <Text style={[styles.reactionLabel, { color: colors.textSecondary }]}>
-                      Comments
-                    </Text>
-                  </View>
-
-                 
-
-                 
-                  <View style={styles.reactionItem}>
-                    <TouchableOpacity
-                      onPress={() => shareShort(selectedShort)}
-                      style={[styles.reactionButton, { backgroundColor: colors.backgroundSecondary }]}
-                    >
-                      <Icon name="share-2" size={24} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                    <Text style={[styles.reactionCount, { color: colors.text }]}>
-                      Share
-                    </Text>
-                    <Text style={[styles.reactionLabel, { color: colors.textSecondary }]}>
-                      &nbsp;
-                    </Text>
-                  </View>
-                </View>
-              </View>
-              
-              
-            </View> */}
+            
           </View>
         </View>
       </Modal>
@@ -865,13 +745,12 @@ const HomePageShortsRow = ({navigation}) => {
 };
 
 const styles = StyleSheet.create({
-  // Main container
+  
   container: {
     paddingHorizontal: 16,
     paddingVertical: 24,
   },
-  
-  // Title section
+
   titleSection: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -967,7 +846,6 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   
-  // Minimal overlay
   minimalOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
@@ -1006,7 +884,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   
-  // Tap to watch
   tapToWatchOverlay: {
     alignSelf: 'center',
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -1021,7 +898,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
-  // Expand button
   expandButton: {
     position: 'absolute',
     top: 12,
@@ -1035,13 +911,11 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   
-  // Row layout
   row: {
     paddingBottom: 8,
     paddingRight: 16,
   },
   
-  // Loading state
   loadingRow: {
     flexDirection: 'row',
     gap: 16,
@@ -1052,7 +926,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   
-  // Modal styles
   modalContainer: {
     flex: 1,
   },
@@ -1063,7 +936,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: 20,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: '#000',
   },
   modalHeaderButton: {
     padding: 10,
@@ -1139,7 +1012,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   
-  // Right panel
+
   rightPanel: {
     width: Platform.OS === 'web' ? 400 : '100%',
     height: Platform.OS === 'web' ? '100%' : '50%',

@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Image,
@@ -12,6 +11,7 @@ import {
   Platform,
   Alert
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import * as ImagePicker from 'react-native-image-picker';
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: '#fff',
-    padding:20,
+    padding:Platform.OS === 'ios' ? 16 : 0,
     fontSize: 16,
     fontWeight: '600',
   },

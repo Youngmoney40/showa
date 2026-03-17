@@ -192,7 +192,7 @@ const VerificationCodeScreen = ({ route }) => {
             ) : (
               <View style={styles.buttonContent}>
                 <Text style={styles.submitButtonText}>{getButtonText()}</Text>
-                <Icon style={{marginTop:-20}} name="arrow-forward" size={20} color="#fff" />
+               
               </View>
             )}
           </LinearGradient>
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   buttonGradient:{borderRadius:10, paddingVertical:10, alignItems:'center', justifyContent:'center' },
   buttonDisabled:{ opacity:0.7 },
   buttonContent:{ flexDirection:'row', alignItems:'center' },
-  submitButtonText:{ color:'#fff', fontWeight:'600',paddingVertical:6,marginBottom:25, fontSize:16, marginRight:10 },
+  submitButtonText:{ color:'#fff', fontWeight:'600',paddingVertical:6,marginBottom:2, fontSize:16, marginRight:10 },
 
   resendContainer:{ marginTop:10 },
   resendContent:{ flexDirection:'row', alignItems:'center' },

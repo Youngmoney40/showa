@@ -2148,7 +2148,6 @@ import {
   Dimensions,
   StatusBar,
   Platform,
-  SafeAreaView,
   Modal,
   ScrollView,
   Animated,
@@ -2158,6 +2157,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import MaterialIcon from "react-native-vector-icons/MaterialIcons";
 import { API_ROUTE, API_ROUTE_IMAGE } from "../api_routing/api";
 import LinearGradient from "react-native-linear-gradient";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get("window");
 
@@ -2469,8 +2469,6 @@ const ServicesScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-
-      {/* Header Banner */}
       <ImageBackground
         source={require("../assets/images/dad.jpg")}
         style={styles.headerBanner}
@@ -2492,11 +2490,11 @@ const ServicesScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.bannerTextContainer}>
-            <View style={styles.welcomeTag}>
+            {/* <View style={styles.welcomeTag}>
               <Icon name="flash" size={16} color="#FBBF24" />
               <Text style={styles.welcomeText}>Professional Services</Text>
             </View>
-            
+             */}
             <Text style={styles.bannerMainTitle}>
               Find trusted{'\n'}service providers
             </Text>
@@ -2589,7 +2587,7 @@ const styles = StyleSheet.create({
   },
   headerBanner: {
     width: width,
-    height: height * 0.65,
+    height: height * 0.58,
   },
   bannerImage: {
     resizeMode: 'cover',

@@ -108,9 +108,9 @@ const SyncContactsScreen = () => {
           <Text style={styles.syncButtonText}>Sync Contacts</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleSkip}>
+        {/* <TouchableOpacity onPress={handleSkip}>
           <Text style={styles.skipText}>Skip for now</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <Modal
           visible={modalVisible}

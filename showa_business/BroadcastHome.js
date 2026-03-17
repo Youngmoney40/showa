@@ -1778,67 +1778,86 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
   //   }
   // }, []);
 
-  const handleShareOptimized = useCallback(async (postId) => {
+const handleShareOptimized = useCallback(async (postId) => {
   try {
     const post = posts.find(p => p.id === postId) || allposts.find(p => p.id === postId);
     if (!post) return 0;
 
+    // Get the first image if multiple images exist
+    let imageUrl = post.image_url;
+    if (!imageUrl && post.all_images && post.all_images.length > 0) {
+      imageUrl = post.all_images[0].url;
+    }
+
+    // Format the image URL with the website domain
+    let formattedImageUrl = '';
+    if (imageUrl) {
+      // Extract just the filename/path if it's a full URL
+      const imagePath = imageUrl.replace(/^https?:\/\/[^/]+/, '');
+      formattedImageUrl = `https://showapp.com${API_ROUTE_IMAGE}${imagePath}`;
+    }
+
+    // Create a rich share message with post details
+    const shareMessage = 
+      `📱 Check out this post on ShowApp!\n\n` +
+      `"${post.content}"\n\n` +
+      `━━━━━━━━━━━━━━━━━━━\n` +
+      `👤 Author: ${post.username}\n` +
+      `❤️ Likes: ${post.like_count || 0}\n` +
+      `💬 Comments: ${post.comment_count || 0}\n` +
+      `👁️ Views: ${post.views || 0}\n` +
+      `━━━━━━━━━━━━━━━━━━━\n\n` +
+      `🔗 View post: https://showapp.com/post/${post.id}\n` +
+      `📱 Download the app: https://showapp.com/download`;
+
     const shareOptions = {
-      message: `${post.content}\n\nShared from Showa`,
-      url: post.image_url,
-      title: `Post by ${post.username}`,
+      message: shareMessage,
+      title: `ShowApp - Post by ${post.username}`,
     };
 
-    await Share.share(shareOptions);
-    
-    const token = await AsyncStorage.getItem('userToken');
-    
-    // Call API to record the share
-    const response = await axios.post(
-      `${API_ROUTE}/post-react/`,
-      { 
-        post_id: postId, 
-        reaction_type: 'share',
-        share_platform: 'external'
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    console.log('Share response:', response.data);
-    
-    // Update local state with new share count
-    const newShareCount = response.data.share_count || post.share_count + 1;
-    
-    setPosts(prevPosts => 
-      prevPosts.map(p => 
-        p.id === postId 
-          ? { ...p, share_count: newShareCount } 
-          : p
-      )
-    );
-    
-    setAllPosts(prevPosts => 
-      prevPosts.map(p => 
-        p.id === postId 
-          ? { ...p, share_count: newShareCount } 
-          : p
-      )
-    );
-    
-    await trackPostShare(postId);
-    setIsOptionsBottomSheetVisible(false);
-    setSnackbarVisible(true);
-    
-    // Show reward if any
-    if (response.data.reward) {
-      Alert.alert(
-        '🎉 Share Reward!',
-        `You earned ${response.data.reward.coins} coins for sharing!`,
-        [{ text: 'OK' }]
-      );
+    // Add URL for iOS (supports image preview)
+    if (Platform.OS === 'ios') {
+      shareOptions.url = formattedImageUrl || `https://showapp.com/post/${post.id}`;
     }
+
+    const shareResult = await Share.share(shareOptions);
     
-    return newShareCount;
+    if (shareResult.action === Share.sharedAction) {
+      const token = await AsyncStorage.getItem('userToken');
+      
+      // Track share in backend
+      const response = await axios.post(
+        `${API_ROUTE}/post-react/`,
+        { 
+          post_id: postId, 
+          reaction_type: 'share',
+          share_platform: 'external'
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Update share count in UI
+      const newShareCount = response.data.share_count || (post.share_count || 0) + 1;
+      
+      // Update both posts states
+      const updatePost = (p) => p.id === postId ? { ...p, share_count: newShareCount } : p;
+      setPosts(prev => prev.map(updatePost));
+      setAllPosts(prev => prev.map(updatePost));
+      
+      await trackPostShare(postId);
+      setIsOptionsBottomSheetVisible(false);
+      setSnackbarVisible(true);
+      
+      if (response.data.reward) {
+        Alert.alert(
+          '🎉 Share Reward!',
+          `You earned ${response.data.reward.coins} coins for sharing!`,
+          [{ text: 'OK' }]
+        );
+      }
+      
+      return newShareCount;
+    }
   } catch (error) {
     console.error('Error sharing post:', error);
     return 0;
@@ -2856,8 +2875,8 @@ const renderSuggestedFriend = useCallback(({ item }) => (
           />
           <View style={styles.promoContent}>
             <Text style={styles.promoTitle}>Earn Massive Income</Text>
-            <Text style={styles.promoSubtitle}>Up to 5m instantly</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Earnings')} style={styles.promoButton}>
+            <Text style={styles.promoSubtitle}>Up to 5m instantly using Showa reward system</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('EarningDashboard')} style={styles.promoButton}>
               <Text style={styles.promoButtonText}>Get Started Now</Text>
             </TouchableOpacity>
           </View>

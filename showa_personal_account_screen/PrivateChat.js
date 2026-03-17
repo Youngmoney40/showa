@@ -1835,6 +1835,8 @@ export default function PersonalPrivateChatScreen({ route, navigation }) {
   const [chatBackground, setChatBackground] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(null);
   const [isSending, setIsSending] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState({});
+  const [downloadingFileId, setDownloadingFileId] = useState(null);
 
   const isPickingRef = useRef(false);
 
@@ -1848,6 +1850,90 @@ export default function PersonalPrivateChatScreen({ route, navigation }) {
   const maxReconnectAttempts = 5;
   const FALLBACK_AVATAR = require('../assets/images/avatar/blank-profile-picture-973460_1280.png');
 
+
+  const downloadFileWithProgress = async (fileUrl, fileName, messageId) => {
+    try {
+      const hasPermission = await checkStoragePermission();
+      if (!hasPermission) {
+        Alert.alert('Permission Denied', 'Cannot download file without storage permission');
+        return;
+      }
+
+      const downloadDest = Platform.select({
+        ios: `${RNFS.DocumentDirectoryPath}/${fileName}`,
+        android: `${RNFS.DownloadDirectoryPath}/${fileName}`,
+      });
+
+      Alert.alert(
+        'Download File',
+        `Download "${fileName}" to your device?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Download',
+            onPress: async () => {
+              setDownloadingFileId(messageId);
+              setDownloadProgress(prev => ({ ...prev, [messageId]: 0 }));
+              
+              try {
+                const options = {
+                  fromUrl: fileUrl,
+                  toFile: downloadDest,
+                  progress: (res) => {
+                    const progress = (res.bytesWritten / res.contentLength) * 100;
+                    setDownloadProgress(prev => ({ 
+                      ...prev, 
+                      [messageId]: Math.round(progress) 
+                    }));
+                  },
+                  progressDivider: 1,
+                };
+
+                const result = await RNFS.downloadFile(options).promise;
+                
+                if (result.statusCode === 200) {
+                  setDownloadProgress(prev => ({ ...prev, [messageId]: 100 }));
+                  setTimeout(() => {
+                    setDownloadProgress(prev => ({ ...prev, [messageId]: undefined }));
+                    setDownloadingFileId(null);
+                  }, 2000);
+                  Alert.alert('Success', `File downloaded successfully`);
+                } else {
+                  throw new Error('Download failed');
+                }
+              } catch (error) {
+                setDownloadProgress(prev => ({ ...prev, [messageId]: undefined }));
+                setDownloadingFileId(null);
+                Alert.alert('Error', 'Failed to download file');
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to download file');
+    }
+};
+
+useEffect(() => {
+    const timers = {};
+    
+    Object.keys(downloadProgress).forEach(key => {
+      if (downloadProgress[key] === 100 && !timers[key]) {
+        timers[key] = setTimeout(() => {
+          setDownloadProgress(prev => {
+            const newProgress = { ...prev };
+            delete newProgress[key];
+            return newProgress;
+          });
+        }, 3000);
+      }
+    });
+    
+    return () => {
+      Object.values(timers).forEach(timer => clearTimeout(timer));
+    };
+  }, [downloadProgress]);
   const getWallpaperSource = (chatBackground) => {
     if (!chatBackground) {
       return require('../assets/images/backroundsplash.png');
@@ -1898,7 +1984,7 @@ export default function PersonalPrivateChatScreen({ route, navigation }) {
     loadBackground();
   }, []);
 
-  // Alternative approach - check what the package exports
+  
 useEffect(() => {
   // Log what the package exports
   import('@react-native-documents/picker').then(module => {
@@ -1970,7 +2056,7 @@ useEffect(() => {
       const storageKey = chatType === 'single' ? `chat_single_${receiverId}` : `chat_group_${groupSlug}`;
       await AsyncStorage.setItem(storageKey, JSON.stringify(limitedMessages));
     } catch (error) {
-      // Silent fail
+     
     }
   };
 
@@ -2555,23 +2641,45 @@ const formatFileSize = (bytes) => {
             )}
             {item.file && (
               <TouchableOpacity
-                style={[styles.fileContainer, item.is_sending && styles.sendingFile]}
-                onPress={() => !item.is_sending && downloadFile(item.file, item.file_name || 'document')}
-                disabled={item.is_sending}
+                style={[
+                  styles.fileContainer, 
+                  item.is_sending && styles.sendingFile,
+                  downloadProgress[item.id] !== undefined && styles.downloadingFile
+                ]}
+                onPress={() => !item.is_sending && downloadFileWithProgress(item.file, item.file_name || 'document', item.id)}
+                disabled={item.is_sending || downloadProgress[item.id] !== undefined}
               >
                 <Icon name="insert-drive-file" size={24} color="#128C7E" />
                 <View style={styles.fileInfo}>
                   <Text style={styles.fileName} numberOfLines={1}>
                     {item.file_name || item.file.split('/').pop()}
                   </Text>
-                  {item.file_size && (
+                  {item.file_size && !downloadProgress[item.id] && (
                     <Text style={styles.fileSize}>{formatFileSize(item.file_size)}</Text>
+                  )}
+                  {downloadProgress[item.id] !== undefined && (
+                    <View style={styles.downloadProgressContainer}>
+                      <View style={[styles.downloadProgressBar, { width: `${downloadProgress[item.id]}%` }]} />
+                      <Text style={styles.downloadProgressText}>
+                        {downloadProgress[item.id] === 100 ? '✓ Downloaded' : `${downloadProgress[item.id]}%`}
+                      </Text>
+                    </View>
                   )}
                 </View>
                 {item.is_sending ? (
                   <ActivityIndicator size="small" color="#128C7E" />
                 ) : (
-                  <Icon name="file-download" size={20} color="#128C7E" />
+                  <View style={styles.fileActionContainer}>
+                    {downloadProgress[item.id] === undefined && (
+                      <Icon name="file-download" size={20} color="#128C7E" />
+                    )}
+                    {downloadProgress[item.id] === 100 && (
+                      <Icon name="check-circle" size={20} color="#4CAF50" />
+                    )}
+                    {downloadProgress[item.id] !== undefined && downloadProgress[item.id] < 100 && (
+                      <ActivityIndicator size="small" color="#128C7E" />
+                    )}
+                  </View>
                 )}
               </TouchableOpacity>
             )}
@@ -2718,7 +2826,7 @@ const sendMessage = async (caption = '', emoji = null) => {
     emoji: emojiToSend || null,
     reply_to: replyToMessage ? replyToMessage.id : null,
     is_deleted: false,
-    is_sending: true, // Add flag to show sending status
+    is_sending: true,
     timestamp: new Date().toISOString(),
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     avatar: userProfileImage || null,
@@ -2742,6 +2850,10 @@ const sendMessage = async (caption = '', emoji = null) => {
     if (selectedImage || selectedFile || (!caption.trim() && emojiToSend)) {
       // For media messages
       logFormData(formData);
+      
+      // Create a local variable to track progress
+      let lastProgress = 0;
+      
       const response = await axiosInstance.post(`/api/chat/`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -2750,16 +2862,23 @@ const sendMessage = async (caption = '', emoji = null) => {
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(percentCompleted);
             
-            // Update message with upload progress
-            setMessages((prev) => 
-              prev.map(msg => 
-                msg.id === tempId 
-                  ? { ...msg, uploadProgress: percentCompleted } 
-                  : msg
-              )
-            );
+            // Only update if progress changed
+            if (percentCompleted !== lastProgress) {
+              lastProgress = percentCompleted;
+              
+              // Update upload progress state
+              setUploadProgress(percentCompleted);
+              
+              // Update message with upload progress using a stable reference
+              setMessages((currentMessages) => 
+                currentMessages.map(msg => 
+                  msg.id === tempId 
+                    ? { ...msg, uploadProgress: percentCompleted } 
+                    : msg
+                )
+              );
+            }
           }
         },
       });
@@ -2796,11 +2915,20 @@ const sendMessage = async (caption = '', emoji = null) => {
         group_slug: chatType === 'group' ? groupSlug : null,
         user_id: userId,
         account_mode: accountMode,
-        temp_id: tempId, // Send temp ID to server for reference
+        temp_id: tempId,
       };
       ws.current.send(JSON.stringify(msg));
       
-      // Message will be updated when WebSocket receives confirmation
+      // Update temp message to show it's no longer sending after a short delay
+      setTimeout(() => {
+        setMessages((prev) => 
+          prev.map(msg => 
+            msg.id === tempId 
+              ? { ...msg, is_sending: false } 
+              : msg
+          )
+        );
+      }, 500);
       
     } else {
       // Fallback to HTTP for text
@@ -2830,7 +2958,7 @@ const sendMessage = async (caption = '', emoji = null) => {
       }
     }
     
-    // Clear input and selections (but keep the message in chat)
+    // Clear input and selections
     setText('');
     setFileCaption('');
     setSelectedImage(null);
@@ -2842,6 +2970,8 @@ const sendMessage = async (caption = '', emoji = null) => {
     setUploadProgress(null);
     
   } catch (error) {
+    console.error('Send message error:', error);
+    
     // Mark message as failed on error
     setMessages((prev) => {
       const updatedMessages = prev.map(msg => 
@@ -2862,6 +2992,7 @@ const sendMessage = async (caption = '', emoji = null) => {
     Alert.alert('Error', errorMessage);
   } finally {
     setIsSending(false);
+    setUploadProgress(null);
   }
 };
 
@@ -2907,7 +3038,7 @@ const sendMessage = async (caption = '', emoji = null) => {
                       roomId: 'unique-room-id',
                       isInitiator: true
                     })}
-                  style={styles.headerButton}
+                  style={[styles.headerButton,{marginLeft:10}]}
                 >
                   <Icon name="call" size={24} color="#FFF" />
                 </TouchableOpacity>
@@ -3355,10 +3486,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingBottom: Platform.OS === 'android' ? 16 : 0,
-    paddingTop: Platform.OS === 'android' ? 5 : 0,
-    borderBottomLeftRadius: Platform.OS === 'android' ? 20 : 0,
-    borderBottomRightRadius: Platform.OS === 'android' ? 20 : 0,
+    paddingBottom: Platform.OS === 'android' ? 0 : 0,
+    paddingTop: Platform.OS === 'android' ? 0 : 0,
+    borderBottomLeftRadius: Platform.OS === 'android' ? 0 : 0,
+    borderBottomRightRadius: Platform.OS === 'android' ? 0 : 0,
     backgroundColor: '#0d64dd',
     elevation: 6,
     zIndex: 1000,
@@ -3481,6 +3612,44 @@ const styles = StyleSheet.create({
     color: '#999',
     fontStyle: 'italic',
   },
+  downloadingFile: {
+  opacity: 0.9,
+  borderWidth: 1,
+  borderColor: '#128C7E',
+},
+downloadProgressContainer: {
+  marginTop: 4,
+  height: 20,
+  backgroundColor: '#E8E8E8',
+  borderRadius: 10,
+  overflow: 'hidden',
+  position: 'relative',
+  width: '100%',
+},
+downloadProgressBar: {
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  bottom: 0,
+  backgroundColor: '#128C7E',
+  borderRadius: 10,
+},
+downloadProgressText: {
+  position: 'absolute',
+  top: 2,
+  left: 0,
+  right: 0,
+  textAlign: 'center',
+  fontSize: 10,
+  color: '#000',
+  fontWeight: 'bold',
+},
+fileActionContainer: {
+  width: 30,
+  height: 30,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
   messageImage: {
     width: 200,
     height: 200,
@@ -3494,7 +3663,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 4,
-    minWidth: 200,
+    minWidth: 250,
   },
   fileInfo: {
     flex: 1,
@@ -3577,7 +3746,7 @@ const styles = StyleSheet.create({
     flex: 1,
     maxHeight: 120,
     paddingHorizontal: 12,
-    paddingVertical: 16,
+    paddingVertical: 10,
     backgroundColor: '#FFF',
     borderRadius: 20,
     fontSize: 16,

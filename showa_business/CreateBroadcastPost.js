@@ -855,7 +855,7 @@ export default function CreatePost({ navigation }) {
 
         if (response.status === 200) {
           setFullname(response.data.name);
-          setUsername(response.data.name);
+          setUsername(response.data.username);
           setUserProfileImage(`${API_ROUTE_IMAGE}${response.data.profile_picture}`);
         }
       } catch (error) {
@@ -1608,15 +1608,25 @@ const styles = StyleSheet.create({
   hashtagText: {
     fontSize: 16,
   },
-  // AI Modal Styles
+  
   aiModalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
   },
+  // aiModalContainer: {
+  //   borderTopLeftRadius: 24,
+  //   borderTopRightRadius: 24,
+  //   height: height * 0.95,
+  //   padding: 20,
+  // },
   aiModalContainer: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    height: height * 0.85,
+    height: Platform.select({
+      ios: height * 0.80,
+      android: height * 0.50,
+      default: height * 0.70, 
+    }),
     padding: 20,
   },
   aiModalHeader: {
@@ -1655,13 +1665,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    gap: 8,
+    paddingVertical: 0,
+    gap: 0,
   },
   generateButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+    alignSelf: 'center',
+    paddingTop:10,
+     paddingBottom:-30,
+    
   },
   dividerContainer: {
     flexDirection: 'row',

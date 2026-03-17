@@ -3776,97 +3776,99 @@ const dismissKeyboard = () => {
     </TouchableOpacity>
   );
 
-  const renderStatusPreview = (userStatus) => {
-    const isVideo = userStatus.status_type === 'video';
-    const url = userStatus.statuses[0].media;
-    const path_img = url.replace(/^https?:\/\/[^/]+/, '');
-
-    return (
-      <TouchableOpacity style={styles.statusWrapper} onPress={() => openImageModal(userStatus)}>
-        <View style={styles.statusContainer}>
-          {isVideo ? (
-            <View style={styles.statusMediaContainer}>
-              <Video
-                source={{ uri: userStatus.statuses[0].media }}
-                style={styles.statusMedia}
-                resizeMode="cover"
-                paused={true}
-                repeat={false}
-              />
-              <View style={styles.videoPlayIcon}>
-                <Icon name="play" size={20} color="#fff" />
-              </View>
-            </View>
-          ) : (
-            
-            <ImageBackground
-              source={{
-                uri: getImageUrl(userStatus.statuses[0].media),
-              }}
-              style={styles.statusMedia}
-              imageStyle={styles.statusMediaStyle}
-            />
-          )}
-          
-          <View style={[
-            styles.statusRing,
-            userStatus.user?.phone === currentUserPhone || userStatus.user === currentUserPhone 
-              ? styles.myStatusRing 
-              : styles.otherStatusRing
-          ]} />
-          
-          <View style={styles.statusNameContainer}>
-            <Text style={styles.statusNameText} numberOfLines={1}>
-              {userStatus.user?.phone === currentUserPhone || userStatus.user === currentUserPhone
-                ? 'My Story'
-                : userStatus.user?.name || userStatus.user}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderLiveStreamPreview = (stream) => (
-    <TouchableOpacity 
-      style={styles.statusWrapper}
-      onPress={() => navigation.navigate('Viewer', {
-         roomName: 'match-123',
-            streamId: 'stream-1',
-              viewerId: 'viewer-1',
-      })}
-    >
-      <View style={styles.statusContainer}>
-        <ImageBackground
-          source={
-            stream.broadcaster_image
-              ? { uri: stream.broadcaster_image }
-              : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-          }
-          style={styles.statusMedia}
-          imageStyle={styles.statusMediaStyle}
-        >
-          <View style={styles.liveBadge}>
-            <View style={styles.liveIndicator} />
-            <Text style={styles.liveText}>LIVE</Text>
-          </View>
-          
-          <View style={styles.viewerCountBadge}>
-            <Icon name="eye" size={10} color="#fff" />
-            <Text style={styles.viewerCountText}>{stream.viewer_count || 0}</Text>
-          </View>
-        </ImageBackground>
-        
-        <View style={[styles.statusRing, styles.liveStatusRing]} />
-        
-        <View style={styles.statusNameContainer}>
-          <Text style={styles.statusNameText} numberOfLines={1}>
-            {stream.broadcaster_name || 'User'}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+   const renderStatusPreview = (userStatus) => {
+     const isVideo = userStatus.status_type === 'video';
+     const url = userStatus.statuses[0].media;
+     const path_img = url.replace(/^https?:\/\/[^/]+/, '');
+ 
+     return (
+       <TouchableOpacity style={styles.statusWrapper} onPress={() => openImageModal(userStatus)}>
+         <View style={styles.statusContainer}>
+           {isVideo ? (
+             <View style={styles.statusMediaContainer}>
+               <Video
+                 source={{ uri: userStatus.statuses[0].media }}
+                 style={styles.statusMedia}
+                 resizeMode="cover"
+                 paused={true}
+                 repeat={false}
+               />
+               <View style={styles.videoPlayIcon}>
+                 <Icon name="play" size={20} color="#fff" />
+               </View>
+             </View>
+           ) : (
+             
+             <ImageBackground
+               source={{
+                 uri: getImageUrl(userStatus.statuses[0].media),
+               }}
+               style={styles.statusMedia}
+               imageStyle={styles.statusMediaStyle}
+             />
+           )}
+           
+           {/* <View style={[
+             styles.statusRing,
+             userStatus.user?.phone === currentUserPhone || userStatus.user === currentUserPhone 
+               ? styles.myStatusRing 
+               : styles.otherStatusRing
+           ]} /> */}
+           
+           <View style={styles.statusNameContainer}>
+             <Text style={styles.statusNameText} numberOfLines={1}>
+               {userStatus.user?.phone === currentUserPhone || userStatus.user === currentUserPhone
+                 ? 'My Story'
+                 : userStatus.user?.name || userStatus.user}
+             </Text>
+           </View>
+         </View>
+       </TouchableOpacity>
+     );
+   };
+ 
+   const renderLiveStreamPreview = (stream) => (
+   <TouchableOpacity 
+     style={styles.statusWrapper}
+     onPress={() => navigation.navigate('Viewer', {
+        roomName: 'match-123',
+        streamId: 'stream-1',
+        viewerId: 'viewer-1',
+     })}
+   >
+     <View style={styles.statusContainer}>
+       <ImageBackground
+         source={
+           stream.broadcaster_image
+             ? { 
+                 uri: stream.broadcaster_image.startsWith('http://') 
+                   ? stream.broadcaster_image.replace('http://', 'https://')
+                   : stream.broadcaster_image 
+               }
+             : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+         }
+         style={styles.statusMedia}
+         imageStyle={styles.statusMediaStyle}
+       >
+         <View style={styles.liveBadge}>
+           <View style={styles.liveIndicator} />
+           <Text style={styles.liveText}>LIVE</Text>
+         </View>
+         
+         {/* <View style={styles.viewerCountBadge}>
+           <Icon name="eye" size={10} color="#fff" />
+           <Text style={styles.viewerCountText}>{stream.viewer_count || 0}</Text>
+         </View> */}
+       </ImageBackground>
+       
+       <View style={styles.statusNameContainer}>
+         <Text style={styles.statusNameText} numberOfLines={1}>
+           {stream.broadcaster_name || 'User'}
+         </Text>
+       </View>
+     </View>
+   </TouchableOpacity>
+ );
 
   const renderStatusItem = ({ item, index }) => {
   const isMyStatus = item.user?.phone === currentUserPhone || item.user === currentUserPhone;
@@ -4743,7 +4745,7 @@ const createStyles = (colors, isDark, insets) => StyleSheet.create({
   },
   statusWrapper: {
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 20,
   },
   statusContainer: {
     alignItems: 'center',
@@ -4804,7 +4806,7 @@ keyboardCloseButton: {
   statusMediaStyle: {
     borderRadius: 25,
   },
-  statusRing: {
+  statusggRing: {
     position: 'absolute',
     width: 95,
     height: 180,

@@ -17,7 +17,7 @@
 // import { CallProvider } from './components/CallContext';
 // import CallSignalListener from "./components/CallSignalListener";
 // import IncomingCallModal from './components/IncomingCallModal';
-// //import NetworkStatusBanner from "./components/Networkstatusbanner";
+//import NetworkStatusBanner from "./components/Networkstatusbanner";
 
 // // Services
 // import { startBackgroundContactSync, setupContactSyncListener } from "./components/BackgroundSync";
@@ -1335,6 +1335,7 @@ const navigationRef = React.createRef();
 // Import checkPinStatus from the correct location
 import { checkPinStatus } from './showa_personal_account_screen/FaceSecuritySetting';
 import PinUnlockModal from './screens/PinUnlockModal';
+import videoBackgroundfetch from './src/services/VideoBackgroundFetch';
 
 // Theme Context
 import { ThemeProvider } from './src/context/ThemeContext';
@@ -1346,6 +1347,8 @@ import { useTheme } from './src/context/ThemeContext';
 import { CallProvider } from './components/CallContext';
 import CallSignalListener from "./components/CallSignalListener";
 import IncomingCallModal from './components/IncomingCallModal';
+
+import NetworkStatusBanner from "./components/Networkstatusbanner";
 
 // Services
 import { startBackgroundContactSync, setupContactSyncListener } from "./components/BackgroundSync";
@@ -1523,11 +1526,36 @@ export default function App() {
 
 // Main App Content
 function AppContent() {
+  const [userId, setUserId] = useState(null);
+
+  // Initialize video prefetch when user is logged in
+  useEffect(() => {
+    const initVideoPrefetch = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('userData');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setUserId(user.id);
+          
+          // Initialize video prefetch service
+          await videoBackgroundfetch.init(user.id);
+          
+          // Get cached videos immediately
+          const cachedVideos = await videoBackgroundfetch.getCachedVideos();
+          console.log('📦 Cached videos ready:', cachedVideos?.length || 0);
+        }
+      } catch (error) {
+        console.error('Error initializing video prefetch:', error);
+      }
+    };
+
+    initVideoPrefetch();
+  }, []);
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <CallProvider>
         <ThemedNavigator />
-        {/* <NetworkStatusBanner /> */}
+        <NetworkStatusBanner />
       </CallProvider>
     </GestureHandlerRootView>
   );

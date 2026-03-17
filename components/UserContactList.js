@@ -1647,7 +1647,6 @@ import {
   ActivityIndicator, 
   StatusBar,
   Image,
-  SafeAreaView,
   TextInput,
   Platform,
   Alert,
@@ -1660,6 +1659,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../src/context/ThemeContext';
 import Contacts from 'react-native-contacts';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ContactsScreen = ({ navigation }) => {
   const { colors, theme, isDark } = useTheme();

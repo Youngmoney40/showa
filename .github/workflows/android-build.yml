@@ -1,4 +1,4 @@
-name: Android APK Build
+name: Android AAB Build (Play Store)
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
           node-version: 20
           cache: npm
 
-      # 3️⃣ Install dependencies (always run)
+      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: npm ci
 
@@ -48,18 +48,26 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      # 6️⃣ Setup keystore
+      # 6️⃣ Setup Keystore
       - name: Setup Keystore
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
-      # 7️⃣ Make gradlew executable
+      # 7️⃣ Create gradle.properties for signing
+      - name: Setup signing config
+        run: |
+          echo "MYAPP_UPLOAD_STORE_FILE=release.keystore" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> android/gradle.properties
+
+      # 8️⃣ Make gradlew executable
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      # 8️⃣ Generate React Native bundle
+      # 9️⃣ Generate React Native bundle
       - name: Generate JS bundle
         run: |
           mkdir -p android/app/src/main/assets
@@ -70,23 +78,22 @@ jobs:
             --bundle-output android/app/src/main/assets/index.android.bundle \
             --assets-dest android/app/src/main/res
 
-      # 9️⃣ Clean Gradle
+      # 🔟 Clean Gradle
       - name: Clean Gradle
         run: |
           cd android
           ./gradlew clean
 
-      # 🔟 Build Release APK
-      - name: Build APK
+      # 1️⃣1️⃣ Build Release AAB (IMPORTANT)
+      - name: Build AAB
         run: |
           cd android
-          ./gradlew assembleDebug
+          ./gradlew bundleRelease
 
-
-      # 1️⃣1️⃣ Upload APK
-      - name: Upload Debug APK
+      # 1️⃣2️⃣ Upload AAB
+      - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: app-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 30

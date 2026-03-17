@@ -14,7 +14,6 @@ import {
   Platform,
   Alert,
   Dimensions,
-  SafeAreaView,
   StatusBar,
   Image,
   FlatList
@@ -24,7 +23,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import { API_ROUTE } from '../api_routing/api';
-import { BlurView } from '@react-native-community/blur';
+// import { BlurView } from '@react-native-community/blur';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 const CHAT_STORAGE_KEY = '@showa_ai_chat_history';
@@ -495,12 +495,7 @@ const AIChatScreen = ({ route, navigation }) => {
       />
 
       {/* Premium Header with Blur */}
-      <BlurView
-        style={styles.header}
-        blurType="dark"
-        blurAmount={20}
-        reducedTransparencyFallbackColor="#0A0A0C"
-      >
+      <View style={[styles.header, { backgroundColor: 'rgba(10,10,12,0.95)' }]}>
         <TouchableOpacity 
           style={[styles.headerIcon,{marginLeft:20}]}
           onPress={() => navigation.goBack()}
@@ -519,7 +514,7 @@ const AIChatScreen = ({ route, navigation }) => {
         <TouchableOpacity style={[styles.headerIcon,{marginRight:20}]} onPress={clearChat}>
           <Icon name="refresh" size={22} color="#FFFFFF" />
         </TouchableOpacity>
-      </BlurView>
+      </View>
 
       {showSuggestions && messages.length === 0 ? (
         <KeyboardAvoidingView 
@@ -679,12 +674,7 @@ const AIChatScreen = ({ route, navigation }) => {
           </ScrollView>
 
           {/* Premium Chat Input */}
-          <BlurView
-            style={styles.chatInputContainer}
-            blurType="dark"
-            blurAmount={20}
-            reducedTransparencyFallbackColor="#0A0A0C"
-          >
+          <View style={[styles.chatInputContainer, { backgroundColor: '#1A1A1E' }]}>
             <View style={styles.chatInputWrapper}>
               <TextInput
                 ref={inputRef}
@@ -720,7 +710,7 @@ const AIChatScreen = ({ route, navigation }) => {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-          </BlurView>
+          </View>
         </KeyboardAvoidingView>
       )}
     </SafeAreaView>

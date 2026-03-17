@@ -2009,11 +2009,11 @@ import {
   Dimensions,
   StatusBar,
   Platform,
-  SafeAreaView,
   Modal,
   ScrollView,
   Animated,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Feather from "react-native-vector-icons/Feather";

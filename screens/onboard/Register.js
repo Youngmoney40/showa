@@ -705,7 +705,7 @@ const RegistrationScreen = ({ navigation, route }) => {
                 disabled={loading}
                 activeOpacity={0.8}
               >
-                <Icon name="create-outline" size={20} color="#0D64DD" />
+                
                 <Text style={styles.editButtonText}>EDIT</Text>
               </TouchableOpacity>
 
@@ -719,14 +719,9 @@ const RegistrationScreen = ({ navigation, route }) => {
                 activeOpacity={0.8}
               >
                 <Text style={styles.confirmButtonText}>
-                  {loading ? 'REGISTERING...' : 'CONFIRM & REGISTER'}
+                  {loading ? 'REGISTERING...' : 'PROCEED'}
                 </Text>
-                <Icon 
-                  name="checkmark" 
-                  size={20} 
-                  color="#FFF" 
-                  style={styles.buttonIcon} 
-                />
+                
               </TouchableOpacity>
             </View>
           </View>

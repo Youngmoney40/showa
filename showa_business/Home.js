@@ -868,6 +868,7 @@ const HomeScreen = ({ navigation }) => {
                 <Text style={styles.chatName}>
                   {highlightSearchText(item.name, searchQuery) ||
                   (item.type === 'group' ? 'Group Chat' : 'Unnamed Chat')}
+                  
                 </Text>
                 {item.type === 'group' && (
                   <>

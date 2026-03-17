@@ -736,7 +736,7 @@ export default function HomeScreen({ navigation }) {
       // You'll need to adjust this based on how categories are stored in your listing data
       // This assumes listings have a 'category' field
       filtered = filtered.filter(listing => 
-        listing.category?.toLowerCase() === selectedCategory.toLowerCase()
+        listing.category === selectedCategory.toLowerCase()
       );
     }
 

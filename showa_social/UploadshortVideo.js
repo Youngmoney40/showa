@@ -26,12 +26,18 @@
 
 // const { width, height } = Dimensions.get('window');
 
+
+// const hashTag = [
+//   "Music",
+// ]
+
 // const UploadShortScreen = ({ navigation }) => {
 //   const [video, setVideo] = useState(null);
 //   const [caption, setCaption] = useState('');
 //   const [isUploading, setIsUploading] = useState(false);
 //   const [isPaused, setIsPaused] = useState(false);
 //   const videoRef = useRef(null);
+//   const scrollViewRef = useRef(null);
 
 //   const selectVideoFromGallery = () => {
 //     const options = {
@@ -154,153 +160,155 @@
 //     setVideo(null);
 //   };
 
+//   const scrollToInput = (yOffset) => {
+//     if (scrollViewRef.current) {
+//       scrollViewRef.current.scrollTo({ y: yOffset, animated: true });
+//     }
+//   };
+
 //   return (
 //     <SafeAreaView style={{flex:1, backgroundColor:'black'}}>
-
 //       <KeyboardAvoidingView
-//       style={{ flex: 1 }}
-//       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-//       keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-//       enabled
-//     >
-
-   
-//          <View style={styles.container}>
-//       <StatusBar barStyle={Platform.OS === 'android'? 'light-content' : 'light-content'} backgroundColor="#000" />
-//       <View style={styles.header}>
-//         <TouchableOpacity 
-//           onPress={() => navigation.goBack()} 
-//           style={styles.backButton}
-//         >
-//           <Icon name="arrow-back" size={24} color="#FFF" />
-//         </TouchableOpacity>
-        
-//         <Text style={styles.headerTitle}>Create Short</Text>
-        
-//         <TouchableOpacity 
-//           onPress={handleUpload} 
-//           disabled={isUploading || !video || !caption.trim()}
-//           style={[
-//             styles.postButton,
-//             (!video || !caption.trim()) && styles.postButtonDisabled
-//           ]}
-//         >
-//           {isUploading ? (
-//             <ActivityIndicator color="#FFF" size="small" />
-//           ) : (
-//             <Text style={styles.postButtonText}>Post</Text>
-//           )}
-//         </TouchableOpacity>
-//       </View>
-
-//       <ScrollView 
-//         style={styles.content}
-//         showsVerticalScrollIndicator={false}
-//         keyboardShouldPersistTaps="handled"           
-//         contentContainerStyle={{ paddingBottom: 40 }}
+//         style={{ flex: 1 }}
+//         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+//         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
 //       >
-//         {/* Video Preview Section */}
-//         <View style={styles.previewSection}>
-//           {video ? (
-//             <View style={styles.videoContainer}>
-//               <Video
-//                 ref={videoRef}
-//                 source={{ uri: video.uri }}
-//                 style={styles.videoPreview}
-//                 resizeMode="cover"
-//                 paused={isPaused}
-//                 repeat={true}
-//                 muted={true}
-//               />
-              
-//               <View style={styles.videoOverlay}>
-//                 <TouchableOpacity 
-//                   style={styles.playButton}
-//                   onPress={togglePlayPause}
-//                 >
-//                   <Icon 
-//                     name={isPaused ? "play-arrow" : "pause"} 
-//                     size={32} 
-//                     color="#FFF" 
+//         <View style={styles.container}>
+//           <StatusBar barStyle={Platform.OS === 'android'? 'light-content' : 'light-content'} backgroundColor="#000" />
+//           <View style={styles.header}>
+//             <TouchableOpacity 
+//               onPress={() => navigation.goBack()} 
+//               style={styles.backButton}
+//             >
+//               <Icon name="arrow-back" size={24} color="#FFF" />
+//             </TouchableOpacity>
+            
+//             <Text style={styles.headerTitle}>Create Short</Text>
+            
+//             <TouchableOpacity 
+//               onPress={handleUpload} 
+//               disabled={isUploading || !video || !caption.trim()}
+//               style={[
+//                 styles.postButton,
+//                 (!video || !caption.trim()) && styles.postButtonDisabled
+//               ]}
+//             >
+//               {isUploading ? (
+//                 <ActivityIndicator color="#FFF" size="small" />
+//               ) : (
+//                 <Text style={styles.postButtonText}>Post</Text>
+//               )}
+//             </TouchableOpacity>
+//           </View>
+
+//           <ScrollView 
+//             ref={scrollViewRef}
+//             style={styles.content}
+//             showsVerticalScrollIndicator={false}
+//             keyboardShouldPersistTaps="handled"
+//             keyboardDismissMode="interactive"
+//             contentContainerStyle={{ paddingBottom: 40 }}
+//           >
+//             {/* Video Preview Section */}
+//             <View style={styles.previewSection}>
+//               {video ? (
+//                 <View style={styles.videoContainer}>
+//                   <Video
+//                     ref={videoRef}
+//                     source={{ uri: video.uri }}
+//                     style={styles.videoPreview}
+//                     resizeMode="cover"
+//                     paused={isPaused}
+//                     repeat={true}
+//                     muted={true}
 //                   />
-//                 </TouchableOpacity>
-                
-//                 <TouchableOpacity 
-//                   style={styles.clearButton}
-//                   onPress={clearVideo}
-//                 >
-//                   <Icon name="close" size={20} color="#FFF" />
-//                 </TouchableOpacity>
+                  
+//                   <View style={styles.videoOverlay}>
+//                     <TouchableOpacity 
+//                       style={styles.playButton}
+//                       onPress={togglePlayPause}
+//                     >
+//                       <Icon 
+//                         name={isPaused ? "play-arrow" : "pause"} 
+//                         size={32} 
+//                         color="#FFF" 
+//                       />
+//                     </TouchableOpacity>
+                    
+//                     <TouchableOpacity 
+//                       style={styles.clearButton}
+//                       onPress={clearVideo}
+//                     >
+//                       <Icon name="close" size={20} color="#FFF" />
+//                     </TouchableOpacity>
+//                   </View>
+//                 </View>
+//               ) : (
+//                 <View style={styles.placeholderContainer}>
+//                   <Icon name="videocam" size={64} color="#666" />
+//                   <Text style={styles.placeholderText}>
+//                     Select a video to get started
+//                   </Text>
+//                   <Text style={styles.placeholderSubtext}>
+//                     Maximum 60 seconds
+//                   </Text>
+//                 </View>
+//               )}
+//             </View>
+           
+//             <View style={styles.actionButtons}>
+//               <TouchableOpacity 
+//                 onPress={selectVideoFromGallery} 
+//                 style={styles.actionButton}
+//               >
+//                 <View style={[styles.buttonIcon, { backgroundColor: '#6366F1' }]}>
+//                   <Icon name="photo-library" size={24} color="#FFF" />
+//                 </View>
+//                 <Text style={styles.actionButtonText}>Choose from Gallery</Text>
+//               </TouchableOpacity>
+
+//               <TouchableOpacity 
+//                 onPress={recordVideoFromCamera} 
+//                 style={styles.actionButton}
+//               >
+//                 <View style={[styles.buttonIcon, { backgroundColor: '#EF4444' }]}>
+//                   <Icon name="videocam" size={24} color="#FFF" />
+//                 </View>
+//                 <Text style={styles.actionButtonText}>Record Video</Text>
+//               </TouchableOpacity>
+//             </View>
+
+            
+//             <View style={styles.captionSection}>
+//               <Text style={styles.sectionLabel}>Caption</Text>
+//               <TextInput
+//                 placeholder="What's happening?"
+//                 placeholderTextColor="#94A3B8"
+//                 style={styles.captionInput}
+//                 value={caption}
+//                 onChangeText={setCaption}
+//                 multiline={true}
+//                 maxLength={150}
+//                 textAlignVertical="top"
+//                 onFocus={() => scrollToInput(200)}
+//               />
+//               <View style={styles.captionFooter}>
+//                 <Text style={styles.charCount}>
+//                   {caption.length}/150
+//                 </Text>
 //               </View>
 //             </View>
-//           ) : (
-//             <View style={styles.placeholderContainer}>
-//               <Icon name="videocam" size={64} color="#666" />
-//               <Text style={styles.placeholderText}>
-//                 Select a video to get started
-//               </Text>
-//               <Text style={styles.placeholderSubtext}>
-//                 Maximum 60 seconds
+
+//             <View style={styles.infoSection}>
+//               <Icon name="info" size={18} color="#94A3B8" />
+//               <Text style={styles.infoText}>
+//                 Your short will be visible to everyone and may appear in recommendations
 //               </Text>
 //             </View>
-//           )}
+//           </ScrollView>
 //         </View>
-
-       
-//         <View style={styles.actionButtons}>
-//           <TouchableOpacity 
-//             onPress={selectVideoFromGallery} 
-//             style={styles.actionButton}
-//           >
-//             <View style={[styles.buttonIcon, { backgroundColor: '#6366F1' }]}>
-//               <Icon name="photo-library" size={24} color="#FFF" />
-//             </View>
-//             <Text style={styles.actionButtonText}>Choose from Gallery</Text>
-//           </TouchableOpacity>
-
-//           <TouchableOpacity 
-//             onPress={recordVideoFromCamera} 
-//             style={styles.actionButton}
-//           >
-//             <View style={[styles.buttonIcon, { backgroundColor: '#EF4444' }]}>
-//               <Icon name="videocam" size={24} color="#FFF" />
-//             </View>
-//             <Text style={styles.actionButtonText}>Record Video</Text>
-//           </TouchableOpacity>
-//         </View>
-
-        
-//         <View style={styles.captionSection}>
-//           <Text style={styles.sectionLabel}>Caption</Text>
-//           <TextInput
-//             placeholder="What's happening?"
-//             placeholderTextColor="#94A3B8"
-//             style={styles.captionInput}
-//             value={caption}
-//             onChangeText={setCaption}
-//             multiline={true}
-//             maxLength={150}
-//             textAlignVertical="top"
-//           />
-//           <View style={styles.captionFooter}>
-//             <Text style={styles.charCount}>
-//               {caption.length}/150
-//             </Text>
-//           </View>
-//         </View>
-
-       
-//         <View style={styles.infoSection}>
-//           <Icon name="info" size={18} color="#94A3B8" />
-//           <Text style={styles.infoText}>
-//             Your short will be visible to everyone and may appear in recommendations
-//           </Text>
-//         </View>
-//       </ScrollView>
-//     </View>
-//      </KeyboardAvoidingView>
+//       </KeyboardAvoidingView>
 //     </SafeAreaView>
-   
 //   );
 // };
 
@@ -485,6 +493,7 @@
 // });
 
 // export default UploadShortScreen;
+
 import React, { useState, useRef } from 'react';
 import {
   View,
@@ -499,6 +508,7 @@ import {
   KeyboardAvoidingView,
   Alert,
   Platform,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
@@ -511,11 +521,47 @@ import { API_ROUTE } from '../api_routing/api';
 
 const { width, height } = Dimensions.get('window');
 
+const POPULAR_HASHTAGS = [
+  "#Music",
+  "#Dance",
+  "#Comedy",
+  "#Fashion",
+  "#Beauty",
+  "#Fitness",
+  "#Food",
+  "#Travel",
+  "#Sports",
+  "#Gaming",
+  "#DIY",
+  "#Education",
+  "#Technology",
+  "#Business",
+  "#Art",
+  "#Photography",
+  "#Nature",
+  "#Pets",
+  "#Family",
+  "#Lifestyle",
+  "#Motivation",
+  "#Tutorial",
+  "#Review",
+  "#Unboxing",
+  "#Challenge",
+  "#Trending",
+  "#Viral",
+  "#Shorts",
+  "#Funny",
+  "#Cooking"
+];
+
 const UploadShortScreen = ({ navigation }) => {
   const [video, setVideo] = useState(null);
   const [caption, setCaption] = useState('');
+  const [selectedHashtags, setSelectedHashtags] = useState([]);
+  const [customHashtag, setCustomHashtag] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
   const videoRef = useRef(null);
   const scrollViewRef = useRef(null);
 
@@ -580,6 +626,75 @@ const UploadShortScreen = ({ navigation }) => {
     setIsPaused(!isPaused);
   };
 
+  // Handle hashtag selection
+  const toggleHashtag = (hashtag) => {
+    if (selectedHashtags.includes(hashtag)) {
+      setSelectedHashtags(selectedHashtags.filter(tag => tag !== hashtag));
+    } else {
+      if (selectedHashtags.length < 5) {
+        setSelectedHashtags([...selectedHashtags, hashtag]);
+      } else {
+        Snackbar.show({
+          text: 'Maximum 5 hashtags allowed',
+          backgroundColor: '#FF6B6B',
+        });
+      }
+    }
+  };
+
+  // Add custom hashtag
+  const addCustomHashtag = () => {
+    const trimmed = customHashtag.trim();
+    if (!trimmed) return;
+
+    // Format hashtag - add # if not present
+    let formattedTag = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+    
+    // Remove spaces and special characters (keep only letters, numbers, and underscores)
+    formattedTag = '#' + formattedTag.slice(1).replace(/[^a-zA-Z0-9_]/g, '');
+    
+    if (formattedTag.length < 2 || formattedTag === '#') {
+      Snackbar.show({
+        text: 'Hashtag must be at least 2 characters',
+        backgroundColor: '#FF6B6B',
+      });
+      return;
+    }
+
+    if (selectedHashtags.length >= 5) {
+      Snackbar.show({
+        text: 'Maximum 5 hashtags allowed',
+        backgroundColor: '#FF6B6B',
+      });
+      return;
+    }
+
+    if (!selectedHashtags.includes(formattedTag)) {
+      setSelectedHashtags([...selectedHashtags, formattedTag]);
+      setCustomHashtag('');
+      setShowHashtagSuggestions(false);
+    } else {
+      Snackbar.show({
+        text: 'Hashtag already added',
+        backgroundColor: '#FF6B6B',
+      });
+    }
+  };
+
+  // Remove hashtag
+  const removeHashtag = (hashtag) => {
+    setSelectedHashtags(selectedHashtags.filter(tag => tag !== hashtag));
+  };
+
+  // Filter hashtag suggestions based on input
+  const getHashtagSuggestions = () => {
+    if (!customHashtag.trim()) return [];
+    const searchTerm = customHashtag.toLowerCase().replace('#', '');
+    return POPULAR_HASHTAGS.filter(tag => 
+      tag.toLowerCase().includes(searchTerm) && !selectedHashtags.includes(tag)
+    ).slice(0, 5);
+  };
+
   const handleUpload = async () => {
     if (!video) {
       Snackbar.show({
@@ -597,8 +712,19 @@ const UploadShortScreen = ({ navigation }) => {
       return;
     }
 
+    if (selectedHashtags.length === 0) {
+      Snackbar.show({
+        text: 'Please add at least one hashtag',
+        backgroundColor: '#FF6B6B',
+      });
+      return;
+    }
+
+    // Combine caption with hashtags
+    const captionWithHashtags = `${caption}\n\n${selectedHashtags.join(' ')}`;
+
     const formData = new FormData();
-    formData.append('caption', caption);
+    formData.append('caption', captionWithHashtags);
     formData.append('video', {
       uri: video.uri,
       name: video.fileName || `short_${Date.now()}.mp4`,
@@ -620,10 +746,10 @@ const UploadShortScreen = ({ navigation }) => {
         text: 'Short uploaded successfully!',
         backgroundColor: '#51A851',
       });
-      
 
       setCaption('');
       setVideo(null);
+      setSelectedHashtags([]);
       navigation.navigate('SocialHome', { newShort: true });
     } catch (error) {
       console.error('Upload error:', error);
@@ -646,6 +772,8 @@ const UploadShortScreen = ({ navigation }) => {
     }
   };
 
+  const suggestions = getHashtagSuggestions();
+
   return (
     <SafeAreaView style={{flex:1, backgroundColor:'black'}}>
       <KeyboardAvoidingView
@@ -667,10 +795,10 @@ const UploadShortScreen = ({ navigation }) => {
             
             <TouchableOpacity 
               onPress={handleUpload} 
-              disabled={isUploading || !video || !caption.trim()}
+              disabled={isUploading || !video || !caption.trim() || selectedHashtags.length === 0}
               style={[
                 styles.postButton,
-                (!video || !caption.trim()) && styles.postButtonDisabled
+                (!video || !caption.trim() || selectedHashtags.length === 0) && styles.postButtonDisabled
               ]}
             >
               {isUploading ? (
@@ -736,7 +864,7 @@ const UploadShortScreen = ({ navigation }) => {
               )}
             </View>
 
-           
+            {/* Action Buttons */}
             <View style={styles.actionButtons}>
               <TouchableOpacity 
                 onPress={selectVideoFromGallery} 
@@ -759,7 +887,7 @@ const UploadShortScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
 
-            
+            {/* Caption Section */}
             <View style={styles.captionSection}>
               <Text style={styles.sectionLabel}>Caption</Text>
               <TextInput
@@ -780,11 +908,107 @@ const UploadShortScreen = ({ navigation }) => {
               </View>
             </View>
 
-           
+            {/* Hashtags/Categories Section */}
+            <View style={styles.hashtagSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionLabel}>Categories (Hashtags)</Text>
+                <Text style={styles.hashtagCount}>
+                  {selectedHashtags.length}/5
+                </Text>
+              </View>
+
+              {/* Selected Hashtags */}
+              {selectedHashtags.length > 0 && (
+                <View style={styles.selectedHashtagsContainer}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {selectedHashtags.map((tag, index) => (
+                      <View key={index} style={styles.selectedHashtag}>
+                        <Text style={styles.selectedHashtagText}>{tag}</Text>
+                        <TouchableOpacity
+                          onPress={() => removeHashtag(tag)}
+                          style={styles.removeHashtag}
+                        >
+                          <Icon name="close" size={14} color="#FFF" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Add Custom Hashtag */}
+              <View style={styles.addHashtagContainer}>
+                <TextInput
+                  style={styles.hashtagInput}
+                  placeholder="Add custom hashtag (e.g., #MyTag)"
+                  placeholderTextColor="#94A3B8"
+                  value={customHashtag}
+                  onChangeText={(text) => {
+                    setCustomHashtag(text);
+                    setShowHashtagSuggestions(true);
+                  }}
+                  onFocus={() => setShowHashtagSuggestions(true)}
+                />
+                <TouchableOpacity
+                  style={styles.addHashtagButton}
+                  onPress={addCustomHashtag}
+                >
+                  <Icon name="add" size={24} color="#FFF" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Hashtag Suggestions */}
+              {showHashtagSuggestions && suggestions.length > 0 && (
+                <View style={styles.suggestionsContainer}>
+                  <FlatList
+                    horizontal
+                    data={suggestions}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.suggestionTag}
+                        onPress={() => {
+                          toggleHashtag(item);
+                          setCustomHashtag('');
+                          setShowHashtagSuggestions(false);
+                        }}
+                      >
+                        <Text style={styles.suggestionText}>{item}</Text>
+                      </TouchableOpacity>
+                    )}
+                    showsHorizontalScrollIndicator={false}
+                  />
+                </View>
+              )}
+
+              {/* Popular Hashtags Grid */}
+              <Text style={styles.popularHashtagsTitle}>Popular Hashtags</Text>
+              <View style={styles.popularHashtagsGrid}>
+                {POPULAR_HASHTAGS.slice(0, 12).map((tag, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.popularHashtag,
+                      selectedHashtags.includes(tag) && styles.popularHashtagSelected
+                    ]}
+                    onPress={() => toggleHashtag(tag)}
+                  >
+                    <Text style={[
+                      styles.popularHashtagText,
+                      selectedHashtags.includes(tag) && styles.popularHashtagTextSelected
+                    ]}>
+                      {tag}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Info Section */}
             <View style={styles.infoSection}>
               <Icon name="info" size={18} color="#94A3B8" />
               <Text style={styles.infoText}>
-                Your short will be visible to everyone and may appear in recommendations
+                Add hashtags to help people discover your short. Maximum 5 hashtags allowed.
               </Text>
             </View>
           </ScrollView>
@@ -956,6 +1180,109 @@ const styles = StyleSheet.create({
   charCount: {
     color: '#94A3B8',
     fontSize: 14,
+  },
+  // Hashtag Styles
+  hashtagSection: {
+    marginBottom: 24,
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  hashtagCount: {
+    color: '#94A3B8',
+    fontSize: 14,
+  },
+  selectedHashtagsContainer: {
+    marginBottom: 16,
+  },
+  selectedHashtag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  selectedHashtagText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 4,
+  },
+  removeHashtag: {
+    padding: 2,
+  },
+  addHashtagContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  hashtagInput: {
+    flex: 1,
+    backgroundColor: '#0F0F0F',
+    borderRadius: 8,
+    padding: 12,
+    color: '#E5E7EB',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    marginRight: 8,
+  },
+  addHashtagButton: {
+    backgroundColor: '#6366F1',
+    padding: 12,
+    borderRadius: 8,
+  },
+  suggestionsContainer: {
+    marginBottom: 16,
+  },
+  suggestionTag: {
+    backgroundColor: '#2A2A2A',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  suggestionText: {
+    color: '#E5E7EB',
+    fontSize: 14,
+  },
+  popularHashtagsTitle: {
+    color: '#E5E7EB',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  popularHashtagsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  popularHashtag: {
+    backgroundColor: '#2A2A2A',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 4,
+  },
+  popularHashtagSelected: {
+    backgroundColor: '#6366F1',
+  },
+  popularHashtagText: {
+    color: '#E5E7EB',
+    fontSize: 14,
+  },
+  popularHashtagTextSelected: {
+    color: '#FFF',
   },
   infoSection: {
     flexDirection: 'row',

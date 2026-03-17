@@ -776,23 +776,12 @@ const ContactsScreen = () => { // Remove navigation from props
     );
   };
 
-  if (loading && !refreshing) {
-    return (
-      <SafeAreaView style={dynamicStyles.container}>
-        <View style={dynamicStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={dynamicStyles.loadingText}>Loading contacts...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={dynamicStyles.container}>
-      <View style={dynamicStyles.header}>
+      {/* <View style={dynamicStyles.header}>
         <Text style={dynamicStyles.headerTitle}>Discover People</Text>
         <Text style={dynamicStyles.headerSubtitle}>Connect with friends and contacts</Text>
-      </View>
+      </View> */}
       
       <View style={dynamicStyles.sectionHeader}>
         <Text style={dynamicStyles.sectionTitle}>People You May Know</Text>

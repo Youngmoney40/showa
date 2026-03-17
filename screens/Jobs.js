@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useTheme } from '../src/context/ThemeContext'; // Adjust path as needed
+import { useTheme } from '../src/context/ThemeContext'; 
 
 const { width } = Dimensions.get('window');
 
@@ -68,7 +68,7 @@ const PremiumJobCard = ({ job, colors, isDark }) => {
       {job.isFeatured && (
         <View style={[styles.premiumBadge, { backgroundColor: colors.card }]}>
           <View style={styles.premiumBadgeInner}>
-            <MaterialCommunityIcon name="sparkles" size={12} color={colors.primary} />
+            <MaterialCommunityIcon name="star" size={12} color={colors.primary} />
             <Text style={[styles.premiumBadgeText, { color: colors.primary }]}>Featured</Text>
           </View>
         </View>
@@ -107,15 +107,18 @@ const PremiumJobCard = ({ job, colors, isDark }) => {
         <View style={styles.workTypeContainer}>
           <Icon name="clock" size={14} color="#fff" />
           <Text style={[styles.workTypeText, { color: '#fff' }]} numberOfLines={1}>
-            {job.workType || 'Full-time'}
+            {job.workType || 'Full-time'} - {formatSalary(job.salary)}
           </Text>
+          {/* <Text style={[styles.metricValue, { color: colors.text }]} numberOfLines={1}>
+                {formatSalary(job.salary)}
+          </Text> */}
         </View>
       </View>
 
       {/* Main Content */}
       <View style={styles.mainContent}>
-        {/* Key Metrics Grid */}
-        <View style={styles.metricsGrid}>
+       
+        {/* <View style={styles.metricsGrid}>
           <View style={[styles.metricItem, { backgroundColor: colors.backgroundSecondary }]}>
             <View style={[styles.metricIconContainer, { backgroundColor: colors.card }]}>
               <Icon name="award" size={14} color={colors.primary} />
@@ -139,7 +142,7 @@ const PremiumJobCard = ({ job, colors, isDark }) => {
               </Text>
             </View>
           </View>
-        </View>
+        </View> */}
 
         {/* Job Description */}
         <View style={styles.descriptionSection}>
@@ -168,8 +171,10 @@ const PremiumJobCard = ({ job, colors, isDark }) => {
                 >
                   {tag}
                 </Text>
+                
               ))}
             </View>
+            
           </View>
         )}
       </View>
@@ -185,7 +190,7 @@ const PremiumJobCard = ({ job, colors, isDark }) => {
           </View>
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
           <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>
-            {getTimeAgo(job.createdAt)}
+            {getTimeAgo(job.createdAt.slice(0,5)+'..')}
           </Text>
         </View>
         
@@ -204,9 +209,9 @@ const PremiumJobCard = ({ job, colors, isDark }) => {
             isPressed ? styles.viewDetailsTextPressed : styles.viewDetailsTextNormal,
             { color: isPressed ? '#fff' : colors.primary }
           ]}>
-            View Details
+            View 
           </Text>
-          <Icon name="external-link" size={14} color={isPressed ? '#fff' : colors.primary} />
+         
         </TouchableOpacity>
       </View>
     </Pressable>
@@ -273,7 +278,7 @@ const PremiumJobScroll = () => {
           views: Math.floor(Math.random() * 1500) + 500
         }));
         
-        setJobs(enhancedJobs.slice(0, 6)); // Reduced from 8 to 6
+        setJobs(enhancedJobs.slice(0, 6)); 
       }
     } catch (err) {
       setError('Unable to load opportunities at the moment. Please try again.');
@@ -324,8 +329,19 @@ const PremiumJobScroll = () => {
             Discover your next career opportunity
           </Text>
         </View>
+        {!loading && jobs.length > 0 && (
+        <View style={styles.viewAllContainer}>
+          <TouchableOpacity 
+            onPress={() => Linking.openURL('https://ejobs.com.ng/jobs')}
+            style={styles.viewAllButton}
+          >
+            <Text style={[styles.viewAllText, { color: colors.primary }]}>See All</Text>
+            <Icon name="external-link" size={16} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+      )}
 
-        <View style={styles.navButtons}>
+        {/* <View style={styles.navButtons}>
           <TouchableOpacity 
             onPress={scrollLeft}
             style={[styles.navButton, { 
@@ -344,7 +360,7 @@ const PremiumJobScroll = () => {
           >
             <Icon name="chevron-right" size={20} color={colors.text} />
           </TouchableOpacity>
-        </View>
+        </View> */}
       </View>
 
       {/* Job Cards Container */}
@@ -378,7 +394,7 @@ const PremiumJobScroll = () => {
       </ScrollView>
 
       {/* View All Link */}
-      {!loading && jobs.length > 0 && (
+      {/* {!loading && jobs.length > 0 && (
         <View style={styles.viewAllContainer}>
           <TouchableOpacity 
             onPress={() => Linking.openURL('https://ejobs.com.ng/jobs')}
@@ -388,7 +404,7 @@ const PremiumJobScroll = () => {
             <Icon name="external-link" size={16} color={colors.primary} />
           </TouchableOpacity>
         </View>
-      )}
+      )} */}
     </View>
   );
 };
@@ -793,7 +809,7 @@ const styles = StyleSheet.create({
   // View all container
   viewAllContainer: {
     alignItems: 'center',
-    marginTop: 16,
+    
   },
   viewAllButton: {
     flexDirection: 'row',
