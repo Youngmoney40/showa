@@ -559,21 +559,37 @@ const RegistrationScreen = ({ navigation, route }) => {
         data: response.data
       });
 
-      if (response.status === 200 || response.status === 201) {
-        const { token, refresh, user } = response.data;
+      // if (response.status === 200 || response.status === 201) {
+      //   const { token, refresh, user } = response.data;
         
-        if (!token) {
-          throw new Error('No token received from server');
-        }
+      //   if (!token) {
+      //     throw new Error('No token received from server');
+      //   }
 
-        // Store all data in AsyncStorage
-        await Promise.all([
-          AsyncStorage.setItem('userToken', token),
-          AsyncStorage.setItem('refreshToken', refresh || ''),
-          AsyncStorage.setItem('userData', JSON.stringify(user))
-        ]);
+      //   // Store all data in AsyncStorage
+      //   await Promise.all([
+      //     AsyncStorage.setItem('userToken', token),
+      //     AsyncStorage.setItem('refreshToken', refresh || ''),
+      //     AsyncStorage.setItem('userData', JSON.stringify(user))
+      //   ]);
 
-        navigation.navigate('SynMessage');
+      //   navigation.navigate('SynMessage');
+      if (response.status === 200 || response.status === 201) {
+          const { token, refresh, user } = response.data;
+
+          if (!token) {
+            throw new Error('No token received from server');
+          }
+          
+          await Promise.all([
+            AsyncStorage.setItem('userToken', token),
+            AsyncStorage.setItem('refreshToken', refresh || ''),
+            AsyncStorage.setItem('userData', JSON.stringify(user)),
+            AsyncStorage.setItem('username', formData.username.trim()) 
+          ]);
+
+          navigation.navigate('SynMessage');
+        
       } else {
         throw new Error(`Unexpected status code: ${response.status}`);
       }

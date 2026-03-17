@@ -1,4 +1,4 @@
-name: Android AAB Build (Play Store)
+name: Android AAB Build
 
 on:
   push:
@@ -15,29 +15,24 @@ jobs:
 
     steps:
 
-      # 1️⃣ Checkout repository
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      # 4️⃣ Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # 5️⃣ Cache Gradle
       - name: Cache Gradle
         uses: actions/cache@v3
         with:
@@ -48,26 +43,15 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      # 6️⃣ Setup Keystore
       - name: Setup Keystore
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
-      # 7️⃣ Create gradle.properties for signing
-      - name: Setup signing config
-        run: |
-          echo "MYAPP_UPLOAD_STORE_FILE=release.keystore" >> android/gradle.properties
-          echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> android/gradle.properties
-          echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> android/gradle.properties
-          echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> android/gradle.properties
-
-      # 8️⃣ Make gradlew executable
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      # 9️⃣ Generate React Native bundle
       - name: Generate JS bundle
         run: |
           mkdir -p android/app/src/main/assets
@@ -78,19 +62,18 @@ jobs:
             --bundle-output android/app/src/main/assets/index.android.bundle \
             --assets-dest android/app/src/main/res
 
-      # 🔟 Clean Gradle
       - name: Clean Gradle
         run: |
           cd android
           ./gradlew clean
 
-      # 1️⃣1️⃣ Build Release AAB (IMPORTANT)
+      # ✅ CHANGED HERE
       - name: Build AAB
         run: |
           cd android
           ./gradlew bundleRelease
 
-      # 1️⃣2️⃣ Upload AAB
+      # ✅ CHANGED HERE
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:

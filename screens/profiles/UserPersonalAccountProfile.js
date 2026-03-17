@@ -142,22 +142,54 @@ const UserProfile = ({ navigation, route }) => {
     }).start();
   }, []);
 
+  // useEffect(() => {
+  //   const checkProfileOwnership = async () => {
+  //     if (userIdFromParams) {
+  //       const currentUserId = await AsyncStorage.getItem('userId');
+  //       setIsOwnProfile(userIdFromParams === currentUserId);
+  //     } else {
+  //       const userDataStr = await AsyncStorage.getItem('userData');
+  //       const userNameStr = await AsyncStorage.getItem('username');
+  //       const userData = userDataStr ? JSON.parse(userDataStr) : null;
+  //       const userName = userNameStr ? JSON.parse(userNameStr) : null;
+  //       console.log('Current user data from AsyncStorage:', userData);
+  //       if (userData?.id) {
+  //         setIsOwnProfile(true);
+  //       }
+  //     }
+  //   };
+  //   checkProfileOwnership();
+  // }, [userIdFromParams]);
+
   useEffect(() => {
-    const checkProfileOwnership = async () => {
+  const checkProfileOwnership = async () => {
+    try {
+      // If a specific userId is passed in params
       if (userIdFromParams) {
         const currentUserId = await AsyncStorage.getItem('userId');
         setIsOwnProfile(userIdFromParams === currentUserId);
       } else {
+        // If no userId param, use stored user data
         const userDataStr = await AsyncStorage.getItem('userData');
+        const username = await AsyncStorage.getItem('username'); // no JSON.parse needed
         const userData = userDataStr ? JSON.parse(userDataStr) : null;
+        // setUserName({ username }); // Store username in state for display
+
         console.log('Current user data from AsyncStorage:', userData);
+        console.log('Current username from AsyncStorage:', username);
+
         if (userData?.id) {
           setIsOwnProfile(true);
         }
       }
-    };
-    checkProfileOwnership();
-  }, [userIdFromParams]);
+    } catch (error) {
+      console.error('Error checking profile ownership:', error);
+      setIsOwnProfile(false);
+    }
+  };
+
+  checkProfileOwnership();
+}, [userIdFromParams]);
 
   const getImageUrl = (imagePath) => {
     if (!imagePath || imagePath === 'null' || imagePath === 'undefined' || imagePath === '') {
@@ -1033,7 +1065,7 @@ const UserProfile = ({ navigation, route }) => {
               )}
             </View>
             <Text style={[styles.profileUsername, { color: colors.textSecondary }]}>
-              @{userData.username || userData.name?.toLocaleLowerCase()}
+              @{userData?.username || userData.name?.toLocaleLowerCase()}
             </Text>
           </View>
         </View>
