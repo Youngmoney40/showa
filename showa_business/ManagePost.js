@@ -932,21 +932,7 @@ const ManagePostsScreen = () => {
         </TouchableOpacity>
         
         {/* Share button - top left (optional) */}
-        {imageViewerItem && (
-          <TouchableOpacity
-            style={styles.imageViewerShareButton}
-            onPress={() => {
-              // Add your share function here
-              Alert.alert('Share', 'Share functionality');
-            }}
-            activeOpacity={0.7}
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-          >
-            <View style={styles.imageViewerShareButtonInner}>
-              <Ionicons name="share-outline" size={22} color="#fff" />
-            </View>
-          </TouchableOpacity>
-        )}
+        
         
         {/* Swipe indicator - shows that you can swipe down */}
         <View style={styles.swipeIndicator}>

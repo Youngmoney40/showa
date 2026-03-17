@@ -131,6 +131,7 @@ const UserProfile = ({ navigation, route }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [fadeAnim] = useState(new Animated.Value(0));
   const [dateLockMessage, setDateLockMessage] = useState('');
+  const [loginusername, setUserName] = useState('');
 
   const scrollViewRef = useRef(null);
 
@@ -173,7 +174,7 @@ const UserProfile = ({ navigation, route }) => {
         const userDataStr = await AsyncStorage.getItem('userData');
         const username = await AsyncStorage.getItem('username'); // no JSON.parse needed
         const userData = userDataStr ? JSON.parse(userDataStr) : null;
-        // setUserName({ username }); // Store username in state for display
+        setUserName({ username }); 
 
         console.log('Current user data from AsyncStorage:', userData);
         console.log('Current username from AsyncStorage:', username);
@@ -1065,7 +1066,7 @@ const UserProfile = ({ navigation, route }) => {
               )}
             </View>
             <Text style={[styles.profileUsername, { color: colors.textSecondary }]}>
-              @{userData?.username || userData.name?.toLocaleLowerCase()}
+              @{userData?.username || loginusername?.toLocaleLowerCase()}
             </Text>
           </View>
         </View>
