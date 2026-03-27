@@ -346,8 +346,8 @@ const fetchChatHistory = useCallback(async (userId) => {
       }
 
       const wsUrl = chatType === 'single'
-        ? `wss://showa.essential.com.ng/ws/chat/single/${Math.min(userId, receiverId)}/${Math.max(userId, receiverId)}/${accountMode}/?token=${encodeURIComponent(token)}`
-        : `wss://showa.essential.com.ng/ws/chat/group/${groupSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
+        ? `wss://api.showapp.ng/ws/chat/single/${Math.min(userId, receiverId)}/${Math.max(userId, receiverId)}/${accountMode}/?token=${encodeURIComponent(token)}`
+        : `wss://api.showapp.ng/ws/chat/group/${groupSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
 
       console.log('Connecting WebSocket:', wsUrl);
       ws.current = new WebSocket(wsUrl);
@@ -2082,8 +2082,8 @@ videoLabel: {
 //       if (!token) return;
 
 //       const wsUrl = chatType === 'single'
-//         ? `wss://showa.essential.com.ng/ws/chat/single/${Math.min(userId, receiverId)}/${Math.max(userId, receiverId)}/${accountMode}/?token=${encodeURIComponent(token)}`
-//         : `wss://showa.essential.com.ng/ws/chat/group/${groupSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
+//         ? `wss://api.showapp.ng/ws/chat/single/${Math.min(userId, receiverId)}/${Math.max(userId, receiverId)}/${accountMode}/?token=${encodeURIComponent(token)}`
+//         : `wss://api.showapp.ng/ws/chat/group/${groupSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
 
 //       ws.current = new WebSocket(wsUrl);
 

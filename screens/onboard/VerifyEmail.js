@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -176,25 +175,30 @@ const VerificationCodeScreen = ({ route }) => {
           ))}
         </View>
 
-        {/* Verify Button */}
+        {/* Verify Button - Keep enabled during loading */}
         <TouchableOpacity
-          style={[styles.submitButton, (!isCodeComplete || loading) && styles.buttonDisabled]}
-          disabled={!isCodeComplete || loading}
+          style={styles.submitButton}
+          disabled={!isCodeComplete} // Only disable if code is incomplete
           onPress={verifyOTP}
+          activeOpacity={loading ? 0.8 : 0.6}
         >
           <LinearGradient
-            colors={isCodeComplete && !loading ? ['#0d64dd', '#0d64dd'] : ['#8fb1ff', '#a8c4ff']}
+            colors={isCodeComplete ? ['#0d64dd', '#0d64dd'] : ['#8fb1ff', '#a8c4ff']}
             style={styles.buttonGradient}
             start={{x: 0, y: 0}} end={{x: 1, y: 0}}
           >
-            {loading ? (
-              <ActivityIndicator style={{padding:10, marginBottom:20}} size="small" color="#fff" />
-            ) : (
-              <View style={styles.buttonContent}>
+            <View style={styles.buttonContent}>
+              {loading ? (
+                <>
+                  <ActivityIndicator size="small" color="#fff" />
+                  <Text style={[styles.submitButtonText, styles.buttonTextWithLoader]}>
+                    VERIFYING...
+                  </Text>
+                </>
+              ) : (
                 <Text style={styles.submitButtonText}>{getButtonText()}</Text>
-               
-              </View>
-            )}
+              )}
+            </View>
           </LinearGradient>
         </TouchableOpacity>
 
@@ -242,11 +246,40 @@ const styles = StyleSheet.create({
   codeInputFilled:{ borderColor:'#0d64dd', backgroundColor:'#fff' },
   codeInputError:{ borderColor:'#ff3b30' },
 
-  submitButton:{ borderRadius:12, overflow:'hidden', marginBottom:20, width:'100%', elevation:3, shadowColor:'#000', shadowOffset:{width:0,height:2}, shadowOpacity:0.2, shadowRadius:4 },
-  buttonGradient:{borderRadius:10, paddingVertical:10, alignItems:'center', justifyContent:'center' },
-  buttonDisabled:{ opacity:0.7 },
-  buttonContent:{ flexDirection:'row', alignItems:'center' },
-  submitButtonText:{ color:'#fff', fontWeight:'600',paddingVertical:6,marginBottom:2, fontSize:16, marginRight:10 },
+  submitButton:{ 
+    borderRadius: 12, 
+    overflow: 'hidden', 
+    marginBottom: 20, 
+    width: '100%', 
+    elevation: 3, 
+    shadowColor: '#000', 
+    shadowOffset: {width: 0, height: 2}, 
+    shadowOpacity: 0.2, 
+    shadowRadius: 4,
+  },
+  buttonGradient: {
+    borderRadius: 12, 
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: 'center', 
+    justifyContent: 'center',
+    minHeight: 52,
+  },
+  buttonContent: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    gap: 10,
+  },
+  submitButtonText: { 
+    color: '#fff', 
+    fontWeight: '600',
+    fontSize: 16, 
+    letterSpacing: 0.5,
+  },
+  buttonTextWithLoader: {
+    marginLeft: 8,
+  },
 
   resendContainer:{ marginTop:10 },
   resendContent:{ flexDirection:'row', alignItems:'center' },

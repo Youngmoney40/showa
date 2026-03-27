@@ -2182,7 +2182,7 @@ const ServiceImage = ({ imageUrl, style, placeholderIcon, isAvatar = false }) =>
     }
     
     
-    const baseUrl = 'https://showa.essential.com.ng';
+    const baseUrl = 'https://api.showapp.ng';
     const fullUrl = url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
     console.log('👤 Profile image URL:', { original: url, full: fullUrl });
     return fullUrl;

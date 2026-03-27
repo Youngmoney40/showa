@@ -20,8 +20,6 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { COUNTRIES } from '../onboard/CountryPicker';
 
-
-
 const COLORS = {
   primary: '#0d64dd',
   primaryLight: '#4a90e2',
@@ -48,7 +46,6 @@ export default function PhoneNumberScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const phoneInputRef = useRef(null);
 
-  
   useEffect(() => {
     const focusTimer = setTimeout(() => {
       phoneInputRef.current?.focus();
@@ -57,18 +54,8 @@ export default function PhoneNumberScreen({ navigation }) {
     return () => clearTimeout(focusTimer);
   }, []);
 
- 
-  useEffect(() => {
-    if (showDropdown) {
-      phoneInputRef.current?.blur();
-    } else {
-     
-      const focusTimer = setTimeout(() => {
-        phoneInputRef.current?.focus();
-      }, 100);
-      return () => clearTimeout(focusTimer);
-    }
-  }, [showDropdown]);
+  // REMOVED the problematic useEffect that was causing focus issues
+  // No need to blur/focus when dropdown opens/closes
 
   const validatePhoneNumber = () => {
     const trimmedNumber = phoneNumber.trim();
@@ -131,7 +118,6 @@ export default function PhoneNumberScreen({ navigation }) {
         translucent={false}
       />
 
-     
       <LinearGradient
         colors={[COLORS.primary, COLORS.primary]}
         start={{ x: 0, y: 0 }}
@@ -139,12 +125,11 @@ export default function PhoneNumberScreen({ navigation }) {
         style={styles.header}
       >
         <View style={styles.headerRow}>
-         
-
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Phone Verification</Text>
-            <Text style={styles.headerSubtitle}><Text style={styles.headerSubtitle}>Provide your details to continue</Text>
-</Text>
+            <Text style={styles.headerSubtitle}>
+              <Text style={styles.headerSubtitle}>Provide your details to continue</Text>
+            </Text>
           </View>
 
           <View style={styles.headerPlaceholder} />
@@ -162,7 +147,6 @@ export default function PhoneNumberScreen({ navigation }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-         
           <View style={styles.heroContainer}>
             <LinearGradient
               colors={['rgba(13,100,221,0.1)', 'rgba(74,144,226,0.05)']}
@@ -255,7 +239,6 @@ export default function PhoneNumberScreen({ navigation }) {
             ) : (
               <>
                 <Text style={styles.buttonText}>Continue</Text>
-                
               </>
             )}
           </TouchableOpacity>
@@ -312,6 +295,10 @@ export default function PhoneNumberScreen({ navigation }) {
                   onPress={() => {
                     setSelectedCountry(item);
                     setShowDropdown(false);
+                    // Small delay to ensure modal closes before focusing
+                    setTimeout(() => {
+                      phoneInputRef.current?.focus();
+                    }, 100);
                   }}
                   activeOpacity={0.7}
                 >
@@ -384,14 +371,11 @@ const styles = StyleSheet.create({
   headerPlaceholder: {
     width: 40,
   },
-
-  /* Content Styles */
   contentContainer: {
     padding: SPACING.lg,
     paddingBottom: SPACING.xxl,
   },
 
-  /* Hero Section */
   heroContainer: {
     alignItems: 'center',
     marginBottom: SPACING.xxl,
@@ -431,7 +415,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
   },
 
-  /* Input Section */
   inputSection: {
     marginBottom: SPACING.xl,
   },
@@ -524,7 +507,6 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
   },
 
-  /* Button Styles */
   continueButton: {
     backgroundColor: COLORS.primary,
     paddingVertical: SPACING.lg,
@@ -558,7 +540,6 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
   },
 
-  /* Privacy Text */
   privacyText: {
     fontSize: 12,
     color: COLORS.textSecondary,
@@ -567,7 +548,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
   },
 
-  /* Modal Styles */
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -577,7 +557,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: SCREEN_HEIGHT * 0.8,
+    maxHeight: SCREEN_HEIGHT * 0.5,
     paddingTop: SPACING.md,
   },
   modalHeader: {

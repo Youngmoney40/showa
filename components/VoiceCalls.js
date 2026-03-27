@@ -31,7 +31,7 @@
 
 
 // // ================== CONFIG ==================
-// const SIGNALING_SERVER = "wss://showa.essential.com.ng";
+// const SIGNALING_SERVER = "wss://api.showapp.ng";
 // // ============================================
 
 // export default function VoiceVideoCallScreen({ navigation, route }) {
@@ -1617,7 +1617,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // // ============================================
 
 // // export default function VideoCallScreen({ navigation, route }) {
@@ -2694,7 +2694,7 @@ import InCallManager from "react-native-incall-manager";
 
 
 // ================== CONFIG ==================
-const SIGNALING_SERVER = "wss://showa.essential.com.ng";
+const SIGNALING_SERVER = "wss://api.showapp.ng";
 // ============================================
 
 export default function VoiceVideoCallScreen({ navigation, route }) {

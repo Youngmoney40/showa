@@ -208,7 +208,7 @@
 // // //         return;
 // // //       }
 
-// // //       const wsUrl = `ws://showa.essential.com.ng/ws/chat/channel/${channelSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
+// // //       const wsUrl = `ws://api.showapp.ng/ws/chat/channel/${channelSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
 // // //       ws.current = new WebSocket(wsUrl);
 
 // // //       ws.current.onopen = () => {
@@ -1423,7 +1423,7 @@
 // //         return;
 // //       }
 
-// //       const wsUrl = `ws://showa.essential.com.ng/ws/chat/channel/${channelSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
+// //       const wsUrl = `ws://api.showapp.ng/ws/chat/channel/${channelSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
 // //       ws.current = new WebSocket(wsUrl);
 
 // //       ws.current.onopen = () => {
@@ -3865,7 +3865,7 @@ export default function ChannelAdminScreen({ route, navigation }) {
         }
 
        
-        const wsUrl = `ws://showa.essential.com.ng/ws/chat/channel/${channelSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
+        const wsUrl = `ws://api.showapp.ng/ws/chat/channel/${channelSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
         
         ws.current = new WebSocket(wsUrl);
 

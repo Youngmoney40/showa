@@ -174,7 +174,7 @@ const UserProfile = ({ navigation, route }) => {
         const userDataStr = await AsyncStorage.getItem('userData');
         const username = await AsyncStorage.getItem('username'); // no JSON.parse needed
         const userData = userDataStr ? JSON.parse(userDataStr) : null;
-        setUserName({ username }); 
+        setUserName(username); 
 
         console.log('Current user data from AsyncStorage:', userData);
         console.log('Current username from AsyncStorage:', username);
@@ -199,18 +199,18 @@ const UserProfile = ({ navigation, route }) => {
     
     if (typeof imagePath === 'string' && imagePath.startsWith('http')) {
       let url = imagePath;
-      if (url.includes('showa.essential.com.ngmedia')) {
-        url = url.replace('showa.essential.com.ngmedia', 'showa.essential.com.ng/media');
+      if (url.includes('api.showapp.ngmedia')) {
+        url = url.replace('api.showapp.ngmedia', 'api.showapp.ng/media');
       }
       if (url.startsWith('http://')) {
         url = url.replace('http://', 'https://');
       }
-      if (url.includes('showa.essential.com.ng/') && 
-          !url.includes('showa.essential.com.ng/media/') &&
+      if (url.includes('api.showapp.ng/') && 
+          !url.includes('api.showapp.ng/media/') &&
           (url.includes('profile_pics') || url.includes('cover_photos') ||
            url.includes('catalog_images') || url.includes('marketplace_images') ||
            url.includes('post_images'))) {
-        url = url.replace('showa.essential.com.ng/', 'showa.essential.com.ng/media/');
+        url = url.replace('api.showapp.ng/', 'api.showapp.ng/media/');
       }
       return url;
     }
@@ -1066,7 +1066,17 @@ const UserProfile = ({ navigation, route }) => {
               )}
             </View>
             <Text style={[styles.profileUsername, { color: colors.textSecondary }]}>
-              @{userData?.username || loginusername?.toLocaleLowerCase()}
+                @{
+                  (() => {
+                    // If userData?.username exists and matches loginusername, use loginusername
+                    if (userData?.username && loginusername && 
+                        loginusername.toLowerCase() === loginusername.toLowerCase()) {
+                      return loginusername.toLowerCase();
+                    }
+                    // Otherwise use userData?.username or fallback to loginusername
+                    return (userData?.username || loginusername || '').toLowerCase();
+                  })()
+                }
             </Text>
           </View>
         </View>

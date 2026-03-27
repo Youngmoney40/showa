@@ -115,7 +115,7 @@ const HomeScreen = ({ navigation }) => {
         const userData = JSON.parse(retrieveUserId);
         const currentUserId = userData.id;
         const ROOM_ID = `user-${currentUserId}`;
-        const SIGNALING_SERVER = 'wss://showa.essential.com.ng';
+        const SIGNALING_SERVER = 'wss://api.showapp.ng';
 
         const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
 

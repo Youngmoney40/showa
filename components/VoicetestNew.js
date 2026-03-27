@@ -17,7 +17,7 @@
 // // } from "react-native-webrtc";
 // // import { useCall } from "./CallContext";
 
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // const ROOM_ID = "unique-room-id";
 
 // // export default function VoiceCallScreen({navigation}) {
@@ -397,7 +397,7 @@
 // // import { useCall } from "./CallContext";
 // // import { Image } from "react-native-animatable";
 
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // const ROOM_ID = "unique-room-id";
 
 // // export default function VoiceCallScreen({ navigation, route }) {
@@ -834,7 +834,7 @@
 // // import LottieView from "lottie-react-native";
 // // import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // const ROOM_ID = "unique-room-id";
 
 
@@ -1707,7 +1707,7 @@
 // // import LottieView from 'lottie-react-native';
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // // ============================================
 
 // // export default function VoiceCallScreen({ navigation, route }) {
@@ -2627,7 +2627,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // // ============================================
 
 // // export default function VoiceVideoCallScreen({ navigation, route }) {
@@ -3536,7 +3536,7 @@
 
 
 // // ================== CONFIG ==================
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // ============================================
 
 // export default function VoiceVideoCallScreen({ navigation, route }) {
@@ -5091,7 +5091,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // // ============================================
 
 // // export default function VoiceVideoCallScreen({ navigation, route }) {
@@ -6006,7 +6006,7 @@
 
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // // ============================================
 
 // // export default function VoiceVideoCallScreen({ navigation, route }) {

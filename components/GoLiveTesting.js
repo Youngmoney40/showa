@@ -29,7 +29,7 @@
 // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // ================== CONFIG ==================
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // const MAX_VIEWERS = 10;
 // const MAX_RECONNECT_ATTEMPTS = 5;
 // const INITIAL_RECONNECT_DELAY = 3000;
@@ -1902,7 +1902,7 @@
 // // import InCallManager from "react-native-incall-manager";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // const MAX_VIEWERS = 10;
 // // // ============================================
 
@@ -2862,7 +2862,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // const MAX_VIEWERS = 10;
 // // // ============================================
 
@@ -3920,7 +3920,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // const MAX_VIEWERS = 10;
 // // // ============================================
 
@@ -4507,7 +4507,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // const MAX_VIEWERS = 10;
 // // // ============================================
 
@@ -5662,7 +5662,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // const MAX_VIEWERS = 10;
 // // // ============================================
 
@@ -6833,7 +6833,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "wss://showa.essential.com.ng"; // Changed to wss://
+// // const SIGNALING_SERVER = "wss://api.showapp.ng"; // Changed to wss://
 // // const MAX_VIEWERS = 10;
 // // const MAX_RECONNECT_ATTEMPTS = 5;
 // // const INITIAL_RECONNECT_DELAY = 3000;
@@ -8021,7 +8021,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "wss://showa.essential.com.ng"; // Changed to wss://
+// // const SIGNALING_SERVER = "wss://api.showapp.ng"; // Changed to wss://
 // // const MAX_VIEWERS = 10;
 // // const MAX_RECONNECT_ATTEMPTS = 5;
 // // const INITIAL_RECONNECT_DELAY = 3000;
@@ -9208,7 +9208,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "wss://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "wss://api.showapp.ng";
 // // const MAX_VIEWERS = 10;
 // // const MAX_RECONNECT_ATTEMPTS = 5;
 // // const INITIAL_RECONNECT_DELAY = 3000;
@@ -10433,7 +10433,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "wss://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "wss://api.showapp.ng";
 // // const MAX_VIEWERS = 10;
 // // const MAX_RECONNECT_ATTEMPTS = 5;
 // // const INITIAL_RECONNECT_DELAY = 3000;
@@ -11758,7 +11758,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // const MAX_VIEWERS = 10;
 // // const MAX_RECONNECT_ATTEMPTS = 5;
 // // const INITIAL_RECONNECT_DELAY = 3000;
@@ -13086,7 +13086,7 @@
 // // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // const MAX_VIEWERS = 10;
 // // const MAX_RECONNECT_ATTEMPTS = 5;
 // // const INITIAL_RECONNECT_DELAY = 3000;

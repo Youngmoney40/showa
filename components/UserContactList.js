@@ -2216,6 +2216,14 @@ Join me and let’s connect!. Download it here: https://play.google.com/store/ap
             />
             <Text style={[styles.headerTitle, { color: '#fff' }]}>Contacts</Text>
           </View>
+          <TouchableOpacity onPress={()=>navigation.navigate('SyncContactForBusiness')}>
+            <Icon 
+              name="refresh" 
+              size={24} 
+              color='#fff' 
+              
+            />
+          </TouchableOpacity>
         </View>
         
         <View style={[styles.searchContainer, { backgroundColor: '#fff' }]}>

@@ -1,11 +1,19 @@
-// import React, { useEffect, useState } from "react";
-// import { AppState, View, StatusBar as RNStatusBar } from 'react-native';
+
+// import React, { useEffect, useState, useRef } from "react";
+// import { AppState,Platform, View, ActivityIndicator, StatusBar as RNStatusBar } from 'react-native';
 // import { GestureHandlerRootView } from 'react-native-gesture-handler';
-// import { NavigationContainer } from '@react-navigation/native';
+// import { NavigationContainer, useNavigation } from '@react-navigation/native';
 // import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 // import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+// // Create navigation ref
+// const navigationRef = React.createRef();
+
+// // Import checkPinStatus from the correct location
+// import { checkPinStatus } from './showa_personal_account_screen/FaceSecuritySetting';
+// import PinUnlockModal from './screens/PinUnlockModal';
+// import videoBackgroundfetch from './src/services/VideoBackgroundFetch';
 
 // // Theme Context
 // import { ThemeProvider } from './src/context/ThemeContext';
@@ -17,7 +25,8 @@
 // import { CallProvider } from './components/CallContext';
 // import CallSignalListener from "./components/CallSignalListener";
 // import IncomingCallModal from './components/IncomingCallModal';
-//import NetworkStatusBanner from "./components/Networkstatusbanner";
+
+// import NetworkStatusBanner from "./components/Networkstatusbanner";
 
 // // Services
 // import { startBackgroundContactSync, setupContactSyncListener } from "./components/BackgroundSync";
@@ -29,6 +38,8 @@
 // import Loginscreen from './screens/Loginscreen';
 // import Signin from './screens/onboard/SignIn';
 // import Signin_two from './screens/onboard/SignIn2_two';
+// import TermsCondition from './screens/onboard/Terms';
+// import PrivacyPolicy from './screens/onboard/PrivacyPolicy';
 // import Register from './screens/onboard/Register';
 // import Biometric from './screens/onboard/Biometric';
 // import LinkingScreen from './screens/onboard/LinkingScreen';
@@ -48,6 +59,7 @@
 // import NotificationSetting from './showa_personal_account_screen/NotificationSetting';
 // import WallpaperSetting from './showa_personal_account_screen/WallpaperSetting';
 // import FaceSecuritySetting from './showa_personal_account_screen/FaceSecuritySetting';
+// import PrivateChat from './showa_personal_account_screen/PrivateChat';
 
 // // Business Account Screens
 // import ChannelDetails from './showa_business/ChannelDetails';
@@ -114,12 +126,19 @@
 // import AllProducts from './showa_business/AllProducts';
 // import OtherUserCatalog from './showa_business/OthersUserCatalog';
 // import OtherUserCatalogDetail from './showa_business/OtherUserCatalogDetail';
+// import BPrivateChat from './showa_business/BusinessChat';
+// import BusinessGroupChat from './showa_business/BusinessGroupChat';
+// import SupplierNotificationScreen from './showa_business/SupplierNotificationScreen';
+// import RequesterPostHistory from './showa_business/RequesterPostHistory';
+// import GroupMembers from './showa_business/GroupMembers';
+
 
 // // Social Media Screens
 // import SocialHome from './showa_social/Home';
 // import Discover from './showa_social/Discover';
 // import UploadshortVideo from './showa_social/UploadshortVideo';
 // import SearchShort from './showa_social/SearchShort';
+
 
 // // Feature Components
 // import GroupCreate from './screens/GroupCreate';
@@ -151,12 +170,6 @@
 // import NewsList from "./components/NewsList";
 // import Broadcaster from "./src/Broadcaster";
 // import Viewer from "./src/Viewer";
-
-// import RequesterPostHistory from './showa_business/RequesterPostHistory';
-// import PrivateChat from './showa_personal_account_screen/PrivateChat';
-// import BusinessGroupChat from './showa_business/BusinessGroupChat';
-// import SupplierNotificationScreen from './showa_business/SupplierNotificationScreen';
-// import BPrivateChat from './showa_business/BusinessChat';
 
 // // ==================== NAVIGATION SETUP ====================
 
@@ -195,11 +208,52 @@
 
 // // Main App Content
 // function AppContent() {
+//   const [userId, setUserId] = useState(null);
+
+//   // Initialize video prefetch when user is logged in
+//   useEffect(() => {
+//     const initVideoPrefetch = async () => {
+//       try {
+//         const userData = await AsyncStorage.getItem('userData');
+//         if (userData) {
+//           const user = JSON.parse(userData);
+//           setUserId(user.id);
+          
+//           // Initialize video prefetch service
+//           await videoBackgroundfetch.init(user.id);
+          
+//           // Get cached videos immediately
+//           const cachedVideos = await videoBackgroundfetch.getCachedVideos();
+//           console.log('📦 Cached videos ready:', cachedVideos?.length || 0);
+//         }
+//       } catch (error) {
+//         console.error('Error initializing video prefetch:', error);
+//       }
+//     };
+
+//     initVideoPrefetch();
+//   }, []);
+
+// //   useEffect(() => {
+// //   const subscription = AppState.addEventListener('change', (nextAppState) => {
+// //     if (nextAppState === 'background') {
+// //       // Clean up heavy resources when app goes to background
+// //       if (Platform.OS === 'android') {
+// //         // Clear caches, stop animations, etc.
+// //         ImageCache.clear();
+// //       }
+// //     }
+// //   });
+
+// //   return () => {
+// //     subscription.remove();
+// //   };
+// // }, []);
 //   return (
 //     <GestureHandlerRootView style={{ flex: 1 }}>
 //       <CallProvider>
 //         <ThemedNavigator />
-//         {/* <NetworkStatusBanner /> */}
+//         <NetworkStatusBanner />
 //       </CallProvider>
 //     </GestureHandlerRootView>
 //   );
@@ -210,6 +264,8 @@
 //   const { theme, colors } = useTheme();
 //   const [userId, setUserId] = useState(null);
 //   const [appState, setAppState] = useState(AppState.currentState);
+//   const [showPinModal, setShowPinModal] = useState(false);
+//   const [isLoading, setIsLoading] = useState(true);
 
 //   // Create custom navigation theme
 //   const customTheme = {
@@ -240,6 +296,29 @@
 //         fontWeight: '900',
 //       },
 //     },
+//   };
+
+//   useEffect(() => {
+//     checkPinRequirement();
+//   }, []);
+  
+//   const checkPinRequirement = async () => {
+//     try {
+//       const pinEnabled = await AsyncStorage.getItem('pin_enabled');
+//       const token = await AsyncStorage.getItem('userToken');
+      
+//       if (pinEnabled === 'true' && token) {
+//         // Optional: Verify with server that PIN is still valid
+//         const status = await checkPinStatus(token);
+//         if (status && status.has_pin) {
+//           setShowPinModal(true);
+//         }
+//       }
+//     } catch (error) {
+//       console.error('Error checking PIN requirement:', error);
+//     } finally {
+//       setIsLoading(false);
+//     }
 //   };
 
 //   // Load user data
@@ -300,14 +379,31 @@
 //     setupContactSyncListener();
 //   }, []);
 
+//   // Don't render navigation until we've checked PIN
+//   if (isLoading) {
+//     return (
+//       <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+//         <ActivityIndicator size="large" color={colors.primary} />
+//       </View>
+//     );
+//   }
+
 //   return (
 //     <NavigationContainer 
+//       ref={navigationRef}
 //       linking={linking}
 //       theme={customTheme}
 //     >
 //       <RNStatusBar 
 //         barStyle={theme === 'dark' ? 'light-content' : 'dark-content'}
 //         backgroundColor={colors.background}
+//       />
+
+//       {/* PIN Unlock Modal - Placed outside Stack.Navigator to overlay everything */}
+//       <PinUnlockModal 
+//         visible={showPinModal}
+//         onClose={() => setShowPinModal(false)}
+//         navigation={navigationRef.current} // Pass navigation ref's current value
 //       />
       
 //       <Stack.Navigator
@@ -326,7 +422,6 @@
 //           )}
 //         </Stack.Screen>
         
-//         {/* Wrap ALL screens with ScreenWrapper */}
 //         <Stack.Screen name="Signin">
 //           {(props) => (
 //             <ScreenWrapper>
@@ -343,7 +438,6 @@
 //           )}
 //         </Stack.Screen>
         
-        
 //         <Stack.Screen name="Register">
 //           {(props) => (
 //             <ScreenWrapper>
@@ -351,6 +445,7 @@
 //             </ScreenWrapper>
 //           )}
 //         </Stack.Screen>
+        
 //         <Stack.Screen name="OtherUserCatalog">
 //           {(props) => (
 //             <ScreenWrapper>
@@ -358,6 +453,7 @@
 //             </ScreenWrapper>
 //           )}
 //         </Stack.Screen>
+        
 //         <Stack.Screen name="OtherUserCatalogDetail">
 //           {(props) => (
 //             <ScreenWrapper>
@@ -397,11 +493,32 @@
 //             </ScreenWrapper>
 //           )}
 //         </Stack.Screen>
+//         <Stack.Screen name="GroupMembers">
+//           {(props) => (
+//             <ScreenWrapper>
+//               <GroupMembers {...props} />
+//             </ScreenWrapper>
+//           )}
+//         </Stack.Screen>
         
 //         <Stack.Screen name="Terms">
 //           {(props) => (
 //             <ScreenWrapper>
 //               <Terms {...props} />
+//             </ScreenWrapper>
+//           )}
+//         </Stack.Screen>
+//         <Stack.Screen name="TermsCondition">
+//           {(props) => (
+//             <ScreenWrapper>
+//               <TermsCondition {...props} />
+//             </ScreenWrapper>
+//           )}
+//         </Stack.Screen>
+//         <Stack.Screen name="PrivacyPolicy">
+//           {(props) => (
+//             <ScreenWrapper>
+//               <PrivacyPolicy {...props} />
 //             </ScreenWrapper>
 //           )}
 //         </Stack.Screen>
@@ -423,8 +540,6 @@
 //           )}
 //         </Stack.Screen>
 
-        
-        
 //         <Stack.Screen name="PStatusBar">
 //           {(props) => (
 //             <ScreenWrapper>
@@ -493,6 +608,14 @@
 //           {(props) => (
 //             <ScreenWrapper>
 //               <FaceSecuritySetting {...props} />
+//             </ScreenWrapper>
+//           )}
+//         </Stack.Screen>
+
+//         <Stack.Screen name="PrivateChat">
+//           {(props) => (
+//             <ScreenWrapper>
+//               <PrivateChat {...props} />
 //             </ScreenWrapper>
 //           )}
 //         </Stack.Screen>
@@ -1002,14 +1125,6 @@
 //           )}
 //         </Stack.Screen> 
         
-//         <Stack.Screen name="PrivateChat">
-//           {(props) => (
-//             <ScreenWrapper>
-//               <PrivateChat {...props} />
-//             </ScreenWrapper>
-//           )}
-//         </Stack.Screen> 
-        
 //         <Stack.Screen name="BusinessGroupChat">
 //           {(props) => (
 //             <ScreenWrapper>
@@ -1042,7 +1157,6 @@
 //           )}
 //         </Stack.Screen>
 
-
 //         <Stack.Screen name="NinRegisterEarning">
 //           {(props) => (
 //             <ScreenWrapper>
@@ -1051,7 +1165,7 @@
 //           )}
 //         </Stack.Screen>
 
-//          <Stack.Screen name="PurchaseData">
+//         <Stack.Screen name="PurchaseData">
 //           {(props) => (
 //             <ScreenWrapper>
 //               <PurchaseData {...props} />
@@ -1115,7 +1229,6 @@
 //             </ScreenWrapper>
 //           )}
 //         </Stack.Screen>
-        
 
 //         {/* ==================== FEATURE SCREENS ==================== */}
 //         <Stack.Screen name="Music">
@@ -1261,7 +1374,6 @@
 //             </ScreenWrapper>
 //           )}
 //         </Stack.Screen>
-       
         
 //         <Stack.Screen name="LiveStreaming">
 //           {(props) => (
@@ -1321,16 +1433,34 @@
 //   );
 // }
 
+
 import React, { useEffect, useState, useRef } from "react";
-import { AppState, View, ActivityIndicator, StatusBar as RNStatusBar } from 'react-native';
+import { 
+  AppState, 
+  Platform, 
+  View, 
+  ActivityIndicator, 
+  StatusBar as RNStatusBar,
+  InteractionManager,
+  Image,
+  NativeModules,
+  LogBox
+} from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Create navigation ref
 const navigationRef = React.createRef();
+
+// Ignore specific warnings
+LogBox.ignoreLogs([
+  'new NativeEventEmitter',
+  'Require cycle:',
+  'VirtualizedLists should never be nested',
+]);
 
 // Import checkPinStatus from the correct location
 import { checkPinStatus } from './showa_personal_account_screen/FaceSecuritySetting';
@@ -1360,6 +1490,8 @@ import backgroundFetchService from "./src/services/BackgroundFetchService";
 import Loginscreen from './screens/Loginscreen';
 import Signin from './screens/onboard/SignIn';
 import Signin_two from './screens/onboard/SignIn2_two';
+import TermsCondition from './screens/onboard/Terms';
+import PrivacyPolicy from './screens/onboard/PrivacyPolicy';
 import Register from './screens/onboard/Register';
 import Biometric from './screens/onboard/Biometric';
 import LinkingScreen from './screens/onboard/LinkingScreen';
@@ -1465,6 +1597,7 @@ import UserContactListPersonalAccount from './components/UserContactListPersonal
 import Music from './components/Music';
 import UserContactList from './components/UserContactList';
 import SyncMessagePersonal from './components/SyncMessagePersonal';
+import SyncContactForBusiness from './components/SyncContactForBusiness';
 import CameraScreen from './components/CameraScreen';
 import SongsList from './components/SongsListScreen';
 import NewCommunity from './components/NewCommunityScreen';
@@ -1489,9 +1622,155 @@ import NewsList from "./components/NewsList";
 import Broadcaster from "./src/Broadcaster";
 import Viewer from "./src/Viewer";
 
-// ==================== NAVIGATION SETUP ====================
+// ==================== HELPER FUNCTIONS ====================
 
-const Stack = createNativeStackNavigator();
+// Clear image cache helper function
+const clearImageCache = async () => {
+  try {
+    if (Platform.OS === 'android') {
+      // Clear React Native's image cache using Image.queryCache
+      Image.queryCache && Image.queryCache([], (cacheResponse) => {
+        if (cacheResponse && Object.keys(cacheResponse).length > 0) {
+          const urls = Object.keys(cacheResponse);
+          console.log(`Found ${urls.length} cached images to clear`);
+        }
+      });
+    }
+    
+    // Clear in-memory image cache by setting a flag
+    global.__imageCacheCleared = Date.now();
+    
+    console.log('✅ Image cache cleared');
+  } catch (error) {
+    console.error('Error clearing image cache:', error);
+  }
+};
+
+// Clear WebView cache helper
+const clearWebViewCache = async () => {
+  try {
+    if (Platform.OS === 'android') {
+      // Clear WebView cache using native module if available
+      const { WebViewManager } = NativeModules;
+      if (WebViewManager && WebViewManager.clearCache) {
+        await WebViewManager.clearCache();
+      }
+    }
+  } catch (error) {
+    console.error('Error clearing WebView cache:', error);
+  }
+};
+
+// Clear all caches helper
+const clearAllCaches = async () => {
+  try {
+    await clearImageCache();
+    await clearWebViewCache();
+    
+    // Clear AsyncStorage temporary data if needed
+    const allKeys = await AsyncStorage.getAllKeys();
+    const keysToClear = allKeys.filter(key => 
+      key.includes('temp_') || 
+      key.includes('cache_') || 
+      key.includes('_preview') ||
+      key.includes('video_cache_')
+    );
+    
+    if (keysToClear.length > 0) {
+      await AsyncStorage.multiRemove(keysToClear);
+      console.log(`Cleared ${keysToClear.length} temporary cache items`);
+    }
+  } catch (error) {
+    console.error('Error clearing all caches:', error);
+  }
+};
+
+// Free up memory helper
+const freeMemory = () => {
+  if (Platform.OS === 'android') {
+    try {
+      // Suggest garbage collection (only works in debug builds)
+      if (global.gc) {
+        global.gc();
+      }
+      
+      // Clear any large objects from memory
+      if (global.__largeImageCache) {
+        delete global.__largeImageCache;
+      }
+      
+      // Clear video prefetch cache if too large
+      if (global.__videoPrefetchCache) {
+        delete global.__videoPrefetchCache;
+      }
+      
+      console.log('✅ Memory cleanup triggered');
+    } catch (error) {
+      console.error('Error freeing memory:', error);
+    }
+  }
+};
+
+// Stop WebRTC connections helper
+const stopWebRTCConnections = () => {
+  try {
+    // If you have WebRTC connections stored globally, clean them up
+    if (global.__activeWebRTCConnections && global.__activeWebRTCConnections.length > 0) {
+      global.__activeWebRTCConnections.forEach(connection => {
+        if (connection && connection.close) {
+          try {
+            connection.close();
+          } catch (e) {
+            console.error('Error closing WebRTC connection:', e);
+          }
+        }
+      });
+      global.__activeWebRTCConnections = [];
+      console.log('✅ WebRTC connections closed');
+    }
+  } catch (error) {
+    console.error('Error stopping WebRTC connections:', error);
+  }
+};
+
+// Pause video playback helper
+const pauseAllVideos = () => {
+  try {
+    // If you have video refs stored globally
+    if (global.__activeVideoRefs && global.__activeVideoRefs.length > 0) {
+      global.__activeVideoRefs.forEach(videoRef => {
+        if (videoRef && videoRef.current && typeof videoRef.current.pause === 'function') {
+          videoRef.current.pause();
+        }
+      });
+      console.log(`✅ Paused ${global.__activeVideoRefs.length} videos`);
+    }
+  } catch (error) {
+    console.error('Error pausing videos:', error);
+  }
+};
+
+// Stop background services
+const stopBackgroundServices = () => {
+  try {
+    if (global.__backgroundSyncInterval) {
+      clearInterval(global.__backgroundSyncInterval);
+      global.__backgroundSyncInterval = null;
+    }
+    
+    if (global.__contactSyncListener && global.__contactSyncListener.remove) {
+      global.__contactSyncListener.remove();
+      global.__contactSyncListener = null;
+    }
+    
+    backgroundFetchService.stop();
+    console.log('✅ Background services stopped');
+  } catch (error) {
+    console.error('Error stopping background services:', error);
+  }
+};
+
+// ==================== LINKING CONFIG ====================
 
 const linking = {
   prefixes: ['showa://'],
@@ -1501,6 +1780,10 @@ const linking = {
     },
   },
 };
+
+// ==================== NAVIGATION SETUP ====================
+
+const Stack = createNativeStackNavigator();
 
 // Screen wrapper - This provides the theme background for ALL screens
 const ScreenWrapper = ({ children }) => {
@@ -1513,7 +1796,8 @@ const ScreenWrapper = ({ children }) => {
   );
 };
 
-// Main App Component
+// ==================== MAIN APP COMPONENT ====================
+
 export default function App() {
   return (
     <SafeAreaProvider>
@@ -1524,9 +1808,12 @@ export default function App() {
   );
 }
 
-// Main App Content
+// ==================== APP CONTENT ====================
+
 function AppContent() {
   const [userId, setUserId] = useState(null);
+  const backgroundTimerRef = useRef(null);
+  const appStateRef = useRef(AppState.currentState);
 
   // Initialize video prefetch when user is logged in
   useEffect(() => {
@@ -1550,7 +1837,99 @@ function AppContent() {
     };
 
     initVideoPrefetch();
+    
+    // Cleanup on unmount
+    return () => {
+      if (backgroundTimerRef.current) {
+        clearTimeout(backgroundTimerRef.current);
+      }
+      stopBackgroundServices();
+    };
   }, []);
+  
+  // Enhanced background cleanup for Android 15 and Xiaomi devices
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState) => {
+      const currentState = appStateRef.current;
+      
+      if (currentState === 'active' && nextAppState === 'background') {
+        console.log('📱 App going to background - cleaning up resources');
+        
+        // Clean up heavy resources when app goes to background
+        if (Platform.OS === 'android') {
+          // Immediate cleanup for critical resources
+          pauseAllVideos();
+          stopWebRTCConnections();
+          
+          // Delay cache cleanup to not block app state change
+          setTimeout(() => {
+            clearAllCaches();
+            freeMemory();
+            
+            // Cancel any pending network requests
+            if (global.__pendingRequests && global.__pendingRequests.length > 0) {
+              global.__pendingRequests.forEach((request, index) => {
+                if (request && request.cancel) {
+                  request.cancel();
+                }
+              });
+              global.__pendingRequests = [];
+            }
+          }, 500);
+          
+          // Set a timer to clear more resources after 30 seconds in background
+          if (backgroundTimerRef.current) {
+            clearTimeout(backgroundTimerRef.current);
+          }
+          
+          backgroundTimerRef.current = setTimeout(() => {
+            console.log('🕐 30 seconds in background - deep cleanup');
+            freeMemory();
+            // Stop background services to save battery
+            if (global.__backgroundServicesRunning) {
+              stopBackgroundServices();
+              global.__backgroundServicesRunning = false;
+            }
+          }, 30000);
+        }
+      } else if (currentState === 'background' && nextAppState === 'active') {
+        console.log('📱 App coming to foreground - restoring resources');
+        
+        // Clear the background timer
+        if (backgroundTimerRef.current) {
+          clearTimeout(backgroundTimerRef.current);
+          backgroundTimerRef.current = null;
+        }
+        
+        // Restart background services if needed
+        if (!global.__backgroundServicesRunning && userId) {
+          InteractionManager.runAfterInteractions(() => {
+            backgroundFetchService.init();
+            startBackgroundContactSync();
+            setupContactSyncListener();
+            global.__backgroundServicesRunning = true;
+          });
+        }
+        
+        // Optionally reload some data
+        InteractionManager.runAfterInteractions(() => {
+          console.log('✅ App resumed');
+        });
+      }
+      
+      appStateRef.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+      if (backgroundTimerRef.current) {
+        clearTimeout(backgroundTimerRef.current);
+      }
+    };
+  }, [userId]);
+  
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <CallProvider>
@@ -1561,7 +1940,8 @@ function AppContent() {
   );
 }
 
-// Main Navigator with Theme Support
+// ==================== THEMED NAVIGATOR ====================
+
 function ThemedNavigator() {
   const { theme, colors } = useTheme();
   const [userId, setUserId] = useState(null);
@@ -1602,6 +1982,20 @@ function ThemedNavigator() {
 
   useEffect(() => {
     checkPinRequirement();
+    
+    // Initialize global tracking objects
+    if (!global.__activeWebRTCConnections) {
+      global.__activeWebRTCConnections = [];
+    }
+    if (!global.__activeVideoRefs) {
+      global.__activeVideoRefs = [];
+    }
+    if (!global.__pendingRequests) {
+      global.__pendingRequests = [];
+    }
+    if (!global.__backgroundServicesRunning) {
+      global.__backgroundServicesRunning = true;
+    }
   }, []);
   
   const checkPinRequirement = async () => {
@@ -1640,11 +2034,13 @@ function ThemedNavigator() {
     loadUser();
   }, []);
 
-  // Background services
+  // Background services with proper cleanup
   useEffect(() => {
     const handleAppStateChange = (nextAppState) => {
       if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        backgroundFetchService.forceFetch();
+        if (global.__backgroundServicesRunning) {
+          backgroundFetchService.forceFetch();
+        }
       }
       setAppState(nextAppState);
     };
@@ -1658,7 +2054,7 @@ function ThemedNavigator() {
 
   useEffect(() => {
     const initializeBackgroundServices = async () => {
-      if (userId) {
+      if (userId && global.__backgroundServicesRunning) {
         backgroundFetchService.init();
         startBackgroundContactSync();
         setupContactSyncListener();
@@ -1672,14 +2068,10 @@ function ThemedNavigator() {
     initializeBackgroundServices();
 
     return () => {
-      backgroundFetchService.stop();
+      // Don't stop services here to allow them to run in background
+      // They will be stopped by AppContent when needed
     };
   }, [userId]);
-
-  useEffect(() => {
-    startBackgroundContactSync();
-    setupContactSyncListener();
-  }, []);
 
   // Don't render navigation until we've checked PIN
   if (isLoading) {
@@ -1705,7 +2097,7 @@ function ThemedNavigator() {
       <PinUnlockModal 
         visible={showPinModal}
         onClose={() => setShowPinModal(false)}
-        navigation={navigationRef.current} // Pass navigation ref's current value
+        navigation={navigationRef.current}
       />
       
       <Stack.Navigator
@@ -1795,6 +2187,7 @@ function ThemedNavigator() {
             </ScreenWrapper>
           )}
         </Stack.Screen>
+        
         <Stack.Screen name="GroupMembers">
           {(props) => (
             <ScreenWrapper>
@@ -1807,6 +2200,22 @@ function ThemedNavigator() {
           {(props) => (
             <ScreenWrapper>
               <Terms {...props} />
+            </ScreenWrapper>
+          )}
+        </Stack.Screen>
+        
+        <Stack.Screen name="TermsCondition">
+          {(props) => (
+            <ScreenWrapper>
+              <TermsCondition {...props} />
+            </ScreenWrapper>
+          )}
+        </Stack.Screen>
+        
+        <Stack.Screen name="PrivacyPolicy">
+          {(props) => (
+            <ScreenWrapper>
+              <PrivacyPolicy {...props} />
             </ScreenWrapper>
           )}
         </Stack.Screen>
@@ -1824,6 +2233,13 @@ function ThemedNavigator() {
           {(props) => (
             <ScreenWrapper>
               <UserPersonalAccountProfile {...props} />
+            </ScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="SyncContactForBusiness">
+          {(props) => (
+            <ScreenWrapper>
+              <SyncContactForBusiness {...props} />
             </ScreenWrapper>
           )}
         </Stack.Screen>

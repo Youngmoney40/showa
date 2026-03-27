@@ -14,7 +14,7 @@
 //     const token = await AsyncStorage.getItem("userToken");
 
     
-//     const SIGNALING_SERVER = Platform.OS === 'android' ? "wss://showa.essential.com.ng" : "wss://showa.essential.com.ng";
+//     const SIGNALING_SERVER = Platform.OS === 'android' ? "wss://api.showapp.ng" : "wss://api.showapp.ng";
 //     const url = `${SIGNALING_SERVER}/ws/livestream/${this.roomName}/?token=${token || ""}`;
 //     console.log("WS URL:", url);
 
@@ -109,7 +109,7 @@ export default class Signaling {
     try {
       const token = await AsyncStorage.getItem("userToken");
       
-      const SIGNALING_SERVER = "wss://showa.essential.com.ng";
+      const SIGNALING_SERVER = "wss://api.showapp.ng";
       
   
       const url = `${SIGNALING_SERVER}/ws/livestream/${this.roomName}/?token=${encodeURIComponent(token || "")}`;

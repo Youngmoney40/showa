@@ -916,6 +916,30 @@ export default function EmailScreen({ navigation, route }) {
     return '';
   };
 
+  // const register = async () =>{
+  //   try {
+  //     const payload = new FormData();
+  //     payload.append('email', 'johness@gmail.com');
+  //     payload.append('phone_number', '09037102599');
+  //     payload.append('name', 'John');
+  //     const response = await axios.post('http://api.showapp.ng/api/showa/register/', 
+  //       payload, 
+  //       {
+  //           headers: { 
+  //             'Content-Type': 'multipart/form-data',
+  //             'Accept': 'application/json'
+  //           },
+  //           timeout: 15000
+  //         });
+
+  //         console.log('Registration Response:', response.data);
+      
+  //   } catch (error) {
+  //     console.error('Error registering user:', error);
+  //   }
+    
+  // }
+
   const checkEmailExists = async () => {
     try {
       const response = await axios.post(`${API_ROUTE}/check-email/`, { email });
@@ -1184,6 +1208,7 @@ export default function EmailScreen({ navigation, route }) {
                 )}
               </LinearGradient>
             </TouchableOpacity>
+
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

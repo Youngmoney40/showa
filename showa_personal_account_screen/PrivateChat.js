@@ -458,9 +458,9 @@
 //       const encodedToken = encodeURIComponent(token);
 //       let wsUrl;
 //       if (chatType === 'single') {
-//         wsUrl = `wss://showa.essential.com.ng/ws/chat/single/${Math.min(userId, receiverId)}/${Math.max(userId, receiverId)}/${accountMode}/?token=${encodeURIComponent(token)}`;
+//         wsUrl = `wss://api.showapp.ng/ws/chat/single/${Math.min(userId, receiverId)}/${Math.max(userId, receiverId)}/${accountMode}/?token=${encodeURIComponent(token)}`;
 //       } else {
-//         wsUrl = `wss://showa.essential.com.ng/ws/chat/group/${groupSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
+//         wsUrl = `wss://api.showapp.ng/ws/chat/group/${groupSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
 //       }
 
 //       ws.current = new WebSocket(wsUrl);
@@ -1789,6 +1789,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+
 import { pick, keepLocalCopy } from '@react-native-documents/picker';
 import EmojiSelector from 'react-native-emoji-selector';
 import { ScrollView, Swipeable } from 'react-native-gesture-handler';
@@ -1796,8 +1797,9 @@ import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import RNFS from 'react-native-fs';
 
+
 const axiosInstance = axios.create({
-  baseURL: 'https://showa.essential.com.ng/api/showa',
+  baseURL: 'https://api.showapp.ng/api/showa',
   timeout: 30000,
 });
 
@@ -1838,11 +1840,87 @@ export default function PersonalPrivateChatScreen({ route, navigation }) {
   const [downloadProgress, setDownloadProgress] = useState({});
   const [downloadingFileId, setDownloadingFileId] = useState(null);
 
+const [isAndroid15, setIsAndroid15] = useState(false);
+const [keyboardVisible, setKeyboardVisible] = useState(false);
+const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+useEffect(() => {
+  if (Platform.OS === 'android') {
+    // Get Android version
+    const androidVersion = Platform.constants?.Version || 0;
+    // Android 15 is API level 35
+    const isAndroid15OrHigher = androidVersion >= 35;
+    setIsAndroid15(isAndroid15OrHigher);
+    
+    console.log('Android Version:', androidVersion, 'Is Android 15+:', isAndroid15OrHigher);
+  } else {
+    setIsAndroid15(false);
+  }
+}, []);
+
+
+useEffect(() => {
+  const keyboardDidShowListener = Keyboard.addListener(
+    'keyboardDidShow',
+    (event) => {
+      setKeyboardVisible(true);
+      if (isAndroid15) {
+        // For Android 15, i use full height adjustment
+        setKeyboardHeight(event.endCoordinates.height);
+      }
+      setTimeout(() => {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      }, 100);
+    }
+  );
+  
+  const keyboardDidHideListener = Keyboard.addListener(
+    'keyboardDidHide',
+    () => {
+      setKeyboardVisible(false);
+      setKeyboardHeight(0);
+    }
+  );
+
+  return () => {
+    keyboardDidShowListener.remove();
+    keyboardDidHideListener.remove();
+  };
+}, [isAndroid15]);
+
   const isPickingRef = useRef(false);
 
   LogBox.ignoreLogs([
     'VirtualizedLists should never be nested inside plain ScrollViews with the same orientation',
   ]);
+
+  useEffect(() => {
+  const keyboardDidShowListener = Keyboard.addListener(
+    'keyboardDidShow',
+    (event) => {
+      setKeyboardVisible(true);
+      setKeyboardHeight(event.endCoordinates.height);
+      
+      // Scroll to bottom when keyboard appears
+      setTimeout(() => {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      }, 100);
+    }
+  );
+  
+  const keyboardDidHideListener = Keyboard.addListener(
+    'keyboardDidHide',
+    () => {
+      setKeyboardVisible(false);
+      setKeyboardHeight(0);
+    }
+  );
+
+  return () => {
+    keyboardDidShowListener.remove();
+    keyboardDidHideListener.remove();
+  };
+}, []);
 
   const flatListRef = useRef();
   const ws = useRef(null);
@@ -2228,9 +2306,9 @@ useEffect(() => {
       const encodedToken = encodeURIComponent(token);
       let wsUrl;
       if (chatType === 'single') {
-        wsUrl = `ws://showa.essential.com.ng/ws/chat/single/${Math.min(userId, receiverId)}/${Math.max(userId, receiverId)}/${accountMode}/?token=${encodeURIComponent(token)}`;
+        wsUrl = `ws://api.showapp.ng/ws/chat/single/${Math.min(userId, receiverId)}/${Math.max(userId, receiverId)}/${accountMode}/?token=${encodeURIComponent(token)}`;
       } else {
-        wsUrl = `ws://showa.essential.com.ng/ws/chat/group/${groupSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
+        wsUrl = `ws://api.showapp.ng/ws/chat/group/${groupSlug}/${accountMode}/?token=${encodeURIComponent(token)}`;
       }
       
       ws.current = new WebSocket(wsUrl);
@@ -2996,23 +3074,21 @@ const sendMessage = async (caption = '', emoji = null) => {
   }
 };
 
-  return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <StatusBar
-        barStyle={Platform.OS === 'android' ? 'light-content' : 'dark-content'}
-        translucent={Platform.OS === 'android'}
-        backgroundColor={Platform.OS === 'android' ? '#0750b5' : undefined}
-      />
-      <ImageBackground
-        source={getWallpaperSource(chatBackground)}
-        style={styles.container}
-        resizeMode="cover"
-      >
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-        >
+return (
+  <SafeAreaView style={{ flex: 1 }}>
+    <StatusBar
+      barStyle={Platform.OS === 'android' ? 'light-content' : 'dark-content'}
+      translucent={Platform.OS === 'android'}
+      backgroundColor={Platform.OS === 'android' ? '#0750b5' : undefined}
+    />
+    <ImageBackground
+      source={getWallpaperSource(chatBackground)}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      {isAndroid15 ? (
+        // For Android 15 devices, use manual adjustment
+        <View style={styles.container}>
           <LinearGradient colors={['#0d64dd', '#0d64dd']} style={styles.header}>
             <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: 15 }}>
               <TouchableOpacity onPress={redirectBack} style={styles.headerButton}>
@@ -3030,30 +3106,27 @@ const sendMessage = async (caption = '', emoji = null) => {
               </TouchableOpacity>
               <View style={{ display: 'flex', flexDirection: 'row', alignContent: 'center', alignItems: 'center' }}>
                 <TouchableOpacity
-                  
-                   onPress={() => navigation.navigate('VoiceCalls', {
-                      targetUserId: receiverId,
-                      name: name,
-                      profile_image: profile_image,
-                      roomId: 'unique-room-id',
-                      isInitiator: true
-                    })}
+                  onPress={() => navigation.navigate('VoiceCalls', {
+                    targetUserId: receiverId,
+                    name: name,
+                    profile_image: profile_image,
+                    roomId: 'unique-room-id',
+                    isInitiator: true
+                  })}
                   style={[styles.headerButton,{marginLeft:10}]}
                 >
                   <Icon name="call" size={24} color="#FFF" />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  
-                   onPress={() => navigation.navigate('VideoCalls', {
-                      targetUserId: receiverId,
-                      name: name,
-                      profile_image: profile_image,
-                      roomId: 'unique-room-id',
-                      isInitiator: true
-                    })}
+                  onPress={() => navigation.navigate('VideoCalls', {
+                    targetUserId: receiverId,
+                    name: name,
+                    profile_image: profile_image,
+                    roomId: 'unique-room-id',
+                    isInitiator: true
+                  })}
                   style={styles.headerButton}
                 >
-           
                   <Icon name="videocam" size={24} color="#FFF" />
                 </TouchableOpacity>
               </View>
@@ -3080,6 +3153,9 @@ const sendMessage = async (caption = '', emoji = null) => {
             maxToRenderPerBatch={10}
             windowSize={5}
             removeClippedSubviews={true}
+            onContentSizeChange={() => {
+              flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+            }}
           />
 
           {replyToMessage && (
@@ -3096,7 +3172,12 @@ const sendMessage = async (caption = '', emoji = null) => {
             </View>
           )}
 
-          <View style={styles.footer}>
+          <View style={[
+            styles.footer,
+            {
+              marginBottom: keyboardVisible ? keyboardHeight : 0,
+            }
+          ]}>
             <TouchableOpacity 
               onPress={() => setModalVisible(true)} 
               style={styles.attachButton}
@@ -3104,7 +3185,6 @@ const sendMessage = async (caption = '', emoji = null) => {
             >
               <Icon name="attach-file" size={27} color={isSending ? "#ccc" : "#0d64dd"} />
             </TouchableOpacity>
-
 
             <TextInput
               style={styles.input}
@@ -3114,6 +3194,11 @@ const sendMessage = async (caption = '', emoji = null) => {
               onChangeText={setText}
               multiline
               editable={!isSending}
+              onFocus={() => {
+                setTimeout(() => {
+                  flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+                }, 200);
+              }}
             />
             {text.trim().length > 0 ? (
               <TouchableOpacity 
@@ -3129,358 +3214,464 @@ const sendMessage = async (caption = '', emoji = null) => {
               </TouchableOpacity>
             )}
           </View>
-
-          {/* Options Modal */}
-          {/* Options Modal */}
-<Modal
-  transparent={true}
-  visible={modalVisible}
-  onRequestClose={() => setModalVisible(false)}
->
-  <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-    <View style={styles.modalOverlay} />
-  </TouchableWithoutFeedback>
-  <View style={styles.modalContent}>
-    <FlatList
-      data={options}
-      keyExtractor={(item) => item.id}
-      numColumns={2}
-      contentContainerStyle={styles.modalOptions}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          style={styles.optionButton}
-          onPress={() => {
-            if (item.label === 'Document') {
-              setModalVisible(false);
-              setTimeout(async () => {
-                try {
-                  const result = await pick({ 
-                    type: ['*/*'],
-                    allowMultiSelection: false 
-                  });
-                  
-                  // Check if user canceled or picked a file
-                  if (result && result.length > 0) {
-                    const file = result[0];
-                    // Optional: Check file size if needed
-                    // const fileSize = await getFileSize(file.uri);
-                    // if (fileSize > MAX_FILE_SIZE) {
-                    //   Alert.alert('File Too Large', `File size exceeds maximum allowed size (${formatFileSize(MAX_FILE_SIZE)}).`);
-                    //   return;
-                    // }
-                    
-                    setSelectedFile(file);
-                    setFilePreviewModalVisible(true);
-                  }
-                  // If result is empty or undefined, user canceled - no alert needed
-                } catch (e) {
-                  // Only show alert for actual errors, not cancellations
-                  if (e.code !== 'DOCUMENT_PICKER_CANCELED' && 
-                      e.message !== 'User cancelled' && 
-                      !e.message?.includes('cancel')) {
-                    Alert.alert('Error', 'Failed to pick document. Please try again.');
-                  }
-                }
-              }, 250);
-            } else if (item.label === 'Camera') {
-              pickImage(true);
-              setModalVisible(false);
-            } else if (item.label === 'Gallery') {
-              pickImage(false);
-              setModalVisible(false);
-            } else if (item.label === 'Emoji') {
-              setEmojiPickerVisible(true);
-              setModalVisible(false);
-            }
-          }}
+        </View>
+      ) : (
+        // For Android 14 and below, iOS, use KeyboardAvoidingView
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          <View style={[styles.optionIconContainer, { backgroundColor: '#E8F5E9' }]}>
-            <Icon name={item.icon} size={24} color={item.color} />
-          </View>
-          <Text style={styles.optionLabel}>{item.label}</Text>
-        </TouchableOpacity>
-      )}
-    />
-  </View>
-</Modal>
-
-          
-
-         
-{/* Image Preview Modal - WITH SCROLLABLE IMAGE */}
-        <Modal
-          transparent={false}
-          visible={imagePreviewModalVisible}
-          onRequestClose={() => setImagePreviewModalVisible(false)}
-          animationType="slide"
-          presentationStyle="fullScreen"
-        >
-          <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }}>
-            {/* Header - Fixed at top */}
-            <View style={styles.previewModalHeader}>
-              <TouchableOpacity
-                onPress={() => {
-                  setImagePreviewModalVisible(false);
-                  setSelectedImage(null);
-                  setText('');
-                }}
-                style={styles.previewCloseButton}
-              >
-                <Icon name="close" size={28} color="#FFF" />
-              </TouchableOpacity>
-              <Text style={styles.previewTitle}>Send Image</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  sendMessage(text);
-                  setImagePreviewModalVisible(false);
-                }}
-                style={styles.previewSendButton}
-                disabled={isSending}
-              >
-                <Icon name="send" size={28} color={isSending ? "#ccc" : "#0d64dd"} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Image Preview Area - Scrollable */}
-            <View style={{ flex: 1 }}>
-              <ScrollView 
-                contentContainerStyle={styles.previewScrollContent}
-                showsVerticalScrollIndicator={true}
-                showsHorizontalScrollIndicator={true}
-                maximumZoomScale={3.0}
-                minimumZoomScale={1.0}
-                bouncesZoom={true}
-              >
-                {selectedImage && (
+          <View style={styles.container}>
+            <LinearGradient colors={['#0d64dd', '#0d64dd']} style={styles.header}>
+              <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: 15 }}>
+                <TouchableOpacity onPress={redirectBack} style={styles.headerButton}>
+                  <Icon name="arrow-back" size={24} color="#FFF" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.headerProfile}
+                  onPress={() => navigation.navigate('OtherUserProfile', { userId: receiverId })}
+                >
                   <Image
-                    source={{ uri: selectedImage.uri }}
-                    style={styles.previewImage}
-                    resizeMode="contain"
+                    source={chatType === 'single' && profile_image ? { uri: `${profile_image}` } : FALLBACK_AVATAR}
+                    style={styles.headerAvatar}
                   />
-                )}
-              </ScrollView>
-            </View>
-
-            {/* Input Area - Fixed at bottom */}
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-            >
-              <View style={styles.previewInputContainer}>
-                <TextInput
-                  style={styles.previewInput}
-                  placeholder="Add a caption..."
-                  placeholderTextColor="#999"
-                  value={text}
-                  onChangeText={setText}
-                  multiline
-                  editable={!isSending}
-                />
+                  <Text style={styles.headerName}>{name.slice(0, 16) + '...'}</Text>
+                </TouchableOpacity>
+                <View style={{ display: 'flex', flexDirection: 'row', alignContent: 'center', alignItems: 'center' }}>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('VoiceCalls', {
+                      targetUserId: receiverId,
+                      name: name,
+                      profile_image: profile_image,
+                      roomId: 'unique-room-id',
+                      isInitiator: true
+                    })}
+                    style={[styles.headerButton,{marginLeft:10}]}
+                  >
+                    <Icon name="call" size={24} color="#FFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('VideoCalls', {
+                      targetUserId: receiverId,
+                      name: name,
+                      profile_image: profile_image,
+                      roomId: 'unique-room-id',
+                      isInitiator: true
+                    })}
+                    style={styles.headerButton}
+                  >
+                    <Icon name="videocam" size={24} color="#FFF" />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </KeyboardAvoidingView>
-          </SafeAreaView>
-        </Modal>
-          {/* File Preview Modal */}
+            </LinearGradient>
 
-          {/* File Preview Modal - UPDATED WITH SCROLLABLE CONTENT */}
-        <Modal
-          transparent={false}
-          visible={filePreviewModalVisible}
-          onRequestClose={() => setFilePreviewModalVisible(false)}
-          animationType="slide"
-          presentationStyle="fullScreen"
-        >
-          <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-            {/* Header - Fixed at top */}
-            <View style={[styles.previewModalHeader, { backgroundColor: '#fff' }]}>
-              <TouchableOpacity
-                onPress={() => {
-                  setFilePreviewModalVisible(false);
-                  setSelectedFile(null);
-                  setFileCaption('');
-                }}
-                style={styles.previewCloseButton}
-              >
-                <Icon name="close" size={28} color="#000" />
-              </TouchableOpacity>
-              <Text style={[styles.previewTitle, { color: '#000' }]}>Send Document</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  sendMessage(fileCaption);
-                  setFilePreviewModalVisible(false);
-                }}
-                style={styles.previewSendButton}
+            {uploadProgress !== null && uploadProgress < 100 && (
+              <View style={styles.progressContainer}>
+                <View style={[styles.progressBar, { width: `${uploadProgress}%` }]} />
+                <Text style={styles.progressText}>Uploading... {uploadProgress}%</Text>
+              </View>
+            )}
+
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={(item) => item.id.toString()}
+              inverted
+              contentContainerStyle={styles.chatContent}
+              keyboardShouldPersistTaps="handled"
+              scrollEnabled={true}
+              initialNumToRender={15}
+              maxToRenderPerBatch={10}
+              windowSize={5}
+              removeClippedSubviews={true}
+              onContentSizeChange={() => {
+                flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+              }}
+            />
+
+            {replyToMessage && (
+              <View style={styles.replyPreview}>
+                <View style={styles.replyPreviewContent}>
+                  <Text style={styles.replyPreviewUsername}>~ replying {name}</Text>
+                  <Text style={styles.replyPreviewText} numberOfLines={1}>
+                    {replyToMessage.content || (replyToMessage.emoji ? replyToMessage.emoji : 'Media')}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setReplyToMessage(null)}>
+                  <Icon name="close" size={20} color="#999" />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={styles.footer}>
+              <TouchableOpacity 
+                onPress={() => setModalVisible(true)} 
+                style={styles.attachButton}
                 disabled={isSending}
               >
-                <Icon name="send" size={28} color={isSending ? "#ccc" : "#0d64dd"} />
+                <Icon name="attach-file" size={27} color={isSending ? "#ccc" : "#0d64dd"} />
               </TouchableOpacity>
-            </View>
 
-            {/* File Preview Area - Scrollable */}
-            <View style={{ flex: 1 }}>
-              <ScrollView 
-                contentContainerStyle={styles.filePreviewScrollContent}
-                showsVerticalScrollIndicator={true}
-                bounces={true}
-              >
-                {/* File Icon */}
-                <View style={styles.fileIconContainer}>
-                  <Icon name="insert-drive-file" size={100} color="#0d64dd" />
-                </View>
-                
-                {/* File Name */}
-                <Text style={[styles.filePreviewName, { color: '#000' }]} numberOfLines={3}>
-                  {selectedFile?.name || 'Document'}
-                </Text>
-                
-                {/* File Size */}
-                {selectedFile?.size && (
-                  <Text style={styles.filePreviewSize}>
-                    {formatFileSize(selectedFile.size)}
-                  </Text>
-                )}
-                
-                {/* Preview for images (if file is an image) */}
-                {selectedFile?.type?.startsWith('image/') && (
-                  <View style={styles.fileImagePreviewContainer}>
-                    <Image 
-                      source={{ uri: selectedFile.uri }} 
-                      style={styles.filePreviewImage}
-                      resizeMode="contain"
-                    />
-                  </View>
-                )}
-                
-                {/* File Type Badge */}
-                {selectedFile?.type && (
-                  <View style={styles.fileTypeBadge}>
-                    <Text style={styles.fileTypeText}>
-                      {selectedFile.type.split('/')[1]?.toUpperCase() || 'FILE'}
-                    </Text>
-                  </View>
-                )}
-              </ScrollView>
-            </View>
-
-            {/* Input Area - Fixed at bottom */}
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-            >
-              <View style={styles.previewInputContainer}>
-                <TextInput
-                  style={[styles.previewInput, { color: '#000', backgroundColor: '#f5f5f5' }]}
-                  placeholder="Add a caption..."
-                  placeholderTextColor="#999"
-                  value={fileCaption}
-                  onChangeText={setFileCaption}
-                  multiline
-                  editable={!isSending}
-                />
-              </View>
-            </KeyboardAvoidingView>
-          </SafeAreaView>
-        </Modal>
-        
-
-          {contextMenu.visible && (
-            <View style={[
-              styles.contextMenuContainer,
-              {
-                top: contextMenu.position.y - 50,
-                left: Math.max(10, Math.min(contextMenu.position.x - 100, Dimensions.get('window').width - 220)),
-              }
-            ]}>
-              {contextMenu.message?.user_id === userId && !contextMenu.message?.is_deleted && (
-                <>
-                  <TouchableOpacity
-                    style={styles.contextMenuItem}
-                    onPress={() => {
-                      deleteMessage(contextMenu.message.id);
-                      setContextMenu({ visible: false, message: null });
-                    }}
-                    activeOpacity={0.6}
-                  >
-                    <View style={styles.contextMenuIcon}>
-                      <Icon name="delete" size={20} color="#ff4444" />
-                    </View>
-                    <Text style={[styles.contextMenuText, { color: '#ff4444' }]}>Delete</Text>
-                  </TouchableOpacity>
-                  <View style={styles.contextMenuDivider} />
-                  <TouchableOpacity
-                    style={styles.contextMenuItem}
-                    onPress={() => setContextMenu({ visible: false, message: null })}
-                    activeOpacity={0.6}
-                  >
-                    <View style={styles.contextMenuIcon}>
-                      <Icon name="close" size={20} color="#666" />
-                    </View>
-                    <Text style={styles.contextMenuText}>Cancel</Text>
-                  </TouchableOpacity>
-                </>
+              <TextInput
+                style={styles.input}
+                placeholder="Type a message..."
+                placeholderTextColor="#999"
+                value={text}
+                onChangeText={setText}
+                multiline
+                editable={!isSending}
+                onFocus={() => {
+                  setTimeout(() => {
+                    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+                  }, 200);
+                }}
+              />
+              {text.trim().length > 0 ? (
+                <TouchableOpacity 
+                  onPress={() => sendMessage(text)} 
+                  style={styles.sendButton}
+                  disabled={isSending}
+                >
+                  <Icon name="send" size={24} color={isSending ? "#ccc" : "#0d64dd"} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity disabled style={styles.sendButton}>
+                  <Icon name="send" size={24} color="#ccc" />
+                </TouchableOpacity>
               )}
             </View>
-          )}
-
-          <Modal
-            transparent={true}
-            visible={emojiPickerVisible}
-            onRequestClose={() => setEmojiPickerVisible(false)}
-          >
-            <TouchableWithoutFeedback onPress={() => setEmojiPickerVisible(false)}>
-              <View style={styles.modalOverlay}>
-                <View style={styles.emojiPickerContainer}>
-                  <EmojiSelector onEmojiSelected={selectEmoji} />
+          </View>
+        </KeyboardAvoidingView>
+      )}
+      {/* Options Modal */}
+      <Modal
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.modalOverlay} />
+        </TouchableWithoutFeedback>
+        <View style={styles.modalContent}>
+          <FlatList
+            data={options}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            contentContainerStyle={styles.modalOptions}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.optionButton}
+                onPress={() => {
+                  if (item.label === 'Document') {
+                    setModalVisible(false);
+                    setTimeout(async () => {
+                      try {
+                        const result = await pick({ 
+                          type: ['*/*'],
+                          allowMultiSelection: false 
+                        });
+                        
+                        if (result && result.length > 0) {
+                          const file = result[0];
+                          setSelectedFile(file);
+                          setFilePreviewModalVisible(true);
+                        }
+                      } catch (e) {
+                        if (e.code !== 'DOCUMENT_PICKER_CANCELED' && 
+                            e.message !== 'User cancelled' && 
+                            !e.message?.includes('cancel')) {
+                          Alert.alert('Error', 'Failed to pick document. Please try again.');
+                        }
+                      }
+                    }, 250);
+                  } else if (item.label === 'Camera') {
+                    pickImage(true);
+                    setModalVisible(false);
+                  } else if (item.label === 'Gallery') {
+                    pickImage(false);
+                    setModalVisible(false);
+                  } else if (item.label === 'Emoji') {
+                    setEmojiPickerVisible(true);
+                    setModalVisible(false);
+                  }
+                }}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: '#E8F5E9' }]}>
+                  <Icon name={item.icon} size={24} color={item.color} />
                 </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </Modal>
+                <Text style={styles.optionLabel}>{item.label}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </Modal>
 
-          <Modal
-            transparent={true}
-            visible={!!userPopup}
-            onRequestClose={() => setUserPopup(null)}
+      {/* Image Preview Modal */}
+      <Modal
+        transparent={false}
+        visible={imagePreviewModalVisible}
+        onRequestClose={() => setImagePreviewModalVisible(false)}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }}>
+          <View style={styles.previewModalHeader}>
+            <TouchableOpacity
+              onPress={() => {
+                setImagePreviewModalVisible(false);
+                setSelectedImage(null);
+                setText('');
+              }}
+              style={styles.previewCloseButton}
+            >
+              <Icon name="close" size={28} color="#FFF" />
+            </TouchableOpacity>
+            <Text style={styles.previewTitle}>Send Image</Text>
+            <TouchableOpacity
+              onPress={() => {
+                sendMessage(text);
+                setImagePreviewModalVisible(false);
+              }}
+              style={styles.previewSendButton}
+              disabled={isSending}
+            >
+              <Icon name="send" size={28} color={isSending ? "#ccc" : "#0d64dd"} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <ScrollView 
+              contentContainerStyle={styles.previewScrollContent}
+              showsVerticalScrollIndicator={true}
+              showsHorizontalScrollIndicator={true}
+              maximumZoomScale={3.0}
+              minimumZoomScale={1.0}
+              bouncesZoom={true}
+            >
+              {selectedImage && (
+                <Image
+                  source={{ uri: selectedImage.uri }}
+                  style={styles.previewImage}
+                  resizeMode="contain"
+                />
+              )}
+            </ScrollView>
+          </View>
+
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
           >
-            <TouchableWithoutFeedback onPress={() => setUserPopup(null)}>
-              <View style={styles.userModalOverlay}>
-                <View style={styles.userModalContent}>
-                  <Image
-                    source={userPopup?.avatar ? { uri: userPopup.avatar } : FALLBACK_AVATAR}
-                    style={styles.userModalAvatar}
+            <View style={styles.previewInputContainer}>
+              <TextInput
+                style={styles.previewInput}
+                placeholder="Add a caption..."
+                placeholderTextColor="#999"
+                value={text}
+                onChangeText={setText}
+                multiline
+                editable={!isSending}
+              />
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* File Preview Modal */}
+      <Modal
+        transparent={false}
+        visible={filePreviewModalVisible}
+        onRequestClose={() => setFilePreviewModalVisible(false)}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+          <View style={[styles.previewModalHeader, { backgroundColor: '#fff' }]}>
+            <TouchableOpacity
+              onPress={() => {
+                setFilePreviewModalVisible(false);
+                setSelectedFile(null);
+                setFileCaption('');
+              }}
+              style={styles.previewCloseButton}
+            >
+              <Icon name="close" size={28} color="#000" />
+            </TouchableOpacity>
+            <Text style={[styles.previewTitle, { color: '#000' }]}>Send Document</Text>
+            <TouchableOpacity
+              onPress={() => {
+                sendMessage(fileCaption);
+                setFilePreviewModalVisible(false);
+              }}
+              style={styles.previewSendButton}
+              disabled={isSending}
+            >
+              <Icon name="send" size={28} color={isSending ? "#ccc" : "#0d64dd"} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <ScrollView 
+              contentContainerStyle={styles.filePreviewScrollContent}
+              showsVerticalScrollIndicator={true}
+              bounces={true}
+            >
+              <View style={styles.fileIconContainer}>
+                <Icon name="insert-drive-file" size={100} color="#0d64dd" />
+              </View>
+              
+              <Text style={[styles.filePreviewName, { color: '#000' }]} numberOfLines={3}>
+                {selectedFile?.name || 'Document'}
+              </Text>
+              
+              {selectedFile?.size && (
+                <Text style={styles.filePreviewSize}>
+                  {formatFileSize(selectedFile.size)}
+                </Text>
+              )}
+              
+              {selectedFile?.type?.startsWith('image/') && (
+                <View style={styles.fileImagePreviewContainer}>
+                  <Image 
+                    source={{ uri: selectedFile.uri }} 
+                    style={styles.filePreviewImage}
+                    resizeMode="contain"
                   />
-                  <Text style={[styles.userModalUsername, { color: '#333' }]}>
-                    {userPopup?.username || 'Unknown'}
+                </View>
+              )}
+              
+              {selectedFile?.type && (
+                <View style={styles.fileTypeBadge}>
+                  <Text style={styles.fileTypeText}>
+                    {selectedFile.type.split('/')[1]?.toUpperCase() || 'FILE'}
                   </Text>
-                  <View style={styles.userModalButtons}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '100%' }}>
-                      <TouchableOpacity onPress={() => setUserPopup(false)} style={{ alignItems: 'center', borderColor: 'grey', borderWidth: 1, padding: 10, borderRadius: 10, width: 80, height: 80 }}>
-                        <Icon name="chat" size={28} color="#25D366" />
-                        <Text style={{ fontSize: 12, color: "#333", marginTop: 5 }}>Chat</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => navigation.navigate('BusinessVoiceCalls', { receiverId, isCaller: true, name, roomId: 'unique-room-id' })} style={{ alignItems: 'center', borderColor: 'grey', borderWidth: 1, padding: 10, borderRadius: 10, width: 80, height: 80 }}>
-                        <Icon name="phone" size={28} color="#34B7F1" />
-                        <Text style={{ fontSize: 12, color: "#333", marginTop: 5 }}>Call</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => navigation.navigate('CallOngoingScreen', { type: 'video', receiverId, profile_image, name })} style={{ alignItems: 'center', borderColor: 'grey', borderWidth: 1, padding: 10, borderRadius: 10, width: 80, height: 80 }}>
-                        <Icoon name="video" size={28} color="#FF6D00" />
-                        <Text style={{ fontSize: 12, color: "#333", marginTop: 5 }}>Video</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  <TouchableOpacity style={{ marginTop: 10, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, backgroundColor: "#eee" }} onPress={() => setUserPopup(null)}>
-                    <Text style={{ color: "#333", fontSize: 16 }}>Close</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          >
+            <View style={styles.previewInputContainer}>
+              <TextInput
+                style={[styles.previewInput, { color: '#000', backgroundColor: '#f5f5f5' }]}
+                placeholder="Add a caption..."
+                placeholderTextColor="#999"
+                value={fileCaption}
+                onChangeText={setFileCaption}
+                multiline
+                editable={!isSending}
+              />
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Context Menu */}
+      {contextMenu.visible && (
+        <View style={[
+          styles.contextMenuContainer,
+          {
+            top: contextMenu.position.y - 50,
+            left: Math.max(10, Math.min(contextMenu.position.x - 100, Dimensions.get('window').width - 220)),
+          }
+        ]}>
+          {contextMenu.message?.user_id === userId && !contextMenu.message?.is_deleted && (
+            <>
+              <TouchableOpacity
+                style={styles.contextMenuItem}
+                onPress={() => {
+                  deleteMessage(contextMenu.message.id);
+                  setContextMenu({ visible: false, message: null });
+                }}
+                activeOpacity={0.6}
+              >
+                <View style={styles.contextMenuIcon}>
+                  <Icon name="delete" size={20} color="#ff4444" />
+                </View>
+                <Text style={[styles.contextMenuText, { color: '#ff4444' }]}>Delete</Text>
+              </TouchableOpacity>
+              <View style={styles.contextMenuDivider} />
+              <TouchableOpacity
+                style={styles.contextMenuItem}
+                onPress={() => setContextMenu({ visible: false, message: null })}
+                activeOpacity={0.6}
+              >
+                <View style={styles.contextMenuIcon}>
+                  <Icon name="close" size={20} color="#666" />
+                </View>
+                <Text style={styles.contextMenuText}>Cancel</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      )}
+
+      {/* Emoji Picker Modal */}
+      <Modal
+        transparent={true}
+        visible={emojiPickerVisible}
+        onRequestClose={() => setEmojiPickerVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setEmojiPickerVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.emojiPickerContainer}>
+              <EmojiSelector onEmojiSelected={selectEmoji} />
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* User Popup Modal */}
+      <Modal
+        transparent={true}
+        visible={!!userPopup}
+        onRequestClose={() => setUserPopup(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setUserPopup(null)}>
+          <View style={styles.userModalOverlay}>
+            <View style={styles.userModalContent}>
+              <Image
+                source={userPopup?.avatar ? { uri: userPopup.avatar } : FALLBACK_AVATAR}
+                style={styles.userModalAvatar}
+              />
+              <Text style={[styles.userModalUsername, { color: '#333' }]}>
+                {userPopup?.username || 'Unknown'}
+              </Text>
+              <View style={styles.userModalButtons}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '100%' }}>
+                  <TouchableOpacity onPress={() => setUserPopup(false)} style={{ alignItems: 'center', borderColor: 'grey', borderWidth: 1, padding: 10, borderRadius: 10, width: 80, height: 80 }}>
+                    <Icon name="chat" size={28} color="#25D366" />
+                    <Text style={{ fontSize: 12, color: "#333", marginTop: 5 }}>Chat</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => navigation.navigate('BusinessVoiceCalls', { receiverId, isCaller: true, name, roomId: 'unique-room-id' })} style={{ alignItems: 'center', borderColor: 'grey', borderWidth: 1, padding: 10, borderRadius: 10, width: 80, height: 80 }}>
+                    <Icon name="phone" size={28} color="#34B7F1" />
+                    <Text style={{ fontSize: 12, color: "#333", marginTop: 5 }}>Call</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => navigation.navigate('CallOngoingScreen', { type: 'video', receiverId, profile_image, name })} style={{ alignItems: 'center', borderColor: 'grey', borderWidth: 1, padding: 10, borderRadius: 10, width: 80, height: 80 }}>
+                    <Icoon name="video" size={28} color="#FF6D00" />
+                    <Text style={{ fontSize: 12, color: "#333", marginTop: 5 }}>Video</Text>
                   </TouchableOpacity>
                 </View>
               </View>
-            </TouchableWithoutFeedback>
-          </Modal>
-        </KeyboardAvoidingView>
-      </ImageBackground>
-    </SafeAreaView>
-  );
+              <TouchableOpacity style={{ marginTop: 10, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, backgroundColor: "#eee" }} onPress={() => setUserPopup(null)}>
+                <Text style={{ color: "#333", fontSize: 16 }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    </ImageBackground>
+  </SafeAreaView>
+);
 }
 
-// Add these styles
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

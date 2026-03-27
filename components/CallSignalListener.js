@@ -33,7 +33,7 @@ export default function CallSignalListener() {
   useEffect(() => {
     if (!userId) return; 
 
-    const url = `wss://showa.essential.com.ng/ws/call/${userId}/`;
+    const url = `wss://api.showapp.ng/ws/call/${userId}/`;
     const ws = new WebSocket(url);
     wsRef.current = ws;
 

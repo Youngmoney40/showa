@@ -11,6 +11,10 @@ import {
   ScrollView,
   Modal,
   Platform,
+  KeyboardAvoidingView,
+  Keyboard,
+  TouchableWithoutFeedback,
+
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -29,6 +33,7 @@ const CreateStatusScreen = ({ navigation }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const canvasRef = useRef(null);
+  const textInputRef = useRef(null);
 
   const colorOptions = [
     '#000000', '#1E90FF', '#FF6347','#a1057a', '#32CD32', '#FFD700', '#BA55D3', '#00CED1',
@@ -43,6 +48,8 @@ const CreateStatusScreen = ({ navigation }) => {
       } else if (response.assets && response.assets.length > 0) {
         setImage(response.assets[0]);
         setBackgroundColor(null);
+        // Dismiss keyboard when image is selected
+        Keyboard.dismiss();
       }
     });
   };
@@ -56,11 +63,15 @@ const CreateStatusScreen = ({ navigation }) => {
       } else if (response.assets && response.assets.length > 0) {
         setImage(response.assets[0]);
         setBackgroundColor(null);
+        // Dismiss keyboard when image is selected
+        Keyboard.dismiss();
       }
     });
   };
 
   const handleSelectImage = () => {
+    // Dismiss keyboard before showing image picker
+    Keyboard.dismiss();
     Alert.alert('Choose Option', '', [
       { text: 'Camera', onPress: openCamera },
       { text: 'Gallery', onPress: openGallery },
@@ -133,6 +144,8 @@ const CreateStatusScreen = ({ navigation }) => {
       return;
     }
 
+    // Dismiss keyboard before posting
+    Keyboard.dismiss();
     setIsLoading(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
@@ -189,105 +202,139 @@ const CreateStatusScreen = ({ navigation }) => {
       Alert.alert('Info', 'Background color is only available for text statuses.');
       return;
     }
+    // Dismiss keyboard when opening color picker
+    Keyboard.dismiss();
     setShowColorPicker(!showColorPicker);
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: image ? '#000' : backgroundColor }]}>
-      <Canvas ref={canvasRef} style={styles.hiddenCanvas} />
-      <View style={styles.topIcons}>
-        <TouchableOpacity onPress={redirectBack}>
-          <Icon name="close" size={24} color="#fff" />
-        </TouchableOpacity>
+    
+    <SafeAreaView style={{flex:1}}>
 
-        <View style={styles.rightIcons}>
-          <TouchableOpacity onPress={() => setShowEmojiPicker(true)}>
-            <Icon name="happy-outline" size={22} color="#fff" style={styles.icon} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleSelectImage}>
-            <Icon name="image-outline" size={22} color="#fff" style={styles.icon} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={toggleColorPicker}>
-            <Icon name="color-palette-outline" size={22} color="#fff" style={styles.icon} />
-          </TouchableOpacity>
-        </View>
-      </View>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={[styles.container, { backgroundColor: image ? '#000' : backgroundColor }]}>
+            <Canvas ref={canvasRef} style={styles.hiddenCanvas} />
+            <KeyboardAvoidingView
+              style={styles.keyboardAvoidingView}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+              <View style={styles.topIcons}>
+                <TouchableOpacity onPress={redirectBack}>
+                  <Icon name="close" size={24} color="#fff" />
+                </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={styles.centerBox}>
-        {image ? (
-          <Image
-            source={{ uri: image.uri }}
-            style={styles.previewImage}
-            onError={() => console.log('Failed to load preview image')}
-          />
-        ) : null}
-        <TextInput
-          style={[styles.statusInput, image ? styles.statusInputWithImage : {}]}
-          placeholder={image ? 'Add a caption...' : 'Type a status..'}
-          placeholderTextColor={image ? '#888' : '#dfe6f1'}
-          value={statusText}
-          onChangeText={setStatusText}
-          multiline
-          maxLength={200}
-          autoFocus
-        />
-      </ScrollView>
+                <View style={styles.rightIcons}>
+                  <TouchableOpacity onPress={() => setShowEmojiPicker(true)}>
+                    <Icon name="happy-outline" size={22} color="#fff" style={styles.icon} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleSelectImage}>
+                    <Icon name="image-outline" size={22} color="#fff" style={styles.icon} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={toggleColorPicker}>
+                    <Icon name="color-palette-outline" size={22} color="#fff" style={styles.icon} />
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-      {showColorPicker && !image ? (
-        <View style={styles.colorPicker}>
-          {colorOptions.map((color) => (
-            <TouchableOpacity
-              key={color}
-              style={[styles.colorOption, { backgroundColor: color }]}
-              onPress={() => {
-                setBackgroundColor(color);
-                setShowColorPicker(false);
-              }}
-            />
-          ))}
-        </View>
-      ) : null}
+              <ScrollView 
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.centerBox}>
+                  {image ? (
+                    <Image
+                      source={{ uri: image.uri }}
+                      style={styles.previewImage}
+                      onError={() => console.log('Failed to load preview image')}
+                    />
+                  ) : null}
+                  <TextInput
+                    ref={textInputRef}
+                    style={[
+                      styles.statusInput,
+                      image ? styles.statusInputWithImage : {},
+                      !image && styles.statusInputTextOnly
+                    ]}
+                    placeholder={image ? 'Add a caption...' : 'Type a status..'}
+                    placeholderTextColor={image ? '#888' : '#dfe6f1'}
+                    value={statusText}
+                    onChangeText={setStatusText}
+                    multiline
+                    maxLength={200}
+                    autoFocus
+                    textAlignVertical="center"
+                    returnKeyType="done"
+                    blurOnSubmit={true}
+                    onSubmitEditing={Keyboard.dismiss}
+                  />
+                </View>
+              </ScrollView>
 
-      <Modal
-        visible={showEmojiPicker}
-        animationType="slide"
-        onRequestClose={() => setShowEmojiPicker(false)}
-      >
-        <SafeAreaView style={styles.emojiPickerContainer}>
-          <View style={styles.emojiPickerHeader}>
-            <TouchableOpacity onPress={() => setShowEmojiPicker(false)}>
-              <Icon name="close" size={24} color="#000" />
-            </TouchableOpacity>
-            <Text style={styles.emojiPickerHeaderText}>Select Emoji</Text>
-            <View style={{ width: 24 }} />
+              {showColorPicker && !image ? (
+                <View style={styles.colorPicker}>
+                  {colorOptions.map((color) => (
+                    <TouchableOpacity
+                      key={color}
+                      style={[styles.colorOption, { backgroundColor: color }]}
+                      onPress={() => {
+                        setBackgroundColor(color);
+                        setShowColorPicker(false);
+                      }}
+                    />
+                  ))}
+                </View>
+              ) : null}
+
+              <TouchableOpacity
+                style={[
+                  styles.postButton,
+                  (!image && !statusText.trim()) || isLoading ? styles.postButtonDisabled : {},
+                ]}
+                onPress={handlePostStatus}
+                disabled={(!image && !statusText.trim()) || isLoading}
+              >
+                <Text style={styles.postButtonText}>
+                  {isLoading ? <ActivityIndicator color='#fff' /> : 'Post Status'}
+                </Text>
+              </TouchableOpacity>
+            </KeyboardAvoidingView>
+            <Modal
+              visible={showEmojiPicker}
+              animationType="slide"
+              onRequestClose={() => setShowEmojiPicker(false)}
+            >
+              <SafeAreaView style={styles.emojiPickerContainer}>
+                <View style={styles.emojiPickerHeader}>
+                  <TouchableOpacity onPress={() => setShowEmojiPicker(false)}>
+                    <Icon name="close" size={24} color="#000" />
+                  </TouchableOpacity>
+                  <Text style={styles.emojiPickerHeaderText}>Select Emoji</Text>
+                  <View style={{ width: 24 }} />
+                </View>
+                <EmojiSelector
+                  onEmojiSelected={(emoji) => setStatusText((prev) => prev + emoji)}
+                  columns={8}
+                  showSearchBar={true}
+                  showTabs={true}
+                  showHistory={true}
+                  categoryPosition="top"
+                />
+              </SafeAreaView>
+            </Modal>
           </View>
-          <EmojiSelector
-            onEmojiSelected={(emoji) => setStatusText((prev) => prev + emoji)}
-            columns={8}
-            showSearchBar={true}
-            showTabs={true}
-            showHistory={true}
-            categoryPosition="top"
-          />
-        </SafeAreaView>
-      </Modal>
-
-      <TouchableOpacity
-        style={[
-          styles.postButton,
-          (!image && !statusText.trim()) || isLoading ? styles.postButtonDisabled : {},
-        ]}
-        onPress={handlePostStatus}
-        disabled={(!image && !statusText.trim()) || isLoading}
-      >
-        <Text style={styles.postButtonText}>{isLoading ? <ActivityIndicator color='#fff'  /> : 'Post Status'}</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+    </TouchableWithoutFeedback>
+  </SafeAreaView>
+   
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  keyboardAvoidingView: {
     flex: 1,
   },
   hiddenCanvas: {
@@ -302,6 +349,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.3)',
+    zIndex: 1,
   },
   rightIcons: {
     flexDirection: 'row',
@@ -310,18 +358,25 @@ const styles = StyleSheet.create({
   icon: {
     marginLeft: 16,
   },
-  centerBox: {
+  scrollContent: {
     flexGrow: 1,
+  },
+  centerBox: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
+    minHeight: 300,
   },
   statusInput: {
     fontSize: 22,
     color: '#fff',
     textAlign: 'center',
     paddingHorizontal: 16,
+  },
+  statusInputTextOnly: {
     flex: 1,
+    textAlignVertical: 'center',
   },
   statusInputWithImage: {
     fontSize: 18,

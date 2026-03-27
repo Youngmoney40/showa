@@ -118,7 +118,7 @@
 //   const loadWalletBalance = async () => {
 //     try {
 //       const token = await AsyncStorage.getItem('userToken');
-//       const response = await fetch(`https://showa.essential.com.ng/api/showa/wallet/`, {
+//       const response = await fetch(`https://api.showapp.ng/api/showa/wallet/`, {
 //         headers: { 'Authorization': `Bearer ${token}` },
 //       });
 //       const data = await response.json();
@@ -136,7 +136,7 @@
 //   const loadAds = async () => {
 //     try {
 //       const token = await AsyncStorage.getItem('userToken');
-//       const response = await fetch(`https://showa.essential.com.ng/api/showa/video-ads/`, {
+//       const response = await fetch(`https://api.showapp.ng/api/showa/video-ads/`, {
 //         headers: { 'Authorization': `Bearer ${token}` },
 //       });
 
@@ -257,7 +257,7 @@
 //       const token = await AsyncStorage.getItem('userToken');
 //       setIsLoadingVideo(true);
       
-//       const watchResponse = await fetch(`https://showa.essential.com.ng/api/showa/video-ads/${selectedAd.id}/watch/`, {
+//       const watchResponse = await fetch(`https://api.showapp.ng/api/showa/video-ads/${selectedAd.id}/watch/`, {
 //         method: 'POST',
 //         headers: {
 //           'Content-Type': 'application/json',
@@ -300,7 +300,7 @@
 //     try {
 //       const token = await AsyncStorage.getItem('userToken');
       
-//       const shareResponse = await fetch(`https://showa.essential.com.ng/api/showa/video-ads/${ad.id}/share/`, {
+//       const shareResponse = await fetch(`https://api.showapp.ng/api/showa/video-ads/${ad.id}/share/`, {
 //         method: 'POST',
 //         headers: {
 //           'Content-Type': 'application/json',
@@ -1729,7 +1729,7 @@ const VideoAdsScreen = ({ navigation }) => {
   const loadWalletBalance = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      const response = await fetch(`https://showa.essential.com.ng/api/showa/wallet/`, {
+      const response = await fetch(`https://api.showapp.ng/api/showa/wallet/`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       const data = await response.json();
@@ -1747,7 +1747,7 @@ const VideoAdsScreen = ({ navigation }) => {
   const loadAds = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      const response = await fetch(`https://showa.essential.com.ng/api/showa/video-ads/`, {
+      const response = await fetch(`https://api.showapp.ng/api/showa/video-ads/`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
@@ -1868,7 +1868,7 @@ const VideoAdsScreen = ({ navigation }) => {
       const token = await AsyncStorage.getItem('userToken');
       setIsLoadingVideo(true);
       
-      const watchResponse = await fetch(`https://showa.essential.com.ng/api/showa/video-ads/${selectedAd.id}/watch/`, {
+      const watchResponse = await fetch(`https://api.showapp.ng/api/showa/video-ads/${selectedAd.id}/watch/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1911,7 +1911,7 @@ const VideoAdsScreen = ({ navigation }) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       
-      const shareResponse = await fetch(`https://showa.essential.com.ng/api/showa/video-ads/${ad.id}/share/`, {
+      const shareResponse = await fetch(`https://api.showapp.ng/api/showa/video-ads/${ad.id}/share/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

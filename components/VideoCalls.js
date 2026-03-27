@@ -30,7 +30,7 @@
 
 
 // // // ================== CONFIG ==================
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// // const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // // ============================================
 
 // // export default function VoiceCallScreen({ navigation, route }) {
@@ -1069,7 +1069,7 @@
 // import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // // ================== CONFIG ==================
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // ============================================
 
 // export default function VideoCallScreen({ navigation, route }) {
@@ -2143,7 +2143,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_ROUTE_IMAGE } from "../api_routing/api";
 
 // ================== CONFIG ==================
-const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+const SIGNALING_SERVER = "ws://api.showapp.ng";
 // ============================================
 
 export default function VideoCallScreen({ navigation, route }) {

@@ -996,7 +996,7 @@
     
 //     // If it's a relative path (starts with /), prepend HTTPS base URL
 //     if (url.startsWith('/')) {
-//       const baseUrl = 'https://showa.essential.com.ng';
+//       const baseUrl = 'https://api.showapp.ng';
 //       const fullUrl = `${baseUrl}${url}`;
 //       console.log('Building profile URL:', { original: url, full: fullUrl });
 //       return fullUrl;
@@ -2054,7 +2054,7 @@ const ServiceImage = ({ imageUrl, style, isAvatar = false }) => {
   
   // For relative paths (profile images)
   if (typeof imageUrl === 'string' && imageUrl.startsWith('/')) {
-    finalUrl = `https://showa.essential.com.ng${imageUrl}`;
+    finalUrl = `https://api.showapp.ng${imageUrl}`;
     console.log('🔗 Built profile URL:', { original: imageUrl, final: finalUrl });
   }
 

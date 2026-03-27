@@ -207,7 +207,7 @@
 //   const setupWebSocket = () => {
 //     console.log(`[WebSocket] Connecting to room: ${roomId} as ${currentUserId.current}`);
     
-//     ws.current = new ReconnectingWebSocket(`ws://showa.essential.com.ng/ws/call/${roomId}/`);
+//     ws.current = new ReconnectingWebSocket(`ws://api.showapp.ng/ws/call/${roomId}/`);
     
 //     ws.current.onopen = () => {
 //       console.log('[WebSocket] Connection established');
@@ -858,7 +858,7 @@
 //   MediaStream
 // } from "react-native-webrtc";
 
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng/ws/call";
+// const SIGNALING_SERVER = "ws://api.showapp.ng/ws/call";
 // const ROOM_ID = "unique-room-id";
 
 // export default function VoiceCallScreen() {
@@ -1016,7 +1016,7 @@
 //   RTCView,
 // } from "react-native-webrtc";
 
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // const ROOM_ID = "unique-room-id";
 
 // export default function VoiceCallScreen() {
@@ -1339,7 +1339,7 @@
 //   RTCView,
 // } from "react-native-webrtc";
 // import InCallManager from "react-native-incall-manager";
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // const ROOM_ID = "unique-room-id";
 
 // export default function VoiceCallScreen() {
@@ -1814,7 +1814,7 @@
 //   RTCView,
 // } from "react-native-webrtc";
 
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // const ROOM_ID = "unique-room-id";
 
 // export default function VoiceCallScreen() {
@@ -2206,7 +2206,7 @@
 //   RTCView,
 // } from "react-native-webrtc";
 
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // const ROOM_ID = "unique-room-id";
 
 // export default function VoiceCallScreen() {
@@ -2770,7 +2770,7 @@
 //     }
 
 //     ws.current = new ReconnectingWebSocket(
-//       `ws://showa.essential.com.ng/ws/call/${roomId}/?token=${token}`
+//       `ws://api.showapp.ng/ws/call/${roomId}/?token=${token}`
 //     );
 
 //     ws.current.onopen = () => {
@@ -3294,7 +3294,7 @@
 // } from "react-native-webrtc";
 // import InCallManager from "react-native-incall-manager";
 
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // const ROOM_ID = "unique-room-id";
 
 // // ----- pcConfig with STUN + public TURN for testing -----
@@ -3843,7 +3843,7 @@
 // // } from "react-native-webrtc";
 // // import InCallManager from "react-native-incall-manager";
 
-// // const SIGNALING_SERVER = "ws://showa.essential.com.ng"; // <-- set your server
+// // const SIGNALING_SERVER = "ws://api.showapp.ng"; // <-- set your server
 // // const ROOM_ID = "unique-room-id"; // <-- set your room id
 
 // // const pcConfig = {
@@ -4424,7 +4424,7 @@
 //   RTCView,
 // } from "react-native-webrtc";
 // import InCallManager from "react-native-incall-manager";
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng:8001";
+// const SIGNALING_SERVER = "ws://api.showapp.ng:8001";
 // const ROOM_ID = "unique-room-id";
 
 // export default function VoiceCallScreen() {
@@ -5078,7 +5078,7 @@
 //     }
 
 //     ws.current = new ReconnectingWebSocket(
-//       `ws://showa.essential.com.ng/ws/call/${roomId}/?token=${token}`
+//       `ws://api.showapp.ng/ws/call/${roomId}/?token=${token}`
 //     );
 
 //     ws.current.onopen = () => {
@@ -5604,7 +5604,7 @@
 //   RTCView,
 // } from "react-native-webrtc";
 
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // const ROOM_ID = "unique-room-id";
 
 // export default function VoiceCallScreen() {
@@ -6002,7 +6002,7 @@
 // } from "react-native-webrtc";
 // import { useCall } from "./CallContext";
 
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // const ROOM_ID = "unique-room-id";
 
 // export default function VoiceCallScreen({navigation}) {
@@ -6394,7 +6394,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { API_ROUTE_IMAGE } from "../api_routing/api";
 import LottieView from "lottie-react-native";
 
-const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+const SIGNALING_SERVER = "ws://api.showapp.ng";
 const ROOM_ID = "unique-room-id";
 
 
@@ -7139,7 +7139,7 @@ const styles = StyleSheet.create({
 // } from "react-native-webrtc";
 // import InCallManager from "react-native-incall-manager";
 
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // const ROOM_ID = "unique-room-id";
 
 // export default function VoiceCallScreen() {
@@ -7592,7 +7592,7 @@ const styles = StyleSheet.create({
 //   }, []);
 
 //   const setupWebSocket = () => {
-//     ws.current = new ReconnectingWebSocket(`ws://showa.essential.com.ng/ws/call/${room}/`);
+//     ws.current = new ReconnectingWebSocket(`ws://api.showapp.ng/ws/call/${room}/`);
 
 //     ws.current.onopen = () => {
 //       console.log('WebSocket connected');
@@ -7967,7 +7967,7 @@ const styles = StyleSheet.create({
 //   const setupWebSocket = () => {
 //     console.log(`[WebSocket] Connecting to room: ${roomId} as ${currentUserId.current}`);
     
-//     ws.current = new ReconnectingWebSocket(`ws://showa.essential.com.ng/ws/call/${roomId}/`);
+//     ws.current = new ReconnectingWebSocket(`ws://api.showapp.ng/ws/call/${roomId}/`);
     
 //     ws.current.onopen = () => {
 //       console.log('[WebSocket] Connection established');
@@ -8565,13 +8565,13 @@ const styles = StyleSheet.create({
 //   // Setup WebSocket connection
 //   const setupWebSocket = async () => {
 //     //const token = AsyncStorage.getItem('userToken');
-//     //ws.current = new ReconnectingWebSocket(`ws://showa.essential.com.ng/ws/call/${roomId}/?token=${token}`);
+//     //ws.current = new ReconnectingWebSocket(`ws://api.showapp.ng/ws/call/${roomId}/?token=${token}`);
     
     
 //     const token = await AsyncStorage.getItem('userToken');
   
 //   ws.current = new ReconnectingWebSocket(
-//     `ws://showa.essential.com.ng/ws/call/${roomId}/?token=${token}`
+//     `ws://api.showapp.ng/ws/call/${roomId}/?token=${token}`
 //   );
     
 //     ws.current.onopen = () => {
@@ -8976,7 +8976,7 @@ const styles = StyleSheet.create({
 
   
 //     ws.current = new ReconnectingWebSocket(
-//       `ws://showa.essential.com.ng/ws/call/${roomId}/?token=${token}`
+//       `ws://api.showapp.ng/ws/call/${roomId}/?token=${token}`
 //     );
 //     pc.current.onsignalingstatechange = () => {
 //   console.log('Signaling state changed:', pc.current.signalingState);
@@ -9478,7 +9478,7 @@ const styles = StyleSheet.create({
 // import Icon from "react-native-vector-icons/MaterialIcons";
 // import LinearGradient from "react-native-linear-gradient";
 
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // const ROOM_ID = "unique-room-id";
 
 // export default function VideoCallScreen({ navigation, route }) {

@@ -31,7 +31,7 @@
 
 
 // // ================== CONFIG ==================
-// const SIGNALING_SERVER = "ws://showa.essential.com.ng";
+// const SIGNALING_SERVER = "ws://api.showapp.ng";
 // // ============================================
 
 // export default function VoiceVideoCallScreen({ navigation, route }) {
