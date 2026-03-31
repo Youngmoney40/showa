@@ -621,7 +621,7 @@
 // // //                     backgroundColor={Platform.OS === 'android' ? '#0750b5' : undefined}
 // // //                   />
 // // //     <ImageBackground
-// // //           source={require('../assets/images/backroundsplash.png')}
+// // //           source={require('../assets/images/showtheme.jpg')}
 // // //           style={styles.container}
 // // //           resizeMode="cover"
 // // //         >
@@ -1841,7 +1841,7 @@
 // //         backgroundColor="#0d64dd"
 // //       />
 // //       <ImageBackground
-// //         source={require('../assets/images/backroundsplash.png')}
+// //         source={require('../assets/images/showtheme.jpg')}
 // //         style={styles.container}
 // //         resizeMode="cover"
 // //       >
@@ -2953,7 +2953,7 @@
 //         backgroundColor="#0d64dd"
 //       />
 //       <ImageBackground
-//         source={require('../assets/images/backroundsplash.png')}
+//         source={require('../assets/images/showtheme.jpg')}
 //         style={styles.container}
 //         resizeMode="cover"
 //       >

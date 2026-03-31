@@ -908,7 +908,7 @@ const fetchChatHistory = useCallback(async (userId) => {
                           backgroundColor={Platform.OS === 'android' ? '#0750b5' : undefined}
                         />
        <ImageBackground
-      source={chatBackground ? { uri: chatBackground.value } : require('../assets/images/backroundsplash.png')}
+      source={chatBackground ? { uri: chatBackground.value } : require('../assets/images/showtheme.jpg')}
       style={[styles.container, {}]}
       resizeMode="cover"
     >
@@ -2785,7 +2785,7 @@ videoLabel: {
 //         backgroundColor={Platform.OS === 'android' ? '#0750b5' : undefined}
 //       />
 //       <ImageBackground
-//         source={chatBackground ? { uri: chatBackground.value } : require('../assets/images/backroundsplash.png')}
+//         source={chatBackground ? { uri: chatBackground.value } : require('../assets/images/showtheme.jpg')}
 //         style={styles.container}
 //         resizeMode="cover"
 //       >

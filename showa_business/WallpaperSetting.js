@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const { width } = Dimensions.get('window');
 
 const defaultWallpapers = [
-  require('../assets/backroundsplash.png'),
+  require('../assets/showtheme.jpg'),
   require('../assets/wallpaper/spring-5016266_1280.jpg'),
   require('../assets/wallpaper/8a91c94c-a725-41fc-b65a-69237c6b12f2.png'),
   require('../assets/wallpaper/whitebkpattern.jpg'),

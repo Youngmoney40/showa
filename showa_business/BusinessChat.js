@@ -264,7 +264,7 @@ export default function PersonalPrivateChatScreen({ route, navigation }) {
 
   const getWallpaperSource = (chatBackground) => {
     if (!chatBackground) {
-      return require('../assets/images/backroundsplash.png');
+      return require('../assets/images/showtheme.jpg');
     }
     
     if (chatBackground.source === 'gallery' && chatBackground.value) {
@@ -275,7 +275,7 @@ export default function PersonalPrivateChatScreen({ route, navigation }) {
     } 
     else if (chatBackground.source === 'default' && chatBackground.index !== undefined) {
       const defaultWallpapers = [
-        require('../assets/images/backroundsplash.png'),
+        require('../assets/images/showtheme.jpg'),
         require('../assets/wallpaper/spring-5016266_1280.jpg'),
         require('../assets/wallpaper/8a91c94c-a725-41fc-b65a-69237c6b12f2.png'),
         require('../assets/wallpaper/whitebkpattern.jpg'),
@@ -294,7 +294,7 @@ export default function PersonalPrivateChatScreen({ route, navigation }) {
       }
     }
     
-    return require('../assets/images/backroundsplash.png');
+    return require('../assets/images/showtheme.jpg');
   };
 
   useEffect(() => {

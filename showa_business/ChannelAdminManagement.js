@@ -727,7 +727,7 @@ export default function ChannelAdminScreen({ route, navigation }) {
     <SafeAreaView style={styles.container}>
 
         <ImageBackground
-      source={require('../assets/images/backroundsplash.png')}
+      source={require('../assets/images/showtheme.jpg')}
       style={styles.container}
       resizeMode="cover"
     >
