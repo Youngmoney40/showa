@@ -178,7 +178,7 @@ const VerificationCodeScreen = ({ route }) => {
         {/* Verify Button - Keep enabled during loading */}
         <TouchableOpacity
           style={styles.submitButton}
-          disabled={!isCodeComplete} // Only disable if code is incomplete
+          disabled={!isCodeComplete} 
           onPress={verifyOTP}
           activeOpacity={loading ? 0.8 : 0.6}
         >
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2, 
     shadowRadius: 4,
   },
-  buttonGradient: {
+  buttonGradsient: {
     borderRadius: 12, 
     paddingVertical: 14,
     paddingHorizontal: 20,
@@ -276,6 +276,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16, 
     letterSpacing: 0.5,
+    padding:15
   },
   buttonTextWithLoader: {
     marginLeft: 8,

@@ -41,39 +41,13 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 
-	<!-- Document Browser Support (ADDED) -->
-	<key>UISupportsDocumentBrowser</key>
-	<true/>
-
-	<!-- File Sharing & In-Place Documents -->
-	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<true/>
-	<key>UIFileSharingEnabled</key>
-	<true/>
-
-	<!-- Document Types (ADDED) -->
-	<key>CFBundleDocumentTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>Public Data</string>
-			<key>LSHandlerRank</key>
-			<string>Default</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>public.data</string>
-				<string>public.content</string>
-			</array>
-		</dict>
-	</array>
-
 	<!-- Required Device Capabilities -->
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>
 	</array>
 
-	<!-- Fonts (react-native-vector-icons) -->
+	<!-- Fonts -->
 	<key>UIAppFonts</key>
 	<array>
 		<string>AntDesign.ttf</string>
@@ -96,63 +70,39 @@
 
 	<!-- Camera -->
 	<key>NSCameraUsageDescription</key>
-	<string>This app needs camera access to take photos.</string>
+	<string>Showa uses your camera to capture photos and videos for posts, stories, and profile updates. For example, you can take a photo and share it with your friends.</string>
 
 	<!-- Microphone -->
 	<key>NSMicrophoneUsageDescription</key>
-	<string>This app needs microphone access for audio recording.</string>
+	<string>Showa uses your microphone to record audio for videos, voice messages, and in-app communication. For example, you can send a voice message to a friend.</string>
 
 	<!-- Photo Library -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app needs access to your photo library.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>This app needs permission to save photos to your library.</string>
+	<string>Showa uses your photo library to let you upload photos and videos to your posts, stories, and profile. For example, you can select an image from your gallery and share it.</string>
 
-	<!-- Documents / Files -->
-	<key>NSDocumentsFolderUsageDescription</key>
-	<string>This app needs access to documents and files.</string>
-	<key>NSDownloadsFolderUsageDescription</key>
-	<string>This app needs access to downloaded files.</string>
+	<!-- Save to Photo Library -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Showa allows you to save photos and videos from the app to your device. For example, you can save shared media to your gallery.</string>
 
 	<!-- Contacts -->
 	<key>NSContactsUsageDescription</key>
-	<string>This app needs access to contacts.</string>
+	<string>Showa uses your contacts to help you find and connect with friends who are already using the app. For example, you can invite contacts or start chats with them.</string>
 
+	<!-- Location (ONLY if you actually use it) -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Showa uses your location to help you discover nearby content and connect with people around you. For example, you can see posts from users near your location.</string>
+
+	<!-- App Icon -->
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
 
-	<!-- Location (Safe & Approved) -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app uses your location to provide location-based features.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app uses your location in the background for core features.</string>
-
-	<!-- Bluetooth -->
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>This app uses Bluetooth to connect to nearby devices.</string>
-	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>This app uses Bluetooth for device communication.</string>
-
-	<!-- Face ID -->
-	<key>NSFaceIDUsageDescription</key>
-	<string>This app uses Face ID for secure authentication.</string>
-
-	<!-- Local Network -->
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>This app needs access to the local network.</string>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>_showaservice._tcp</string>
-		<string>_showaservice._udp</string>
-	</array>
-
-	<!-- Background Modes (ONLY keep what you actually use) -->
+	<!-- Background Modes -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
-		<string>fetch</string>
 	</array>
 
+	<!-- URL Schemes -->
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>instagram</string>
@@ -166,14 +116,10 @@
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
+		<false/>
 	</dict>
 
-	<!-- React Native New Architecture -->
+	<!-- React Native -->
 	<key>RCTNewArchEnabled</key>
 	<true/>
 

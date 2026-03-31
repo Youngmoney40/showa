@@ -1451,9 +1451,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useOnlineStatus } from './src/hooks/useOnlineStatus';
 
 // Create navigation ref
 const navigationRef = React.createRef();
+
+
 
 // Ignore specific warnings
 LogBox.ignoreLogs([
@@ -1812,22 +1815,39 @@ export default function App() {
 
 function AppContent() {
   const [userId, setUserId] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const backgroundTimerRef = useRef(null);
   const appStateRef = useRef(AppState.currentState);
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const userData = await AsyncStorage.getItem('userData');
+        
+        if (token && userData) {
+          const user = JSON.parse(userData);
+          setUserId(user.id);
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        setIsAuthenticated(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
   // Initialize video prefetch when user is logged in
   useEffect(() => {
     const initVideoPrefetch = async () => {
       try {
-        const userData = await AsyncStorage.getItem('userData');
-        if (userData) {
-          const user = JSON.parse(userData);
-          setUserId(user.id);
-          
-          // Initialize video prefetch service
-          await videoBackgroundfetch.init(user.id);
-          
-          // Get cached videos immediately
+        if (userId) {
+          await videoBackgroundfetch.init(userId);
           const cachedVideos = await videoBackgroundfetch.getCachedVideos();
           console.log('📦 Cached videos ready:', cachedVideos?.length || 0);
         }
@@ -1838,16 +1858,15 @@ function AppContent() {
 
     initVideoPrefetch();
     
-    // Cleanup on unmount
     return () => {
       if (backgroundTimerRef.current) {
         clearTimeout(backgroundTimerRef.current);
       }
       stopBackgroundServices();
     };
-  }, []);
+  }, [userId]);
   
-  // Enhanced background cleanup for Android 15 and Xiaomi devices
+  // Enhanced background cleanup
   useEffect(() => {
     const handleAppStateChange = (nextAppState) => {
       const currentState = appStateRef.current;
@@ -1855,18 +1874,14 @@ function AppContent() {
       if (currentState === 'active' && nextAppState === 'background') {
         console.log('📱 App going to background - cleaning up resources');
         
-        // Clean up heavy resources when app goes to background
         if (Platform.OS === 'android') {
-          // Immediate cleanup for critical resources
           pauseAllVideos();
           stopWebRTCConnections();
           
-          // Delay cache cleanup to not block app state change
           setTimeout(() => {
             clearAllCaches();
             freeMemory();
             
-            // Cancel any pending network requests
             if (global.__pendingRequests && global.__pendingRequests.length > 0) {
               global.__pendingRequests.forEach((request, index) => {
                 if (request && request.cancel) {
@@ -1877,7 +1892,6 @@ function AppContent() {
             }
           }, 500);
           
-          // Set a timer to clear more resources after 30 seconds in background
           if (backgroundTimerRef.current) {
             clearTimeout(backgroundTimerRef.current);
           }
@@ -1885,7 +1899,6 @@ function AppContent() {
           backgroundTimerRef.current = setTimeout(() => {
             console.log('🕐 30 seconds in background - deep cleanup');
             freeMemory();
-            // Stop background services to save battery
             if (global.__backgroundServicesRunning) {
               stopBackgroundServices();
               global.__backgroundServicesRunning = false;
@@ -1895,13 +1908,11 @@ function AppContent() {
       } else if (currentState === 'background' && nextAppState === 'active') {
         console.log('📱 App coming to foreground - restoring resources');
         
-        // Clear the background timer
         if (backgroundTimerRef.current) {
           clearTimeout(backgroundTimerRef.current);
           backgroundTimerRef.current = null;
         }
         
-        // Restart background services if needed
         if (!global.__backgroundServicesRunning && userId) {
           InteractionManager.runAfterInteractions(() => {
             backgroundFetchService.init();
@@ -1911,7 +1922,6 @@ function AppContent() {
           });
         }
         
-        // Optionally reload some data
         InteractionManager.runAfterInteractions(() => {
           console.log('✅ App resumed');
         });
@@ -1933,23 +1943,33 @@ function AppContent() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <CallProvider>
-        <ThemedNavigator />
+        <ThemedNavigator isAuthenticated={isAuthenticated} userId={userId} />
         <NetworkStatusBanner />
       </CallProvider>
     </GestureHandlerRootView>
   );
 }
 
+// ==================== ONLINE STATUS MANAGER COMPONENT ====================
+
+const OnlineStatusManager = ({ userId }) => {
+  // Only run if userId exists
+  if (!userId) {
+    return null;
+  }
+  
+  useOnlineStatus(userId);
+  return null;
+};
+
 // ==================== THEMED NAVIGATOR ====================
 
-function ThemedNavigator() {
+function ThemedNavigator({ isAuthenticated, userId }) {
   const { theme, colors } = useTheme();
-  const [userId, setUserId] = useState(null);
   const [appState, setAppState] = useState(AppState.currentState);
   const [showPinModal, setShowPinModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Create custom navigation theme
   const customTheme = {
     dark: theme === 'dark',
     colors: {
@@ -1983,7 +2003,6 @@ function ThemedNavigator() {
   useEffect(() => {
     checkPinRequirement();
     
-    // Initialize global tracking objects
     if (!global.__activeWebRTCConnections) {
       global.__activeWebRTCConnections = [];
     }
@@ -2004,7 +2023,6 @@ function ThemedNavigator() {
       const token = await AsyncStorage.getItem('userToken');
       
       if (pinEnabled === 'true' && token) {
-        // Optional: Verify with server that PIN is still valid
         const status = await checkPinStatus(token);
         if (status && status.has_pin) {
           setShowPinModal(true);
@@ -2017,24 +2035,6 @@ function ThemedNavigator() {
     }
   };
 
-  // Load user data
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const uid = await AsyncStorage.getItem("userData");
-        if (uid) {
-          const parsed = JSON.parse(uid);
-          setUserId(parsed.id);
-        }
-      } catch (err) {
-        console.error('Error loading user:', err);
-      }
-    };
-
-    loadUser();
-  }, []);
-
-  // Background services with proper cleanup
   useEffect(() => {
     const handleAppStateChange = (nextAppState) => {
       if (appState.match(/inactive|background/) && nextAppState === 'active') {
@@ -2067,13 +2067,9 @@ function ThemedNavigator() {
 
     initializeBackgroundServices();
 
-    return () => {
-      // Don't stop services here to allow them to run in background
-      // They will be stopped by AppContent when needed
-    };
+    return () => {};
   }, [userId]);
 
-  // Don't render navigation until we've checked PIN
   if (isLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
@@ -2083,17 +2079,20 @@ function ThemedNavigator() {
   }
 
   return (
-    <NavigationContainer 
-      ref={navigationRef}
+    <NavigationContainer ref={navigationRef}
       linking={linking}
       theme={customTheme}
     >
+      {/* Only enable OnlineStatusManager when user is authenticated */}
+      {isAuthenticated && (
+        <OnlineStatusManager userId={userId} />
+      )}
+      
       <RNStatusBar 
         barStyle={theme === 'dark' ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
 
-      {/* PIN Unlock Modal - Placed outside Stack.Navigator to overlay everything */}
       <PinUnlockModal 
         visible={showPinModal}
         onClose={() => setShowPinModal(false)}
@@ -2107,6 +2106,7 @@ function ThemedNavigator() {
           contentStyle: { backgroundColor: colors.background }
         }}
       >
+        {/* ALL YOUR EXISTING SCREENS - KEEP EXACTLY AS THEY ARE */}
         {/* ==================== AUTHENTICATION FLOW ==================== */}
         <Stack.Screen name="Loginscreen">
           {(props) => (
@@ -2236,6 +2236,7 @@ function ThemedNavigator() {
             </ScreenWrapper>
           )}
         </Stack.Screen>
+        
         <Stack.Screen name="SyncContactForBusiness">
           {(props) => (
             <ScreenWrapper>
@@ -3131,8 +3132,9 @@ function ThemedNavigator() {
         />
       </Stack.Navigator>
       
-      {/* CallSignalListener needs to be inside NavigationContainer */}
       {userId && <CallSignalListener userId={userId} />}
     </NavigationContainer>
   );
 }
+
+

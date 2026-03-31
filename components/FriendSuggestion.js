@@ -527,13 +527,9 @@ const ContactsScreen = () => { // Remove navigation from props
     }
 
     try {
-      // Try to navigate - you need to know the correct screen name
-      // Common screen names: 'OtherUserProfile', 'UserProfile', 'Profile', 'OtherProfile'
+     
       navigation.navigate('OtherUserProfile', { userId: userId });
-      
-      // If the above doesn't work, try these alternatives:
-      // navigation.navigate('UserProfile', { userId: userId });
-      // navigation.navigate('Profile', { userId: userId });
+
       
     } catch (error) {
       console.error('Navigation error:', error);

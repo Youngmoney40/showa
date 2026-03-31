@@ -54,9 +54,6 @@ export default function PhoneNumberScreen({ navigation }) {
     return () => clearTimeout(focusTimer);
   }, []);
 
-  // REMOVED the problematic useEffect that was causing focus issues
-  // No need to blur/focus when dropdown opens/closes
-
   const validatePhoneNumber = () => {
     const trimmedNumber = phoneNumber.trim();
     
@@ -136,7 +133,6 @@ export default function PhoneNumberScreen({ navigation }) {
         </View>
       </LinearGradient>
 
-      {/* Main Content */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -183,7 +179,6 @@ export default function PhoneNumberScreen({ navigation }) {
               />
             </TouchableOpacity>
 
-            {/* Phone Input Container */}
             <View style={styles.phoneInputWrapper}>
               <View style={styles.dialCodeContainer}>
                 <Text style={styles.dialCodeText}>{selectedCountry.dial}</Text>
@@ -491,7 +486,6 @@ const styles = StyleSheet.create({
   phoneInput: {
     flex: 1,
     fontSize: 16,
-    color: COLORS.textPrimary,
     paddingHorizontal: SPACING.md,
     fontWeight: '500',
   },
@@ -557,7 +551,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: SCREEN_HEIGHT * 0.5,
+    maxHeight: SCREEN_HEIGHT * 0.7,
     paddingTop: SPACING.md,
   },
   modalHeader: {

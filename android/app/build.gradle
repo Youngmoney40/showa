@@ -21,8 +21,8 @@ android {
         applicationId "com.showa"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 25
-        versionName "1.0"
+        versionCode 26
+        versionName "1.0.1"
 
         // For Android 15 compatibility
         multiDexEnabled true
@@ -35,7 +35,7 @@ android {
 
         // Enable Hermes for better memory management
     project.ext.react = [
-        enableHermes: true,  // Clean and rebuild if changing
+        enableHermes: true,  
     ]
 
         

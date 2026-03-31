@@ -54,7 +54,7 @@ const options = [
 ];
 
 export default function PersonalPrivateChatScreen({ route, navigation }) {
-  const { chatType, receiverId, groupSlug, name, profile_image } = route.params;
+  const { chatType, receiverId, groupSlug, name, profile_image, userIdd, } = route.params;
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
@@ -80,17 +80,52 @@ export default function PersonalPrivateChatScreen({ route, navigation }) {
 
   const [downloadProgress, setDownloadProgress] = useState({});
   const [downloadingFileId, setDownloadingFileId] = useState(null);
-
-  
   const [isAndroid15, setIsAndroid15] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // ==========================
+  //     online staus 
+  //===========================
+  const [currentStatus, setCurrentStatus] = useState(null);
+      const [isOnline, setIsOnline] = useState(false);
+      const [lastSeenDisplay, setLastSeenDisplay] = useState('');
+  
+      useEffect(() => {
+       
+        const fetchStatus = async () => {
+          try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await axios.get(
+              `${API_ROUTE}/user-status/${receiverId}/`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+              }
+            );
+            
+            setCurrentStatus(response.data);
+            setIsOnline(response.data.is_online);
+            setLastSeenDisplay(response.data.last_seen_display);
+          } catch (error) {
+            console.error('Failed to fetch user status:', error);
+          }
+        };
+  
+        fetchStatus();
+  
+        // Poll every 30 seconds for status updates
+        const interval = setInterval(fetchStatus, 30000);
+  
+        return () => clearInterval(interval);
+      }, [receiverId]);
   
   useEffect(() => {
     if (Platform.OS === 'android') {
-      // Get Android version
+    
       const androidVersion = Platform.constants?.Version || 0;
-      // Android 15 is API level 35
+     
       const isAndroid15OrHigher = androidVersion >= 35;
       setIsAndroid15(isAndroid15OrHigher);
       
@@ -107,7 +142,7 @@ export default function PersonalPrivateChatScreen({ route, navigation }) {
       (event) => {
         setKeyboardVisible(true);
         if (isAndroid15) {
-          // For Android 15, i use full height adjustment
+         
           setKeyboardHeight(event.endCoordinates.height);
         }
         setTimeout(() => {
@@ -1297,6 +1332,20 @@ const sendMessage = async (caption = '', emoji = null) => {
       saveMessagesToStorage(updatedMessages);
       return updatedMessages;
     });
+
+
+    if (error.response?.status === 403) {
+          Alert.alert('Sorry', 'You cannot send a message to this user because you are blocked');
+          setMessages((prev) => {
+            const updatedMessages = prev.map(msg => 
+              msg.id === tempId 
+                ? { ...msg, is_sending: false, is_blocked: true }
+                : msg
+            );
+            saveMessagesToStorage(updatedMessages);
+            return updatedMessages;
+          });
+        }
     
     let errorMessage = 'Failed to send message';
     if (error.response?.status === 413) {
@@ -1304,7 +1353,7 @@ const sendMessage = async (caption = '', emoji = null) => {
     } else if (error.message.includes('Network')) {
       errorMessage = 'Network error. Please check your connection.';
     }
-    Alert.alert('Error', errorMessage);
+    //Alert.alert('Error', errorMessage);
   } finally {
     setIsSending(false);
     setUploadProgress(null);
@@ -1339,7 +1388,12 @@ return (
                   source={chatType === 'single' && profile_image ? { uri: `${profile_image}` } : FALLBACK_AVATAR}
                   style={styles.headerAvatar}
                 />
-                <Text style={styles.headerName}>{name.slice(0, 16) + '...'}</Text>
+                <View style={{display:'flex',flexDirection:'column'}}>
+                                    <Text style={styles.headerName}>{name.slice(0, 16) + '...'}</Text>
+                                    <Text style={styles.userStatus}>
+                                      {isOnline ? 'Online' : `Last seen ${lastSeenDisplay}`}
+                                    </Text>
+                </View>
               </TouchableOpacity>
               <View style={{ display: 'flex', flexDirection: 'row', alignContent: 'center', alignItems: 'center' }}>
                 <TouchableOpacity
@@ -1473,7 +1527,12 @@ return (
                     source={chatType === 'single' && profile_image ? { uri: `${profile_image}` } : FALLBACK_AVATAR}
                     style={styles.headerAvatar}
                   />
-                  <Text style={styles.headerName}>{name.slice(0, 16) + '...'}</Text>
+                  <View style={{display:'flex',flexDirection:'column'}}>
+                                      <Text style={styles.headerName}>{name.slice(0, 16) + '...'}</Text>
+                                      <Text style={styles.userStatus}>
+                                        {isOnline ? 'Online' : `Last seen ${lastSeenDisplay}`}
+                                      </Text>
+                  </View>
                 </TouchableOpacity>
                 <View style={{ display: 'flex', flexDirection: 'row', alignContent: 'center', alignItems: 'center' }}>
                   <TouchableOpacity
@@ -2423,6 +2482,12 @@ fileActionContainer: {
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  userStatus: {
+    fontSize: 12,
+    color: '#ffffffff',
+    marginTop: 2,
+    marginLeft:15
   },
   userModalContent: {
     backgroundColor: "#fff",

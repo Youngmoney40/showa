@@ -1,3 +1,4 @@
+
 // import React, { useEffect, useRef } from 'react';
 // import { 
 //   View, 
@@ -6,8 +7,8 @@
 //   Dimensions, 
 //   Animated, 
 //   StatusBar,
-//   SafeAreaView,Text
 // } from 'react-native';
+// import { SafeAreaView } from 'react-native-safe-area-context';
 // import { useNavigation } from '@react-navigation/native';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 // import axios from 'axios';
@@ -41,16 +42,63 @@
 //     }
 //   };
 
+  
+
 //   const switchAccount = async () => {
 //     try {
 //       const profile = await fetchProfile();
 //       if (profile?.name?.trim()) {
-//         navigation.navigate('BusinessHome');
+//         return 'BusinessHome';
 //       } else {
-//         navigation.navigate('ProceedOptions');
+//         return 'ProceedOptions';
+//         //return 'Signin';
 //       }
 //     } catch (error) {
-//       navigation.navigate('Signin');
+//       return 'Signin';
+//     }
+//   };
+
+//   const checkAuth = async () => {
+//     try {
+//       const [token, refreshToken, biometricEnabled] = await Promise.all([
+//         AsyncStorage.getItem('userToken'),
+//         AsyncStorage.getItem('refreshToken'),
+//         AsyncStorage.getItem('biometric_enabled')
+//       ]);
+
+//       if (token) {
+//         if (biometricEnabled === 'true') {
+//           return 'Biometric';
+//         } else {
+//           return await switchAccount();
+//         }
+//       }
+
+//       if (refreshToken) {
+//         try {
+//           const response = await axios.post(`${API_ROUTE}/auth/token/refresh/`, {
+//             refresh: refreshToken
+//           });
+
+//           if (response.data?.access) {
+//             await AsyncStorage.setItem('userToken', response.data.access);
+//             const bioEnabled = await AsyncStorage.getItem('biometric_enabled');
+//             if (bioEnabled === 'true') {
+//               return 'Biometric';
+//             } else {
+//               return await switchAccount();
+//             }
+//           }
+//         } catch (refreshError) {
+         
+//           await AsyncStorage.multiRemove(['userToken', 'refreshToken']);
+//         }
+//       }
+
+//       return 'Signin';
+//     } catch (error) {
+     
+//       return 'Signin';
 //     }
 //   };
 
@@ -68,54 +116,17 @@
 //       }),
 //     ]).start();
 
-//     const checkAuth = async () => {
-//       try {
-//         const [token, refreshToken, biometricEnabled] = await Promise.all([
-//           AsyncStorage.getItem('userToken'),
-//           AsyncStorage.getItem('refreshToken'),
-//           AsyncStorage.getItem('biometric_enabled')
-//         ]);
-
-//         if (token) {
-//           if (biometricEnabled === 'true') {
-//             navigation.navigate('Biometric');
-//           } else {
-//             await switchAccount();
-//           }
-//           return;
-//         }
-
-//         if (refreshToken) {
-//           try {
-//             const response = await axios.post(`${API_ROUTE}/auth/token/refresh/`, {
-//               refresh: refreshToken
-//             });
-
-//             if (response.data?.access) {
-//               await AsyncStorage.setItem('userToken', response.data.access);
-//               const bioEnabled = await AsyncStorage.getItem('biometric_enabled');
-//               if (bioEnabled === 'true') {
-//                 navigation.navigate('Biometric');
-//               } else {
-//                 await switchAccount();
-//               }
-//               return;
-//             }
-//           } catch (refreshError) {
-           
-//             await AsyncStorage.multiRemove(['userToken', 'refreshToken']);
-//           }
-//         }
-
-//         navigation.navigate('Signin');
-//       } catch (error) {
-       
-//         navigation.navigate('Signin');
+//     const startTime = Date.now();
+//     checkAuth().then((target) => {
+//       const elapsed = Date.now() - startTime;
+//       const remaining = 2000 - elapsed;
+//       if (remaining > 0) {
+//         setTimeout(() => navigation.navigate(target), remaining);
+//       } else {
+//         navigation.navigate(target);
 //       }
-//     };
+//     });
 
-//     const timer = setTimeout(checkAuth, 1000);
-//     return () => clearTimeout(timer);
 //   }, [navigation]);
 
 //   useEffect(() => {
@@ -217,6 +228,7 @@
 //   },
 // });
 
+// screens/SplashScreen.js (Updated)
 import React, { useEffect, useRef } from 'react';
 import { 
   View, 
@@ -246,6 +258,8 @@ export default function SplashScreen() {
   const fetchProfile = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
+      if (!token) return null;
+      
       const response = await axios.get(`${API_ROUTE}/profiles/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -255,7 +269,7 @@ export default function SplashScreen() {
       }
       return null;
     } catch (err) {
-     // console.error('fetchProfile error:', err);
+      console.error('fetchProfile error:', err);
       return null;
     }
   };
@@ -267,7 +281,6 @@ export default function SplashScreen() {
         return 'BusinessHome';
       } else {
         return 'ProceedOptions';
-        //return 'Signin';
       }
     } catch (error) {
       return 'Signin';
@@ -306,19 +319,19 @@ export default function SplashScreen() {
             }
           }
         } catch (refreshError) {
-         
           await AsyncStorage.multiRemove(['userToken', 'refreshToken']);
         }
       }
 
       return 'Signin';
     } catch (error) {
-     
+      console.error('checkAuth error:', error);
       return 'Signin';
     }
   };
 
   useEffect(() => {
+    // Logo animations
     Animated.parallel([
       Animated.timing(logoScale, {
         toValue: 1,
@@ -332,20 +345,7 @@ export default function SplashScreen() {
       }),
     ]).start();
 
-    const startTime = Date.now();
-    checkAuth().then((target) => {
-      const elapsed = Date.now() - startTime;
-      const remaining = 2000 - elapsed;
-      if (remaining > 0) {
-        setTimeout(() => navigation.navigate(target), remaining);
-      } else {
-        navigation.navigate(target);
-      }
-    });
-
-  }, [navigation]);
-
-  useEffect(() => {
+    // Dot animations
     const animateDot = (dot, delay) => {
       Animated.loop(
         Animated.sequence([
@@ -367,7 +367,19 @@ export default function SplashScreen() {
     animateDot(dot1, 0);
     animateDot(dot2, 200);
     animateDot(dot3, 400);
-  }, []);
+
+    const startTime = Date.now();
+    checkAuth().then((target) => {
+      const elapsed = Date.now() - startTime;
+      const remaining = 2000 - elapsed;
+      if (remaining > 0) {
+        setTimeout(() => navigation.navigate(target), remaining);
+      } else {
+        navigation.navigate(target);
+      }
+    });
+
+  }, [navigation]);
 
   return (
     <LinearGradient
@@ -378,8 +390,6 @@ export default function SplashScreen() {
     >
       <StatusBar backgroundColor="#0750b5" barStyle="light-content" />
       <SafeAreaView style={styles.safeArea}>
-        
-       
         <View style={styles.logoContainer}>
           <Animated.Image
             source={require('../assets/images/elogo.png')}
@@ -392,7 +402,6 @@ export default function SplashScreen() {
             ]}
             resizeMode="contain"
           />
-          
         </View>
         
         <View style={styles.bottomContainer}>
@@ -402,7 +411,6 @@ export default function SplashScreen() {
             <Animated.View style={[styles.dot, { transform: [{ scale: dot3 }] }]} />
           </View>
         </View>
-        
       </SafeAreaView>
     </LinearGradient>
   );

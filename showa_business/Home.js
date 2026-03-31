@@ -40,6 +40,7 @@ import NotificationService from '../src/services/PushNotifications';
 import Video from 'react-native-video';
 import { useTheme } from '../src/context/ThemeContext';
 import EarningsSlideInManager from '../components/EarningsSlideInManager';
+import OnlineStatusBadge from '../components/OnlineStatusBadge';
 
 const windowWidth = Dimensions.get('window').width;
 
@@ -69,7 +70,7 @@ const HomeScreen = ({ navigation }) => {
   const [buttonLayout, setButtonLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const insets = useSafeAreaInsets();
   
-  const styles = createStyles(colors, isDark, insets); // Create styles with theme
+  const styles = createStyles(colors, isDark, insets); 
 
   const [notificationSettings, setNotificationSettings] = useState({
     showNotifications: true,
@@ -848,27 +849,47 @@ const HomeScreen = ({ navigation }) => {
                   name: item.name,
                   chatType: 'single',
                   profile_image: item.avatar,
+                  userIdd: item.receiverId || item.id
                 });
               }
             }}
             style={styles.chatItem}
           >
-            <Image
-              source={
-                item.avatar
-                  ? { uri: `${API_ROUTE_IMAGE}${item.avatar}` || item.avatar }
-                  : item.type === 'group'
-                  ? { uri: 'https://via.placeholder.com/50/cccccc/808080?text=G' }
-                  : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-              }
-              style={styles.avatar}
-            />
+            {/* Avatar Container with Status Badge */}
+            <View style={styles.avatarContainer}>
+              <Image
+                source={
+                  item.avatar
+                    ? { uri: `${API_ROUTE_IMAGE}${item.avatar}` || item.avatar }
+                    : item.type === 'group'
+                    ? { uri: 'https://via.placeholder.com/50/cccccc/808080?text=G' }
+                    : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+                }
+                style={styles.avatar}
+              />
+              {/* Show online status dot only for single chats (not groups) */}
+              {item.type === 'single' && (
+                <OnlineStatusBadge 
+                  userId={item.receiverId || item.id}
+                  dotSize={14}
+                  position="bottom-right"
+                  borderWidth={2}
+                  borderColor={colors.card}
+                />
+              )}
+              {/* Show group icon badge for groups */}
+              {item.type === 'group' && (
+                <View style={styles.groupBadge}>
+                  <Icon name="people" size={12} color="#fff" />
+                </View>
+              )}
+            </View>
+            
             <View style={styles.chatContent}>
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
                 <Text style={styles.chatName}>
                   {highlightSearchText(item.name, searchQuery) ||
                   (item.type === 'group' ? 'Group Chat' : 'Unnamed Chat')}
-                  
                 </Text>
                 {item.type === 'group' && (
                   <>

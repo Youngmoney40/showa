@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Animated, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -53,39 +54,45 @@ const NetworkStatusBanner = () => {
   if (!showBanner) return null;
 
   return (
-    <Animated.View style={[
-      styles.banner,
-      isConnected ? styles.onlineBanner : styles.offlineBanner,
-      { transform: [{ translateY: slideAnim }] }
-    ]}>
-      <View style={styles.bannerContent}>
-        <View style={styles.statusInfo}>
-         
+    <SafeAreaView style={styles.banner}>
+
+        <Animated.View 
+        style={[
+        styles.banner,
+        isConnected ? styles.onlineBanner : styles.offlineBanner,
+        { transform: [{ translateY: slideAnim }] }
+      ]}>
+        <View style={styles.bannerContent}>
+          <View style={styles.statusInfo}>
           
-          <Icon 
-            name={isConnected ? "wifi-outline" : "wifi-outline"} 
-            size={20} 
-            color="#fff" 
-          />
-          <View style={styles.textContainer}>
-            <Text style={styles.bannerText}>
-              {isConnected ? 'Back online' : 'No internet connection'}
-            </Text>
-            {!isConnected && (
-              <Text style={styles.subText}>
-                {connectionType === 'cellular' ? 'Mobile data not working' : 'Check your connection'}
+            
+            <Icon 
+              name={isConnected ? "wifi-outline" : "wifi-outline"} 
+              size={20} 
+              color="#fff" 
+            />
+            <View style={styles.textContainer}>
+              <Text style={styles.bannerText}>
+                {isConnected ? 'Back online' : 'No internet connection'}
               </Text>
-            )}
+              {!isConnected && (
+                <Text style={styles.subText}>
+                  {connectionType === 'cellular' ? 'Mobile data not working' : 'Check your connection'}
+                </Text>
+              )}
+            </View>
           </View>
+          
+          {!isConnected && (
+            <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          )}
         </View>
-        
-        {!isConnected && (
-          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-            <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </Animated.View>
+      </Animated.View>
+
+    </SafeAreaView>
+    
   );
 };
 
@@ -101,6 +108,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+
   },
   onlineBanner: {
     backgroundColor: '#10B981', 
@@ -114,7 +122,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingTop: 40, 
+    paddingTop: Platform.OS === 'android' ? 40 : 70, 
   },
   statusInfo: {
     flexDirection: 'row',

@@ -3329,15 +3329,12 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     backgroundColor: 'rgba(0,0,0,0.3)',
     zIndex: 1000,
-    ...Platform.select({
-      ios: {
-        paddingTop: StatusBar.currentHeight || 44,
-      },
+    paddingTop: 70,
+    
       
-    }),
   },
   navBarIOS: {
-    paddingTop: 44,
+    paddingTop: 70,
   },
   tabsContainer: {
     flexDirection: 'row',

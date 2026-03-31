@@ -68,7 +68,7 @@ const TermsScreen = ({ navigation }) => {
   ];
 
   const handleEmailPress = () => {
-    Linking.openURL('mailto:legal@showapp.ng');
+    Linking.openURL('mailto:info@showapp.ng');
   };
 
   const navigateToPrivacy = () => {
@@ -90,7 +90,7 @@ const TermsScreen = ({ navigation }) => {
           >
             <Icon name="arrow-back" size={24} color="#FFF" />
           </TouchableOpacity>
-          <View style={styles.headerTextContainer}>
+          <View style={[styles.headerTextContsainer,{padding:0, paddingBottom:70}]}>
             <Text style={styles.headerTitle}>Terms & Conditions</Text>
             <Text style={styles.headerSubtitle}>Last updated: {lastUpdated}</Text>
           </View>
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 50 : 40,
+    paddingTop: Platform.OS === 'ios' ? 0 : 40,
     paddingBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -203,11 +203,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    marginBottom:0
   },
   backButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
+    marginTop:50
   },
   headerTextContainer: {
     flex: 1,
@@ -217,17 +219,19 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 20,
     fontWeight: '700',
+    marginTop:90
   },
   headerSubtitle: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 12,
-    marginTop: 2,
+    marginTop: 3,
   },
   privacyButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 8,
+    marginTop:50
   },
   privacyButtonText: {
     color: '#FFF',

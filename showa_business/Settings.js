@@ -487,7 +487,7 @@ const ContactProfile = ({ navigation }) => {
           [
             {
               text: 'OK',
-              onPress: () => navigation.navigate('Signin_two')
+              onPress: () => navigation.navigate('Signin')
             }
           ]
         );
@@ -783,7 +783,7 @@ const ContactProfile = ({ navigation }) => {
               </Text>
             </View>
             
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Why are you leaving? (Optional)</Text>
+            {/* <Text style={[styles.inputLabel, { color: colors.text }]}>Why are you leaving? (Optional)</Text>
             <TextInput
               style={[styles.textInput, { backgroundColor: colors.backgroundSecondary, color: colors.text }]}
               placeholder="Tell us your reason..."
@@ -792,7 +792,7 @@ const ContactProfile = ({ navigation }) => {
               onChangeText={setDeleteReason}
               multiline
               numberOfLines={3}
-            />
+            /> */}
             
             {/* <Text style={[styles.inputLabel, { color: colors.text, marginTop: 15 }]}>Enter Password to Confirm</Text>
             <TextInput

@@ -892,7 +892,7 @@ export default function EmailScreen({ navigation, route }) {
   const [loginLoading, setLoginLoading] = useState(false);
   const emailInputRef = useRef(null);
 
-  // Auto-focus email input when screen loads
+
   useEffect(() => {
     const focusTimer = setTimeout(() => {
       emailInputRef.current?.focus();

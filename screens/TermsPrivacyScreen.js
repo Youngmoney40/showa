@@ -701,7 +701,7 @@ Showa App
         >
           <Icon name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Terms & Conditions</Text>
+        <Text style={[styles.headerTitle]}>Terms & Conditions</Text>
         <View style={styles.headerSpacer} />
       </View>
 

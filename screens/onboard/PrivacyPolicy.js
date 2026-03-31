@@ -149,7 +149,7 @@ You can control cookie settings in your browser.`
   };
 
   const navigateToTerms = () => {
-    navigation.navigate('TermsScreen');
+    navigation.navigate('TermsCondition');
   };
 
   return (
@@ -307,44 +307,52 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 50 : 40,
+    paddingTop: Platform.OS === 'ios' ? 0 : 40,
     paddingBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
+    marginTop:0
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    marginBottom:40
+    
   },
   backButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
+     marginTop:60
   },
   headerTextContainer: {
     flex: 1,
     alignItems: 'center',
+    padding:20
   },
   headerTitle: {
     color: '#FFF',
     fontSize: 20,
     fontWeight: '700',
+    marginTop:60
   },
   headerSubtitle: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 12,
     marginTop: 2,
+    
   },
   termsButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 8,
+     marginTop:60
   },
   termsButtonText: {
     color: '#FFF',

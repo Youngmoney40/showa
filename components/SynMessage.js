@@ -64,7 +64,7 @@ const SyncContactsScreen = () => {
   // };
 
   const handleSkip = () => {
-    navigation.goBack();
+    navigation.navigate('ProceedOptions');
   };
 
 
@@ -75,7 +75,6 @@ const SyncContactsScreen = () => {
       routes: [{ name: 'ProceedOptions' }],
     });
 
-    // Start background sync
     await startBackgroundContactSync();
   };
   
@@ -108,9 +107,9 @@ const SyncContactsScreen = () => {
           <Text style={styles.syncButtonText}>Sync Contacts</Text>
         </TouchableOpacity>
 
-        {/* <TouchableOpacity onPress={handleSkip}>
+        <TouchableOpacity onPress={handleSkip}>
           <Text style={styles.skipText}>Skip for now</Text>
-        </TouchableOpacity> */}
+        </TouchableOpacity>
 
         <Modal
           visible={modalVisible}
