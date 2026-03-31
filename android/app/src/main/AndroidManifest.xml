@@ -1,6 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"
+        tools:node="remove"/>
+
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_CAMERA"
+        tools:node="remove"/>
+
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"
+        tools:node="remove"/>
+
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"
+        tools:node="remove"/>
+
     <!-- ========== BASIC PERMISSIONS ========== -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -44,14 +60,7 @@
     
     <!-- ========== DOWNLOADS ========== -->
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
-    
-    <!-- ========== CRITICAL: COMMENT OUT FOREGROUND SERVICES (CAUSING CRASHES) ========== -->
-    <!-- FOREGROUND_SERVICE permissions are causing crashes on Android 15 -->
-    <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> -->
-    <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" /> -->
-    <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" /> -->
-    <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" /> -->
-
+   
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -79,7 +88,6 @@
         android:roundIcon="@mipmap/showa_icon"
         android:allowBackup="false"
         android:theme="@style/AppTheme"
-        android:requestLegacyExternalStorage="true"
         android:largeHeap="true">
 
         <activity
@@ -96,12 +104,6 @@
             </intent-filter>
         </activity>
         
-        <!-- CRITICAL: REMOVE OR COMMENT OUT WebRTC SERVICE (CAUSING CRASHES) -->
-        <!-- <service android:name="org.webrtc.PeerConnectionFactory" 
-            android:foregroundServiceType="camera|microphone" 
-            android:exported="false" /> -->
-        
-        <!-- File Provider for Android 7+ -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
