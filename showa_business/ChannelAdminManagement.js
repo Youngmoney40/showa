@@ -1053,7 +1053,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: Platform.OS === 'ios' ? 44 : 10,
-    paddingHorizontal: 16,
+   
     paddingBottom: 12,
     elevation: 4,
     shadowColor: '#000',
@@ -1067,6 +1067,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+     paddingHorizontal: 16,
   },
   headerButton: {
     padding: 8,

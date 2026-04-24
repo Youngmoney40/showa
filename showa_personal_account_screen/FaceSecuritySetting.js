@@ -949,13 +949,13 @@ const PrivacySettings = ({ navigation }) => {
   };
 
   const menuItems = [
-    {
-      key: 'pinSecurity',
-      label: 'PIN Security',
-      description: 'Secure your app with a 4-digit PIN code. Required for accessing private chats.',
-      icon: 'lock-closed-outline',
-      requiresSetup: true,
-    },
+    // {
+    //   key: 'pinSecurity',
+    //   label: 'PIN Security',
+    //   description: 'Secure your app with a 4-digit PIN code. Required for accessing private chats.',
+    //   icon: 'lock-closed-outline',
+    //   requiresSetup: true,
+    // },
     {
       key: 'faceRecognition',
       label: 'Biometric Authentication',
@@ -1004,7 +1004,7 @@ const PrivacySettings = ({ navigation }) => {
                 styles.securityLevelFill, 
                 { 
                   width: `${(settings.pinSecurity || settings.faceRecognition) ? 
-                    (settings.pinSecurity && settings.faceRecognition ? 100 : 50) : 0}%`,
+                    (settings.pinSecurity && settings.faceRecognition ? 100 : 100) : 0}%`,
                   backgroundColor: settings.pinSecurity && settings.faceRecognition ? 
                     (isDark ? '#10b981' : '#4CAF50') : 
                     (isDark ? '#f59e0b' : '#FFC107')
@@ -1013,7 +1013,7 @@ const PrivacySettings = ({ navigation }) => {
             </View>
             <Text style={styles.securityLevelStatus}>
               {settings.pinSecurity && settings.faceRecognition ? 'Maximum Security' :
-              settings.pinSecurity || settings.faceRecognition ? 'Medium Security' : 'Basic Security'}
+              settings.pinSecurity || settings.faceRecognition ? 'Medium Security' : 'Medium Security'}
             </Text>
           </View>
 

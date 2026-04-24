@@ -1789,35 +1789,31 @@ const handleShareOptimized = useCallback(async (postId) => {
       imageUrl = post.all_images[0].url;
     }
 
-    // Format the image URL with the website domain
-    let formattedImageUrl = '';
-    if (imageUrl) {
-      // Extract just the filename/path if it's a full URL
-      const imagePath = imageUrl.replace(/^https?:\/\/[^/]+/, '');
-      formattedImageUrl = `https://showapp.com${API_ROUTE_IMAGE}${imagePath}`;
-    }
+    // Create deep link URL
+    const deepLinkUrl = `showa://post/${post.id}`;
+    const webUrl = `https://showapp.com/post/${post.id}`;
 
     // Create a rich share message with post details
     const shareMessage = 
       `📱 Check out this post on ShowApp!\n\n` +
-      `"${post.content}"\n\n` +
+      `"${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}"\n\n` +
       `━━━━━━━━━━━━━━━━━━━\n` +
       `👤 Author: ${post.username}\n` +
       `❤️ Likes: ${post.like_count || 0}\n` +
       `💬 Comments: ${post.comment_count || 0}\n` +
       `👁️ Views: ${post.views || 0}\n` +
       `━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🔗 View post: https://showapp.com/post/${post.id}\n` +
-      `📱 Download the app: https://showapp.com/download`;
+      `🔗 Open in app: ${deepLinkUrl}\n` +
+      `🌐 Or view online: ${webUrl}`;
 
     const shareOptions = {
       message: shareMessage,
       title: `ShowApp - Post by ${post.username}`,
     };
 
-    // Add URL for iOS (supports image preview)
+    // Add URL for iOS (supports preview)
     if (Platform.OS === 'ios') {
-      shareOptions.url = formattedImageUrl || `https://showapp.com/post/${post.id}`;
+      shareOptions.url = webUrl;
     }
 
     const shareResult = await Share.share(shareOptions);
@@ -1863,6 +1859,7 @@ const handleShareOptimized = useCallback(async (postId) => {
     return 0;
   }
 }, [posts, allposts]);
+
 
   const handleOptionsOptimized = useCallback((postId, userId) => {
     setSelectedPostId(postId);

@@ -77,6 +77,10 @@ const HomeScreen = ({ navigation }) => {
     doNotDisturb: false,
   });
 
+
+//   const READ_CHATS_KEY = 'read_chats_business';
+// const CHAT_CACHE_KEY = 'cached_chat_list_business';
+
   useEffect(() => {
     loadNotificationSettings();
   }, []);
@@ -247,109 +251,161 @@ const HomeScreen = ({ navigation }) => {
   const CHAT_CACHE_KEY = 'cached_chat_list_business';
   const READ_CHATS_KEY = 'read_chats_business';
 
-  const loadReadChats = async () => {
-    try {
-      const stored = await AsyncStorage.getItem(READ_CHATS_KEY);
-      if (stored) {
-        setReadChats(new Set(JSON.parse(stored)));
-      }
-    } catch (e) {
-      console.error('Load read chats error:', e);
+ const loadReadChats = async () => {
+  try {
+    const stored = await AsyncStorage.getItem(READ_CHATS_KEY);
+    console.log('Loading read chats from storage:', stored);
+    if (stored) {
+      const parsedSet = new Set(JSON.parse(stored));
+      setReadChats(parsedSet);
+      return parsedSet;
     }
-  };
+    return new Set();
+  } catch (e) {
+    console.error('Load read chats error:', e);
+    return new Set();
+  }
+};
 
-  const saveReadChats = async () => {
-    try {
-      await AsyncStorage.setItem(READ_CHATS_KEY, JSON.stringify(Array.from(readChats)));
-    } catch (e) {
-      console.error('Save read chats error:', e);
-    }
-  };
+  const saveReadChats = async (readChatsSet) => {
+  try {
+    const toStore = JSON.stringify(Array.from(readChatsSet));
+    await AsyncStorage.setItem(READ_CHATS_KEY, toStore);
+    console.log('Saved read chats:', toStore);
+  } catch (e) {
+    console.error('Save read chats error:', e);
+  }
+};
+
 
   useEffect(() => {
-    saveReadChats();
-  }, [readChats]);
+  if (readChats && readChats.size > 0) {
+    saveReadChats(readChats);
+  }
+}, [readChats]);
 
   const loadCachedChats = async () => {
-    try {
-      const cached = await AsyncStorage.getItem(CHAT_CACHE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        setChatList(parsed);
-        setFilteredChatList(parsed);
-        return true;
-      }
-    } catch (e) {
-      console.error('Load cache error:', e);
+  try {
+    const cached = await AsyncStorage.getItem(CHAT_CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      console.log('Loaded cached chats:', parsed.length);
+      setChatList(parsed);
+      setFilteredChatList(parsed);
+      return true;
     }
-    return false;
-  };
+  } catch (e) {
+    console.error('Load cache error:', e);
+  }
+  return false;
+};
 
-  const cacheChats = async (chats) => {
-    try {
-      await AsyncStorage.setItem(CHAT_CACHE_KEY, JSON.stringify(chats));
-    } catch (e) {
-      console.error('Cache chats error:', e);
-    }
-  };
+
+ const cacheChats = async (chats) => {
+  try {
+    await AsyncStorage.setItem(CHAT_CACHE_KEY, JSON.stringify(chats));
+    console.log('Cached chats:', chats.length);
+  } catch (e) {
+    console.error('Cache chats error:', e);
+  }
+};
+
 
   useEffect(() => {
-    async function loadCache() {
-      setIsInitialLoading(true);
-      await loadReadChats();
-      const hasCache = await loadCachedChats();
-      if (hasCache) {
-        setChatList(prev =>
-          prev.map(chat =>
-            readChats.has(`${chat.id}-${chat.type}`) ? { ...chat, unread_count: 0 } : chat
-          )
-        );
-        setFilteredChatList(prev =>
-          prev.map(chat =>
-            readChats.has(`${chat.id}-${chat.type}`) ? { ...chat, unread_count: 0 } : chat
-          )
-        );
-      }
-      setIsInitialLoading(false);
+  async function loadInitialData() {
+    setIsInitialLoading(true);
+    
+    // Load read chats first
+    const loadedReadChats = await loadReadChats();
+    console.log('Loaded read chats on startup:', Array.from(loadedReadChats));
+    
+    // Then load cached chats
+    const hasCache = await loadCachedChats();
+    
+    if (hasCache) {
+      // Apply read state to cached chats
+      setChatList(prev =>
+        prev.map(chat => {
+          const chatKey = `${chat.id}-${chat.type}`;
+          const isRead = loadedReadChats.has(chatKey);
+          return isRead ? { ...chat, unread_count: 0 } : chat;
+        })
+      );
+      setFilteredChatList(prev =>
+        prev.map(chat => {
+          const chatKey = `${chat.id}-${chat.type}`;
+          const isRead = loadedReadChats.has(chatKey);
+          return isRead ? { ...chat, unread_count: 0 } : chat;
+        })
+      );
     }
-    loadCache();
-  }, []);
+    
+    setIsInitialLoading(false);
+  }
+  
+  loadInitialData();
+}, []);
+
+  // useEffect(() => {
+  //   async function loadCache() {
+  //     setIsInitialLoading(true);
+  //     await loadReadChats();
+  //     const hasCache = await loadCachedChats();
+  //     if (hasCache) {
+  //       setChatList(prev =>
+  //         prev.map(chat =>
+  //           readChats.has(`${chat.id}-${chat.type}`) ? { ...chat, unread_count: 0 } : chat
+  //         )
+  //       );
+  //       setFilteredChatList(prev =>
+  //         prev.map(chat =>
+  //           readChats.has(`${chat.id}-${chat.type}`) ? { ...chat, unread_count: 0 } : chat
+  //         )
+  //       );
+  //     }
+  //     setIsInitialLoading(false);
+  //   }
+  //   loadCache();
+  //}, []);
 
   const fetchChatList = async () => {
-    setIsLoading(true);
-    setError(null);
-    const token = await AsyncStorage.getItem('userToken');
-    try {
-      const response = await axios.get(`${API_ROUTE}/api/chat/list/?account_mode=business`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      const filteredChats = response.data.chats.filter(chat =>
-        chat.type !== 'channel' 
-      );
-      
-      const uniqueChats = [];
-      const seenIds = new Set();
-      filteredChats.forEach((chat) => {
-        const chatIdentifier = chat.type === 'single'
-          ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
-          : chat.group_slug || chat.id;
-       
-        if (!seenIds.has(chatIdentifier)) {
-          seenIds.add(chatIdentifier);
-          uniqueChats.push({
-            ...chat,
-            id: chatIdentifier
-          });
-        }
-      });
+  setIsLoading(true);
+  setError(null);
+  const token = await AsyncStorage.getItem('userToken');
+  try {
+    const response = await axios.get(`${API_ROUTE}/api/chat/list/?account_mode=business`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    const filteredChats = response.data.chats.filter(chat =>
+      chat.type !== 'channel' 
+    );
+    
+    const uniqueChats = [];
+    const seenIds = new Set();
+    filteredChats.forEach((chat) => {
+      const chatIdentifier = chat.type === 'single'
+        ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
+        : chat.group_slug || chat.id;
+     
+      if (!seenIds.has(chatIdentifier)) {
+        seenIds.add(chatIdentifier);
+        uniqueChats.push({
+          ...chat,
+          id: chatIdentifier
+        });
+      }
+    });
 
-      const chats = uniqueChats.map((chat) => ({
+    const chats = uniqueChats.map((chat) => {
+      const chatKey = `${chat.id}-${chat.type}`;
+      const isRead = readChats.has(chatKey);
+      return {
         id: chat.id,
-        unread_count: chat.unread_count || 0,
+        unread_count: isRead ? 0 : (chat.unread_count || 0),
         name: chat.name || 'Unknown',
         content: chat.content || '[media]',
         time: new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -358,57 +414,79 @@ const HomeScreen = ({ navigation }) => {
         members_count: chat.members_count,
         receiverId: chat.type === 'single' ? chat.id : null,
         group_slug: chat.group_slug || null
-      }));
+      };
+    });
 
-      setChatList(chats);
-      setFilteredChatList(chats);
-      cacheChats(chats);
-    } catch (err) {
-      console.error('Failed to load chat list:', err.response?.data || err.message);
-      setError('Failed to load chats. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    setChatList(chats);
+    setFilteredChatList(chats);
+    cacheChats(chats);
+  } catch (err) {
+    console.error('Failed to load chat list:', err.response?.data || err.message);
+    setError('Failed to load chats. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const markMessagesAsRead = async (chatId, chatType) => {
-    console.log('Marking as read - chatId:', chatId, 'chatType:', chatType);
-    setReadChats(prev => new Set(prev).add(`${chatId}-${chatType}`));
-    setChatList(prevChats =>
-      prevChats.map(chat =>
-        chat.id === chatId && chat.type === chatType ? { ...chat, unread_count: 0 } : chat
-      )
-    );
-    setFilteredChatList(prevFiltered =>
-      prevFiltered.map(chat =>
-        chat.id === chatId && chat.type === chatType ? { ...chat, unread_count: 0 } : chat
-      )
-    );
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      const res = await axios.post(
-        `${API_ROUTE}/chatmessage/mark-read/`,
-        {
-          chat_id: chatId,
-          chat_type: chatType,
+  const chatKey = `${chatId}-${chatType}`;
+  console.log('Marking as read - chatId:', chatId, 'chatType:', chatType, 'key:', chatKey);
+  
+  // Check if already marked as read
+  if (readChats.has(chatKey)) {
+    console.log('Already marked as read, skipping');
+    return;
+  }
+  
+  // Update local state
+  setReadChats(prev => {
+    const newSet = new Set(prev);
+    newSet.add(chatKey);
+    saveReadChats(newSet); // Save immediately
+    return newSet;
+  });
+  
+  // Update chat lists
+  setChatList(prevChats =>
+    prevChats.map(chat =>
+      chat.id === chatId && chat.type === chatType ? { ...chat, unread_count: 0 } : chat
+    )
+  );
+  setFilteredChatList(prevFiltered =>
+    prevFiltered.map(chat =>
+      chat.id === chatId && chat.type === chatType ? { ...chat, unread_count: 0 } : chat
+    )
+  );
+  
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    const res = await axios.post(
+      `${API_ROUTE}/chatmessage/mark-read/`,
+      {
+        chat_id: chatId,
+        chat_type: chatType,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (res.status !== 200 && res.status !== 201) {
-        throw new Error('API call failed');
       }
-    } catch (error) {
-      setReadChats(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(`${chatId}-${chatType}`);
-        return newSet;
-      });
+    );
+    if (res.status !== 200 && res.status !== 201) {
+      throw new Error('API call failed');
     }
-  };
+    console.log('Successfully marked as read on server');
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+    // Revert on failure
+    setReadChats(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(chatKey);
+      saveReadChats(newSet);
+      return newSet;
+    });
+  }
+};
 
   useFocusEffect(
     useCallback(() => {
@@ -424,68 +502,73 @@ const HomeScreen = ({ navigation }) => {
     return () => clearInterval(interval);
   }, []);
 
+
   const fetchChatListSilently = async () => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) return;
-      const response = await axios.get(
-        `${API_ROUTE}/api/chat/list/?account_mode=${accountMode}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
-      
-      const filteredChats = response.data.chats.filter(chat =>
-        chat.type !== 'channel'
-      );
-      const uniqueChats = [];
-      const seenIds = new Set();
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) return;
+    const response = await axios.get(
+      `${API_ROUTE}/api/chat/list/?account_mode=${accountMode}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+    
+    const filteredChats = response.data.chats.filter(chat =>
+      chat.type !== 'channel'
+    );
+    const uniqueChats = [];
+    const seenIds = new Set();
+   
+    filteredChats.forEach((chat) => {
+      const chatIdentifier = chat.type === 'single'
+        ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
+        : chat.group_slug || chat.id;
      
-      filteredChats.forEach((chat) => {
-        const chatIdentifier = chat.type === 'single'
-          ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
-          : chat.group_slug || chat.id;
-       
-        if (!seenIds.has(chatIdentifier)) {
-          seenIds.add(chatIdentifier);
-          uniqueChats.push({
-            ...chat,
-            id: chatIdentifier,
-            unread_count: chat.unread_count || 0,
-            name: chat.name || 'Unknown',
-            content: chat.content || '[media]',
-            time: new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            avatar: chat.avatar ? `${API_ROUTE_IMAGE}${chat.avatar}` : null,
-            type: chat.type,
-            members_count: chat.members_count,
-            receiverId: chat.type === 'single' ? chatIdentifier : null,
-            group_slug: chat.group_slug || null
-          });
-        }
-      });
-      
-      checkForNewMessages(uniqueChats);
-      
-      setChatList(prevChats => {
-        if (JSON.stringify(prevChats) !== JSON.stringify(uniqueChats)) {
-          cacheChats(uniqueChats);
-          return uniqueChats;
-        }
-        return prevChats;
-      });
-      
-      setFilteredChatList(prevFiltered => {
-        if (searchQuery.trim() === '') {
-          return uniqueChats;
-        }
-        return prevFiltered;
-      });
-    } catch (err) {
-      console.error('Silent refresh error:', err);
-    }
-  };
+      if (!seenIds.has(chatIdentifier)) {
+        seenIds.add(chatIdentifier);
+        const chatKey = `${chatIdentifier}-${chat.type}`;
+        const isRead = readChats.has(chatKey);
+        uniqueChats.push({
+          ...chat,
+          id: chatIdentifier,
+          unread_count: isRead ? 0 : (chat.unread_count || 0),
+          name: chat.name || 'Unknown',
+          content: chat.content || '[media]',
+          time: new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          avatar: chat.avatar ? `${API_ROUTE_IMAGE}${chat.avatar}` : null,
+          type: chat.type,
+          members_count: chat.members_count,
+          receiverId: chat.type === 'single' ? chatIdentifier : null,
+          group_slug: chat.group_slug || null
+        });
+      }
+    });
+    
+    checkForNewMessages(uniqueChats);
+    
+    setChatList(prevChats => {
+      if (JSON.stringify(prevChats) !== JSON.stringify(uniqueChats)) {
+        cacheChats(uniqueChats);
+        return uniqueChats;
+      }
+      return prevChats;
+    });
+    
+    setFilteredChatList(prevFiltered => {
+      if (searchQuery.trim() === '') {
+        return uniqueChats;
+      }
+      return prevFiltered;
+    });
+  } catch (err) {
+    console.error('Silent refresh error:', err);
+  }
+};
+
+  
 
   const checkForNewMessages = (newChats) => {
     if (!notificationSettings.showNotifications || notificationSettings.doNotDisturb) {

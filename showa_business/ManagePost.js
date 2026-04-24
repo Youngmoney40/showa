@@ -3673,6 +3673,47 @@ const PostDetailBottomSheet = ({
     setNewComment(`@${username} `);
   };
 
+const handleDeletePost = () => {
+  Alert.alert(
+    "Delete Post",
+    "Are you sure you want to delete this post? This action cannot be undone.",
+    [
+      { text: "Cancel", style: "cancel" },
+      { 
+        text: "Delete", 
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const token = await AsyncStorage.getItem('userToken');
+            let endpoint = '';
+            
+            if (type === 'marketplace') {
+              endpoint = `${API_ROUTE}/my-listings/${post.id}/`;
+            } else if (type === 'tweets') {
+              endpoint = `${API_ROUTE}/my-posts/${post.id}/`;
+            } else {
+              endpoint = `${API_ROUTE}/my-shorts/${post.id}/`;
+            }
+            
+            await axios.delete(endpoint, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            Alert.alert("Success", "Post deleted successfully");
+            if (onPostUpdate) {
+              onPostUpdate(post.id, { deleted: true });
+            }
+            onClose();
+          } catch (error) {
+            console.error('Delete error:', error);
+            Alert.alert("Error", "Failed to delete post");
+          }
+        }
+      }
+    ]
+  );
+};
+
   const handleCommentSubmit = async () => {
     if (!newComment.trim() || !post) return;
     
@@ -4039,6 +4080,16 @@ const renderCommentItem = (comment, level = 0) => {
                   <Ionicons name="share-social-outline" size={24} color={colors.textSecondary} />
                   <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>
                     Share
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.actionButton}
+                  onPress={handleDeletePost}
+                >
+                  <Ionicons name="trash-outline" size={24} color="#e74c3c" />
+                  <Text style={[styles.actionButtonText, { color: '#e74c3c' }]}>
+                    Delete
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -4812,7 +4863,7 @@ const userId = video.user?.id;
 };
 
 // ==================== VIDEO GRID ITEM ====================
-const VideoGridItem = memo(({ item, onPress, colors, isPlaying }) => {
+const VideoGridItem = memo(({ item, onPress, onOptionsPress, colors, isPlaying }) => {
   const [isPressed, setIsPressed] = useState(false);
   
   const formatViews = (views) => {
@@ -4844,10 +4895,14 @@ const VideoGridItem = memo(({ item, onPress, colors, isPlaying }) => {
         colors={colors}
       />
       
-      {/* <View style={styles.videoViewsOverlay}>
-        <Ionicons name="eye" size={12} color="#fff" />
-        <Text style={styles.videoViewsText}>{formatViews(item.views || 0)}</Text>
-      </View> */}
+      {/* ADD THREE-DOT MENU BUTTON */}
+      <TouchableOpacity 
+        style={styles.videoGridMenuButton}
+        onPress={() => onOptionsPress && onOptionsPress(item)}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons name="ellipsis-vertical" size={18} color="#fff" />
+      </TouchableOpacity>
       
       {item.like_count > 0 && (
         <View style={styles.videoLikeOverlay}>
@@ -4872,17 +4927,13 @@ const ManagePostsScreen = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [playingVideoId, setPlayingVideoId] = useState(null);
-  
-  // Bottom sheet states
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedPostType, setSelectedPostType] = useState(null);
-  
   const slideAnim = useRef(new Animated.Value(height)).current;
   const abortControllerRef = useRef(null);
   const isMounted = useRef(true);
   
-  // Viewability config for video autoplay
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 50,
     minimumViewTime: 500,
@@ -4901,7 +4952,10 @@ const ManagePostsScreen = () => {
     { viewabilityConfig: viewabilityConfig.current, onViewableItemsChanged }
   ]);
 
-  // Cleanup on unmount
+
+
+
+ 
   useEffect(() => {
     return () => {
       isMounted.current = false;
@@ -5300,7 +5354,7 @@ const ManagePostsScreen = () => {
         renderEmptyState()
       ) : (
         <FlatList
-          key={getFlatListKey()} // Important: Forces re-render when numColumns changes
+          key={getFlatListKey()} 
           data={currentData()}
           renderItem={renderGridItem}
           keyExtractor={(item) => `${selectedTab}-${item.id.toString()}`}
@@ -5474,6 +5528,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  videoGridMenuButton: {
+  position: 'absolute',
+  top: 8,
+  right: 8,
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  borderRadius: 15,
+  width: 30,
+  height: 30,
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 10,
+},
   reactionBadge: {
     position: 'absolute',
     bottom: 8,

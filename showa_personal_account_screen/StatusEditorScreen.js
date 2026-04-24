@@ -63,19 +63,20 @@ const CreateStatusScreen = ({ navigation }) => {
       } else if (response.assets && response.assets.length > 0) {
         setImage(response.assets[0]);
         setBackgroundColor(null);
-        // Dismiss keyboard when image is selected
+       
         Keyboard.dismiss();
       }
     });
   };
 
   const handleSelectImage = () => {
-    // Dismiss keyboard before showing image picker
+   
     Keyboard.dismiss();
     Alert.alert('Choose Option', '', [
-      { text: 'Camera', onPress: openCamera },
-      { text: 'Gallery', onPress: openGallery },
-      { text: 'Cancel', style: 'cancel' },
+        { text: 'Gallery', onPress: openGallery },
+       { text: 'Cancel', style: 'cancel' },
+    
+    
     ]);
   };
 
@@ -202,7 +203,6 @@ const CreateStatusScreen = ({ navigation }) => {
       Alert.alert('Info', 'Background color is only available for text statuses.');
       return;
     }
-    // Dismiss keyboard when opening color picker
     Keyboard.dismiss();
     setShowColorPicker(!showColorPicker);
   };

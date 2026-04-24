@@ -342,11 +342,11 @@ Join me and let’s connect!. Download it here: https://play.google.com/store/ap
           <Text style={[styles.contactName, { color: colors.text }]}>
             {item.name || item.user_details?.name || item.phone_number || 'Unknown User'}
           </Text>
-          {item.phone_number && (
+          {/* {item.phone_number && (
             <Text style={[styles.contactPhone, { color: colors.textSecondary }]}>
               {item.phone_number}
             </Text>
-          )}
+          )} */}
           {item.is_in_contacts && (
             <View style={[styles.contactBadge, { backgroundColor: colors.surfaceVariant }]}>
               <Text style={[styles.contactBadgeText, { color: colors.primary }]}>In your contacts</Text>

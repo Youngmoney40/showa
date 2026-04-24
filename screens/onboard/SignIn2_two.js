@@ -1141,6 +1141,7 @@ export default function EmailScreen({ navigation, route }) {
                   keyboardType="email-address"
                   autoComplete="email"
                   autoCapitalize="none"
+                  placeholderTextColor='#000000'
                   autoCorrect={false}
                   textContentType="emailAddress"
                   value={email}
@@ -1148,7 +1149,7 @@ export default function EmailScreen({ navigation, route }) {
                     setEmail(text.trim());
                     if (emailError) setEmailError('');
                   }}
-                  placeholderTextColor={COLORS.placeholder}
+                 
                   returnKeyType="send"
                   onSubmitEditing={handleEmailSentOTP}
                   blurOnSubmit={false}

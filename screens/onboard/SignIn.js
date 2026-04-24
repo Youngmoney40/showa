@@ -185,13 +185,14 @@ export default function PhoneNumberScreen({ navigation }) {
               </View>
               
               <TextInput
+    
                 ref={phoneInputRef}
                 placeholder="Enter phone number"
                 style={styles.phoneInput}
                 keyboardType="number-pad"
                 autoComplete="tel"
                 textContentType="telephoneNumber"
-                placeholderTextColor={COLORS.placeholder}
+                placeholderTextColor='#000'
                 value={phoneNumber}
                 onChangeText={formatPhoneNumber}
                 maxLength={15}

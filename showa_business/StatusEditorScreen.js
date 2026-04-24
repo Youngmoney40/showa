@@ -44,9 +44,7 @@ const StatusEditorScreen = ({navigation}) => {
           <TouchableOpacity>
             <Icon name="happy-outline" size={22} color="#fff" style={styles.icon} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={openCamera}>
-            <Icon name="camera-outline" size={22} color="#fff" style={styles.icon} />
-          </TouchableOpacity>
+          
           <TouchableOpacity>
             <Icon name="image-outline" size={22} color="#fff" style={styles.icon} />
           </TouchableOpacity>

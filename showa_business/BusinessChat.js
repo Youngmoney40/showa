@@ -397,12 +397,12 @@ useEffect(() => {
         setMessages(parsedMessages);
       }
     } catch (error) {
-      // Silent fail
+      
     }
   };
 
   const redirectBack = () => {
-    navigation.navigate('BusinessHome');
+    navigation.goBack();
   };
 
   const fetchUserData = useCallback(async () => {

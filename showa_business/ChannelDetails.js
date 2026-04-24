@@ -4327,17 +4327,32 @@ export default function ChannelAdminScreen({ route, navigation }) {
     );
   }
 
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Icon name="error-outline" size={60} color="#FF6B6B" />
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+ if (error) {
+  return (
+    <View style={styles.errorContainer}>
+      <Icon name="lock-closed" size={60} color="#FF6B6B" />
+      <Text style={styles.errorTitle}>Channel Access Restricted</Text>
+      <Text style={styles.errorMessage}>
+        You need to follow this channel to view its content
+      </Text>
+      
+      <TouchableOpacity 
+        style={styles.followToViewButton} 
+         onPress={() => navigation.goBack()}
+      >
+        <Icon name="person-add" size={20} color="#fff" />
+        <Text style={styles.followToViewButtonText}>Back to Follow to View</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={styles.cancelButton} 
+        onPress={() => navigation.goBack()}
+      >
+        <Text style={styles.cancelButtonText}>Cancel</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -4840,6 +4855,35 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
   },
+  followToViewButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#0d64dd',
+  paddingHorizontal: 24,
+  paddingVertical: 14,
+  borderRadius: 30,
+  marginTop: 20,
+  shadowColor: '#0d64dd',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 4,
+  elevation: 3,
+},
+followToViewButtonText: {
+  color: '#fff',
+  fontSize: 18,
+  fontWeight: '600',
+  marginLeft: 10,
+},
+cancelButton: {
+  marginTop: 12,
+  paddingVertical: 10,
+  paddingHorizontal: 20,
+},
+cancelButtonText: {
+  color: '#333',
+  fontSize: 16,
+},
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',

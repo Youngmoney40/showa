@@ -78,6 +78,7 @@ const [fileCaption, setFileCaption] = useState('');
 
 
 
+
 const [chatBackground, setChatBackground] = useState(null);
 useEffect(() => {
   const loadBackground = async () => {
@@ -103,6 +104,76 @@ useEffect(() => {
 
   return () => backHandler.remove(); 
 }, [navigation]);
+
+
+const useChatMessages = (chatType, receiverId, groupSlug, accountMode, userId) => {
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    const loadMessages = async () => {
+      // Load from cache immediately
+      const storageKey = chatType === 'single' ? `chat_single_${receiverId}` : `chat_group_${groupSlug}`;
+      const cached = await AsyncStorage.getItem(storageKey);
+      
+      if (cached && isMounted) {
+        setMessages(JSON.parse(cached));
+        setIsLoading(false);
+      }
+      
+      // Fetch fresh data
+      setIsRefreshing(true);
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        let url = `/api/chat/?chat_type=${chatType}&account_mode=business`;
+        if (chatType === 'single' && receiverId) url += `&receiver=${receiverId}`;
+        else if (chatType === 'group' && groupSlug) url += `&group_slug=${groupSlug}`;
+        
+        const response = await axiosInstance.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 8000
+        });
+        
+        const history = response.data.results?.map((msg) => ({
+          id: msg.id.toString(),
+          user: msg.user_name || msg.name || 'Unknown',
+          user_id: msg.user_id || msg.user,
+          content: msg.content || '',
+          image: msg.image ? `${API_ROUTE_IMAGE}${msg.image}` : null,
+          file: msg.file ? `${API_ROUTE_IMAGE}${msg.file}` : null,
+          emoji: msg.emoji || null,
+          reply_to: msg.reply_to ? msg.reply_to.toString() : null,
+          is_deleted: msg.is_deleted || false,
+          timestamp: msg.timestamp,
+          time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          avatar: msg.user_profile_picture || null,
+        })) || [];
+        
+        const uniqueMessages = [...new Map(history.map((msg) => [msg.id, msg])).values()].reverse();
+        
+        if (isMounted) {
+          setMessages(uniqueMessages);
+          await AsyncStorage.setItem(storageKey, JSON.stringify(uniqueMessages.slice(0, 100)));
+        }
+      } catch (error) {
+        console.error('Background fetch error:', error.message);
+      } finally {
+        if (isMounted) setIsRefreshing(false);
+      }
+    };
+    
+    if (userId) {
+      loadMessages();
+    }
+    
+    return () => { isMounted = false; };
+  }, [chatType, receiverId, groupSlug, accountMode, userId]);
+  
+  return { messages, setMessages, isLoading, isRefreshing };
+};
 
   const flatListRef = useRef();
   const ws = useRef(null);
@@ -249,60 +320,6 @@ const fetchChatHistory = useCallback(async (userId) => {
   }
 }, [chatType, receiverId, groupSlug, accountMode]);
 
-//   const fetchChatHistory = useCallback(async (userId) => {
-//     if (!userId) {
-//       //console.error('No userId for fetchChatHistory');
-//       return [];
-//     }
-
-//     try {
-//       //console.log('Fetching chat history...');
-//       const token = await AsyncStorage.getItem('userToken');
-//       if (!token) {
-//         console.error('No access token found');
-//         return [];
-//       }
-
-//       let url = `/api/chat/?chat_type=${chatType}&account_mode=business`;
-//       if (chatType === 'single' && receiverId) url += `&receiver=${receiverId}`;
-//       else if (chatType === 'group' && groupSlug) url += `&group_slug=${groupSlug}`;
-//       else {
-//         console.error('Invalid chat parameters:', { chatType, receiverId, groupSlug });
-//         return [];
-//       }
-
-//       const response = await Promise.race([
-//         axiosInstance.get(url, { headers: { Authorization: `Bearer ${token}` } }),
-//         new Promise((_, reject) => setTimeout(() => reject(new Error('API timeout')), 8000)),
-//       ]);
-
-//       const history = response.data.results?.map((msg) => ({
-//   id: msg.id.toString(),
-//   user: msg.user_name || msg.name || 'Unknown',
-//   user_id: msg.user_id || msg.user,
-//   content: msg.content || '',
-//   image: msg.image ? `${API_ROUTE_IMAGE}${msg.image}` : null,
-//   file: msg.file ? `${API_ROUTE_IMAGE}${msg.file}` : null,
-//   audio: msg.audio ? `${API_ROUTE_IMAGE}${msg.audio}` : null,
-//   emoji: msg.emoji || null,
-//   reply_to: msg.reply_to ? msg.reply_to.toString() : null,
-//   is_deleted: msg.is_deleted || false,
-//   timestamp: msg.timestamp,
-//   time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-//   avatar: msg.avatar ? `${API_ROUTE_IMAGE}${msg.avatar}` : null,
-// })) || [];
-
-// const uniqueMessages = [...new Map(history.map((msg) => [msg.id, msg])).values()].reverse();
-
-//       console.log('Fetched messages:', uniqueMessages.length);
-//       // console.log('Fetched messages:', response.data);
-//       saveMessagesToStorage(uniqueMessages);
-//       return uniqueMessages;
-//     } catch (error) {
-//       console.error('Error fetching chat history:', error.response?.data || error.message);
-//       return await loadMessagesFromStorage();
-//     }
-//   }, [chatType, receiverId, groupSlug, accountMode]);
 
   useEffect(() => {
     let isMounted = true;
@@ -923,7 +940,7 @@ const fetchChatHistory = useCallback(async (userId) => {
         <View style={styles.contentContainer}>
           <LinearGradient colors={['#0d64dd', '#0d64dd']} style={styles.header}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity onPress={() => navigation.navigate('BusinessHome')} style={[styles.headerButton, { marginTop: -20 }]}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.headerButton, { marginTop: -20 }]}>
               <Icon name="arrow-back" size={24} color="#FFF" />
             </TouchableOpacity>
             <TouchableOpacity
@@ -970,56 +987,46 @@ const fetchChatHistory = useCallback(async (userId) => {
         keyboardShouldPersistTaps="handled"
       >
   {messages.length === 0 && pendingMessages.length === 0 ? (
+  isLoading ? (
     <View style={styles.emptyChatPlaceholder}>
-      {/* Group Info Section */}
+      <ActivityIndicator size="large" color="#0d64dd" />
+      <Text style={{ marginTop: 16, color: '#666' }}>Loading messages...</Text>
+    </View>
+  ) : (
+    <View style={styles.emptyChatPlaceholder}>
       <View style={styles.groupInfoContainer}>
         <View style={styles.groupAvatar}>
-          {/* Placeholder for group avatar */}
           <Icon name="group" size={48} color="#367BF5" />
         </View>
-        <Text style={styles.groupName}>
-          {name || "New Group"}
-        </Text>
+        <Text style={styles.groupName}>{name || "New Group"}</Text>
         <Text style={styles.groupMembers}>
           {members_count} {members_count === 1 ? "member" : "members"}
         </Text>
       </View>
-
-      {/* Welcome message */}
       <Text style={styles.welcomeText}>
         This is the very beginning of the {name || "group"} conversation.
       </Text>
-
-      {/* Encryption info */}
       <Text style={styles.encryptionText}>
         Messages are <Text style={{ fontWeight: "bold" }}>end-to-end encrypted 🔒</Text>.{"\n"}
         No one outside of this chat, not even us, can read or listen to them.
       </Text>
-
-      {/* Prompt */}
       <Text style={styles.startChatPrompt}>
         Send a message to start the conversation.
       </Text>
     </View>
- 
-
-
-
-        ) : (
-         
-
-              <FlatList
-            ref={flatListRef}
-            data={[...pendingMessages, ...messages]}
-            renderItem={renderMessage}
-            keyExtractor={(item) => item.id.toString()}
-            inverted
-            contentContainerStyle={styles.chatContent}
-            keyboardShouldPersistTaps="handled"
-            scrollEnabled={true}
-          />
-          
-        )}
+  )
+) : (
+  <FlatList
+    ref={flatListRef}
+    data={[...pendingMessages, ...messages]}
+    renderItem={renderMessage}
+    keyExtractor={(item) => item.id.toString()}
+    inverted
+    contentContainerStyle={styles.chatContent}
+    keyboardShouldPersistTaps="handled"
+    scrollEnabled={true}
+  />
+)}
         </KeyboardAwareScrollView>
         </View>
 

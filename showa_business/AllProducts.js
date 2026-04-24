@@ -11,7 +11,6 @@ import {
   ScrollView,
   Animated,
   StatusBar,
-  SafeAreaView,
   TextInput
 } from 'react-native';
 import axios from 'axios';
@@ -19,6 +18,7 @@ import Colors from '../theme/colors';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2; 
@@ -84,7 +84,7 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.container}>
-        {/* Header */}
+
         <View style={styles.headerContainer}>
           <View style={[styles.searchContainer, { width: searchContainerWidth }]}>
             <Icon name="search" size={20} color="#888" style={styles.searchIcon} />
@@ -95,14 +95,7 @@ export default function HomeScreen({ navigation }) {
               onFocus={handleSearchFocus}
               onBlur={handleSearchBlur}
             />
-            {!searchFocused && (
-              <TouchableOpacity 
-                style={styles.cameraButton}
-                onPress={() => navigation.navigate('CreateListing')}
-              >
-                <Icon name="photo-camera" size={20} color={Colors.primary} />
-              </TouchableOpacity>
-            )}
+            
           </View>
           
           <TouchableOpacity 

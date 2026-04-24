@@ -65,7 +65,6 @@ const redirectback = () => {
   navigation.goBack();
 }
 
-// In your header:
 
 
   const openLearnMore = () => {

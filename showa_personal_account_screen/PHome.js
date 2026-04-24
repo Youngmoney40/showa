@@ -163,6 +163,16 @@ const HomeScreen = ({ navigation }) => {
     >
       <Text style={[styles.dropdownItem, { color: colors.text }]}>Watch Live</Text>
     </TouchableOpacity>
+
+    <TouchableOpacity
+      onPress={() => {
+        setShowDropdown(false);
+        navigation.navigate('ManagePost');
+      }}
+      style={styles.dropdownTouchable}
+    >
+      <Text style={[styles.dropdownItem, { color: colors.text }]}>Manage Posts</Text>
+    </TouchableOpacity>
     
     <TouchableOpacity
       onPress={() => {

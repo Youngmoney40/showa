@@ -60,6 +60,8 @@
     
     <!-- ========== DOWNLOADS ========== -->
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
+
+    
    
     <queries>
         <intent>
@@ -98,10 +100,55 @@
             android:windowSoftInputMode="adjustResize"
             android:exported="true"
             android:screenOrientation="portrait">
+            
+            <!-- LAUNCHER Intent Filter -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            
+            <!-- DEEP LINK Intent Filter - Custom Scheme -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="showa" />
+                <data android:scheme="showa://" />
+            </intent-filter>
+            
+            <!-- DEEP LINK Intent Filter - Post deep link with custom scheme -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="showa" />
+                <data android:host="post" />
+                <data android:pathPattern="/.*" />
+            </intent-filter>
+            
+            <!-- UNIVERSAL LINKS - For website domain (optional but recommended) -->
+            <!-- You'll need to host assetlinks.json at https://showapp.com/.well-known/assetlinks.json -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:scheme="http" />
+                <data android:host="showapp.com" />
+                <data android:host="www.showapp.com" />
+                <data android:pathPrefix="/post" />
+            </intent-filter>
+            
+            <!-- Additional deep link for user profiles -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="showa" />
+                <data android:host="user" />
+                <data android:pathPattern="/.*" />
+            </intent-filter>
+            
         </activity>
         
         <provider
