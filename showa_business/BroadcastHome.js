@@ -1781,19 +1781,24 @@ const handleReactionOptimized = useCallback(async (postId, type) => {
 const handleShareOptimized = useCallback(async (postId) => {
   try {
     const post = posts.find(p => p.id === postId) || allposts.find(p => p.id === postId);
-    if (!post) return 0;
+    if (!post) {
+      console.error('Post not found for sharing:', postId);
+      return;
+    }
 
-    // Get the first image if multiple images exist
+    // Create deep link URL - use consistent format
+    const deepLinkUrl = `showa://post/${post.id}`;
+    
+    // For better compatibility, also include web URL
+    const webUrl = `https://api.showapp.ng/post/${post.id}`;
+
+    // Get first image for better share preview
     let imageUrl = post.image_url;
     if (!imageUrl && post.all_images && post.all_images.length > 0) {
       imageUrl = post.all_images[0].url;
     }
 
-    // Create deep link URL
-    const deepLinkUrl = `showa://post/${post.id}`;
-    const webUrl = `https://showapp.com/post/${post.id}`;
-
-    // Create a rich share message with post details
+    // Create rich share message
     const shareMessage = 
       `📱 Check out this post on ShowApp!\n\n` +
       `"${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}"\n\n` +
@@ -1811,16 +1816,24 @@ const handleShareOptimized = useCallback(async (postId) => {
       title: `ShowApp - Post by ${post.username}`,
     };
 
-    // Add URL for iOS (supports preview)
+    // Add URL for iOS preview support
     if (Platform.OS === 'ios') {
       shareOptions.url = webUrl;
     }
 
+    // Show share dialog
     const shareResult = await Share.share(shareOptions);
     
+    // Track successful share
     if (shareResult.action === Share.sharedAction) {
-      const token = await AsyncStorage.getItem('userToken');
+      console.log('Post shared successfully:', postId);
       
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        console.warn('No token found for tracking share');
+        return;
+      }
+
       // Track share in backend
       const response = await axios.post(
         `${API_ROUTE}/post-react/`,
@@ -1840,26 +1853,38 @@ const handleShareOptimized = useCallback(async (postId) => {
       setPosts(prev => prev.map(updatePost));
       setAllPosts(prev => prev.map(updatePost));
       
+      // Track locally
       await trackPostShare(postId);
+      
+      // Close options modal if open
       setIsOptionsBottomSheetVisible(false);
+      
+      // Show success message
       setSnackbarVisible(true);
       
+      // Show reward if any
       if (response.data.reward) {
         Alert.alert(
           '🎉 Share Reward!',
-          `You earned ${response.data.reward.coins} coins for sharing!`,
-          [{ text: 'OK' }]
+          `You earned ${response.data.reward.coins} coins for sharing this post!`,
+          [{ text: 'Awesome!' }]
         );
       }
       
       return newShareCount;
+    } else if (shareResult.action === Share.dismissedAction) {
+      console.log('Share dismissed');
     }
   } catch (error) {
     console.error('Error sharing post:', error);
+    Alert.alert(
+      'Share Failed',
+      'Unable to share post. Please try again.',
+      [{ text: 'OK' }]
+    );
     return 0;
   }
-}, [posts, allposts]);
-
+}, [posts, allposts, setPosts, setAllPosts, setIsOptionsBottomSheetVisible, setSnackbarVisible]);
 
   const handleOptionsOptimized = useCallback((postId, userId) => {
     setSelectedPostId(postId);

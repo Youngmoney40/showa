@@ -19,6 +19,7 @@ import {
   Platform,
   Keyboard,
   Linking,
+  Vibration,
   KeyboardAvoidingView, 
   ScrollView
 } from 'react-native';
@@ -33,6 +34,7 @@ import { Divider } from 'react-native-paper';
 import { launchCamera } from 'react-native-image-picker';
 import SwitchAccountSheet from '../components/SwitchAccountSheet';
 import IncomingCallModal from '../components/IncomingCallModal';
+import InCallManager from 'react-native-incall-manager';
 import EarningFloatingButton from '../components/EarningButtonForHome';
 import NotificationService from '../src/services/PushNotifications';
 import Video from 'react-native-video';
@@ -717,19 +719,55 @@ useEffect(() => {
       
     },[])
 
+// const handleAcceptCall = () => {
+//   console.log('accept call pressed with offer:', callerInfo.offer);
+//   navigation.navigate('VoiceCalls', {
+//     profile_image: callerInfo.profileImage,
+//     name: callerInfo.name,
+//     incomingOffer: callerInfo.offer,
+//     isIncomingCall: true,
+//     isInitiator: false,
+//     isVideoCall: isVideoCall // Pass the video call state
+//   });
+//   setShowIncomingCallModal(false);
+// };
+
+
+
 const handleAcceptCall = () => {
   console.log('accept call pressed with offer:', callerInfo.offer);
-  navigation.navigate('VoiceCalls', {
-    profile_image: callerInfo.profileImage,
-    name: callerInfo.name,
-    incomingOffer: callerInfo.offer,
-    isIncomingCall: true,
-    isInitiator: false,
-    isVideoCall: isVideoCall // Pass the video call state
-  });
-  setShowIncomingCallModal(false);
+  
+  // IMPORTANT: Stop ringtone and vibration immediately
+  InCallManager.stopRingtone();
+  Vibration.cancel();
+  
+  // Small delay to ensure ringtone is stopped before navigation
+  setTimeout(() => {
+    navigation.navigate('VoiceCalls', {
+      profile_image: callerInfo.profileImage,
+      name: callerInfo.name,
+      incomingOffer: callerInfo.offer,
+      isIncomingCall: true,
+      isInitiator: false,
+      isVideoCall: isVideoCall
+    });
+    setShowIncomingCallModal(false);
+  }, 50);
 };
+
+
+  // const handleRejectCall = () => {
+  //   sendMessage({ type: 'call-ended' });
+  //   setShowIncomingCallModal(false);
+  //   setCallerInfo({ profileImage: '', name: 'Unknown', offer: null });
+  // };
+
+
   const handleRejectCall = () => {
+    // Stop ringtone and vibration immediately
+    InCallManager.stopRingtone();
+    Vibration.cancel();
+    
     sendMessage({ type: 'call-ended' });
     setShowIncomingCallModal(false);
     setCallerInfo({ profileImage: '', name: 'Unknown', offer: null });
@@ -1646,7 +1684,8 @@ useEffect(()=>{
         onPress={() => navigation.navigate('UserContactListPersonalAccount')}
        // onPress={() => navigation.navigate('ChatAi')}
       >
-        <Icon name="add" size={24} color="#0d64dd" />
+        <Text style={{color:"#0d64dd"}}>Contact</Text>
+        {/* <Icon name="add" size={24} color="#0d64dd" /> */}
       </TouchableOpacity>
 
       <EarningsSlideInManager />

@@ -192,7 +192,7 @@ export default function PhoneNumberScreen({ navigation }) {
                 keyboardType="number-pad"
                 autoComplete="tel"
                 textContentType="telephoneNumber"
-                placeholderTextColor='#000'
+                placeholderTextColor={COLORS.placeholder}
                 value={phoneNumber}
                 onChangeText={formatPhoneNumber}
                 maxLength={15}
@@ -489,6 +489,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingHorizontal: SPACING.md,
     fontWeight: '500',
+    color: COLORS.textPrimary,
   },
   clearButton: {
     width: 50,

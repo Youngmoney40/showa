@@ -2671,6 +2671,7 @@ import {
   Platform,
   TouchableOpacity,
   Modal,
+  Vibration,
   StatusBar,
   ImageBackground,
 } from "react-native";
@@ -2728,6 +2729,24 @@ export default function VoiceVideoCallScreen({ navigation, route }) {
 
   //=============== RINGING TOO LONG ===============
   const [isRinging, setIsRinging] = useState(false);
+
+
+  // Add this useEffect at the beginning of VoiceVideoCallScreen component
+useEffect(() => {
+  // Stop any existing ringtone when entering call screen
+  InCallManager.stopRingtone();
+  Vibration.cancel();
+  
+  // Start audio session for call
+  InCallManager.start({ media: 'audio' });
+  
+  return () => {
+    // Cleanup when leaving call screen
+    InCallManager.stop();
+    InCallManager.stopRingtone();
+    Vibration.cancel();
+  };
+}, []);
 
   // Start ringing when incoming call modal is shown
   useEffect(() => {
@@ -2858,38 +2877,125 @@ useEffect(() => {
   };
 
   // =============== ICE SERVERS ===============
-  const getIceServers = async () => {
-    try {
-      const res = await fetch("https://global.xirsys.net/_turn/Showa", {
-        method: "PUT",
-        headers: {
-          Authorization: "Basic " + btoa("essential:95aca53e-7c66-11f0-acf8-4662eff0c0a9"),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ format: "urls" }),
-      });
 
-      const data = await res.json();
-      let iceServers = [];
-      if (data.v?.iceServers) {
-        iceServers = data.v.iceServers;
-      } else if (data.v?.urls) {
-        iceServers = data.v.urls.map((url) => ({
-          urls: url,
-          username: data.v.username,
-          credential: data.v.credential,
-        }));
-      }
 
-      rtcConfig.iceServers = iceServers.length
-        ? iceServers
-        : [{ urls: "stun:stun.l.google.com:19302" }];
-      console.log("[Xirsys] ICE servers ready:", rtcConfig.iceServers);
-    } catch (err) {
-      console.error("[Xirsys] Failed to fetch ICE servers:", err);
-      rtcConfig.iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+//  const getIceServers = async () => {
+//   try {
+//     const res = await fetch("https://global.xirsys.net/_turn/Showa", {
+//       method: "PUT",
+//       headers: {
+//         Authorization: "Basic " + btoa("essential:95aca53e-7c66-11f0-acf8-4662eff0c0a9"),
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({ format: "urls" }),
+//     });
+
+//     const data = await res.json();
+//     console.log("[Xirsys RAW]:", JSON.stringify(data));
+
+//     let iceServers = [];
+
+//     if (data?.v?.iceServers) {
+//       const server = data.v.iceServers;
+//       const urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+
+//       // Split into STUN (no creds) and TURN (needs creds)
+//       const turnUrls = urls.filter(u => u.startsWith("turn:") || u.startsWith("turns:"));
+//       const stunUrls = urls.filter(u => u.startsWith("stun:"));
+
+//       const tcpUrls = turnUrls.filter(u => u.includes("transport=tcp") || u.startsWith("turns:"));
+//       const udpUrls = turnUrls.filter(u => u.includes("transport=udp"));
+//       console.log("[ICE] All URLs from Xirsys:", urls);
+//       console.log("[ICE] UDP TURN URLs:", udpUrls.length, udpUrls);
+//       console.log("[ICE] TCP TURN URLss:", tcpUrls.length, tcpUrls); 
+
+
+//       if (turnUrls.length > 0) {
+//         iceServers.push({
+//           urls: turnUrls,
+//           username: server.username,
+//           credential: server.credential,
+//         });
+//       }
+
+//       stunUrls.forEach(u => iceServers.push({ urls: u }));
+//     }
+
+//     if (!iceServers.length) throw new Error("No ICE servers from Xirsys");
+
+//     // Fallback STUN
+//     iceServers.push({ urls: "stun:stun.l.google.com:19302" });
+
+//     rtcConfig.iceServers = iceServers;
+//     console.log("✅ [ICE SERVERS]:", JSON.stringify(iceServers, null, 2));
+
+//   } catch (err) {
+//     console.error("❌ [Xirsys Failed]:", err);
+//     rtcConfig.iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+//   }
+
+//   // Allow all transport types — do NOT lock to relay only
+//   rtcConfig.iceTransportPolicy = "all";
+// };
+
+
+const getIceServers = async () => {
+  try {
+    console.log("[Xirsys] Fetching ICE servers...");
+
+    const res = await fetch("https://global.xirsys.net/_turn/Showa", {
+      method: "PUT",
+      headers: {
+        Authorization: "Basic " + btoa("essential:95aca53e-7c66-11f0-acf8-4662eff0c0a9"),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ format: "urls" }),
+    });
+
+    const data = await res.json();
+    console.log("[Xirsys RAW]:", data);
+
+    let iceServers = [];
+
+    if (data?.v?.iceServers) {
+      const server = data.v.iceServers;
+      
+      // SEE WHAT'S ACTUALLY COMING BACK
+      console.log("[Xirsys] Raw URLs:", JSON.stringify(server.urls, null, 2));
+      console.log("[Xirsys] Is array?", Array.isArray(server.urls));
+
+      const urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+
+      console.log("[ICE] TCP URLs:", urls.filter(u => u.includes("transport=tcp") || u.startsWith("turns:")));
+      console.log("[ICE] UDP URLs:", urls.filter(u => u.includes("transport=udp")));
+
+      // Pass ALL urls in one object — WebRTC picks the best available
+      iceServers = [
+        {
+          urls: urls,
+          username: server.username,
+          credential: server.credential,
+        }
+      ];
     }
-  };
+
+    if (!iceServers.length) {
+      throw new Error("No ICE servers from Xirsys");
+    }
+
+    // Fallback STUN
+    iceServers.push({ urls: "stun:stun.l.google.com:19302" });
+
+    rtcConfig.iceServers = iceServers;
+    console.log("✅ [ICE CONFIG READY]:", JSON.stringify(iceServers, null, 2));
+
+  } catch (err) {
+    console.error("❌ [Xirsys Failed]:", err);
+    rtcConfig.iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+  }
+
+  rtcConfig.iceTransportPolicy = "all"; // NOT "relay" — allow all candidate types
+};
 
 const ensurePeerConnection = async () => {
   if (pc.current) return;
@@ -2898,6 +3004,8 @@ const ensurePeerConnection = async () => {
     await getIceServers();
   }
 
+  // rtcConfig.iceTransportPolicy = "relay";
+
   pc.current = new RTCPeerConnection(rtcConfig);
   console.log("[WebRTC] RTCPeerConnection created");
 
@@ -2905,9 +3013,27 @@ const ensurePeerConnection = async () => {
     console.log("[WebRTC] onnegotiationneeded fired. signalingState:", pc.current?.signalingState);
   };
 
+  // pc.current.onicecandidate = (evt) => {
+  //   if (evt.candidate) {
+  //     sendMessage({ type: "candidate", candidate: evt.candidate });
+  //   }
+  // };
+
   pc.current.onicecandidate = (evt) => {
     if (evt.candidate) {
+      const cand = evt.candidate.candidate;
+
+      if (cand.includes("typ relay")) {
+        console.log("🟢 [TURN WORKING - Xirsys]", cand);
+      } else if (cand.includes("typ srflx")) {
+        console.log("🟡 [STUN WORKING - Google]", cand);
+      } else if (cand.includes("typ host")) {
+        console.log("⚪ [LOCAL ONLY - NO STUN/TURN]", cand);
+      }
+
       sendMessage({ type: "candidate", candidate: evt.candidate });
+    } else {
+      console.log("[ICE] Gathering finished");
     }
   };
 
@@ -2923,20 +3049,49 @@ const ensurePeerConnection = async () => {
     }
   };
 
-  pc.current.onconnectionstatechange = () => {
-    if (!pc.current) {
-      console.warn("[WebRTC] onconnectionstatechange called with no pc");
-      return;
-    }
-    console.log("[WebRTC] connectionState =>", pc.current.connectionState);
-    // if (pc.current.connectionState === "failed") {
-    //   console.warn("[WebRTC] connection failed, consider recreating pc or ending call");
-    // }
 
-     
-  if (pc.current.connectionState === "failed") {
-    console.warn("[WebRTC] Connection failed");
-    // Save as failed call
+  pc.current.onconnectionstatechange = async () => {
+  if (!pc.current) {
+    console.warn("[WebRTC] onconnectionstatechange called with no pc");
+    return;
+  }
+
+  const state = pc.current.connectionState;
+  console.log("[WebRTC] connectionState =>", state);
+
+  // ✅ SUCCESS
+  if (state === "connected") {
+    console.log("✅ CALL CONNECTED");
+
+    try {
+      const stats = await pc.current.getStats();
+
+      stats.forEach((report) => {
+        if (report.type === "candidate-pair" && report.state === "succeeded") {
+          console.log("🎯 SELECTED CANDIDATE PAIR:", report);
+
+          // 🔥 IMPORTANT: detect TURN vs STUN properly
+          const local = stats.get(report.localCandidateId);
+          const remote = stats.get(report.remoteCandidateId);
+
+          if (local?.candidateType === "relay" || remote?.candidateType === "relay") {
+            console.log("🟢 USING TURN (Xirsys)");
+          } else if (local?.candidateType === "srflx") {
+            console.log("🟡 USING STUN (Google)");
+          } else {
+            console.log("⚪ USING LOCAL (same network)");
+          }
+        }
+      });
+    } catch (err) {
+      console.warn("[WebRTC] getStats failed:", err);
+    }
+  }
+
+  // ❌ FAILURE
+  if (state === "failed") {
+    console.warn("❌ CONNECTION FAILED → TURN NOT WORKING");
+
     saveCallToHistory({
       contact: { name, profileImage: profile_image, userId: targetUserId },
       direction: isInitiator ? 'outgoing' : 'incoming',
@@ -2945,8 +3100,32 @@ const ensurePeerConnection = async () => {
       duration: callDuration
     });
   }
+};
 
-  };
+  // pc.current.onconnectionstatechange = () => {
+  //   if (!pc.current) {
+  //     console.warn("[WebRTC] onconnectionstatechange called with no pc");
+  //     return;
+  //   }
+  //   console.log("[WebRTC] connectionState =>", pc.current.connectionState);
+  //   // if (pc.current.connectionState === "failed") {
+  //   //   console.warn("[WebRTC] connection failed, consider recreating pc or ending call");
+  //   // }
+
+     
+  //   if (pc.current.connectionState === "failed") {
+  //     console.warn("[WebRTC] Connection failed");
+  //     // Save as failed call
+  //     saveCallToHistory({
+  //       contact: { name, profileImage: profile_image, userId: targetUserId },
+  //       direction: isInitiator ? 'outgoing' : 'incoming',
+  //       isVideoCall: isVideoCall,
+  //       status: 'failed',
+  //       duration: callDuration
+  //     });
+  //   }
+
+  // };
 
   pc.current.oniceconnectionstatechange = () => {
     if (!pc.current) return;

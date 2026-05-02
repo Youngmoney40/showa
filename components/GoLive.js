@@ -2970,57 +2970,114 @@ export default function LiveStreamScreen({ navigation, route }) {
 
   // =============== ICE SERVERS ===============
   const getIceServers = async () => {
-    try {
-      const res = await fetch("https://global.xirsys.net/_turn/Showa", {
-        method: "PUT",
-        headers: {
-          Authorization: "Basic " + btoa("essential:95aca53e-7c66-11f0-acf8-4662eff0c0a9"),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ format: "urls" }),
-      });
-      const data = await res.json();
-      let iceServers = [];
-      if (data.v?.iceServers) {
-        iceServers = data.v.iceServers;
-      } else if (data.v?.urls) {
-        iceServers = data.v.urls.map((url) => ({
-          urls: url,
-          username: data.v.username,
-          credential: data.v.credential,
-        }));
-      }
-    
-      iceServers.push({
-        urls: "turn:openrelay.metered.ca:80",
-        username: "openrelayproject",
-        credential: "openrelayproject",
-      });
-      rtcConfig.iceServers = iceServers.length
-        ? iceServers
-        : [
-            { urls: "stun:stun.l.google.com:19302" },
-            { urls: "stun:stun1.l.google.com:19302" },
-            {
-              urls: "turn:openrelay.metered.ca:80",
-              username: "openrelayproject",
-              credential: "openrelayproject",
-            },
-          ];
-      console.log("[Xirsys] ICE servers:", rtcConfig.iceServers);
-    } catch (err) {
-      console.error("[Xirsys] Failed to fetch ICE servers:", err);
-      rtcConfig.iceServers = [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
+  try {
+    console.log("[Xirsys] Fetching ICE servers...");
+
+    const res = await fetch("https://global.xirsys.net/_turn/Showa", {
+      method: "PUT",
+      headers: {
+        Authorization: "Basic " + btoa("essential:95aca53e-7c66-11f0-acf8-4662eff0c0a9"),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ format: "urls" }),
+    });
+
+    const data = await res.json();
+    console.log("[Xirsys RAW]:", data);
+
+    let iceServers = [];
+
+    if (data?.v?.iceServers) {
+      const server = data.v.iceServers;
+      
+      // SEE WHAT'S ACTUALLY COMING BACK
+      console.log("[Xirsys] Raw URLs:", JSON.stringify(server.urls, null, 2));
+      console.log("[Xirsys] Is array?", Array.isArray(server.urls));
+
+      const urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+
+      console.log("[ICE] TCP URLs:", urls.filter(u => u.includes("transport=tcp") || u.startsWith("turns:")));
+      console.log("[ICE] UDP URLs:", urls.filter(u => u.includes("transport=udp")));
+
+      // Pass ALL urls in one object — WebRTC picks the best available
+      iceServers = [
         {
-          urls: "turn:openrelay.metered.ca:80",
-          username: "openrelayproject",
-          credential: "openrelayproject",
-        },
+          urls: urls,
+          username: server.username,
+          credential: server.credential,
+        }
       ];
     }
-  };
+
+    if (!iceServers.length) {
+      throw new Error("No ICE servers from Xirsys");
+    }
+
+    // Fallback STUN
+    iceServers.push({ urls: "stun:stun.l.google.com:19302" });
+
+    rtcConfig.iceServers = iceServers;
+    console.log("✅ [ICE CONFIG READY]:", JSON.stringify(iceServers, null, 2));
+
+  } catch (err) {
+    console.error("❌ [Xirsys Failed]:", err);
+    rtcConfig.iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+  }
+
+  rtcConfig.iceTransportPolicy = "all"; // NOT "relay" — allow all candidate types
+};
+  // const getIceServers = async () => {
+  //   try {
+  //     const res = await fetch("https://global.xirsys.net/_turn/Showa", {
+  //       method: "PUT",
+  //       headers: {
+  //         Authorization: "Basic " + btoa("essential:95aca53e-7c66-11f0-acf8-4662eff0c0a9"),
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ format: "urls" }),
+  //     });
+  //     const data = await res.json();
+  //     let iceServers = [];
+  //     if (data.v?.iceServers) {
+  //       iceServers = data.v.iceServers;
+  //     } else if (data.v?.urls) {
+  //       iceServers = data.v.urls.map((url) => ({
+  //         urls: url,
+  //         username: data.v.username,
+  //         credential: data.v.credential,
+  //       }));
+  //     }
+    
+  //     iceServers.push({
+  //       urls: "turn:openrelay.metered.ca:80",
+  //       username: "openrelayproject",
+  //       credential: "openrelayproject",
+  //     });
+  //     rtcConfig.iceServers = iceServers.length
+  //       ? iceServers
+  //       : [
+  //           { urls: "stun:stun.l.google.com:19302" },
+  //           { urls: "stun:stun1.l.google.com:19302" },
+  //           {
+  //             urls: "turn:openrelay.metered.ca:80",
+  //             username: "openrelayproject",
+  //             credential: "openrelayproject",
+  //           },
+  //         ];
+  //     console.log("[Xirsys] ICE servers:", rtcConfig.iceServers);
+  //   } catch (err) {
+  //     console.error("[Xirsys] Failed to fetch ICE servers:", err);
+  //     rtcConfig.iceServers = [
+  //       { urls: "stun:stun.l.google.com:19302" },
+  //       { urls: "stun:stun1.l.google.com:19302" },
+  //       {
+  //         urls: "turn:openrelay.metered.ca:80",
+  //         username: "openrelayproject",
+  //         credential: "openrelayproject",
+  //       },
+  //     ];
+  //   }
+  // };
 
   const createPeerConnection = async (targetId) => {
     if (!rtcConfig.iceServers.length) {
