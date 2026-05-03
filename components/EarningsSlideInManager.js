@@ -1159,13 +1159,14 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
         return;
       }
 
-      console.log('Fetching active time status...');
+      
       const response = await axios.get(`${API_ROUTE}/activity/status/`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
+      console.log('Fetching active time status...', response.data);
 
       if (response.data) {
         const data = response.data;
@@ -1417,8 +1418,14 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
 
               {/* Earnings Counter */}
               <View style={styles.counterContainer}>
-                <Animated.Text style={styles.counterAmount}>
+                {/* <Animated.Text style={styles.counterAmount}>
                   ${animateValue.interpolate({
+                    inputRange: [0, dailyMaximum],
+                    outputRange: ['$0.00', `$${dailyMaximum.toFixed(2)}`]
+                  })}
+                </Animated.Text> */}
+                <Animated.Text style={styles.counterAmount}>
+                  {animateValue.interpolate({
                     inputRange: [0, dailyMaximum],
                     outputRange: ['$0.00', `$${dailyMaximum.toFixed(2)}`]
                   })}
@@ -1752,7 +1759,7 @@ const EarningsSlideInManager = () => {
 
         // Set timer to show earnings after 1 hour (3600000 ms)
         // For testing, you can use a shorter time like 5000 (5 seconds)
-        const timerDuration = 2000; // 1 hour
+        const timerDuration = 3600000; // 1 hour
         console.log(`Setting timer to show earnings in ${timerDuration/1000} seconds`);
         
         const timer = setTimeout(async () => {

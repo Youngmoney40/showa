@@ -69,15 +69,15 @@ jobs:
           ./gradlew clean
 
       # ✅ CHANGED HERE
-      - name: Build APK
+      - name: Build AAB
         run: |
           cd android
-          ./gradlew assembleRelease
+          ./gradlew bundleRelease
 
       # ✅ CHANGED HERE
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: app-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
