@@ -1050,7 +1050,14 @@ const formatFileSize = (bytes) => {
             )}
             
             <View style={styles.messageFooter}>
-              <Text style={styles.timeText}>{item.time}</Text>
+              <Text style={styles.timeText}>
+                {new Date(item.timestamp).toLocaleString([], { 
+                  month: 'short', 
+                  day: 'numeric',
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
+              </Text>
               {isMyMessage && (
                 <>
                   {item.is_sending ? (

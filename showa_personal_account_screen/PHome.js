@@ -410,124 +410,245 @@ const fetchUserData = async () => {
   }
 };
 
+
+const fetchChatList = async () => {
+  setIsLoading(true);
+  setError(null);
+  setIsInitialLoading(true);
+  const token = await AsyncStorage.getItem('userToken');
+  try {
+    // FORCE personal account mode only
+    const response = await axios.get(`${API_ROUTE}/api/chat/list/?account_mode=personal`, { // Hardcoded to 'personal'
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const filteredChats = response.data.chats.filter(chat => chat.type !== 'channel');
+    const uniqueChats = [];
+    const seenIds = new Set();
+
+    filteredChats.forEach((chat) => {
+      const chatIdentifier = chat.type === 'single'
+        ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
+        : chat.group_slug || chat.id;
+
+      if (!seenIds.has(chatIdentifier)) {
+        seenIds.add(chatIdentifier);
+        uniqueChats.push({
+          ...chat,
+          id: chatIdentifier,
+          unread_count: readChats.has(`${chatIdentifier}-${chat.type}`) ? 0 : (chat.unread_count || 0),
+          name: chat.name || 'Unknown',
+          content: chat.content || '[media]',
+          time: new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          avatar: chat.avatar ? `${API_ROUTE_IMAGE}${chat.avatar}` : null,
+          type: chat.type,
+          receiverId: chat.type === 'single' ? chatIdentifier : null,
+          group_slug: chat.group_slug || null,
+          members_count: chat.members_count,
+          creator_id: chat.creator_id,
+          key: `${chat.id}-${chat.type}`,
+        });
+      }
+    });
+
+    setChatList(uniqueChats);
+    setFilteredChatList(uniqueChats);
+    await saveChatsToStorage(uniqueChats);
+  } catch (err) {
+    console.error('Failed to load chat list:', err.response?.data || err.message);
+    setError('Failed to load chats. Please try again.');
+  } finally {
+    setIsLoading(false);
+    setIsInitialLoading(false);
+  }
+};
+
   // Fetch chat list and cache it
-  const fetchChatList = async () => {
-    setIsLoading(true);
-    setError(null);
-    setIsInitialLoading(true);
-    const token = await AsyncStorage.getItem('userToken');
-    try {
-      const response = await axios.get(`${API_ROUTE}/api/chat/list/?account_mode=personal`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+  // const fetchChatList = async () => {
+  //   setIsLoading(true);
+  //   setError(null);
+  //   setIsInitialLoading(true);
+  //   const token = await AsyncStorage.getItem('userToken');
+  //   try {
+  //     const response = await axios.get(`${API_ROUTE}/api/chat/list/?account_mode=personal`, {
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': `Bearer ${token}`,
+  //       },
+  //     });
 
-      const filteredChats = response.data.chats.filter(chat => chat.type !== 'channel');
-      const uniqueChats = [];
-      const seenIds = new Set();
+  //     const filteredChats = response.data.chats.filter(chat => chat.type !== 'channel');
+  //     const uniqueChats = [];
+  //     const seenIds = new Set();
 
-      filteredChats.forEach((chat) => {
-        const chatIdentifier = chat.type === 'single'
-          ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
-          : chat.group_slug || chat.id;
+  //     filteredChats.forEach((chat) => {
+  //       const chatIdentifier = chat.type === 'single'
+  //         ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
+  //         : chat.group_slug || chat.id;
 
-        if (!seenIds.has(chatIdentifier)) {
-          seenIds.add(chatIdentifier);
-          uniqueChats.push({
-            ...chat,
-            id: chatIdentifier,
-            unread_count: readChats.has(`${chatIdentifier}-${chat.type}`) ? 0 : (chat.unread_count || 0),
-            name: chat.name || 'Unknown',
-            content: chat.content || '[media]',
-            time: new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            avatar: chat.avatar ? `${API_ROUTE_IMAGE}${chat.avatar}` : null,
-            type: chat.type,
-            receiverId: chat.type === 'single' ? chatIdentifier : null,
-            group_slug: chat.group_slug || null,
-            members_count: chat.members_count,
-            creator_id: chat.creator_id,
-            key: `${chat.id}-${chat.type}`,
-          });
-        }
-      });
+  //       if (!seenIds.has(chatIdentifier)) {
+  //         seenIds.add(chatIdentifier);
+  //         uniqueChats.push({
+  //           ...chat,
+  //           id: chatIdentifier,
+  //           unread_count: readChats.has(`${chatIdentifier}-${chat.type}`) ? 0 : (chat.unread_count || 0),
+  //           name: chat.name || 'Unknown',
+  //           content: chat.content || '[media]',
+  //           time: new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  //           avatar: chat.avatar ? `${API_ROUTE_IMAGE}${chat.avatar}` : null,
+  //           type: chat.type,
+  //           receiverId: chat.type === 'single' ? chatIdentifier : null,
+  //           group_slug: chat.group_slug || null,
+  //           members_count: chat.members_count,
+  //           creator_id: chat.creator_id,
+  //           key: `${chat.id}-${chat.type}`,
+  //         });
+  //       }
+  //     });
 
-      setChatList(uniqueChats);
-      setFilteredChatList(uniqueChats);
-      await saveChatsToStorage(uniqueChats); // Cache the chats
-    } catch (err) {
-      console.error('Failed to load chat list:', err.response?.data || err.message);
-      setError('Failed to load chats. Please try again.');
-    } finally {
-      setIsLoading(false);
-      setIsInitialLoading(false);
-    }
-  };
+  //     setChatList(uniqueChats);
+  //     setFilteredChatList(uniqueChats);
+  //     await saveChatsToStorage(uniqueChats); // Cache the chats
+  //   } catch (err) {
+  //     console.error('Failed to load chat list:', err.response?.data || err.message);
+  //     setError('Failed to load chats. Please try again.');
+  //   } finally {
+  //     setIsLoading(false);
+  //     setIsInitialLoading(false);
+  //   }
+  // };
 
   // Silent fetch for background updates
-  const fetchChatListSilently = async () => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) return;
+  // const fetchChatListSilently = async () => {
+  //   try {
+  //     const token = await AsyncStorage.getItem('userToken');
+  //     if (!token) return;
 
-      const response = await axios.get(
-        `${API_ROUTE}/api/chat/list/?account_mode=${accountMode}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
+  //     const response = await axios.get(
+  //       `${API_ROUTE}/api/chat/list/?account_mode=${accountMode}`,
+  //       {
+  //         headers: {
+  //           'Authorization': `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
 
-      const filteredChats = response.data.chats.filter(chat => chat.type !== 'channel');
-      const uniqueChats = [];
-      const seenIds = new Set();
+  //     const filteredChats = response.data.chats.filter(chat => chat.type !== 'channel');
+  //     const uniqueChats = [];
+  //     const seenIds = new Set();
 
-      filteredChats.forEach((chat) => {
-        const chatIdentifier = chat.type === 'single'
-          ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
-          : chat.group_slug || chat.id;
+  //     filteredChats.forEach((chat) => {
+  //       const chatIdentifier = chat.type === 'single'
+  //         ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
+  //         : chat.group_slug || chat.id;
 
-        if (!seenIds.has(chatIdentifier)) {
-          seenIds.add(chatIdentifier);
-          uniqueChats.push({
-            ...chat,
-            id: chatIdentifier,
-            unread_count: readChats.has(`${chatIdentifier}-${chat.type}`) ? 0 : (chat.unread_count || 0),
-            name: chat.name || 'Unknown',
-            content: chat.content || '[media]',
-            time: new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            avatar: chat.avatar ? `${API_ROUTE_IMAGE}${chat.avatar}` : null,
-            type: chat.type,
-            members_count: chat.members_count,
-            receiverId: chat.type === 'single' ? chatIdentifier : null,
-            group_slug: chat.group_slug || null,
-            key: `${chat.id}-${chat.type}`,
-          });
-        }
-      });
+  //       if (!seenIds.has(chatIdentifier)) {
+  //         seenIds.add(chatIdentifier);
+  //         uniqueChats.push({
+  //           ...chat,
+  //           id: chatIdentifier,
+  //           unread_count: readChats.has(`${chatIdentifier}-${chat.type}`) ? 0 : (chat.unread_count || 0),
+  //           name: chat.name || 'Unknown',
+  //           content: chat.content || '[media]',
+  //           time: new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  //           avatar: chat.avatar ? `${API_ROUTE_IMAGE}${chat.avatar}` : null,
+  //           type: chat.type,
+  //           members_count: chat.members_count,
+  //           receiverId: chat.type === 'single' ? chatIdentifier : null,
+  //           group_slug: chat.group_slug || null,
+  //           key: `${chat.id}-${chat.type}`,
+  //         });
+  //       }
+  //     });
 
-      checkForNewMessages(uniqueChats);
+  //     checkForNewMessages(uniqueChats);
 
-      setChatList(prevChats => {
-        if (JSON.stringify(prevChats) !== JSON.stringify(uniqueChats)) {
-          saveChatsToStorage(uniqueChats); // Update cache
-          return uniqueChats;
-        }
-        return prevChats;
-      });
+  //     setChatList(prevChats => {
+  //       if (JSON.stringify(prevChats) !== JSON.stringify(uniqueChats)) {
+  //         saveChatsToStorage(uniqueChats); // Update cache
+  //         return uniqueChats;
+  //       }
+  //       return prevChats;
+  //     });
 
-      setFilteredChatList(prevFiltered => {
-        if (searchQuery.trim() === '') {
-          return uniqueChats;
-        }
-        return prevFiltered;
-      });
-    } catch (err) {
-      console.error('Silent refresh error:', err);
-    }
-  };
+  //     setFilteredChatList(prevFiltered => {
+  //       if (searchQuery.trim() === '') {
+  //         return uniqueChats;
+  //       }
+  //       return prevFiltered;
+  //     });
+  //   } catch (err) {
+  //     console.error('Silent refresh error:', err);
+  //   }
+  // };
+
+  // Silent fetch for background updates - personal only
+const fetchChatListSilently = async () => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) return;
+
+    // FORCE personal account mode only
+    const response = await axios.get(
+      `${API_ROUTE}/api/chat/list/?account_mode=personal`, 
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+
+    const filteredChats = response.data.chats.filter(chat => chat.type !== 'channel');
+    const uniqueChats = [];
+    const seenIds = new Set();
+
+    filteredChats.forEach((chat) => {
+      const chatIdentifier = chat.type === 'single'
+        ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
+        : chat.group_slug || chat.id;
+
+      if (!seenIds.has(chatIdentifier)) {
+        seenIds.add(chatIdentifier);
+        uniqueChats.push({
+          ...chat,
+          id: chatIdentifier,
+          unread_count: readChats.has(`${chatIdentifier}-${chat.type}`) ? 0 : (chat.unread_count || 0),
+          name: chat.name || 'Unknown',
+          content: chat.content || '[media]',
+          time: new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          avatar: chat.avatar ? `${API_ROUTE_IMAGE}${chat.avatar}` : null,
+          type: chat.type,
+          members_count: chat.members_count,
+          receiverId: chat.type === 'single' ? chatIdentifier : null,
+          group_slug: chat.group_slug || null,
+          key: `${chat.id}-${chat.type}`,
+        });
+      }
+    });
+
+    checkForNewMessages(uniqueChats);
+
+    setChatList(prevChats => {
+      if (JSON.stringify(prevChats) !== JSON.stringify(uniqueChats)) {
+        saveChatsToStorage(uniqueChats);
+        return uniqueChats;
+      }
+      return prevChats;
+    });
+
+    setFilteredChatList(prevFiltered => {
+      if (searchQuery.trim() === '') {
+        return uniqueChats;
+      }
+      return prevFiltered;
+    });
+  } catch (err) {
+    console.error('Silent refresh error:', err);
+  }
+};
 
   // Check for new messages and show notifications
   const checkForNewMessages = (newChats) => {
@@ -579,14 +700,23 @@ const fetchUserData = async () => {
     }, [readChats])
   );
 
-  // Periodic silent refresh
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchChatListSilently();
-    }, 30000);
 
-    return () => clearInterval(interval);
-  }, [accountMode, searchQuery, readChats]);
+  useEffect(() => {
+  const interval = setInterval(() => {
+    fetchChatListSilently(); // This now always uses personal mode
+  }, 30000);
+
+  return () => clearInterval(interval);
+}, [searchQuery, readChats]);
+
+  // Periodic silent refresh
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     fetchChatListSilently();
+  //   }, 30000);
+
+  //   return () => clearInterval(interval);
+  // }, [accountMode, searchQuery, readChats]);
 
 useEffect(() => {
   const connectCallWebSocket = async () => {
@@ -916,13 +1046,20 @@ const handleCameraLaunch = async () => {
     }
   }, [searchQuery, chatList]);
 
-  useEffect(() => {
-    const loadMode = async () => {
-      const mode = await AsyncStorage.getItem('accountMode') || 'personal';
+ useEffect(() => {
+  const loadMode = async () => {
+    // Force personal account mode always
+    const mode = await AsyncStorage.getItem('accountMode') || 'personal';
+    if (mode !== 'personal') {
+      // If it's not personal, switch it back
+      await AsyncStorage.setItem('accountMode', 'personal');
+      setAccountMode('personal');
+    } else {
       setAccountMode(mode);
-    };
-    loadMode();
-  }, []);
+    }
+  };
+  loadMode();
+}, []);
 
   const getSyncSummary = async () => {
   const summary = await AsyncStorage.getItem("contactSyncSummary");
@@ -991,26 +1128,45 @@ useEffect(()=>{
     }
   };
 
-  const switchAccount = async (account) => {
-    setIsLoading(true);
-    try {
-      await AsyncStorage.setItem('accountMode', account);
-      setAccountMode(account);
 
-      if (account === 'personal') {
-        fetchChatList();
-      } else {
-        const profile = await fetchProfile();
-        if (profile && profile.name && profile.name.trim() !== '') {
-          navigation.navigate('BusinessHome');
-        } else {
-          navigation.navigate('BusinessSetup');
-        }
-      }
-    } finally {
+const switchAccount = async (account) => {
+  setIsLoading(true);
+  try {
+    // Don't actually switch - force back to personal
+    if (account === 'business') {
+      Alert.alert('Notice', 'Business account switching is disabled in this view');
       setIsLoading(false);
+      return;
     }
-  };
+    
+    await AsyncStorage.setItem('accountMode', 'personal');
+    setAccountMode('personal');
+    fetchChatList();
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  // const switchAccount = async (account) => {
+  //   setIsLoading(true);
+  //   try {
+  //     await AsyncStorage.setItem('accountMode', account);
+  //     setAccountMode(account);
+
+  //     if (account === 'personal') {
+  //       fetchChatList();
+  //     } else {
+  //       const profile = await fetchProfile();
+  //       if (profile && profile.name && profile.name.trim() !== '') {
+  //         navigation.navigate('BusinessHome');
+  //       } else {
+  //         navigation.navigate('BusinessSetup');
+  //       }
+  //     }
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const handlePostStatus = async (media, caption) => {
     if (!media) {

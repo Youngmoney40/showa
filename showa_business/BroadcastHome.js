@@ -31,6 +31,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Snackbar } from 'react-native-paper';
 import dayjs from 'dayjs';
+import LinearGradient from "react-native-linear-gradient";
 import relativeTime from 'dayjs/plugin/relativeTime';
 import Icon from 'react-native-vector-icons/Ionicons';
 import colors from '../theme/colorscustom';
@@ -357,7 +358,7 @@ const MemoizedTweetItem = memo(({
   isDark 
 }) => {
   const [isReadMore, setIsReadMore] = useState(true);
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(post.is_followed_by_current_user || false);
   const [imageLoading, setImageLoading] = useState({});
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const postIdStr = post.id?.toString();
@@ -435,10 +436,16 @@ const MemoizedTweetItem = memo(({
     setImageLoading(prev => ({ ...prev, [index]: false }));
   };
 
-  const handleFollowPress = () => {
-    setIsFollowing(true);
-    onFollow(post.user_id);
-  };
+  // const handleFollowPress = () => {
+  //   setIsFollowing(true);
+  //   onFollow(post.user_id);
+  // };
+
+const handleFollowPress = () => {
+  const newFollowingState = !isFollowing;
+  setIsFollowing(newFollowingState);
+  onFollow(post.user_id);
+};
 
   const handleSharePress = async () => {
     await onShare(post.id);
@@ -888,6 +895,48 @@ export default function HomePage({ navigation }) {
   const [allPostsHasMore, setAllPostsHasMore] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
+
+const [statusViewerModalVisible, setStatusViewerModalVisible] = useState(false);
+const [statusPaused, setStatusPaused] = useState(false);
+
+
+const getStatusImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http://')) {
+    return url.replace('http://', 'https://');
+  }
+  if (url.startsWith('https://')) {
+    return url;
+  }
+  return `${API_ROUTE_IMAGE}${url}`;
+};
+
+const trackStatusView = useCallback(async (statusId) => {
+  if (!statusId) return;
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    await axios.post(
+      `${API_ROUTE}/status/${statusId}/track-view/`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  } catch (error) {
+    console.error('Error tracking status view:', error);
+  }
+}, []);
+
+const formatStatusTime = (date) => {
+  if (!date) return '';
+  const now = new Date();
+  const diffInHours = (now - new Date(date)) / (1000 * 60 * 60);
+  if (diffInHours < 24) {
+    return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } else if (diffInHours < 48) {
+    return 'Yesterday';
+  } else {
+    return new Date(date).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+};
   
   useEffect(()=>{
         const fetUserdata = async()=>{
@@ -1892,25 +1941,52 @@ const handleShareOptimized = useCallback(async (postId) => {
     setIsOptionsBottomSheetVisible(true);
   }, []);
 
+  // const handleFollow = useCallback(async (userId) => {
+  //   try {
+  //     const token = await AsyncStorage.getItem('userToken');
+  //     if (!token) return;
+
+  //     await axios.post(
+  //       `${API_ROUTE}/follow-user/${userId}/`,
+  //       {},
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+
+  //     setFollowedUsers((prev) => [...prev, userId]);
+  //     setAllPosts((prev) => prev.filter((post) => post.user_id !== userId));
+  //     setSuggestedFriends((prev) => prev.filter((friend) => friend.id !== userId));
+  //     setSnackbarVisible(true);
+  //   } catch (error) {
+  //     console.error('Error following user:', error);
+  //   }
+  // }, []);
+
   const handleFollow = useCallback(async (userId) => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) return;
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) return;
 
-      await axios.post(
-        `${API_ROUTE}/follow-user/${userId}/`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    await axios.post(
+      `${API_ROUTE}/follow-user/${userId}/`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      setFollowedUsers((prev) => [...prev, userId]);
-      setAllPosts((prev) => prev.filter((post) => post.user_id !== userId));
-      setSuggestedFriends((prev) => prev.filter((friend) => friend.id !== userId));
-      setSnackbarVisible(true);
-    } catch (error) {
-      console.error('Error following user:', error);
-    }
-  }, []);
+    setFollowedUsers((prev) => [...prev, userId]);
+    
+    // Update the posts to mark this user as followed (don't remove them)
+    setAllPosts((prev) => prev.map(post => 
+      post.user_id === userId 
+        ? { ...post, is_followed_by_current_user: true }
+        : post
+    ));
+    
+    setSuggestedFriends((prev) => prev.filter((friend) => friend.id !== userId));
+    setSnackbarVisible(true);
+  } catch (error) {
+    console.error('Error following user:', error);
+  }
+}, []);
 
   const handleViewUser = useCallback((userId) => {
     navigation.navigate('BroadcastUserProfile', { user_ID: userId });
@@ -1951,12 +2027,32 @@ const handleShareOptimized = useCallback(async (postId) => {
       console.error('Error bookmarking post:', error);
     }
   }, []);
-  const openImageModal = useCallback((userStatuses) => {
-    setSelectedUserStatuses(userStatuses.statuses);
-    setCurrentStatusIndex(0);
-    setModalVisible(true);
-    setPaused(false);
-  }, []);
+  // const openImageModal = useCallback((userStatuses) => {
+  //   setSelectedUserStatuses(userStatuses.statuses);
+  //   setCurrentStatusIndex(0);
+  //   setModalVisible(true);
+  //   setPaused(false);
+  // }, []);
+
+  const openImageModal = useCallback((userStatus) => {
+  // Set the selected user's statuses
+  setSelectedUserStatuses(userStatus.statuses);
+  // Reset to first status
+  setCurrentStatusIndex(0);
+  // Show the modal
+  setModalVisible(true);
+  // Reset paused state
+  setPaused(false);
+  
+  // Track views for each status (except the current user's own status)
+  const isMyStatus = userStatus.user?.phone === currentUserPhone || 
+                     userStatus.user === currentUserPhone;
+  
+  if (!isMyStatus) {
+    // Track view for the first status
+    trackStatusView(userStatus.statuses[0]?.id);
+  }
+}, [currentUserPhone]);
 
   const showViewers = useCallback((viewers) => {
     setCurrentViewers(viewers);
@@ -3407,6 +3503,172 @@ const renderSuggestedFriend = useCallback(({ item }) => (
           </View>
         </View>
       </Modal>
+      {/* Status Viewer Modal */}
+<Modal 
+  visible={modalVisible} 
+  transparent={true} 
+  onRequestClose={() => setModalVisible(false)}
+  statusBarTranslucent={true}
+>
+  <View style={styles.statusViewerContainer}>
+    <FlatList
+      ref={useRef(null)}
+      data={selectedUserStatuses}
+      renderItem={({ item, index }) => (
+        <View style={styles.statusViewerPage}>
+          {/* Left tap area - previous status */}
+          <TouchableOpacity 
+            style={[styles.statusTapArea, styles.statusLeftTapArea]}
+            onPress={() => {
+              if (currentStatusIndex > 0) {
+                const newIndex = currentStatusIndex - 1;
+                setCurrentStatusIndex(newIndex);
+                // Track view for previous status
+                const isMyStatus = item.user?.phone === currentUserPhone || 
+                                   item.user === currentUserPhone;
+                if (!isMyStatus) {
+                  trackStatusView(selectedUserStatuses[newIndex]?.id);
+                }
+              }
+            }}
+            activeOpacity={1}
+          />
+          
+          {/* Right tap area - next status */}
+          <TouchableOpacity 
+            style={[styles.statusTapArea, styles.statusRightTapArea]}
+            onPress={() => {
+              if (currentStatusIndex < selectedUserStatuses.length - 1) {
+                const newIndex = currentStatusIndex + 1;
+                setCurrentStatusIndex(newIndex);
+                // Track view for next status
+                const isMyStatus = item.user?.phone === currentUserPhone || 
+                                   item.user === currentUserPhone;
+                if (!isMyStatus) {
+                  trackStatusView(selectedUserStatuses[newIndex]?.id);
+                }
+              } else {
+                setModalVisible(false);
+              }
+            }}
+            activeOpacity={1}
+          />
+
+          {/* Media content */}
+          {item.status_type === 'video' ? (
+            <Video
+              source={{ uri: getStatusImageUrl(item.media) }}
+              style={styles.statusFullImage}
+              resizeMode="contain"
+              paused={statusPaused}
+              repeat={true}
+              onError={(e) => console.log('Video error:', e)}
+            />
+          ) : (
+            <Image
+              source={{ uri: getStatusImageUrl(item.media) }}
+              style={styles.statusFullImage}
+              resizeMode="contain"
+            />
+          )}
+
+          {/* Header overlay */}
+          <LinearGradient
+            colors={['rgba(0,0,0,0.6)', 'transparent']}
+            style={styles.statusViewerHeader}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          >
+            <Image
+              source={
+                item.user?.profile_picture
+                  ? { uri: `${API_ROUTE_IMAGE}${item.user.profile_picture}` }
+                  : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+              }
+              style={styles.statusViewerAvatar}
+            />
+            <View style={styles.statusViewerUserInfo}>
+              <Text style={styles.statusViewerUsername}>
+                {item.user?.phone === currentUserPhone || item.user === currentUserPhone
+                  ? 'My Status'
+                  : item.user?.name || item.user?.phone || 'User'}
+              </Text>
+              <Text style={styles.statusViewerTime}>
+                {formatStatusTime(item.created_at)}
+              </Text>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.statusViewerCloseButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Icon name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+          </LinearGradient>
+
+          {/* Caption overlay */}
+          {item.text && (
+            <View style={styles.statusCaptionContainer}>
+              <Text style={styles.statusViewerCaption}>{item.text}</Text>
+            </View>
+          )}
+
+          {/* Viewer count for my status */}
+          {(item.user?.phone === currentUserPhone || item.user === currentUserPhone) && item.viewers_count > 0 && (
+            <TouchableOpacity
+              style={styles.statusViewersButton}
+              onPress={() => {
+                if (item.viewers && item.viewers.length > 0) {
+                  setCurrentViewers(item.viewers);
+                  setViewersModalVisible(true);
+                }
+              }}
+            >
+              <Icon name="eye" size={16} color="#fff" />
+              <Text style={styles.statusViewersButtonText}>
+                {item.viewers_count} view{item.viewers_count !== 1 ? 's' : ''}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Progress indicators */}
+          <View style={styles.statusProgressContainer}>
+            {selectedUserStatuses.map((_, idx) => (
+              <View key={idx} style={styles.statusProgressBar}>
+                <View 
+                  style={[
+                    styles.statusProgressFill,
+                    { 
+                      width: idx === currentStatusIndex ? '100%' : 
+                             idx < currentStatusIndex ? '100%' : '0%' 
+                    }
+                  ]} 
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+      keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+      horizontal
+      pagingEnabled
+      showsHorizontalScrollIndicator={false}
+      initialScrollIndex={currentStatusIndex}
+      getItemLayout={(data, index) => ({
+        length: width,
+        offset: width * index,
+        index,
+      })}
+      onMomentumScrollEnd={(event) => {
+        const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+        if (newIndex !== currentStatusIndex) {
+          setCurrentStatusIndex(newIndex);
+        }
+      }}
+      style={styles.statusFlatList}
+    />
+  </View>
+</Modal>
 
       <Snackbar
         visible={snackbarVisible}
@@ -3450,6 +3712,124 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+ 
+statusViewerContainer: {
+  flex: 1,
+  backgroundColor: '#000',
+},
+statusViewerPage: {
+  width: width,
+  height: height,
+  backgroundColor: '#000',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+statusFullImage: {
+  width: width,
+  height: height,
+},
+statusTapArea: {
+  position: 'absolute',
+  top: 0,
+  bottom: 0,
+  width: width * 0.3,
+  zIndex: 100,
+},
+statusLeftTapArea: {
+  left: 0,
+},
+statusRightTapArea: {
+  right: 0,
+},
+statusViewerHeader: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingHorizontal: 16,
+  paddingTop: Platform.OS === 'ios' ? 60 : 40,
+  paddingBottom: 16,
+  zIndex: 10,
+},
+statusViewerAvatar: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  marginRight: 12,
+  borderWidth: 2,
+  borderColor: '#fff',
+},
+statusViewerUserInfo: {
+  flex: 1,
+},
+statusViewerUsername: {
+  color: '#fff',
+  fontSize: 16,
+  fontWeight: '600',
+},
+statusViewerTime: {
+  color: 'rgba(255,255,255,0.7)',
+  fontSize: 12,
+  marginTop: 2,
+},
+statusViewerCloseButton: {
+  padding: 8,
+},
+statusCaptionContainer: {
+  position: 'absolute',
+  bottom: 100,
+  left: 20,
+  right: 20,
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  padding: 12,
+  borderRadius: 8,
+},
+statusViewerCaption: {
+  color: '#fff',
+  fontSize: 16,
+  textAlign: 'center',
+},
+statusViewersButton: {
+  position: 'absolute',
+  bottom: 40,
+  alignSelf: 'center',
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  paddingHorizontal: 16,
+  paddingVertical: 8,
+  borderRadius: 20,
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+statusViewersButtonText: {
+  color: '#fff',
+  marginLeft: 6,
+  fontSize: 14,
+},
+statusProgressContainer: {
+  position: 'absolute',
+  top: Platform.OS === 'ios' ? 50 : 30,
+  left: 10,
+  right: 10,
+  flexDirection: 'row',
+  zIndex: 10,
+},
+statusProgressBar: {
+  flex: 1,
+  height: 3,
+  backgroundColor: 'rgba(255,255,255,0.3)',
+  marginHorizontal: 2,
+  borderRadius: 2,
+  overflow: 'hidden',
+},
+statusProgressFill: {
+  height: '100%',
+  backgroundColor: '#fff',
+},
+statusFlatList: {
+  flex: 1,
+},
   loadingSkeleton: {
     backgroundColor: '#e0e0e0',
     width: '100%',
