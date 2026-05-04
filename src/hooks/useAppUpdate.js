@@ -6,8 +6,8 @@ const STORAGE_KEY = '@app_version_checked';
 const apiUrl = 'https://api.showapp.ng/api/showa/check-app-version/'; 
 
 // Hardcode your current app version here - update manually on each release
-const CURRENT_APP_VERSION = '1.0.0';
-const CURRENT_APP_VERSION_CODE = 1000000; // e.g., 1.0.0 = 1000000, 1.0.1 = 1000001
+const CURRENT_APP_VERSION = '1.0.3';
+const CURRENT_APP_VERSION_CODE = 1000003; // e.g., 1.0.0 = 1000000, 1.0.1 = 1000001
 
 const useAppUpdate = (autoCheckOnMount = true) => {
   const [updateInfo, setUpdateInfo] = useState(null);

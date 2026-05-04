@@ -6160,159 +6160,324 @@ const StatusScreen = () => {
     </TouchableOpacity>
   );
 
+
   const renderStatusItem = ({ item, index }) => {
-    const isMyStatus = item.user?.phone === currentUserPhone || item.user === currentUserPhone;
-    
-    const handleDeletePress = () => {
-      Alert.alert(
-        'Delete Status',
-        'Are you sure you want to delete this status? This action cannot be undone.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', onPress: () => deleteStatus(item.id), style: 'destructive' },
-        ]
-      );
-    };
-    
-    return (
-      <View style={styles.statusViewerContainer}>
-        <TouchableOpacity 
-          style={[styles.tapArea, styles.leftTapArea]}
-          onPress={goToPreviousStatus}
-          activeOpacity={0.1}
-        />
-        <TouchableOpacity 
-          style={[styles.tapArea, styles.rightTapArea]}
-          onPress={goToNextStatus}
-          activeOpacity={0.1}
-        />
+  const isMyStatus = item.user?.phone === currentUserPhone || item.user === currentUserPhone;
+  
+  const handleDeletePress = () => {
+    Alert.alert(
+      'Delete Status',
+      'Are you sure you want to delete this status? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', onPress: () => deleteStatus(item.id), style: 'destructive' },
+      ]
+    );
+  };
+  
+  return (
+    <View style={styles.statusViewerContainer}>
+      {/* These tap areas are intercepting touches */}
+      <TouchableOpacity 
+        style={[styles.tapArea, styles.leftTapArea]}
+        onPress={goToPreviousStatus}
+        activeOpacity={0.1}
+      />
+      <TouchableOpacity 
+        style={[styles.tapArea, styles.rightTapArea]}
+        onPress={goToNextStatus}
+        activeOpacity={0.1}
+      />
 
-        <Image
-          source={{ uri: getImageUrl(item.media) }}
-          style={styles.fullImage}
-          resizeMode="contain"
-        />
+      <Image
+        source={{ uri: getImageUrl(item.media) }}
+        style={styles.fullImage}
+        resizeMode="contain"
+      />
 
-        <View style={styles.statusViewerOverlay}>
-          <View style={styles.statusViewerHeader}>
-            <Image
-              source={{
-                uri: item.user?.profile_picture
-                  ? getSecureUrl(`${API_ROUTE_IMAGE}${item.user.profile_picture}`)
-                  : 'https://via.placeholder.com/40',
-              }}
-              style={styles.statusViewerAvatar}
-            />
-            <View style={styles.userInfo}>
-              <Text style={styles.statusViewerUsername}>
-                {isMyStatus ? 'My Status' : item.user?.name || item.user}
-              </Text>
-              <Text style={styles.statusViewerTime}>{formatTime(item.created_at)}</Text>
-            </View>
-            
-            {isMyStatus && (
-              <TouchableOpacity 
-                style={styles.headerButton}
-                onPress={handleDeletePress}
-              >
-                <Icon name="trash-outline" size={24} color="#fff" />
-              </TouchableOpacity>
-            )}
+      <View style={styles.statusViewerOverlay}>
+        <View style={styles.statusViewerHeader}>
+          <Image
+            source={{
+              uri: item.user?.profile_picture
+                ? getSecureUrl(`${API_ROUTE_IMAGE}${item.user.profile_picture}`)
+                : 'https://via.placeholder.com/40',
+            }}
+            style={styles.statusViewerAvatar}
+          />
+          <View style={styles.userInfo}>
+            <Text style={styles.statusViewerUsername}>
+              {isMyStatus ? 'My Status' : item.user?.name || item.user}
+            </Text>
+            <Text style={styles.statusViewerTime}>{formatTime(item.created_at)}</Text>
+          </View>
           
+          {isMyStatus && (
             <TouchableOpacity 
               style={styles.headerButton}
-              onPress={() => {
-                if (item.reactions && item.reactions.length > 0) {
-                  showReactions(item.reactions);
-                }
-              }}
+              onPress={handleDeletePress}
             >
-              <Icon name="eye" size={24} color={item.user_reaction ? '#ff375f' : '#fff'} />
-              <Text style={styles.reactionCount}>{item.reactions?.length || 0}</Text>
+              <Icon name="trash-outline" size={24} color="#fff" />
             </TouchableOpacity>
-            
+          )}
+        
+          <TouchableOpacity 
+            style={styles.headerButton}
+            onPress={() => {
+              if (item.reactions && item.reactions.length > 0) {
+                showReactions(item.reactions);
+              }
+            }}
+          >
+            <Icon name="eye" size={24} color={item.user_reaction ? '#ff375f' : '#fff'} />
+            <Text style={styles.reactionCount}>{item.reactions?.length || 0}</Text>
+          </TouchableOpacity>
+          
+          {/* FIX: Change this to a View with higher zIndex and ensure it's clickable */}
+          <View style={styles.headerButton}>
             <TouchableOpacity 
-              style={styles.headerButton}
-              onPress={() => setModalVisible(false)}
+              onPress={() => {
+                console.log('Close button pressed');
+                setModalVisible(false);
+                setCurrentStatusIndex(0);
+              }}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Icon name="close" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
+        </View>
 
-          <View style={styles.bottomInputContainer}>
-            {item.text && (
-              <View style={styles.captionContainer}>
-                <Text style={styles.statusViewerCaption}>{item.text}</Text>
-              </View>
-            )}
+        {/* Rest of your component remains the same */}
+        <View style={styles.bottomInputContainer}>
+          {item.text && (
+            <View style={styles.captionContainer}>
+              <Text style={styles.statusViewerCaption}>{item.text}</Text>
+            </View>
+          )}
 
-            {!isMyStatus && (
-              <View style={{ justifyContent: 'center', alignItems: 'center', marginRight: 8, flexDirection: 'row', paddingHorizontal: 10 }}>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={styles.commentInput}
-                    placeholder="Reply to status..."
-                    placeholderTextColor="#999"
-                    value={commentText}
-                    onChangeText={setCommentText}
-                    multiline
-                  />
-                  <TouchableOpacity 
-                    style={[styles.sendButton, !commentText.trim() && styles.sendButtonDisabled]}
-                    onPress={() => handleAddComment(item.id)}
-                    disabled={!commentText.trim()}
-                  >
-                    <Icon name="send" size={20} color={commentText.trim() ? "#0084ff" : "#666"} />
-                  </TouchableOpacity>
-                </View>
+          {!isMyStatus && (
+            <View style={{ justifyContent: 'center', alignItems: 'center', marginRight: 8, flexDirection: 'row', paddingHorizontal: 10 }}>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Reply to status..."
+                  placeholderTextColor="#999"
+                  value={commentText}
+                  onChangeText={setCommentText}
+                  multiline
+                />
                 <TouchableOpacity 
-                  style={styles.quickActionButton}
-                  onPress={() => addReaction(item.id, 'like')}
+                  style={[styles.sendButton, !commentText.trim() && styles.sendButtonDisabled]}
+                  onPress={() => handleAddComment(item.id)}
+                  disabled={!commentText.trim()}
                 >
-                  <Icon name="heart-outline" size={30} color="#fff" />
+                  <Icon name="send" size={20} color={commentText.trim() ? "#0084ff" : "#666"} />
                 </TouchableOpacity>
               </View>
-            )}
-          </View>
-
-          {currentStatusIndex > 0 && (
-            <TouchableOpacity 
-              style={[styles.navArrow, styles.leftArrow]}
-              onPress={goToPreviousStatus}
-            >
-              <Icon name="chevron-back" size={30} color="#fff" />
-            </TouchableOpacity>
-          )}
-          
-          {currentStatusIndex < selectedUserStatuses.length - 1 && (
-            <TouchableOpacity 
-              style={[styles.navArrow, styles.rightArrow]}
-              onPress={goToNextStatus}
-            >
-              <Icon name="chevron-forward" size={30} color="#fff" />
-            </TouchableOpacity>
-          )}
-
-          {isMyStatus && item.viewers_count > 0 && (
-            <TouchableOpacity
-              style={styles.viewersButton}
-              onPress={() => {
-                if (item.viewers && item.viewers.length > 0) {
-                  setCurrentViewers(item.viewers);
-                  setViewersModalVisible(true);
-                }
-              }}
-            >
-              <Icon name="eye" size={16} color="#fff" style={styles.eyeIcon} />
-              <Text style={styles.viewersButtonText}>
-                {item.viewers_count} view{item.viewers_count !== 1 ? 's' : ''}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.quickActionButton}
+                onPress={() => addReaction(item.id, 'like')}
+              >
+                <Icon name="heart-outline" size={30} color="#fff" />
+              </TouchableOpacity>
+            </View>
           )}
         </View>
+
+        {currentStatusIndex > 0 && (
+          <TouchableOpacity 
+            style={[styles.navArrow, styles.leftArrow]}
+            onPress={goToPreviousStatus}
+          >
+            <Icon name="chevron-back" size={30} color="#fff" />
+          </TouchableOpacity>
+        )}
+        
+        {currentStatusIndex < selectedUserStatuses.length - 1 && (
+          <TouchableOpacity 
+            style={[styles.navArrow, styles.rightArrow]}
+            onPress={goToNextStatus}
+          >
+            <Icon name="chevron-forward" size={30} color="#fff" />
+          </TouchableOpacity>
+        )}
+
+        {isMyStatus && item.viewers_count > 0 && (
+          <TouchableOpacity
+            style={styles.viewersButton}
+            onPress={() => {
+              if (item.viewers && item.viewers.length > 0) {
+                setCurrentViewers(item.viewers);
+                setViewersModalVisible(true);
+              }
+            }}
+          >
+            <Icon name="eye" size={16} color="#fff" style={styles.eyeIcon} />
+            <Text style={styles.viewersButtonText}>
+              {item.viewers_count} view{item.viewers_count !== 1 ? 's' : ''}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
-    );
-  };
+    </View>
+  );
+};
+
+  // const renderStatusItem = ({ item, index }) => {
+  //   const isMyStatus = item.user?.phone === currentUserPhone || item.user === currentUserPhone;
+    
+  //   const handleDeletePress = () => {
+  //     Alert.alert(
+  //       'Delete Status',
+  //       'Are you sure you want to delete this status? This action cannot be undone.',
+  //       [
+  //         { text: 'Cancel', style: 'cancel' },
+  //         { text: 'Delete', onPress: () => deleteStatus(item.id), style: 'destructive' },
+  //       ]
+  //     );
+  //   };
+    
+  //   return (
+  //     <View style={styles.statusViewerContainer}>
+  //       <TouchableOpacity 
+  //         style={[styles.tapArea, styles.leftTapArea]}
+  //         onPress={goToPreviousStatus}
+  //         activeOpacity={0.1}
+  //       />
+  //       <TouchableOpacity 
+  //         style={[styles.tapArea, styles.rightTapArea]}
+  //         onPress={goToNextStatus}
+  //         activeOpacity={0.1}
+  //       />
+
+  //       <Image
+  //         source={{ uri: getImageUrl(item.media) }}
+  //         style={styles.fullImage}
+  //         resizeMode="contain"
+  //       />
+
+  //       <View style={styles.statusViewerOverlay}>
+  //         <View style={styles.statusViewerHeader}>
+  //           <Image
+  //             source={{
+  //               uri: item.user?.profile_picture
+  //                 ? getSecureUrl(`${API_ROUTE_IMAGE}${item.user.profile_picture}`)
+  //                 : 'https://via.placeholder.com/40',
+  //             }}
+  //             style={styles.statusViewerAvatar}
+  //           />
+  //           <View style={styles.userInfo}>
+  //             <Text style={styles.statusViewerUsername}>
+  //               {isMyStatus ? 'My Status' : item.user?.name || item.user}
+  //             </Text>
+  //             <Text style={styles.statusViewerTime}>{formatTime(item.created_at)}</Text>
+  //           </View>
+            
+  //           {isMyStatus && (
+  //             <TouchableOpacity 
+  //               style={styles.headerButton}
+  //               onPress={handleDeletePress}
+  //             >
+  //               <Icon name="trash-outline" size={24} color="#fff" />
+  //             </TouchableOpacity>
+  //           )}
+          
+  //           <TouchableOpacity 
+  //             style={styles.headerButton}
+  //             onPress={() => {
+  //               if (item.reactions && item.reactions.length > 0) {
+  //                 showReactions(item.reactions);
+  //               }
+  //             }}
+  //           >
+  //             <Icon name="eye" size={24} color={item.user_reaction ? '#ff375f' : '#fff'} />
+  //             <Text style={styles.reactionCount}>{item.reactions?.length || 0}</Text>
+  //           </TouchableOpacity>
+            
+  //           <TouchableOpacity 
+  //             style={styles.headerButton}
+  //             onPress={() => setModalVisible(false)}
+  //           >
+  //             <Icon name="close" size={24} color="#fff" />
+  //           </TouchableOpacity>
+  //         </View>
+
+  //         <View style={styles.bottomInputContainer}>
+  //           {item.text && (
+  //             <View style={styles.captionContainer}>
+  //               <Text style={styles.statusViewerCaption}>{item.text}</Text>
+  //             </View>
+  //           )}
+
+  //           {!isMyStatus && (
+  //             <View style={{ justifyContent: 'center', alignItems: 'center', marginRight: 8, flexDirection: 'row', paddingHorizontal: 10 }}>
+  //               <View style={styles.inputWrapper}>
+  //                 <TextInput
+  //                   style={styles.commentInput}
+  //                   placeholder="Reply to status..."
+  //                   placeholderTextColor="#999"
+  //                   value={commentText}
+  //                   onChangeText={setCommentText}
+  //                   multiline
+  //                 />
+  //                 <TouchableOpacity 
+  //                   style={[styles.sendButton, !commentText.trim() && styles.sendButtonDisabled]}
+  //                   onPress={() => handleAddComment(item.id)}
+  //                   disabled={!commentText.trim()}
+  //                 >
+  //                   <Icon name="send" size={20} color={commentText.trim() ? "#0084ff" : "#666"} />
+  //                 </TouchableOpacity>
+  //               </View>
+  //               <TouchableOpacity 
+  //                 style={styles.quickActionButton}
+  //                 onPress={() => addReaction(item.id, 'like')}
+  //               >
+  //                 <Icon name="heart-outline" size={30} color="#fff" />
+  //               </TouchableOpacity>
+  //             </View>
+  //           )}
+  //         </View>
+
+  //         {currentStatusIndex > 0 && (
+  //           <TouchableOpacity 
+  //             style={[styles.navArrow, styles.leftArrow]}
+  //             onPress={goToPreviousStatus}
+  //           >
+  //             <Icon name="chevron-back" size={30} color="#fff" />
+  //           </TouchableOpacity>
+  //         )}
+          
+  //         {currentStatusIndex < selectedUserStatuses.length - 1 && (
+  //           <TouchableOpacity 
+  //             style={[styles.navArrow, styles.rightArrow]}
+  //             onPress={goToNextStatus}
+  //           >
+  //             <Icon name="chevron-forward" size={30} color="#fff" />
+  //           </TouchableOpacity>
+  //         )}
+
+  //         {isMyStatus && item.viewers_count > 0 && (
+  //           <TouchableOpacity
+  //             style={styles.viewersButton}
+  //             onPress={() => {
+  //               if (item.viewers && item.viewers.length > 0) {
+  //                 setCurrentViewers(item.viewers);
+  //                 setViewersModalVisible(true);
+  //               }
+  //             }}
+  //           >
+  //             <Icon name="eye" size={16} color="#fff" style={styles.eyeIcon} />
+  //             <Text style={styles.viewersButtonText}>
+  //               {item.viewers_count} view{item.viewers_count !== 1 ? 's' : ''}
+  //             </Text>
+  //           </TouchableOpacity>
+  //         )}
+  //       </View>
+  //     </View>
+  //   );
+  // };
 
   const renderCommentsModal = () => (
     <Modal
