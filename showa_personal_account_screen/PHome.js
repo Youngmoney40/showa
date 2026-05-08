@@ -84,6 +84,26 @@ const HomeScreen = ({ navigation }) => {
     doNotDisturb: false,
   });
 
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+
+const fetchUnreadNotificationCount = async () => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    const response = await axios.get(`${API_ROUTE}/notifications/unread-count/`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (response.data.success) {
+      setUnreadNotificationCount(response.data.unread_count);
+    }
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+  }
+};
+
 
   // Dropdown Modal Component for iOS
       const DropdownModal = ({ visible, onClose, children, dropdownPosition }) => {
@@ -680,6 +700,7 @@ const fetchChatListSilently = async () => {
   // Initial data load with cached data
   useFocusEffect(
     useCallback(() => {
+      fetchUnreadNotificationCount();
       let isMounted = true;
 
       const loadData = async () => {
@@ -699,6 +720,8 @@ const fetchChatListSilently = async () => {
       };
     }, [readChats])
   );
+
+  
 
 
   useEffect(() => {
@@ -1312,9 +1335,23 @@ const switchAccount = async (account) => {
                 <Text style={[styles.exploreBadgeText,{fontWeight:'800'}]}>Explore</Text>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleCameraLaunch}>
+
+            <TouchableOpacity 
+                onPress={() => navigation.navigate('NotificationsScreen')}
+                style={styles.notificationIconContainer}
+              >
+                <Icon name="notifications-outline" size={25} color="#fff" style={{ marginRight: 20 }} />
+                {unreadNotificationCount > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>
+                      {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            {/* <TouchableOpacity onPress={handleCameraLaunch}>
               <Icon name="camera-outline" size={25} color="#fff" style={{ marginRight: 20 }} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity onPress={() => setShowDropdown(!showDropdown)}>
               <Icon name="ellipsis-vertical" size={25} color="#fff" />
             </TouchableOpacity>
@@ -2134,6 +2171,27 @@ header: {
     minWidth: 200,
     maxWidth: 250,
   },
+
+  notificationIconContainer: {
+  position: 'relative',
+},
+notificationBadge: {
+  position: 'absolute',
+  top: -5,
+  right: 15,
+  backgroundColor: '#FF3B30',
+  borderRadius: 10,
+  minWidth: 18,
+  height: 18,
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 4,
+},
+notificationBadgeText: {
+  color: '#fff',
+  fontSize: 10,
+  fontWeight: 'bold',
+},
   
   dropdownMenuIOS: {
     backgroundColor: colors.backgroundSecondary,

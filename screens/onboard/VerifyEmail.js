@@ -19,6 +19,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import { API_ROUTE } from '../../api_routing/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NotificationService from '../../src/services/NotificationService';
+
 
 const VerificationCodeScreen = ({ route }) => {
   const phoneNumberID = route.params?.phoneNumberID;
@@ -34,6 +36,11 @@ const VerificationCodeScreen = ({ route }) => {
   const navigation = useNavigation();
   const inputsRef = useRef([]);
   const shakeAnimation = useRef(new Animated.Value(0)).current;
+
+  const registerDevice = async () => {
+    const userToken = await AsyncStorage.getItem('userToken'); 
+    await NotificationService.initialize(userToken);
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -106,6 +113,7 @@ const VerificationCodeScreen = ({ route }) => {
           ['userId', user.id.toString()],
         ]);
         navigation.replace('ProceedOptions');
+        registerDevice();
       } else {
         setError('Incorrect code. Try again.');
         startShake();

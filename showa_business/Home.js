@@ -77,12 +77,30 @@ const HomeScreen = ({ navigation }) => {
     doNotDisturb: false,
   });
 
+const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
-//   const READ_CHATS_KEY = 'read_chats_business';
-// const CHAT_CACHE_KEY = 'cached_chat_list_business';
+
+const fetchUnreadNotificationCount = async () => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    const response = await axios.get(`${API_ROUTE}/notifications/unread-count/`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (response.data.success) {
+      setUnreadNotificationCount(response.data.unread_count);
+    }
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+  }
+};
+
 
   useEffect(() => {
     loadNotificationSettings();
+    fetchUnreadNotificationCount();
   }, []);
 
   const loadNotificationSettings = async () => {
@@ -855,14 +873,29 @@ const HomeScreen = ({ navigation }) => {
               </View>
             </TouchableOpacity>
            
-            <TouchableOpacity style={{ marginRight: 20 }} onPress={()=>navigation.navigate('SupplierNotificationScreen')}>
+            {/* <TouchableOpacity style={{ marginRight: 20 }} onPress={()=>navigation.navigate('SupplierNotificationScreen')}>
               <Icon name="chatbubble-ellipses-outline" size={24} color="#fff" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
+
+            <TouchableOpacity 
+                          onPress={() => navigation.navigate('NotificationsScreen')}
+                          style={styles.notificationIconContainer}
+                        >
+                          <Icon name="notifications-outline" size={25} color="#fff" style={{ marginRight: 20 }} />
+                          {unreadNotificationCount > 0 && (
+                            <View style={styles.notificationBadge}>
+                              <Text style={styles.notificationBadgeText}>
+                                {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                              </Text>
+                            </View>
+                          )}
+                        </TouchableOpacity>
             
             <TouchableOpacity ref={ellipsisRef} onPress={toggleDropdown}>
               <Icon name="ellipsis-vertical" size={25} color="#fff" />
             </TouchableOpacity>
           </View>
+             
         </View>
         <View style={styles.tabRow}>
           {['Chats', 'Status', 'Calls'].map((item) => (
@@ -1362,6 +1395,14 @@ const HomeScreen = ({ navigation }) => {
               <TouchableOpacity
                 onPress={() => {
                   setShowDropdown(false);
+                  navigation.navigate('SupplierNotificationScreen');
+                }}
+              >
+                    <Text style={[styles.dropdownItem, { color: colors.text }]}>Deals</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowDropdown(false);
                   navigation.navigate('EarningDashbord');
                 }}
               >
@@ -1582,6 +1623,27 @@ const createStyles = (colors, isDark, insets) => StyleSheet.create({
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
   },
+  
+  notificationIconContainer: {
+  position: 'relative',
+},
+notificationBadge: {
+  position: 'absolute',
+  top: -5,
+  right: 15,
+  backgroundColor: '#FF3B30',
+  borderRadius: 10,
+  minWidth: 18,
+  height: 18,
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 4,
+},
+notificationBadgeText: {
+  color: '#fff',
+  fontSize: 10,
+  fontWeight: 'bold',
+},
   userName: {
     marginLeft: 12,
     fontSize: 16,
