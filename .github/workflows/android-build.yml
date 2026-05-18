@@ -72,7 +72,7 @@ jobs:
       - name: Build AAB
         run: |
           cd android
-          ./gradlew bundleDebug
+          ./gradlew bundleRelease
 
       # ✅ CHANGED HERE
       - name: Upload AAB
