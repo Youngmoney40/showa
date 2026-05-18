@@ -5034,6 +5034,1138 @@
 //   }
 // };
 
+// import React, { useEffect, useState, useRef } from "react";
+// import {
+//   AppState,
+//   Platform,
+//   View,
+//   ActivityIndicator,
+//   StatusBar as RNStatusBar,
+//   InteractionManager,
+//   Image,
+//   NativeModules,
+//   LogBox,
+//   PermissionsAndroid, // ← ANDROID 13+ FIX
+// } from "react-native";
+// import { GestureHandlerRootView } from "react-native-gesture-handler";
+// import { NavigationContainer } from "@react-navigation/native";
+// import { createNativeStackNavigator } from "@react-navigation/native-stack";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { SafeAreaProvider } from "react-native-safe-area-context";
+// import { useOnlineStatus } from "./src/hooks/useOnlineStatus";
+// import {
+//   NotificationProvider,
+//   useNotification,
+// } from "./src/context/NotificationContext";
+
+// // ─── Navigation ref ───────────────────────────────────────────────────────────
+// const navigationRef = React.createRef();
+
+// // ─── Navigation persistence ───────────────────────────────────────────────────
+// const NAVIGATION_STATE_KEY = "NAVIGATION_STATE";
+
+// const saveNavigationState = (state) => {
+//   if (!state) return;
+//   AsyncStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify(state)).catch(
+//     (err) => console.error("Failed to save navigation state:", err)
+//   );
+// };
+
+// const loadNavigationState = async () => {
+//   try {
+//     const raw = await AsyncStorage.getItem(NAVIGATION_STATE_KEY);
+//     return raw ? JSON.parse(raw) : undefined;
+//   } catch (err) {
+//     console.error("Failed to load navigation state:", err);
+//     return undefined;
+//   }
+// };
+
+// // ─── LogBox ───────────────────────────────────────────────────────────────────
+// LogBox.ignoreLogs([
+//   "new NativeEventEmitter",
+//   "Require cycle:",
+//   "VirtualizedLists should never be nested",
+// ]);
+
+// // ─── Imports ──────────────────────────────────────────────────────────────────
+// import { checkPinStatus } from "./showa_personal_account_screen/FaceSecuritySetting";
+// import PinUnlockModal from "./screens/PinUnlockModal";
+// import videoBackgroundfetch from "./src/services/VideoBackgroundFetch";
+// import { ThemeProvider } from "./src/context/ThemeContext";
+// import { useTheme } from "./src/context/ThemeContext";
+// import { CallProvider } from "./components/CallContext";
+// import CallSignalListener from "./components/CallSignalListener";
+// import IncomingCallModal from "./components/IncomingCallModal";
+// import NetworkStatusBanner from "./components/Networkstatusbanner";
+// import {
+//   startBackgroundContactSync,
+//   setupContactSyncListener,
+// } from "./components/BackgroundSync";
+// import backgroundFetchService from "./src/services/BackgroundFetchService";
+
+// // ─── Screen imports ───────────────────────────────────────────────────────────
+// import Loginscreen from "./screens/Loginscreen";
+// import Signin from "./screens/onboard/SignIn";
+// import Signin_two from "./screens/onboard/SignIn2_two";
+// import TermsCondition from "./screens/onboard/Terms";
+// import PrivacyPolicy from "./screens/onboard/PrivacyPolicy";
+// import Register from "./screens/onboard/Register";
+// import Biometric from "./screens/onboard/Biometric";
+// import LinkingScreen from "./screens/onboard/LinkingScreen";
+// import VerificationCode from "./screens/onboard/VerifyEmail";
+// import ProceedOptions from "./screens/ProceedOptions";
+// import Terms from "./screens/TermsPrivacyScreen";
+// import PHome from "./showa_personal_account_screen/PHome";
+// import UserPersonalAccountProfile from "./screens/profiles/UserPersonalAccountProfile";
+// import PStatusBar from "./showa_personal_account_screen/StatusBar";
+// import StatusEditorScreen from "./showa_personal_account_screen/StatusEditorScreen";
+// import JoinChannel from "./showa_personal_account_screen/JoinChannel";
+// import Calls from "./showa_personal_account_screen/Calls";
+// import CallOngoingScreen from "./showa_personal_account_screen/CallOngoingScreen";
+// import Settings from "./showa_personal_account_screen/Settings";
+// import NotificationSetting from "./showa_personal_account_screen/NotificationSetting";
+// import WallpaperSetting from "./showa_personal_account_screen/WallpaperSetting";
+// import FaceSecuritySetting from "./showa_personal_account_screen/FaceSecuritySetting";
+// import PrivateChat from "./showa_personal_account_screen/PrivateChat";
+// import ChannelDetails from "./showa_business/ChannelDetails";
+// import PostDetails from "./showa_business/PostDetailScreen";
+// import BusinessHome from "./showa_business/Home";
+// import ChatAi from "./showa_business/ChatAi";
+// import MonetizationRequestForm from "./showa_business/MonetizationRequestForm";
+// import BUserProfile from "./showa_business/UserProfile";
+// import BStatusBar from "./showa_business/StatusBar";
+// import BStatusEditorScreen from "./showa_business/StatusEditorScreen";
+// import BJoinChannel from "./showa_business/JoinChannel";
+// import BCalls from "./showa_business/Calls";
+// import BCallOngoingScreen from "./showa_business/CallOngoingScreen";
+// import BSettings from "./showa_business/Settings";
+// import BNotificationSetting from "./showa_business/NotificationSetting";
+// import BWallpaperSetting from "./showa_business/WallpaperSetting";
+// import BFaceSecuritySetting from "./showa_business/FaceSecuritySetting";
+// import ToolsScreen from "./showa_business/ToolsScreen";
+// import QuickReplies from "./showa_business/QuickReplies";
+// import AddQuickReply from "./showa_business/AddQuickReply";
+// import EssentialPlatformsScreen from "./showa_business/EssentialPlatformsScreen";
+// import Advertise from "./showa_business/Advertise";
+// import ManageProfile from "./showa_business/ManageProfile";
+// import CreateCatalog from "./showa_business/CreateCatalog";
+// import AddItemToCatalog from "./showa_business/AddItemToCatalog";
+// import Explore from "./showa_business/Explore";
+// import LabelChats from "./showa_business/LabelChatsScreen";
+// import Labels from "./showa_business/LabelsScreen";
+// import AddQuickReplyScreen from "./showa_business/AddQuickReplyScreen";
+// import GreetingMessage from "./showa_business/GreetingMessage";
+// import AwayMessage from "./showa_business/AwayMessageScreen";
+// import HelpCenter from "./showa_business/HelpCenterScreen";
+// import HelpTopic from "./showa_business/HelpTopicScreen";
+// import BusinessSetup from "./showa_business/BusinessSetupScreen";
+// import ProductDetails from "./showa_business/ProductDetailsScreen";
+// import Cart from "./showa_business/CartScreen";
+// import ChannelAdminManagement from "./showa_business/ChannelAdminManagement";
+// import EmptyCart from "./showa_business/EmptyCartScreen";
+// import OoshBusiness from "./showa_business/OoshBusinessScreen";
+// import Live from "./showa_business/LiveScreen";
+// import Broadcast from "./showa_business/Broadcast";
+// import OfficialSearch from "./showa_business/OfficialSearchScreen";
+// import CreateChannel from "./showa_business/CreateChannel";
+// import InviteChannelLink from "./showa_business/InviteChannelLink";
+// import Supplyrequest from "./showa_business/SupplyRequest";
+// import SupplyRequestForm from "./showa_business/SupplyRequestForm";
+// import SupplyServices from "./showa_business/SupplyServices";
+// import SupplyRequestDetail from "./showa_business/SupplyRequestDetail";
+// import CreateServices from "./showa_business/CreateServices";
+// import SupplyRequestDetailScreen from "./showa_business/SupplyRequestDetailScreen";
+// import BroadcastHome from "./showa_business/BroadcastHome";
+// import CreateBroadcastPost from "./showa_business/CreateBroadcastPost";
+// import ReportPost from "./showa_business/ReportPost";
+// import BroadcastUserProfile from "./showa_business/BroadcastUserProfile";
+// import MarketPlace from "./showa_business/MarketPlace";
+// import CreateListing from "./showa_business/CreateListing";
+// import ListingDetails from "./showa_business/ListingDetails";
+// import SuggestedFollowers from "./showa_business/SuggestedFollowers";
+// import ManagePost from "./showa_business/ManagePost";
+// import CreatorDashboard from "./showa_business/CreatorDashboardScreen";
+// import ContractHome from "./showa_business/contracts/ContractHome";
+// import CreateAdForm from "./showa_business/ads/CreateAdFormScreen";
+// import AdReview from "./showa_business/ads/AdReview";
+// import BroadcastSuccess from "./showa_business/BroadcastSuccess";
+// import AllProducts from "./showa_business/AllProducts";
+// import OtherUserCatalog from "./showa_business/OthersUserCatalog";
+// import OtherUserCatalogDetail from "./showa_business/OtherUserCatalogDetail";
+// import BPrivateChat from "./showa_business/BusinessChat";
+// import BusinessGroupChat from "./showa_business/BusinessGroupChat";
+// import SupplierNotificationScreen from "./showa_business/SupplierNotificationScreen";
+// import RequesterPostHistory from "./showa_business/RequesterPostHistory";
+// import GroupMembers from "./showa_business/GroupMembers";
+// import SocialHome from "./showa_social/Home";
+// import Discover from "./showa_social/Discover";
+// import UploadshortVideo from "./showa_social/UploadshortVideo";
+// import SearchShort from "./showa_social/SearchShort";
+// import GroupCreate from "./screens/GroupCreate";
+// import GroupConnect from "./screens/GroupConnect";
+// import UserContactListPersonalAccount from "./components/UserContactListPersonalAccount";
+// import UpdateModal from "./components/UpdateModal";
+// import Music from "./components/Music";
+// import UserContactList from "./components/UserContactList";
+// import SyncMessagePersonal from "./components/SyncMessagePersonal";
+// import SyncContactForBusiness from "./components/SyncContactForBusiness";
+// import CameraScreen from "./components/CameraScreen";
+// import SongsList from "./components/SongsListScreen";
+// import NewCommunity from "./components/NewCommunityScreen";
+// import VideoCalls from "./components/VideoCalls";
+// import VoiceCalls from "./components/VoiceCalls";
+// import GoLive from "./components/GoLive";
+// import LiveStream from "./components/LiveStream";
+// import ContactUs from "./components/ContactUs";
+// import SuccessStory from "./components/SuccessStory";
+// import OtherUserProfile from "./screens/profiles/OtherUserProfile";
+// import EarningDashbord from "./screens/earning/EarningDashbord";
+// import WithdrawEarning from "./screens/earning/WithdrawEarning";
+// import PurchaseData from "./screens/earning/PurchaseData";
+// import NinRegisterEarning from "./screens/earning/NinRegisterEarning";
+// import VideoAds from "./screens/earning/VideoAds";
+// import EarningWallet from "./screens/earning/EarningWallet";
+// import SynMessage from "./components/SynMessage";
+// import SyncContactPersonal from "./components/UserContactPersonal";
+// import LiveStreaming from "./src/LiveStreaming";
+// import useAppUpdate from "./src/hooks/useAppUpdate";
+// import NotificationsScreen from "./screens/NotificationsScreen";
+// import GlobalIssueReport from "./components/GlobalIssueReport";
+// import NewsList from "./components/NewsList";
+// import Broadcaster from "./src/Broadcaster";
+// import Viewer from "./src/Viewer";
+
+// // ─── Linking ──────────────────────────────────────────────────────────────────
+// import { Linking } from "react-native";
+
+// const linking = {
+//   prefixes: ["showa://", "https://showapp.com", "http://showapp.com"],
+//   config: {
+//     screens: {
+//       AiResetPassword: "reset-password",
+//       PostDetail: {
+//         path: "post/:postId",
+//         parse: { postId: (id) => id },
+//       },
+//       UserProfile: {
+//         path: "user/:userId",
+//         parse: { userId: (id) => id },
+//       },
+//       NotFound: "*",
+//     },
+//   },
+//   getInitialURL: async () => {
+//     const url = await Linking.getInitialURL();
+//     console.log("Initial URL:", url);
+//     return url;
+//   },
+//   subscribe: (listener) => {
+//     const onReceiveURL = ({ url }) => {
+//       console.log("Received URL:", url);
+//       listener(url);
+//     };
+//     const subscription = Linking.addEventListener("url", onReceiveURL);
+//     return () => subscription.remove();
+//   },
+// };
+
+// // ─── Android 13+ permission helper ───────────────────────────────────────────
+// // CRITICAL FIX for silent launch crash on Android 13+:
+// // Android 13 (API 33) requires POST_NOTIFICATIONS at runtime. On many OEM
+// // builds (Samsung One UI 5+, Xiaomi MIUI 14, Oppo ColorOS 13, Tecno HiOS),
+// // Firebase Messaging throws a SecurityException during app init if this
+// // permission has never been requested, killing the app before JS loads.
+// // We request it as the VERY FIRST thing before any service starts.
+// const requestAndroid13Permissions = async () => {
+//   if (Platform.OS !== "android") return;
+
+//   try {
+//     const apiLevel = Platform.Version; // integer: 33, 34, 35...
+
+//     if (apiLevel >= 33) {
+//       // POST_NOTIFICATIONS — mandatory on Android 13+ for FCM / push alerts
+//       const notifGranted = await PermissionsAndroid.request(
+//         PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+//         {
+//           title: "Allow Notifications",
+//           message:
+//             "Showa needs permission to send you messages and call alerts.",
+//           buttonPositive: "Allow",
+//           buttonNegative: "Not now",
+//         }
+//       );
+//       console.log("POST_NOTIFICATIONS permission:", notifGranted);
+//     }
+
+//     if (apiLevel >= 31) {
+//       // BLUETOOTH_CONNECT — mandatory on Android 12+ for BT audio during calls
+//       const btGranted = await PermissionsAndroid.request(
+//         PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
+//       );
+//       console.log("BLUETOOTH_CONNECT permission:", btGranted);
+//     }
+//   } catch (err) {
+//     // Never let a permission error crash the app — log and continue
+//     console.error("Android permission request error:", err);
+//   }
+// };
+
+// // ─── Helpers ──────────────────────────────────────────────────────────────────
+// const stopWebRTCConnections = () => {
+//   try {
+//     if (global.__activeWebRTCConnections?.length > 0) {
+//       global.__activeWebRTCConnections.forEach((conn) => {
+//         try { conn?.close?.(); } catch (e) {}
+//       });
+//       global.__activeWebRTCConnections = [];
+//     }
+//   } catch (err) {
+//     console.error("Error stopping WebRTC:", err);
+//   }
+// };
+
+// const pauseAllVideos = () => {
+//   try {
+//     if (global.__activeVideoRefs?.length > 0) {
+//       global.__activeVideoRefs.forEach((ref) => {
+//         try {
+//           if (ref?.current && typeof ref.current.pause === "function") {
+//             ref.current.pause();
+//           }
+//         } catch (e) {}
+//       });
+//     }
+//   } catch (err) {
+//     console.error("Error pausing videos:", err);
+//   }
+// };
+
+// const freeMemory = () => {
+//   if (Platform.OS === "android") {
+//     try {
+//       if (global.gc) global.gc();
+//       if (global.__largeImageCache) delete global.__largeImageCache;
+//       if (global.__videoPrefetchCache) delete global.__videoPrefetchCache;
+//     } catch (err) {
+//       console.error("Error freeing memory:", err);
+//     }
+//   }
+// };
+
+// const stopBackgroundServices = () => {
+//   try {
+//     if (global.__backgroundSyncInterval) {
+//       clearInterval(global.__backgroundSyncInterval);
+//       global.__backgroundSyncInterval = null;
+//     }
+//     if (global.__contactSyncListener?.remove) {
+//       global.__contactSyncListener.remove();
+//       global.__contactSyncListener = null;
+//     }
+//     backgroundFetchService.stop();
+//   } catch (err) {
+//     console.error("Error stopping background services:", err);
+//   }
+// };
+
+// // ─── Stack ────────────────────────────────────────────────────────────────────
+// const Stack = createNativeStackNavigator();
+
+// // ─── ScreenWrapper ────────────────────────────────────────────────────────────
+// const ScreenWrapper = ({ children }) => {
+//   const { colors } = useTheme();
+//   return (
+//     <View style={{ flex: 1, backgroundColor: colors.background }}>
+//       {children}
+//     </View>
+//   );
+// };
+
+// // ─── Root ─────────────────────────────────────────────────────────────────────
+// export default function App() {
+//   return (
+//     <SafeAreaProvider>
+//       <ThemeProvider>
+//         <NotificationProvider>
+//           <AppContent />
+//         </NotificationProvider>
+//       </ThemeProvider>
+//     </SafeAreaProvider>
+//   );
+// }
+
+// // ─── AppContent ───────────────────────────────────────────────────────────────
+// // • Owns the ONE AppState listener (FIX 1 — ThemedNavigator has none)
+// // • All timers are in refs and cleared on unmount (FIX 2)
+// // • Startup is sequenced, not parallel (FIX 7)
+// // • useAppUpdate(false) — no auto-check race (FIX 8)
+// function AppContent() {
+//   const [userId, setUserId] = useState(null);
+//   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+//   const backgroundTimerRef = useRef(null);
+//   const updateTimerRef = useRef(null);
+//   const appStateRef = useRef(AppState.currentState);
+
+//   const { initializeNotifications } = useNotification();
+
+//   // FIX 8: false = hook does NOT auto-check; we call checkForUpdate ourselves
+//   const {
+//     updateInfo,
+//     showModal: showUpdateModal,
+//     dismissModal: dismissUpdateModal,
+//     checkForUpdate,
+//   } = useAppUpdate(false);
+
+//   // ── Sequenced startup (FIX 7 + Android 13 FIX) ────────────────────────────
+//   useEffect(() => {
+//     const init = async () => {
+//       try {
+//         // 1. Android 13+ permissions FIRST — before Firebase/FCM touches anything
+//         await requestAndroid13Permissions();
+//         // 2. Register FCM token, set up notification listeners
+//         await initializeNotifications();
+//         // 3. Read auth token from AsyncStorage
+//         await checkAuth();
+//       } catch (err) {
+//         console.error("Startup init error:", err);
+//       }
+//     };
+
+//     init();
+
+//     return () => {
+//       if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
+//     };
+//   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+//   const checkAuth = async () => {
+//     try {
+//       const token    = await AsyncStorage.getItem("userToken");
+//       const userData = await AsyncStorage.getItem("userData");
+
+//       if (token && userData) {
+//         const user = JSON.parse(userData);
+//         setUserId(user.id);
+//         setIsAuthenticated(true);
+
+//         // FIX 2: tracked, cancellable timer
+//         if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
+//         updateTimerRef.current = setTimeout(() => {
+//           checkForUpdate(true);
+//         }, 2000);
+//       } else {
+//         setIsAuthenticated(false);
+//       }
+//     } catch (err) {
+//       console.error("Error checking auth:", err);
+//       setIsAuthenticated(false);
+//     }
+//   };
+
+//   // ── Video prefetch ─────────────────────────────────────────────────────────
+//   useEffect(() => {
+//     if (!userId) return;
+
+//     let cancelled = false;
+//     const initVideoPrefetch = async () => {
+//       try {
+//         await videoBackgroundfetch.init(userId);
+//         if (!cancelled) {
+//           const cached = await videoBackgroundfetch.getCachedVideos();
+//           console.log("📦 Cached videos ready:", cached?.length || 0);
+//         }
+//       } catch (err) {
+//         console.error("Error initializing video prefetch:", err);
+//       }
+//     };
+
+//     initVideoPrefetch();
+
+//     return () => {
+//       cancelled = true;
+//       if (backgroundTimerRef.current) clearTimeout(backgroundTimerRef.current);
+//       stopBackgroundServices();
+//     };
+//   }, [userId]);
+
+//   // ── Single AppState listener (FIX 1) ──────────────────────────────────────
+//   useEffect(() => {
+//     const handleAppStateChange = (nextAppState) => {
+//       const currentState = appStateRef.current;
+
+//       if (currentState === "active" && nextAppState === "background") {
+//         console.log("📱 App → background");
+
+//         // FIX 4: fire-and-forget — never await inside an event handler
+//         if (navigationRef.current) {
+//           saveNavigationState(navigationRef.current.getRootState());
+//         }
+
+//         if (Platform.OS === "android") {
+//           pauseAllVideos();
+//           stopWebRTCConnections();
+
+//           if (backgroundTimerRef.current)
+//             clearTimeout(backgroundTimerRef.current);
+//           backgroundTimerRef.current = setTimeout(() => {
+//             console.log("🕐 30 s background — light cleanup");
+//             freeMemory();
+//           }, 30000);
+//         }
+//       } else if (currentState === "background" && nextAppState === "active") {
+//         console.log("📱 App → foreground");
+
+//         if (backgroundTimerRef.current) {
+//           clearTimeout(backgroundTimerRef.current);
+//           backgroundTimerRef.current = null;
+//         }
+
+//         // FIX 2: tracked timer
+//         if (isAuthenticated) {
+//           if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
+//           updateTimerRef.current = setTimeout(() => {
+//             checkForUpdate(true);
+//           }, 1000);
+//         }
+
+//         InteractionManager.runAfterInteractions(() => {
+//           console.log("✅ App resumed — screen state preserved");
+//         });
+//       }
+
+//       appStateRef.current = nextAppState;
+//     };
+
+//     const subscription = AppState.addEventListener("change", handleAppStateChange);
+
+//     return () => {
+//       subscription.remove();
+//       if (backgroundTimerRef.current) clearTimeout(backgroundTimerRef.current);
+//       if (updateTimerRef.current)     clearTimeout(updateTimerRef.current);
+//     };
+//   }, [userId, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+//   return (
+//     <GestureHandlerRootView style={{ flex: 1 }}>
+//       <CallProvider>
+//         <ThemedNavigator isAuthenticated={isAuthenticated} userId={userId} />
+//         <NetworkStatusBanner />
+
+//         {updateInfo?.update_available && (
+//           <UpdateModal
+//             visible={showUpdateModal}
+//             updateInfo={updateInfo}
+//             onClose={dismissUpdateModal}
+//           />
+//         )}
+//       </CallProvider>
+//     </GestureHandlerRootView>
+//   );
+// }
+
+// // ─── OnlineStatusManager ──────────────────────────────────────────────────────
+// const OnlineStatusManager = ({ userId }) => {
+//   if (!userId) return null;
+//   useOnlineStatus(userId);
+//   return null;
+// };
+
+// // ─── ThemedNavigator ──────────────────────────────────────────────────────────
+// // • NO AppState listener here (FIX 1)
+// // • Background services started once, here only (FIX 3)
+// // • Navigation state restored only when token exists (FIX 5)
+// // • detachPreviousScreen: false REMOVED — saves RAM on all devices (FIX 6)
+// // • PIN check runs after isAuthenticated is known (FIX 7)
+// function ThemedNavigator({ isAuthenticated, userId }) {
+//   const { theme, colors } = useTheme();
+//   const [showPinModal,            setShowPinModal]            = useState(false);
+//   const [isLoading,               setIsLoading]               = useState(true);
+//   const [isNavigationReady,       setIsNavigationReady]       = useState(false);
+//   const [initialNavigationState,  setInitialNavigationState]  = useState(undefined);
+
+//   const navSaveTimerRef   = useRef(null);
+//   const forceFetchTimerRef = useRef(null);
+
+//   const customTheme = {
+//     dark: theme === "dark",
+//     colors: {
+//       primary:      colors.primary,
+//       background:   colors.background,
+//       card:         colors.surface || colors.card || colors.background,
+//       text:         colors.text,
+//       border:       colors.border,
+//       notification: colors.primary,
+//     },
+//     fonts: {
+//       regular: { fontFamily: "System", fontWeight: "400" },
+//       medium:  { fontFamily: "System", fontWeight: "500" },
+//       bold:    { fontFamily: "System", fontWeight: "700" },
+//       heavy:   { fontFamily: "System", fontWeight: "900" },
+//     },
+//   };
+
+//   // FIX 5: restore nav state only when token exists; clear it if not
+//   useEffect(() => {
+//     const restoreState = async () => {
+//       try {
+//         const token = await AsyncStorage.getItem("userToken");
+//         if (token) {
+//           const saved = await loadNavigationState();
+//           if (saved) setInitialNavigationState(saved);
+//         } else {
+//           await AsyncStorage.removeItem(NAVIGATION_STATE_KEY);
+//         }
+//       } catch (err) {
+//         console.error("Error restoring navigation state:", err);
+//       } finally {
+//         setIsNavigationReady(true);
+//       }
+//     };
+
+//     restoreState();
+
+//     if (!global.__activeWebRTCConnections) global.__activeWebRTCConnections = [];
+//     if (!global.__activeVideoRefs)         global.__activeVideoRefs = [];
+//     if (!global.__pendingRequests)         global.__pendingRequests = [];
+
+//     return () => {
+//       if (navSaveTimerRef.current)    clearTimeout(navSaveTimerRef.current);
+//       if (forceFetchTimerRef.current) clearTimeout(forceFetchTimerRef.current);
+//     };
+//   }, []);
+
+//   // FIX 7: PIN check runs after auth state is set by AppContent
+//   useEffect(() => {
+//     checkPinRequirement();
+//   }, [isAuthenticated]);
+
+//   const checkPinRequirement = async () => {
+//     try {
+//       const pinEnabled = await AsyncStorage.getItem("pin_enabled");
+//       const token      = await AsyncStorage.getItem("userToken");
+//       if (pinEnabled === "true" && token) {
+//         const status = await checkPinStatus(token);
+//         if (status?.has_pin) setShowPinModal(true);
+//       }
+//     } catch (err) {
+//       console.error("Error checking PIN:", err);
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   // FIX 3: background services started here only — not in AppContent
+//   // FIX 9: reset global.__backgroundServicesRunning = false in your logout handler
+//   useEffect(() => {
+//     if (!userId) return;
+
+//     if (!global.__backgroundServicesRunning) {
+//       backgroundFetchService.init();
+//       startBackgroundContactSync();
+//       setupContactSyncListener();
+//       global.__backgroundServicesRunning = true;
+
+//       // FIX 2: tracked timer
+//       forceFetchTimerRef.current = setTimeout(() => {
+//         backgroundFetchService.forceFetch();
+//       }, 2000);
+//     }
+
+//     return () => {
+//       if (forceFetchTimerRef.current) clearTimeout(forceFetchTimerRef.current);
+//     };
+//   }, [userId]);
+
+//   // Debounced nav state save — fire-and-forget (FIX 4)
+//   const handleNavigationStateChange = (state) => {
+//     if (!state) return;
+//     if (navSaveTimerRef.current) clearTimeout(navSaveTimerRef.current);
+//     navSaveTimerRef.current = setTimeout(() => {
+//       saveNavigationState(state);
+//     }, 1000);
+//   };
+
+//   if (isLoading || !isNavigationReady) {
+//     return (
+//       <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: "center", alignItems: "center" }}>
+//         <ActivityIndicator size="large" color={colors.primary} />
+//       </View>
+//     );
+//   }
+
+//   return (
+//     <NavigationContainer
+//       ref={navigationRef}
+//       linking={linking}
+//       theme={customTheme}
+//       initialState={initialNavigationState}
+//       onStateChange={handleNavigationStateChange}
+//     >
+//       {isAuthenticated && <OnlineStatusManager userId={userId} />}
+
+//       <RNStatusBar
+//         barStyle={theme === "dark" ? "light-content" : "dark-content"}
+//         backgroundColor={colors.background}
+//       />
+
+//       <PinUnlockModal
+//         visible={showPinModal}
+//         onClose={() => setShowPinModal(false)}
+//         navigation={navigationRef.current}
+//       />
+
+//       {/* FIX 6: detachPreviousScreen: false removed.
+//           Default RN behaviour only mounts the ACTIVE screen — this alone
+//           can cut RAM usage by 60-70% on a 80-screen app.
+//           If you need one specific screen to stay mounted (e.g. active chat),
+//           add options={{ detachPreviousScreen: false }} to that screen ONLY. */}
+//       <Stack.Navigator
+//         initialRouteName="Loginscreen"
+//         screenOptions={{
+//           headerShown: false,
+//           contentStyle: { backgroundColor: colors.background },
+//         }}
+//       >
+//         {/* ── Authentication ─────────────────────────────────────────────── */}
+//         <Stack.Screen name="Loginscreen">
+//           {(props) => <ScreenWrapper><Loginscreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Signin">
+//           {(props) => <ScreenWrapper><Signin {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Signin_two">
+//           {(props) => <ScreenWrapper><Signin_two {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Register">
+//           {(props) => <ScreenWrapper><Register {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="VerificationCode">
+//           {(props) => <ScreenWrapper><VerificationCode {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="LinkingScreen">
+//           {(props) => <ScreenWrapper><LinkingScreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Biometric">
+//           {(props) => <ScreenWrapper><Biometric {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="ProceedOptions">
+//           {(props) => <ScreenWrapper><ProceedOptions {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Terms">
+//           {(props) => <ScreenWrapper><Terms {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="TermsCondition">
+//           {(props) => <ScreenWrapper><TermsCondition {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="PrivacyPolicy">
+//           {(props) => <ScreenWrapper><PrivacyPolicy {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+
+//         {/* ── Personal account ───────────────────────────────────────────── */}
+//         <Stack.Screen name="PHome">
+//           {(props) => <ScreenWrapper><PHome {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="UserPersonalAccountProfile">
+//           {(props) => <ScreenWrapper><UserPersonalAccountProfile {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SyncContactForBusiness">
+//           {(props) => <ScreenWrapper><SyncContactForBusiness {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="PStatusBar">
+//           {(props) => <ScreenWrapper><PStatusBar {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="StatusEditorScreen">
+//           {(props) => <ScreenWrapper><StatusEditorScreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="JoinChannel">
+//           {(props) => <ScreenWrapper><JoinChannel {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Calls">
+//           {(props) => <ScreenWrapper><Calls {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="CallOngoingScreen">
+//           {(props) => <ScreenWrapper><CallOngoingScreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Settings">
+//           {(props) => <ScreenWrapper><Settings {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="NotificationsScreen">
+//           {(props) => <ScreenWrapper><NotificationsScreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="NotificationSetting">
+//           {(props) => <ScreenWrapper><NotificationSetting {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="WallpaperSetting">
+//           {(props) => <ScreenWrapper><WallpaperSetting {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="FaceSecuritySetting">
+//           {(props) => <ScreenWrapper><FaceSecuritySetting {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="PrivateChat">
+//           {(props) => <ScreenWrapper><PrivateChat {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+
+//         {/* ── Business account ───────────────────────────────────────────── */}
+//         <Stack.Screen name="BusinessHome">
+//           {(props) => <ScreenWrapper><BusinessHome {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="PostDetails">
+//           {(props) => <ScreenWrapper><PostDetails {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="ChannelDetails">
+//           {(props) => <ScreenWrapper><ChannelDetails {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="ChannelAdminManagement">
+//           {(props) => <ScreenWrapper><ChannelAdminManagement {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BUserProfile">
+//           {(props) => <ScreenWrapper><BUserProfile {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BStatusBar">
+//           {(props) => <ScreenWrapper><BStatusBar {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BStatusEditorScreen">
+//           {(props) => <ScreenWrapper><BStatusEditorScreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BJoinChannel">
+//           {(props) => <ScreenWrapper><BJoinChannel {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BCalls">
+//           {(props) => <ScreenWrapper><BCalls {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BCallOngoingScreen">
+//           {(props) => <ScreenWrapper><BCallOngoingScreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BSettings">
+//           {(props) => <ScreenWrapper><BSettings {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BNotificationSetting">
+//           {(props) => <ScreenWrapper><BNotificationSetting {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BWallpaperSetting">
+//           {(props) => <ScreenWrapper><BWallpaperSetting {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BFaceSecuritySetting">
+//           {(props) => <ScreenWrapper><BFaceSecuritySetting {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="ToolsScreen">
+//           {(props) => <ScreenWrapper><ToolsScreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="QuickReplies">
+//           {(props) => <ScreenWrapper><QuickReplies {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="AddQuickReply">
+//           {(props) => <ScreenWrapper><AddQuickReply {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="EssentialPlatforms">
+//           {(props) => <ScreenWrapper><EssentialPlatformsScreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Advertise">
+//           {(props) => <ScreenWrapper><Advertise {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="ManageProfile">
+//           {(props) => <ScreenWrapper><ManageProfile {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="CreateCatalog">
+//           {(props) => <ScreenWrapper><CreateCatalog {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Explore">
+//           {(props) => <ScreenWrapper><Explore {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="AddItemToCatalog">
+//           {(props) => <ScreenWrapper><AddItemToCatalog {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="LabelChats">
+//           {(props) => <ScreenWrapper><LabelChats {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Labels">
+//           {(props) => <ScreenWrapper><Labels {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="AddQuickReplyScreen">
+//           {(props) => <ScreenWrapper><AddQuickReplyScreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="GreetingMessage">
+//           {(props) => <ScreenWrapper><GreetingMessage {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="AwayMessage">
+//           {(props) => <ScreenWrapper><AwayMessage {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="HelpCenter">
+//           {(props) => <ScreenWrapper><HelpCenter {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="HelpTopic">
+//           {(props) => <ScreenWrapper><HelpTopic {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BusinessSetup">
+//           {(props) => <ScreenWrapper><BusinessSetup {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="ProductDetails">
+//           {(props) => <ScreenWrapper><ProductDetails {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Cart">
+//           {(props) => <ScreenWrapper><Cart {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="EmptyCart">
+//           {(props) => <ScreenWrapper><EmptyCart {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Broadcast">
+//           {(props) => <ScreenWrapper><Broadcast {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="OfficialSearch">
+//           {(props) => <ScreenWrapper><OfficialSearch {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Live">
+//           {(props) => <ScreenWrapper><Live {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="OoshBusiness">
+//           {(props) => <ScreenWrapper><OoshBusiness {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="CreateChannel">
+//           {(props) => <ScreenWrapper><CreateChannel {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="InviteChannelLink">
+//           {(props) => <ScreenWrapper><InviteChannelLink {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Supplyrequest">
+//           {(props) => <ScreenWrapper><Supplyrequest {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SupplyRequestForm">
+//           {(props) => <ScreenWrapper><SupplyRequestForm {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SupplyServices">
+//           {(props) => <ScreenWrapper><SupplyServices {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SupplyRequestDetail">
+//           {(props) => <ScreenWrapper><SupplyRequestDetail {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="CreateServices">
+//           {(props) => <ScreenWrapper><CreateServices {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SupplyRequestDetailScreen">
+//           {(props) => <ScreenWrapper><SupplyRequestDetailScreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BroadcastHome">
+//           {(props) => <ScreenWrapper><BroadcastHome {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="CreateBroadcastPost">
+//           {(props) => <ScreenWrapper><CreateBroadcastPost {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="ReportPost">
+//           {(props) => <ScreenWrapper><ReportPost {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BroadcastUserProfile">
+//           {(props) => <ScreenWrapper><BroadcastUserProfile {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="MarketPlace">
+//           {(props) => <ScreenWrapper><MarketPlace {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="CreateListing">
+//           {(props) => <ScreenWrapper><CreateListing {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="ListingDetails">
+//           {(props) => <ScreenWrapper><ListingDetails {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SuggestedFollowers">
+//           {(props) => <ScreenWrapper><SuggestedFollowers {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="ManagePost">
+//           {(props) => <ScreenWrapper><ManagePost {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="CreatorDashboard">
+//           {(props) => <ScreenWrapper><CreatorDashboard {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="MonetizationRequestForm">
+//           {(props) => <ScreenWrapper><MonetizationRequestForm {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="ChatAi">
+//           {(props) => <ScreenWrapper><ChatAi {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="ContractHome">
+//           {(props) => <ScreenWrapper><ContractHome {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="CreateAdForm">
+//           {(props) => <ScreenWrapper><CreateAdForm {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="AdReview">
+//           {(props) => <ScreenWrapper><AdReview {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BroadcastSuccess">
+//           {(props) => <ScreenWrapper><BroadcastSuccess {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="AllProducts">
+//           {(props) => <ScreenWrapper><AllProducts {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="OtherUserCatalog">
+//           {(props) => <ScreenWrapper><OtherUserCatalog {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="OtherUserCatalogDetail">
+//           {(props) => <ScreenWrapper><OtherUserCatalogDetail {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BPrivateChat">
+//           {(props) => <ScreenWrapper><BPrivateChat {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="BusinessGroupChat">
+//           {(props) => <ScreenWrapper><BusinessGroupChat {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SupplierNotificationScreen">
+//           {(props) => <ScreenWrapper><SupplierNotificationScreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="RequesterPostHistory">
+//           {(props) => <ScreenWrapper><RequesterPostHistory {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="GroupMembers">
+//           {(props) => <ScreenWrapper><GroupMembers {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+
+//         {/* ── Social ─────────────────────────────────────────────────────── */}
+//         <Stack.Screen name="SocialHome">
+//           {(props) => <ScreenWrapper><SocialHome {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Discover">
+//           {(props) => <ScreenWrapper><Discover {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="UploadshortVideo">
+//           {(props) => <ScreenWrapper><UploadshortVideo {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SearchShort">
+//           {(props) => <ScreenWrapper><SearchShort {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+
+//         {/* ── Features ───────────────────────────────────────────────────── */}
+//         <Stack.Screen name="Music">
+//           {(props) => <ScreenWrapper><Music {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="GroupCreate">
+//           {(props) => <ScreenWrapper><GroupCreate {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="GroupConnect">
+//           {(props) => <ScreenWrapper><GroupConnect {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="UserContactList">
+//           {(props) => <ScreenWrapper><UserContactList {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SynMessage">
+//           {(props) => <ScreenWrapper><SynMessage {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SyncContactPersonal">
+//           {(props) => <ScreenWrapper><SyncContactPersonal {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="UserContactListPersonalAccount">
+//           {(props) => <ScreenWrapper><UserContactListPersonalAccount {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SyncMessagePersonal">
+//           {(props) => <ScreenWrapper><SyncMessagePersonal {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="CameraScreen">
+//           {(props) => <ScreenWrapper><CameraScreen {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SongsList">
+//           {(props) => <ScreenWrapper><SongsList {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="NewCommunity">
+//           {(props) => <ScreenWrapper><NewCommunity {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="VideoCalls">
+//           {(props) => <ScreenWrapper><VideoCalls {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="VoiceCalls">
+//           {(props) => <ScreenWrapper><VoiceCalls {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="GoLive">
+//           {(props) => <ScreenWrapper><GoLive {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="LiveStream">
+//           {(props) => <ScreenWrapper><LiveStream {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="ContactUs">
+//           {(props) => <ScreenWrapper><ContactUs {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="SuccessStory">
+//           {(props) => <ScreenWrapper><SuccessStory {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="OtherUserProfile">
+//           {(props) => <ScreenWrapper><OtherUserProfile {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="LiveStreaming">
+//           {(props) => <ScreenWrapper><LiveStreaming {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="GlobalIssueReport">
+//           {(props) => <ScreenWrapper><GlobalIssueReport {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="NewsList">
+//           {(props) => <ScreenWrapper><NewsList {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Broadcaster">
+//           {(props) => <ScreenWrapper><Broadcaster {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="Viewer">
+//           {(props) => <ScreenWrapper><Viewer {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+
+//         {/* ── Earning ────────────────────────────────────────────────────── */}
+//         <Stack.Screen name="EarningDashbord">
+//           {(props) => <ScreenWrapper><EarningDashbord {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="WithdrawEarning">
+//           {(props) => <ScreenWrapper><WithdrawEarning {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="PurchaseData">
+//           {(props) => <ScreenWrapper><PurchaseData {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="NinRegisterEarning">
+//           {(props) => <ScreenWrapper><NinRegisterEarning {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="VideoAds">
+//           {(props) => <ScreenWrapper><VideoAds {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+//         <Stack.Screen name="EarningWallet">
+//           {(props) => <ScreenWrapper><EarningWallet {...props} /></ScreenWrapper>}
+//         </Stack.Screen>
+
+//         {/* ── Modal ──────────────────────────────────────────────────────── */}
+//         <Stack.Screen
+//           name="CallOverlay"
+//           component={IncomingCallModal}
+//           options={{
+//             presentation: "transparentModal",
+//             animation: "fade",
+//             contentStyle: { backgroundColor: "transparent" },
+//           }}
+//         />
+//       </Stack.Navigator>
+
+//       {userId && <CallSignalListener userId={userId} />}
+//     </NavigationContainer>
+//   );
+// }
+
+// // ─── Logout helper ────────────────────────────────────────────────────────────
+// // Import and call this from your logout button.
+// // FIX 9: resets service flag so they restart on next login.
+// // FIX 5: clears stale navigation state so user lands on Login.
+// export const handleAppLogout = async (clearTokenFn) => {
+//   try {
+//     global.__backgroundServicesRunning = false;
+//     global.__activeWebRTCConnections   = [];
+//     global.__activeVideoRefs           = [];
+
+//     stopBackgroundServices();
+
+//     await AsyncStorage.multiRemove([
+//       NAVIGATION_STATE_KEY,
+//       "userToken",
+//       "userData",
+//     ]);
+
+//     if (typeof clearTokenFn === "function") await clearTokenFn();
+//   } catch (err) {
+//     console.error("Error during logout cleanup:", err);
+//   }
+// };
+
+
 import React, { useEffect, useState, useRef } from "react";
 import {
   AppState,
@@ -5042,13 +6174,11 @@ import {
   ActivityIndicator,
   StatusBar as RNStatusBar,
   InteractionManager,
-  Image,
-  NativeModules,
   LogBox,
-  PermissionsAndroid, // ← ANDROID 13+ FIX
+  PermissionsAndroid, 
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, CommonActions } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -5058,12 +6188,19 @@ import {
   useNotification,
 } from "./src/context/NotificationContext";
 
+const BLOCKED_AUTO_NAVIGATION_SCREENS  = [
+  "SocialHome",
+  "Discover", 
+  "SearchShort", 
+];
+
 // ─── Navigation ref ───────────────────────────────────────────────────────────
 const navigationRef = React.createRef();
-
-// ─── Navigation persistence ───────────────────────────────────────────────────
 const NAVIGATION_STATE_KEY = "NAVIGATION_STATE";
 
+
+
+// Fire-and-forget — never awaited inside event handlersgggg
 const saveNavigationState = (state) => {
   if (!state) return;
   AsyncStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify(state)).catch(
@@ -5088,7 +6225,7 @@ LogBox.ignoreLogs([
   "VirtualizedLists should never be nested",
 ]);
 
-// ─── Imports ──────────────────────────────────────────────────────────────────
+// ─── All imports ──────────────────────────────────────────────────────────────
 import { checkPinStatus } from "./showa_personal_account_screen/FaceSecuritySetting";
 import PinUnlockModal from "./screens/PinUnlockModal";
 import videoBackgroundfetch from "./src/services/VideoBackgroundFetch";
@@ -5103,8 +6240,6 @@ import {
   setupContactSyncListener,
 } from "./components/BackgroundSync";
 import backgroundFetchService from "./src/services/BackgroundFetchService";
-
-// ─── Screen imports ───────────────────────────────────────────────────────────
 import Loginscreen from "./screens/Loginscreen";
 import Signin from "./screens/onboard/SignIn";
 import Signin_two from "./screens/onboard/SignIn2_two";
@@ -5199,6 +6334,7 @@ import SupplierNotificationScreen from "./showa_business/SupplierNotificationScr
 import RequesterPostHistory from "./showa_business/RequesterPostHistory";
 import GroupMembers from "./showa_business/GroupMembers";
 import SocialHome from "./showa_social/Home";
+import ShortDetail from "./showa_social/ShortDetailScreen";
 import Discover from "./showa_social/Discover";
 import UploadshortVideo from "./showa_social/UploadshortVideo";
 import SearchShort from "./showa_social/SearchShort";
@@ -5239,30 +6375,80 @@ import Viewer from "./src/Viewer";
 // ─── Linking ──────────────────────────────────────────────────────────────────
 import { Linking } from "react-native";
 
+// const linking = {
+//   prefixes: ["showa://", "https://showapp.com", "http://showapp.com"],
+//   config: {
+//     screens: {
+//       PostDetails: {
+//         path: "post/:postId",
+//         parse: { postId: (id) => id },
+//       },
+//       ShortVideoDetails: {
+//         path: "short/:shortId",
+//         parse: { shortId: (id) => id },
+//       },
+//       OtherUserProfile: {
+//         path: "user/:userId",
+//         parse: { userId: (id) => id },
+//       },
+//     },
+//   },
+//   getInitialURL: async () => {
+//     const url = await Linking.getInitialURL();
+//     console.log("Initial URL:", url);
+//     return url;
+//   },
+//   subscribe: (listener) => {
+//     const sub = Linking.addEventListener("url", ({ url }) => listener(url));
+//     return () => sub.remove();
+//   },
+// };
+
+
 const linking = {
   prefixes: ["showa://", "https://showapp.com", "http://showapp.com"],
   config: {
     screens: {
-      AiResetPassword: "reset-password",
+      ShortDetail: {
+        path: "short/:shortId",
+        parse: {
+          shortId: (shortId) => {
+            console.log("📱 Linking - Parsing shortId:", shortId);
+            return shortId;
+          }
+        }
+      },
       PostDetail: {
         path: "post/:postId",
-        parse: { postId: (id) => id },
+        parse: {
+          postId: (postId) => {
+            console.log("📱 Linking - Parsing postId:", postId);
+            return postId;
+          }
+        }
       },
-      UserProfile: {
+      OtherUserProfile: {
         path: "user/:userId",
-        parse: { userId: (id) => id },
+        parse: {
+          userId: (userId) => userId
+        }
       },
       NotFound: "*",
     },
   },
   getInitialURL: async () => {
-    const url = await Linking.getInitialURL();
-    console.log("Initial URL:", url);
-    return url;
+    try {
+      const url = await Linking.getInitialURL();
+      console.log("🔗 Linking.getInitialURL:", url);
+      return url;
+    } catch (err) {
+      console.error("Error in getInitialURL:", err);
+      return null;
+    }
   },
   subscribe: (listener) => {
     const onReceiveURL = ({ url }) => {
-      console.log("Received URL:", url);
+      console.log("🔔 Linking.subscribe received:", url);
       listener(url);
     };
     const subscription = Linking.addEventListener("url", onReceiveURL);
@@ -5270,86 +6456,253 @@ const linking = {
   },
 };
 
-// ─── Android 13+ permission helper ───────────────────────────────────────────
-// CRITICAL FIX for silent launch crash on Android 13+:
-// Android 13 (API 33) requires POST_NOTIFICATIONS at runtime. On many OEM
-// builds (Samsung One UI 5+, Xiaomi MIUI 14, Oppo ColorOS 13, Tecno HiOS),
-// Firebase Messaging throws a SecurityException during app init if this
-// permission has never been requested, killing the app before JS loads.
-// We request it as the VERY FIRST thing before any service starts.
-const requestAndroid13Permissions = async () => {
+const useDeepLinkHandler = () => {
+  useEffect(() => {
+    const handleDeepLink = async (event) => {
+      const { url } = event;
+      console.log("🔗 Deep link received:", url);
+      
+      if (!url || !navigationRef.current) {
+        console.log("❌ No URL or navigation ref available");
+        return;
+      }
+      
+      // Wait a bit for navigation to be ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Check for short video deep link
+      // Supports formats: showa://short/19, showa://s/19, https://showapp.com/short/19
+      const shortMatch = url.match(/\/(?:short|s)\/(\d+)/);
+      if (shortMatch) {
+        const shortId = shortMatch[1];
+        console.log("🎬 Navigating to ShortDetail with ID:", shortId);
+        
+        try {
+          navigationRef.current.dispatch(
+            CommonActions.navigate({
+              name: 'ShortDetail',
+              params: { 
+                shortId: parseInt(shortId, 10),
+                id: parseInt(shortId, 10),
+                short_id: parseInt(shortId, 10)
+              },
+            })
+          );
+          console.log("✅ ShortDetail navigation dispatched");
+        } catch (error) {
+          console.error("❌ Failed to navigate to ShortDetail:", error);
+        }
+        return;
+      }
+      
+      // Check for post deep link
+      // Supports formats: showa://post/97, showa://p/97, https://showapp.com/post/97
+      const postMatch = url.match(/\/(?:post|p)\/(\d+)/);
+      if (postMatch) {
+        const postId = postMatch[1];
+        console.log("📝 Navigating to PostDetail with ID:", postId);
+        
+        try {
+          navigationRef.current.dispatch(
+            CommonActions.navigate({
+              name: 'PostDetails',
+              params: { 
+                postId: parseInt(postId, 10),
+                id: parseInt(postId, 10),
+                post_id: parseInt(postId, 10)
+              },
+            })
+          );
+          console.log("✅ PostDetail navigation dispatched");
+        } catch (error) {
+          console.error("❌ Failed to navigate to PostDetail:", error);
+        }
+        return;
+      }
+      
+      // Check for user profile deep link
+      const userMatch = url.match(/\/(?:user|u)\/(\d+)/);
+      if (userMatch) {
+        const userId = userMatch[1];
+        console.log("👤 Navigating to UserProfile with ID:", userId);
+        
+        try {
+          navigationRef.current.dispatch(
+            CommonActions.navigate({
+              name: 'OtherUserProfile',
+              params: { userId: parseInt(userId, 10) },
+            })
+          );
+          console.log("✅ UserProfile navigation dispatched");
+        } catch (error) {
+          console.error("❌ Failed to navigate to UserProfile:", error);
+        }
+        return;
+      }
+      
+      console.log("⚠️ No matching deep link pattern found for URL:", url);
+    };
+    
+    // Check initial URL when app starts
+    const checkInitialUrl = async () => {
+      try {
+        const url = await Linking.getInitialURL();
+        if (url) {
+          console.log("📱 Initial deep link detected:", url);
+          // Small delay to ensure app is fully initialized
+          setTimeout(() => {
+            handleDeepLink({ url });
+          }, 500);
+        } else {
+          console.log("📱 No initial deep link detected");
+        }
+      } catch (error) {
+        console.error("❌ Error checking initial URL:", error);
+      }
+    };
+    
+    checkInitialUrl();
+    
+    // Listen for subsequent deep links while app is running
+    const subscription = Linking.addEventListener('url', (event) => {
+      console.log("🔔 Deep link event received:", event.url);
+      handleDeepLink(event);
+    });
+    
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+};
+
+// const linking = {
+//   prefixes: ["showa://", "https://showapp.com", "http://showapp.com"],
+//   config: {
+//     screens: {
+//       AiResetPassword: "reset-password",
+//       PostDetail: {
+//         path: "post/:postId",
+//         parse: { postId: (id) => id },
+//       },
+//       UserProfile: {
+//         path: "user/:userId",
+//         parse: { userId: (id) => id },
+//       },
+//       NotFound: "*",
+//     },
+//   },
+//   getInitialURL: async () => {
+//     const url = await Linking.getInitialURL();
+//     console.log("Initial URL:", url);
+//     return url;
+//   },
+//   subscribe: (listener) => {
+//     const sub = Linking.addEventListener("url", ({ url }) => listener(url));
+//     return () => sub.remove();
+//   },
+// };
+
+
+
+// ─── Android permission helper (API 13 / 14 / 15+) ───────────────────────────
+//
+// WHY THIS ORDER MATTERS:
+//   Android 13 (API 33): POST_NOTIFICATIONS + READ_MEDIA_* required at runtime
+//   Android 14 (API 34): Stricter foreground service type checks (manifest fix)
+//   Android 15 (API 35): READ_MEDIA_VISUAL_USER_SELECTED required for media picker
+//                         Edge-to-edge enforced system-wide
+//                         MissingForegroundServiceTypeException kills app silently
+//
+// This function must complete BEFORE initializeNotifications() is called,
+// otherwise Firebase Messaging throws SecurityException on API 33+ (silent kill).
+//
+const requestRuntimePermissions = async () => {
   if (Platform.OS !== "android") return;
 
   try {
-    const apiLevel = Platform.Version; // integer: 33, 34, 35...
+    const api = Platform.Version; // e.g. 33, 34, 35
+    console.log(`📱 Android API level: ${api}`);
 
-    if (apiLevel >= 33) {
-      // POST_NOTIFICATIONS — mandatory on Android 13+ for FCM / push alerts
-      const notifGranted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-        {
-          title: "Allow Notifications",
-          message:
-            "Showa needs permission to send you messages and call alerts.",
-          buttonPositive: "Allow",
-          buttonNegative: "Not now",
-        }
+    const toRequest = [];
+
+    // ── API 33+ (Android 13+) ─────────────────────────────────────────────
+    if (api >= 33) {
+      // Required BEFORE Firebase Messaging initialises — without this the
+      // app throws SecurityException and silently crashes on launch.
+      toRequest.push(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+
+      // Granular media permissions replace READ_EXTERNAL_STORAGE on API 33+
+      toRequest.push(
+        PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
+        PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
+        PermissionsAndroid.PERMISSIONS.READ_MEDIA_AUDIO
       );
-      console.log("POST_NOTIFICATIONS permission:", notifGranted);
     }
 
-    if (apiLevel >= 31) {
-      // BLUETOOTH_CONNECT — mandatory on Android 12+ for BT audio during calls
-      const btGranted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
-      );
-      console.log("BLUETOOTH_CONNECT permission:", btGranted);
+    // ── API 35+ (Android 15+) ─────────────────────────────────────────────
+    // READ_MEDIA_VISUAL_USER_SELECTED enables the new partial photo picker.
+    // Without it the system photo picker crashes the app on Android 15 devices
+    // (Pixel 9, Samsung S25, etc.) when the user selects media.
+    if (api >= 35) {
+      // Only add if the permission constant exists in this version of RN
+      if (PermissionsAndroid.PERMISSIONS.READ_MEDIA_VISUAL_USER_SELECTED) {
+        toRequest.push(
+          PermissionsAndroid.PERMISSIONS.READ_MEDIA_VISUAL_USER_SELECTED
+        );
+      }
     }
+
+    if (toRequest.length === 0) return;
+
+    const results = await PermissionsAndroid.requestMultiple(toRequest);
+
+    // Log results — never crash the app because of a denied permission
+    toRequest.forEach((perm) => {
+      const name = perm.split(".").pop();
+      const result = results[perm];
+      console.log(
+        `  ${result === PermissionsAndroid.RESULTS.GRANTED ? "✅" : "⚠️"} ${name}: ${result}`
+      );
+    });
   } catch (err) {
-    // Never let a permission error crash the app — log and continue
-    console.error("Android permission request error:", err);
+    // Never let permission errors kill the app
+    console.error("Permission request error (non-fatal):", err);
   }
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const stopWebRTCConnections = () => {
   try {
-    if (global.__activeWebRTCConnections?.length > 0) {
-      global.__activeWebRTCConnections.forEach((conn) => {
-        try { conn?.close?.(); } catch (e) {}
-      });
-      global.__activeWebRTCConnections = [];
-    }
+    (global.__activeWebRTCConnections || []).forEach((conn) => {
+      try { conn && conn.close && conn.close(); } catch (_) {}
+    });
+    global.__activeWebRTCConnections = [];
   } catch (err) {
-    console.error("Error stopping WebRTC:", err);
+    console.error("stopWebRTCConnections:", err);
   }
 };
 
 const pauseAllVideos = () => {
   try {
-    if (global.__activeVideoRefs?.length > 0) {
-      global.__activeVideoRefs.forEach((ref) => {
-        try {
-          if (ref?.current && typeof ref.current.pause === "function") {
-            ref.current.pause();
-          }
-        } catch (e) {}
-      });
-    }
+    (global.__activeVideoRefs || []).forEach((ref) => {
+      try {
+        if (ref && ref.current && typeof ref.current.pause === "function")
+          ref.current.pause();
+      } catch (_) {}
+    });
   } catch (err) {
-    console.error("Error pausing videos:", err);
+    console.error("pauseAllVideos:", err);
   }
 };
 
 const freeMemory = () => {
-  if (Platform.OS === "android") {
-    try {
-      if (global.gc) global.gc();
-      if (global.__largeImageCache) delete global.__largeImageCache;
-      if (global.__videoPrefetchCache) delete global.__videoPrefetchCache;
-    } catch (err) {
-      console.error("Error freeing memory:", err);
-    }
+  if (Platform.OS !== "android") return;
+  try {
+    if (global.gc) global.gc();
+    delete global.__largeImageCache;
+    delete global.__videoPrefetchCache;
+  } catch (err) {
+    console.error("freeMemory:", err);
   }
 };
 
@@ -5365,7 +6718,7 @@ const stopBackgroundServices = () => {
     }
     backgroundFetchService.stop();
   } catch (err) {
-    console.error("Error stopping background services:", err);
+    console.error("stopBackgroundServices:", err);
   }
 };
 
@@ -5396,10 +6749,15 @@ export default function App() {
 }
 
 // ─── AppContent ───────────────────────────────────────────────────────────────
-// • Owns the ONE AppState listener (FIX 1 — ThemedNavigator has none)
-// • All timers are in refs and cleared on unmount (FIX 2)
-// • Startup is sequenced, not parallel (FIX 7)
-// • useAppUpdate(false) — no auto-check race (FIX 8)
+// Launch sequence (all Android versions):
+//   1. requestRuntimePermissions()  ← MUST be first — before any service init
+//   2. initializeNotifications()    ← safe after permission granted
+//   3. checkAuth()                  ← reads user state
+//
+// Single AppState listener — ThemedNavigator has none.
+// Every timer stored in a ref and cleared on unmount.
+// isMountedRef guards against setState on unmounted component.
+
 function AppContent() {
   const [userId, setUserId] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -5407,10 +6765,10 @@ function AppContent() {
   const backgroundTimerRef = useRef(null);
   const updateTimerRef = useRef(null);
   const appStateRef = useRef(AppState.currentState);
+  const isMountedRef = useRef(true);
 
   const { initializeNotifications } = useNotification();
-
-  // FIX 8: false = hook does NOT auto-check; we call checkForUpdate ourselves
+  // false = we call checkForUpdate manually at safe moments only
   const {
     updateInfo,
     showModal: showUpdateModal,
@@ -5418,70 +6776,77 @@ function AppContent() {
     checkForUpdate,
   } = useAppUpdate(false);
 
-  // ── Sequenced startup (FIX 7 + Android 13 FIX) ────────────────────────────
+  // ── Sequenced boot ────────────────────────────────────────────────────────
   useEffect(() => {
-    const init = async () => {
+    isMountedRef.current = true;
+
+    const boot = async () => {
+    
+      await requestRuntimePermissions();
+
+      // STEP 2 — Notifications (safe now that POST_NOTIFICATIONS was requested)
       try {
-        // 1. Android 13+ permissions FIRST — before Firebase/FCM touches anything
-        await requestAndroid13Permissions();
-        // 2. Register FCM token, set up notification listeners
         await initializeNotifications();
-        // 3. Read auth token from AsyncStorage
-        await checkAuth();
       } catch (err) {
-        console.error("Startup init error:", err);
+        console.error("initializeNotifications (non-fatal):", err);
       }
+
+      // STEP 3 — Auth
+      await checkAuth();
     };
 
-    init();
+    boot();
 
     return () => {
+      isMountedRef.current = false;
       if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAuth = async () => {
     try {
-      const token    = await AsyncStorage.getItem("userToken");
-      const userData = await AsyncStorage.getItem("userData");
+      const [token, userData] = await Promise.all([
+        AsyncStorage.getItem("userToken"),
+        AsyncStorage.getItem("userData"),
+      ]);
+
+      if (!isMountedRef.current) return;
 
       if (token && userData) {
         const user = JSON.parse(userData);
         setUserId(user.id);
         setIsAuthenticated(true);
 
-        // FIX 2: tracked, cancellable timer
+        // Delayed update check — give services time to settle first
         if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
         updateTimerRef.current = setTimeout(() => {
-          checkForUpdate(true);
-        }, 2000);
+          if (isMountedRef.current) checkForUpdate(true);
+        }, 3000);
       } else {
         setIsAuthenticated(false);
       }
     } catch (err) {
-      console.error("Error checking auth:", err);
-      setIsAuthenticated(false);
+      console.error("checkAuth error:", err);
+      if (isMountedRef.current) setIsAuthenticated(false);
     }
   };
 
-  // ── Video prefetch ─────────────────────────────────────────────────────────
+  // ── Video prefetch ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
-
     let cancelled = false;
-    const initVideoPrefetch = async () => {
+
+    (async () => {
       try {
         await videoBackgroundfetch.init(userId);
         if (!cancelled) {
           const cached = await videoBackgroundfetch.getCachedVideos();
-          console.log("📦 Cached videos ready:", cached?.length || 0);
+          console.log("📦 Cached videos:", cached?.length || 0);
         }
       } catch (err) {
-        console.error("Error initializing video prefetch:", err);
+        console.error("videoBackgroundfetch init (non-fatal):", err);
       }
-    };
-
-    initVideoPrefetch();
+    })();
 
     return () => {
       cancelled = true;
@@ -5490,15 +6855,18 @@ function AppContent() {
     };
   }, [userId]);
 
-  // ── Single AppState listener (FIX 1) ──────────────────────────────────────
+
+    useDeepLinkHandler();
+
+  // ── Single AppState listener (lives here only — not in ThemedNavigator) ──
   useEffect(() => {
     const handleAppStateChange = (nextAppState) => {
-      const currentState = appStateRef.current;
+      const prev = appStateRef.current;
 
-      if (currentState === "active" && nextAppState === "background") {
-        console.log("📱 App → background");
+      if (prev === "active" && nextAppState === "background") {
+        console.log("📱 → background");
 
-        // FIX 4: fire-and-forget — never await inside an event handler
+        // Save navigation state (fire-and-forget, never await in handler)
         if (navigationRef.current) {
           saveNavigationState(navigationRef.current.getRootState());
         }
@@ -5509,41 +6877,39 @@ function AppContent() {
 
           if (backgroundTimerRef.current)
             clearTimeout(backgroundTimerRef.current);
-          backgroundTimerRef.current = setTimeout(() => {
-            console.log("🕐 30 s background — light cleanup");
-            freeMemory();
-          }, 30000);
+          backgroundTimerRef.current = setTimeout(freeMemory, 30_000);
         }
-      } else if (currentState === "background" && nextAppState === "active") {
-        console.log("📱 App → foreground");
+      } else if (prev === "background" && nextAppState === "active") {
+        console.log("📱 → foreground");
 
         if (backgroundTimerRef.current) {
           clearTimeout(backgroundTimerRef.current);
           backgroundTimerRef.current = null;
         }
 
-        // FIX 2: tracked timer
-        if (isAuthenticated) {
+        if (isAuthenticated && isMountedRef.current) {
           if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
           updateTimerRef.current = setTimeout(() => {
-            checkForUpdate(true);
-          }, 1000);
+            if (isMountedRef.current) checkForUpdate(true);
+          }, 1500);
         }
 
-        InteractionManager.runAfterInteractions(() => {
-          console.log("✅ App resumed — screen state preserved");
-        });
+        InteractionManager.runAfterInteractions(() =>
+          console.log("✅ App resumed")
+        );
       }
 
       appStateRef.current = nextAppState;
     };
 
-    const subscription = AppState.addEventListener("change", handleAppStateChange);
+
+
+    const sub = AppState.addEventListener("change", handleAppStateChange);
 
     return () => {
-      subscription.remove();
+      sub.remove();
       if (backgroundTimerRef.current) clearTimeout(backgroundTimerRef.current);
-      if (updateTimerRef.current)     clearTimeout(updateTimerRef.current);
+      if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
     };
   }, [userId, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -5573,29 +6939,30 @@ const OnlineStatusManager = ({ userId }) => {
 };
 
 // ─── ThemedNavigator ──────────────────────────────────────────────────────────
-// • NO AppState listener here (FIX 1)
-// • Background services started once, here only (FIX 3)
-// • Navigation state restored only when token exists (FIX 5)
-// • detachPreviousScreen: false REMOVED — saves RAM on all devices (FIX 6)
-// • PIN check runs after isAuthenticated is known (FIX 7)
+// No AppState listener — AppContent owns the only one.
+// Background services start here, once, each wrapped in its own try/catch.
+// Navigation state only restored when a valid token exists.
+// detachPreviousScreen removed — saves RAM on all device tiers.
+// Android 15 edge-to-edge: StatusBar uses translucent mode to avoid layout crash.
+
 function ThemedNavigator({ isAuthenticated, userId }) {
   const { theme, colors } = useTheme();
-  const [showPinModal,            setShowPinModal]            = useState(false);
-  const [isLoading,               setIsLoading]               = useState(true);
-  const [isNavigationReady,       setIsNavigationReady]       = useState(false);
-  const [initialNavigationState,  setInitialNavigationState]  = useState(undefined);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isNavigationReady, setIsNavigationReady] = useState(false);
+  const [initialNavigationState, setInitialNavigationState] = useState(undefined);
 
-  const navSaveTimerRef   = useRef(null);
+  const navSaveTimerRef = useRef(null);
   const forceFetchTimerRef = useRef(null);
 
   const customTheme = {
     dark: theme === "dark",
     colors: {
-      primary:      colors.primary,
-      background:   colors.background,
-      card:         colors.surface || colors.card || colors.background,
-      text:         colors.text,
-      border:       colors.border,
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.surface || colors.card || colors.background,
+      text: colors.text,
+      border: colors.border,
       notification: colors.primary,
     },
     fonts: {
@@ -5606,29 +6973,61 @@ function ThemedNavigator({ isAuthenticated, userId }) {
     },
   };
 
-  // FIX 5: restore nav state only when token exists; clear it if not
+  // ── Restore navigation state (only when token is valid) ───────────────────
   useEffect(() => {
+    // const restoreState = async () => {
+    //   try {
+    //     const token = await AsyncStorage.getItem("userToken");
+    //     if (token) {
+    //       const saved = await loadNavigationState();
+    //       if (saved) setInitialNavigationState(saved);
+    //     } else {
+    //       // Wipe stale state — logged-out user must land on Login
+    //       await AsyncStorage.removeItem(NAVIGATION_STATE_KEY);
+    //     }
+    //   } catch (err) {
+    //     console.error("restoreState error:", err);
+    //   } finally {
+    //     setIsNavigationReady(true);
+    //   }
+    // };
     const restoreState = async () => {
-      try {
-        const token = await AsyncStorage.getItem("userToken");
-        if (token) {
-          const saved = await loadNavigationState();
-          if (saved) setInitialNavigationState(saved);
-        } else {
+  try {
+    const token = await AsyncStorage.getItem("userToken");
+    if (token) {
+      const saved = await loadNavigationState();
+      if (saved) {
+        // Check if saved state is on a blocked screen
+        const currentRoute = saved.routes?.[saved.index];
+        const currentRouteName = currentRoute?.name;
+        
+        if (currentRouteName && BLOCKED_AUTO_NAVIGATION_SCREENS.includes(currentRouteName)) {
+          console.log(`Blocked restoring navigation to blocked screen: ${currentRouteName}, going to default screen`);
+          // Don't restore - will go to default route (PHome or SocialHome)
+          setInitialNavigationState(undefined);
+          // Clear the bad state from storage
           await AsyncStorage.removeItem(NAVIGATION_STATE_KEY);
+        } else {
+          setInitialNavigationState(saved);
         }
-      } catch (err) {
-        console.error("Error restoring navigation state:", err);
-      } finally {
-        setIsNavigationReady(true);
       }
-    };
+    } else {
+      // Wipe stale state — logged-out user must land on Login
+      await AsyncStorage.removeItem(NAVIGATION_STATE_KEY);
+    }
+  } catch (err) {
+    console.error("restoreState error:", err);
+  } finally {
+    setIsNavigationReady(true);
+  }
+};
 
     restoreState();
 
-    if (!global.__activeWebRTCConnections) global.__activeWebRTCConnections = [];
-    if (!global.__activeVideoRefs)         global.__activeVideoRefs = [];
-    if (!global.__pendingRequests)         global.__pendingRequests = [];
+    // Init globals once on mount
+    global.__activeWebRTCConnections = global.__activeWebRTCConnections || [];
+    global.__activeVideoRefs         = global.__activeVideoRefs || [];
+    global.__pendingRequests         = global.__pendingRequests || [];
 
     return () => {
       if (navSaveTimerRef.current)    clearTimeout(navSaveTimerRef.current);
@@ -5636,56 +7035,91 @@ function ThemedNavigator({ isAuthenticated, userId }) {
     };
   }, []);
 
-  // FIX 7: PIN check runs after auth state is set by AppContent
+  // ── PIN check — runs after auth state is known ────────────────────────────
   useEffect(() => {
     checkPinRequirement();
   }, [isAuthenticated]);
 
   const checkPinRequirement = async () => {
     try {
-      const pinEnabled = await AsyncStorage.getItem("pin_enabled");
-      const token      = await AsyncStorage.getItem("userToken");
+      const [pinEnabled, token] = await Promise.all([
+        AsyncStorage.getItem("pin_enabled"),
+        AsyncStorage.getItem("userToken"),
+      ]);
       if (pinEnabled === "true" && token) {
         const status = await checkPinStatus(token);
         if (status?.has_pin) setShowPinModal(true);
       }
     } catch (err) {
-      console.error("Error checking PIN:", err);
+      console.error("checkPinRequirement error:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // FIX 3: background services started here only — not in AppContent
-  // FIX 9: reset global.__backgroundServicesRunning = false in your logout handler
+  // ── Background services — started once, each guarded individually ─────────
+  // Each service gets its own try/catch so one failure never blocks the others.
+  // Android 14/15: backgroundFetchService.init() may throw if the foreground
+  // service type is missing from the manifest — the guard here prevents a crash
+  // while you fix the manifest, but the manifest fix is still required.
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || global.__backgroundServicesRunning) return;
 
-    if (!global.__backgroundServicesRunning) {
-      backgroundFetchService.init();
-      startBackgroundContactSync();
-      setupContactSyncListener();
+    const startServices = async () => {
+      try {
+        await backgroundFetchService.init();
+      } catch (err) {
+        console.error("backgroundFetchService.init (non-fatal):", err);
+      }
+
+      try {
+        startBackgroundContactSync();
+      } catch (err) {
+        console.error("startBackgroundContactSync (non-fatal):", err);
+      }
+
+      try {
+        setupContactSyncListener();
+      } catch (err) {
+        console.error("setupContactSyncListener (non-fatal):", err);
+      }
+
       global.__backgroundServicesRunning = true;
 
-      // FIX 2: tracked timer
       forceFetchTimerRef.current = setTimeout(() => {
-        backgroundFetchService.forceFetch();
+        try { backgroundFetchService.forceFetch(); } catch (_) {}
       }, 2000);
-    }
+    };
+
+    startServices();
 
     return () => {
       if (forceFetchTimerRef.current) clearTimeout(forceFetchTimerRef.current);
     };
   }, [userId]);
 
-  // Debounced nav state save — fire-and-forget (FIX 4)
+  // ── Debounced navigation state save ───────────────────────────────────────
+  // const handleNavigationStateChange = (state) => {
+  //   if (!state) return;
+  //   if (navSaveTimerRef.current) clearTimeout(navSaveTimerRef.current);
+  //   navSaveTimerRef.current = setTimeout(() => saveNavigationState(state), 1000);
+  // };
+
   const handleNavigationStateChange = (state) => {
-    if (!state) return;
-    if (navSaveTimerRef.current) clearTimeout(navSaveTimerRef.current);
-    navSaveTimerRef.current = setTimeout(() => {
-      saveNavigationState(state);
-    }, 1000);
-  };
+  if (!state) return;
+  
+  // Check if current screen is blocked from being saved
+  const currentRoute = state.routes?.[state.index];
+  const currentRouteName = currentRoute?.name;
+  
+  if (currentRouteName && BLOCKED_AUTO_NAVIGATION_SCREENS.includes(currentRouteName)) {
+    console.log(`Not saving navigation state for blocked screen: ${currentRouteName}`);
+    return; // Don't save state for blocked screens
+  }
+  
+  if (navSaveTimerRef.current) clearTimeout(navSaveTimerRef.current);
+  navSaveTimerRef.current = setTimeout(() => saveNavigationState(state), 1000);
+};
 
   if (isLoading || !isNavigationReady) {
     return (
@@ -5705,9 +7139,16 @@ function ThemedNavigator({ isAuthenticated, userId }) {
     >
       {isAuthenticated && <OnlineStatusManager userId={userId} />}
 
+      {/*
+        Android 15 edge-to-edge fix:
+        - translucent={true} prevents the layout crash that happens when Android 15
+          forces edge-to-edge and a non-translucent StatusBar fights over insets.
+        - backgroundColor kept for older Android versions that need it.
+      */}
       <RNStatusBar
         barStyle={theme === "dark" ? "light-content" : "dark-content"}
-        backgroundColor={colors.background}
+        backgroundColor={Platform.Version >= 35 ? "transparent" : colors.background}
+        translucent={Platform.Version >= 35}
       />
 
       <PinUnlockModal
@@ -5716,11 +7157,11 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         navigation={navigationRef.current}
       />
 
-      {/* FIX 6: detachPreviousScreen: false removed.
-          Default RN behaviour only mounts the ACTIVE screen — this alone
-          can cut RAM usage by 60-70% on a 80-screen app.
-          If you need one specific screen to stay mounted (e.g. active chat),
-          add options={{ detachPreviousScreen: false }} to that screen ONLY. */}
+      {/*
+        detachPreviousScreen intentionally omitted (default = true).
+        Keeping all 80+ screens mounted simultaneously caused OOM crashes on
+        low-RAM and mid-range Android devices.
+      */}
       <Stack.Navigator
         initialRouteName="Loginscreen"
         screenOptions={{
@@ -5730,398 +7171,401 @@ function ThemedNavigator({ isAuthenticated, userId }) {
       >
         {/* ── Authentication ─────────────────────────────────────────────── */}
         <Stack.Screen name="Loginscreen">
-          {(props) => <ScreenWrapper><Loginscreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Loginscreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Signin">
-          {(props) => <ScreenWrapper><Signin {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Signin {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Signin_two">
-          {(props) => <ScreenWrapper><Signin_two {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Signin_two {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Register">
-          {(props) => <ScreenWrapper><Register {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Register {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="VerificationCode">
-          {(props) => <ScreenWrapper><VerificationCode {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><VerificationCode {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="LinkingScreen">
-          {(props) => <ScreenWrapper><LinkingScreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><LinkingScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Biometric">
-          {(props) => <ScreenWrapper><Biometric {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Biometric {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="ProceedOptions">
-          {(props) => <ScreenWrapper><ProceedOptions {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><ProceedOptions {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Terms">
-          {(props) => <ScreenWrapper><Terms {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Terms {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="TermsCondition">
-          {(props) => <ScreenWrapper><TermsCondition {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><TermsCondition {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="PrivacyPolicy">
-          {(props) => <ScreenWrapper><PrivacyPolicy {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><PrivacyPolicy {...p} /></ScreenWrapper>}
         </Stack.Screen>
 
         {/* ── Personal account ───────────────────────────────────────────── */}
         <Stack.Screen name="PHome">
-          {(props) => <ScreenWrapper><PHome {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><PHome {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="UserPersonalAccountProfile">
-          {(props) => <ScreenWrapper><UserPersonalAccountProfile {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><UserPersonalAccountProfile {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SyncContactForBusiness">
-          {(props) => <ScreenWrapper><SyncContactForBusiness {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SyncContactForBusiness {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="PStatusBar">
-          {(props) => <ScreenWrapper><PStatusBar {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><PStatusBar {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="StatusEditorScreen">
-          {(props) => <ScreenWrapper><StatusEditorScreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><StatusEditorScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="JoinChannel">
-          {(props) => <ScreenWrapper><JoinChannel {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><JoinChannel {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Calls">
-          {(props) => <ScreenWrapper><Calls {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Calls {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="CallOngoingScreen">
-          {(props) => <ScreenWrapper><CallOngoingScreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><CallOngoingScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Settings">
-          {(props) => <ScreenWrapper><Settings {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Settings {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="NotificationsScreen">
-          {(props) => <ScreenWrapper><NotificationsScreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><NotificationsScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="NotificationSetting">
-          {(props) => <ScreenWrapper><NotificationSetting {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><NotificationSetting {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="WallpaperSetting">
-          {(props) => <ScreenWrapper><WallpaperSetting {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><WallpaperSetting {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="FaceSecuritySetting">
-          {(props) => <ScreenWrapper><FaceSecuritySetting {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><FaceSecuritySetting {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="PrivateChat">
-          {(props) => <ScreenWrapper><PrivateChat {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><PrivateChat {...p} /></ScreenWrapper>}
         </Stack.Screen>
 
         {/* ── Business account ───────────────────────────────────────────── */}
         <Stack.Screen name="BusinessHome">
-          {(props) => <ScreenWrapper><BusinessHome {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BusinessHome {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="PostDetails">
-          {(props) => <ScreenWrapper><PostDetails {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><PostDetails {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="ChannelDetails">
-          {(props) => <ScreenWrapper><ChannelDetails {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><ChannelDetails {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="ChannelAdminManagement">
-          {(props) => <ScreenWrapper><ChannelAdminManagement {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><ChannelAdminManagement {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BUserProfile">
-          {(props) => <ScreenWrapper><BUserProfile {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BUserProfile {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BStatusBar">
-          {(props) => <ScreenWrapper><BStatusBar {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BStatusBar {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BStatusEditorScreen">
-          {(props) => <ScreenWrapper><BStatusEditorScreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BStatusEditorScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BJoinChannel">
-          {(props) => <ScreenWrapper><BJoinChannel {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BJoinChannel {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BCalls">
-          {(props) => <ScreenWrapper><BCalls {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BCalls {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BCallOngoingScreen">
-          {(props) => <ScreenWrapper><BCallOngoingScreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BCallOngoingScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BSettings">
-          {(props) => <ScreenWrapper><BSettings {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BSettings {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BNotificationSetting">
-          {(props) => <ScreenWrapper><BNotificationSetting {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BNotificationSetting {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BWallpaperSetting">
-          {(props) => <ScreenWrapper><BWallpaperSetting {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BWallpaperSetting {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BFaceSecuritySetting">
-          {(props) => <ScreenWrapper><BFaceSecuritySetting {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BFaceSecuritySetting {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="ToolsScreen">
-          {(props) => <ScreenWrapper><ToolsScreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><ToolsScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="QuickReplies">
-          {(props) => <ScreenWrapper><QuickReplies {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><QuickReplies {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+        <Stack.Screen name="ShortDetail">
+          {(p) => <ScreenWrapper><ShortDetail {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="AddQuickReply">
-          {(props) => <ScreenWrapper><AddQuickReply {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><AddQuickReply {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="EssentialPlatforms">
-          {(props) => <ScreenWrapper><EssentialPlatformsScreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><EssentialPlatformsScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Advertise">
-          {(props) => <ScreenWrapper><Advertise {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Advertise {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="ManageProfile">
-          {(props) => <ScreenWrapper><ManageProfile {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><ManageProfile {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="CreateCatalog">
-          {(props) => <ScreenWrapper><CreateCatalog {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><CreateCatalog {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Explore">
-          {(props) => <ScreenWrapper><Explore {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Explore {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="AddItemToCatalog">
-          {(props) => <ScreenWrapper><AddItemToCatalog {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><AddItemToCatalog {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="LabelChats">
-          {(props) => <ScreenWrapper><LabelChats {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><LabelChats {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Labels">
-          {(props) => <ScreenWrapper><Labels {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Labels {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="AddQuickReplyScreen">
-          {(props) => <ScreenWrapper><AddQuickReplyScreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><AddQuickReplyScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="GreetingMessage">
-          {(props) => <ScreenWrapper><GreetingMessage {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><GreetingMessage {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="AwayMessage">
-          {(props) => <ScreenWrapper><AwayMessage {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><AwayMessage {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="HelpCenter">
-          {(props) => <ScreenWrapper><HelpCenter {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><HelpCenter {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="HelpTopic">
-          {(props) => <ScreenWrapper><HelpTopic {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><HelpTopic {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BusinessSetup">
-          {(props) => <ScreenWrapper><BusinessSetup {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BusinessSetup {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="ProductDetails">
-          {(props) => <ScreenWrapper><ProductDetails {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><ProductDetails {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Cart">
-          {(props) => <ScreenWrapper><Cart {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Cart {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="EmptyCart">
-          {(props) => <ScreenWrapper><EmptyCart {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><EmptyCart {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Broadcast">
-          {(props) => <ScreenWrapper><Broadcast {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Broadcast {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="OfficialSearch">
-          {(props) => <ScreenWrapper><OfficialSearch {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><OfficialSearch {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Live">
-          {(props) => <ScreenWrapper><Live {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Live {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="OoshBusiness">
-          {(props) => <ScreenWrapper><OoshBusiness {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><OoshBusiness {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="CreateChannel">
-          {(props) => <ScreenWrapper><CreateChannel {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><CreateChannel {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="InviteChannelLink">
-          {(props) => <ScreenWrapper><InviteChannelLink {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><InviteChannelLink {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Supplyrequest">
-          {(props) => <ScreenWrapper><Supplyrequest {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Supplyrequest {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SupplyRequestForm">
-          {(props) => <ScreenWrapper><SupplyRequestForm {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SupplyRequestForm {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SupplyServices">
-          {(props) => <ScreenWrapper><SupplyServices {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SupplyServices {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SupplyRequestDetail">
-          {(props) => <ScreenWrapper><SupplyRequestDetail {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SupplyRequestDetail {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="CreateServices">
-          {(props) => <ScreenWrapper><CreateServices {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><CreateServices {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SupplyRequestDetailScreen">
-          {(props) => <ScreenWrapper><SupplyRequestDetailScreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SupplyRequestDetailScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BroadcastHome">
-          {(props) => <ScreenWrapper><BroadcastHome {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BroadcastHome {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="CreateBroadcastPost">
-          {(props) => <ScreenWrapper><CreateBroadcastPost {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><CreateBroadcastPost {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="ReportPost">
-          {(props) => <ScreenWrapper><ReportPost {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><ReportPost {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BroadcastUserProfile">
-          {(props) => <ScreenWrapper><BroadcastUserProfile {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BroadcastUserProfile {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="MarketPlace">
-          {(props) => <ScreenWrapper><MarketPlace {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><MarketPlace {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="CreateListing">
-          {(props) => <ScreenWrapper><CreateListing {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><CreateListing {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="ListingDetails">
-          {(props) => <ScreenWrapper><ListingDetails {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><ListingDetails {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SuggestedFollowers">
-          {(props) => <ScreenWrapper><SuggestedFollowers {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SuggestedFollowers {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="ManagePost">
-          {(props) => <ScreenWrapper><ManagePost {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><ManagePost {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="CreatorDashboard">
-          {(props) => <ScreenWrapper><CreatorDashboard {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><CreatorDashboard {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="MonetizationRequestForm">
-          {(props) => <ScreenWrapper><MonetizationRequestForm {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><MonetizationRequestForm {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="ChatAi">
-          {(props) => <ScreenWrapper><ChatAi {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><ChatAi {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="ContractHome">
-          {(props) => <ScreenWrapper><ContractHome {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><ContractHome {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="CreateAdForm">
-          {(props) => <ScreenWrapper><CreateAdForm {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><CreateAdForm {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="AdReview">
-          {(props) => <ScreenWrapper><AdReview {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><AdReview {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BroadcastSuccess">
-          {(props) => <ScreenWrapper><BroadcastSuccess {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BroadcastSuccess {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="AllProducts">
-          {(props) => <ScreenWrapper><AllProducts {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><AllProducts {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="OtherUserCatalog">
-          {(props) => <ScreenWrapper><OtherUserCatalog {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><OtherUserCatalog {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="OtherUserCatalogDetail">
-          {(props) => <ScreenWrapper><OtherUserCatalogDetail {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><OtherUserCatalogDetail {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BPrivateChat">
-          {(props) => <ScreenWrapper><BPrivateChat {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BPrivateChat {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="BusinessGroupChat">
-          {(props) => <ScreenWrapper><BusinessGroupChat {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><BusinessGroupChat {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SupplierNotificationScreen">
-          {(props) => <ScreenWrapper><SupplierNotificationScreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SupplierNotificationScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="RequesterPostHistory">
-          {(props) => <ScreenWrapper><RequesterPostHistory {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><RequesterPostHistory {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="GroupMembers">
-          {(props) => <ScreenWrapper><GroupMembers {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><GroupMembers {...p} /></ScreenWrapper>}
         </Stack.Screen>
 
         {/* ── Social ─────────────────────────────────────────────────────── */}
         <Stack.Screen name="SocialHome">
-          {(props) => <ScreenWrapper><SocialHome {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SocialHome {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Discover">
-          {(props) => <ScreenWrapper><Discover {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Discover {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="UploadshortVideo">
-          {(props) => <ScreenWrapper><UploadshortVideo {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><UploadshortVideo {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SearchShort">
-          {(props) => <ScreenWrapper><SearchShort {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SearchShort {...p} /></ScreenWrapper>}
         </Stack.Screen>
 
         {/* ── Features ───────────────────────────────────────────────────── */}
         <Stack.Screen name="Music">
-          {(props) => <ScreenWrapper><Music {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Music {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="GroupCreate">
-          {(props) => <ScreenWrapper><GroupCreate {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><GroupCreate {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="GroupConnect">
-          {(props) => <ScreenWrapper><GroupConnect {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><GroupConnect {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="UserContactList">
-          {(props) => <ScreenWrapper><UserContactList {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><UserContactList {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SynMessage">
-          {(props) => <ScreenWrapper><SynMessage {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SynMessage {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SyncContactPersonal">
-          {(props) => <ScreenWrapper><SyncContactPersonal {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SyncContactPersonal {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="UserContactListPersonalAccount">
-          {(props) => <ScreenWrapper><UserContactListPersonalAccount {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><UserContactListPersonalAccount {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SyncMessagePersonal">
-          {(props) => <ScreenWrapper><SyncMessagePersonal {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SyncMessagePersonal {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="CameraScreen">
-          {(props) => <ScreenWrapper><CameraScreen {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><CameraScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SongsList">
-          {(props) => <ScreenWrapper><SongsList {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SongsList {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="NewCommunity">
-          {(props) => <ScreenWrapper><NewCommunity {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><NewCommunity {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="VideoCalls">
-          {(props) => <ScreenWrapper><VideoCalls {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><VideoCalls {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="VoiceCalls">
-          {(props) => <ScreenWrapper><VoiceCalls {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><VoiceCalls {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="GoLive">
-          {(props) => <ScreenWrapper><GoLive {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><GoLive {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="LiveStream">
-          {(props) => <ScreenWrapper><LiveStream {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><LiveStream {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="ContactUs">
-          {(props) => <ScreenWrapper><ContactUs {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><ContactUs {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SuccessStory">
-          {(props) => <ScreenWrapper><SuccessStory {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><SuccessStory {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="OtherUserProfile">
-          {(props) => <ScreenWrapper><OtherUserProfile {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><OtherUserProfile {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="LiveStreaming">
-          {(props) => <ScreenWrapper><LiveStreaming {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><LiveStreaming {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="GlobalIssueReport">
-          {(props) => <ScreenWrapper><GlobalIssueReport {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><GlobalIssueReport {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="NewsList">
-          {(props) => <ScreenWrapper><NewsList {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><NewsList {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Broadcaster">
-          {(props) => <ScreenWrapper><Broadcaster {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Broadcaster {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="Viewer">
-          {(props) => <ScreenWrapper><Viewer {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><Viewer {...p} /></ScreenWrapper>}
         </Stack.Screen>
 
         {/* ── Earning ────────────────────────────────────────────────────── */}
         <Stack.Screen name="EarningDashbord">
-          {(props) => <ScreenWrapper><EarningDashbord {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><EarningDashbord {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="WithdrawEarning">
-          {(props) => <ScreenWrapper><WithdrawEarning {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><WithdrawEarning {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="PurchaseData">
-          {(props) => <ScreenWrapper><PurchaseData {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><PurchaseData {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="NinRegisterEarning">
-          {(props) => <ScreenWrapper><NinRegisterEarning {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><NinRegisterEarning {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="VideoAds">
-          {(props) => <ScreenWrapper><VideoAds {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><VideoAds {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="EarningWallet">
-          {(props) => <ScreenWrapper><EarningWallet {...props} /></ScreenWrapper>}
+          {(p) => <ScreenWrapper><EarningWallet {...p} /></ScreenWrapper>}
         </Stack.Screen>
 
         {/* ── Modal ──────────────────────────────────────────────────────── */}
@@ -6142,26 +7586,19 @@ function ThemedNavigator({ isAuthenticated, userId }) {
 }
 
 // ─── Logout helper ────────────────────────────────────────────────────────────
-// Import and call this from your logout button.
-// FIX 9: resets service flag so they restart on next login.
-// FIX 5: clears stale navigation state so user lands on Login.
+// Import and call this in your logout handler — wherever you clear the token.
+// This resets all service flags so they restart cleanly on the next login and
+// clears saved navigation state so the user always lands on the Login screen.
 export const handleAppLogout = async (clearTokenFn) => {
   try {
     global.__backgroundServicesRunning = false;
     global.__activeWebRTCConnections   = [];
     global.__activeVideoRefs           = [];
-
     stopBackgroundServices();
-
-    await AsyncStorage.multiRemove([
-      NAVIGATION_STATE_KEY,
-      "userToken",
-      "userData",
-    ]);
-
+    await AsyncStorage.removeItem(NAVIGATION_STATE_KEY);
     if (typeof clearTokenFn === "function") await clearTokenFn();
   } catch (err) {
-    console.error("Error during logout cleanup:", err);
+    console.error("handleAppLogout error:", err);
   }
 };
 

@@ -330,7 +330,7 @@ const fetchChatHistory = useCallback(async (userId) => {
         const userId = await fetchUserData();
         if (!userId) {
           console.error('Failed to fetch userId, redirecting to login');
-          navigation.navigate('Login');
+          navigation.navigate('Signin');
           return;
         }
         const history = await fetchChatHistory(userId);

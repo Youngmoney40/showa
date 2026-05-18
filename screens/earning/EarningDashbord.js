@@ -2175,7 +2175,7 @@ const EarnTasksScreen = ({ navigation }) => {
       
     } catch (error) {
       console.error('Error fetching earn data:', error);
-      Alert.alert('Error', 'Failed to load earn tasks. Please try again.');
+      //Alert.alert('Error', 'Failed to load earn tasks. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);

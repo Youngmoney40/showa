@@ -538,39 +538,146 @@ useEffect(() => {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      let isMounted = true;
-      setIsLoading(true);
-      const loadData = async () => {
-        try {
-          const id = await fetchUserData();
-          if (id && isMounted) {
-            await loadMessagesFromStorage();
-            await fetchChatHistory(chatType, receiverId, groupSlug, id);
-          }
-        } catch (error) {
-          // Silent fail
-        } finally {
-          if (isMounted) setIsLoading(false);
+  // ─── INSTANT LOAD: Run on mount only, no API call blocking ───────────────────
+useEffect(() => {
+  const instantLoad = async () => {
+    try {
+      // Read userId AND cached messages simultaneously — no waiting on each other
+      const [json, storageKey] = await Promise.all([
+        AsyncStorage.getItem('userData'),
+        Promise.resolve(
+          chatType === 'single' ? `chat_single_${receiverId}` : `chat_group_${groupSlug}`
+        ),
+      ]);
+
+      const parsed = json ? JSON.parse(json) : null;
+      if (parsed?.id) {
+        setUserId(parsed.id); // Set userId immediately from local cache
+
+        const stored = await AsyncStorage.getItem(storageKey);
+        if (stored) {
+          setMessages(JSON.parse(stored)); // Paint cached messages instantly
         }
-      };
-      loadData();
-      return () => {
-        isMounted = false;
-        clearTimeout(timeoutRef.current);
-      };
-    }, [fetchUserData, fetchChatHistory, chatType, receiverId, groupSlug, accountMode])
-  );
+
+        setIsLoading(false); // Show UI immediately
+
+        // Now fetch fresh data in the background without blocking UI
+        backgroundRefresh(parsed.id);
+      }
+    } catch (e) {
+      setIsLoading(false);
+    }
+  };
+
+  instantLoad();
+}, []); // Runs once on mount
+
+const backgroundRefresh = useCallback(async (id) => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token || !id) return;
+
+    // Fire both requests in parallel
+    const [userRes, chatRes] = await Promise.allSettled([
+      axiosInstance.get(`/user/${id}/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+      axiosInstance.get(
+        `/api/chat/?chat_type=${chatType}&account_mode=${accountMode}` +
+          (chatType === 'single' ? `&receiver=${receiverId}` : `&group_slug=${groupSlug}`),
+        { headers: { Authorization: `Bearer ${token}` } }
+      ),
+    ]);
+
+    // Update user profile silently
+    if (userRes.status === 'fulfilled') {
+      const data = userRes.value.data;
+      setUsername(data.name);
+      setUserProfileImage(
+        data.profile_picture ? `${API_ROUTE_IMAGE}${data.profile_picture}` : null
+      );
+    }
+
+    // Merge fresh messages with any pending/sending messages
+    if (chatRes.status === 'fulfilled') {
+      const fresh = chatRes.value.data.results.map((msg) => ({
+        id: msg.id.toString(),
+        user: msg.user_name || msg.name || 'Unknown',
+        user_id: msg.user_id || msg.user,
+        content: msg.content || '',
+        image: msg.image ? `${API_ROUTE_IMAGE}${msg.image}` : null,
+        file: msg.file ? `${API_ROUTE_IMAGE}${msg.file}` : null,
+        file_name: msg.file_name || (msg.file ? msg.file.split('/').pop() : null),
+        file_size: msg.file_size || null,
+        emoji: msg.emoji || null,
+        reply_to: msg.reply_to ? msg.reply_to.toString() : null,
+        is_deleted: msg.is_deleted || false,
+        timestamp: msg.timestamp,
+        time: new Date(msg.timestamp).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        avatar: msg.avatar ? `${API_ROUTE_IMAGE}${msg.avatar}` : null,
+      }));
+
+      setMessages((prev) => {
+        // Keep any temp/sending messages on top, merge rest from server
+        const sending = prev.filter((m) => m.is_sending || m.is_error);
+        const freshIds = new Set(fresh.map((m) => m.id));
+        const merged = [
+          ...sending,
+          ...fresh.filter((m) => !sending.some((s) => s.id === m.id)),
+        ];
+        saveMessagesToStorage(merged);
+        return merged;
+      });
+    }
+  } catch (e) {
+    // Silent fail — cached messages already showing
+  }
+}, [chatType, receiverId, groupSlug, accountMode]);
+
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     let isMounted = true;
+  //     setIsLoading(true);
+  //     const loadData = async () => {
+  //       try {
+  //         const id = await fetchUserData();
+  //         if (id && isMounted) {
+  //           await loadMessagesFromStorage();
+  //           await fetchChatHistory(chatType, receiverId, groupSlug, id);
+  //         }
+  //       } catch (error) {
+  //         // Silent fail
+  //       } finally {
+  //         if (isMounted) setIsLoading(false);
+  //       }
+  //     };
+  //     loadData();
+  //     return () => {
+  //       isMounted = false;
+  //       clearTimeout(timeoutRef.current);
+  //     };
+  //   }, [fetchUserData, fetchChatHistory, chatType, receiverId, groupSlug, accountMode])
+  // );
+
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     if (userId) {
+  //       fetchChatHistory(chatType, receiverId, groupSlug, userId);
+  //     }
+  //   }, 30000);
+  //   return () => clearInterval(interval);
+  // }, [userId, chatType, receiverId, groupSlug, fetchChatHistory]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (userId) {
-        fetchChatHistory(chatType, receiverId, groupSlug, userId);
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [userId, chatType, receiverId, groupSlug, fetchChatHistory]);
+  if (!userId) return;
+  const interval = setInterval(() => backgroundRefresh(userId), 30000);
+  return () => clearInterval(interval);
+}, [userId, backgroundRefresh]);
+
+
 
   useEffect(() => {
     const connectWebSocket = async () => {
@@ -1439,6 +1546,12 @@ return (
               <Text style={styles.progressText}>Uploading... {uploadProgress}%</Text>
             </View>
           )}
+          {isLoading && (
+            <View style={{ padding: 6, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color="#0d64dd" />
+            </View>
+          )}
+
 
           <FlatList
             ref={flatListRef}

@@ -560,7 +560,7 @@ const ContactProfile = ({ navigation }) => {
     } catch (error) {
       console.error('Error fetching user:', error.response?.data || error.message);
       if (error.response?.status === 401) {
-        navigation.navigate('Login');
+        navigation.navigate('Signin');
       }
       setUserProfileImage(null);
       return null;

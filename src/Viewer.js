@@ -846,15 +846,38 @@ export default function Viewer({ route, navigation }) {
         // Load username from AsyncStorage
         const userData = await AsyncStorage.getItem("userData");
         
-        if (userData) {
-          const parsedData = JSON.parse(userData);
-          setUsername(parsedData.name || parsedData.username || 'Anonymous');
-          setProfilePicture(parsedData.profile_picture || '');
-          console.log('👤 Viewer loaded:', { 
-            username: parsedData.name, 
-            profilePicture: parsedData.profile_picture 
-          });
-        }
+        // if (userData) {
+        //   const parsedData = JSON.parse(userData);
+        //   setUsername(parsedData.name || parsedData.username || 'Anonymous');
+        //   setProfilePicture(parsedData.profile_picture || '');
+        //   console.log('👤 Viewer loaded:', { 
+        //     username: parsedData.name, 
+        //     profilePicture: parsedData.profile_picture 
+        //   });
+        // }
+
+        let currentUsername = 'Anonymous';
+let currentProfilePicture = '';
+
+if (userData) {
+  const parsedData = JSON.parse(userData);
+
+  currentUsername =
+    parsedData.name ||
+    parsedData.username ||
+    'Anonymous';
+
+  currentProfilePicture =
+    parsedData.profile_picture || '';
+
+  setUsername(currentUsername);
+  setProfilePicture(currentProfilePicture);
+
+  console.log('👤 Viewer loaded:', {
+    username: currentUsername,
+    profilePicture: currentProfilePicture,
+  });
+}
 
         // Initialize WebRTC
         await getIceServers();
@@ -886,11 +909,20 @@ export default function Viewer({ route, navigation }) {
         await signaling.current.connect();
 
         // Send viewer joined notification
+        // signaling.current.send({
+        //   type: "viewer-joined",
+        //   viewer_id: viewerId,
+        //   username: username,
+        //   profilePicture: profilePicture,
+        //   streamId: streamId,
+        //   timestamp: Date.now()
+        // });
+
         signaling.current.send({
           type: "viewer-joined",
           viewer_id: viewerId,
-          username: username,
-          profilePicture: profilePicture,
+          username: currentUsername,
+          profilePicture: currentProfilePicture,
           streamId: streamId,
           timestamp: Date.now()
         });

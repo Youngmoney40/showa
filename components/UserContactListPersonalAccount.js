@@ -236,35 +236,74 @@ const ContactsScreen = ({ navigation }) => {
     return true;
   };
 
+  // const sendInvite = (contact) => {
+  //   const phoneNumber = contact.phoneNumbers[0]?.replace(/[^0-9]/g, '');
+  //   const message = `Hey! I'm using this amazing new social app call SHOWA and I think you’ll love it too.
+  //  Join me and let’s connect!. Download it here: https://play.google.com/store/apps/details?id=com.showa&hl=en`;
+    
+  //   // Try to open SMS app
+  //   const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
+    
+  //   Linking.canOpenURL(smsUrl)
+  //     .then(supported => {
+  //       if (supported) {
+  //         return Linking.openURL(smsUrl);
+  //       } else {
+  //         // Fallback to copy to clipboard
+  //         Alert.alert(
+  //           'Invite',
+  //           `Send this message to ${contact.displayName}: \n\n${message}`,
+  //           [
+  //             { text: 'Copy Message', onPress: () => copyToClipboard(message) },
+  //             { text: 'OK' }
+  //           ]
+  //         );
+  //       }
+  //     })
+  //     .catch(err => {
+  //       console.log('Error opening SMS app:', err);
+  //       Alert.alert('Error', 'Could not open messaging app');
+  //     });
+  // };
+
+
   const sendInvite = (contact) => {
-    const phoneNumber = contact.phoneNumbers[0]?.replace(/[^0-9]/g, '');
-    const message = `Hey! I'm using this amazing new social app call SHOWA and I think you’ll love it too.
-Join me and let’s connect!. Download it here: https://play.google.com/store/apps/details?id=com.showa&hl=en`;
-    
-    // Try to open SMS app
-    const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
-    
-    Linking.canOpenURL(smsUrl)
-      .then(supported => {
-        if (supported) {
-          return Linking.openURL(smsUrl);
-        } else {
-          // Fallback to copy to clipboard
-          Alert.alert(
-            'Invite',
-            `Send this message to ${contact.displayName}: \n\n${message}`,
-            [
-              { text: 'Copy Message', onPress: () => copyToClipboard(message) },
-              { text: 'OK' }
-            ]
-          );
-        }
-      })
-      .catch(err => {
-        console.log('Error opening SMS app:', err);
-        Alert.alert('Error', 'Could not open messaging app');
-      });
-  };
+  const phoneNumber = contact.phoneNumbers[0]?.replace(/[^0-9]/g, '');
+  
+  // Platform-specific app store links
+  const appStoreLink = Platform.OS === 'ios' 
+    ? 'https://apps.apple.com/us/app/showa-chat-meet-connect/id6759247435'
+    : 'https://play.google.com/store/apps/details?id=com.showa&hl=en';
+  
+  const message = `Hey! I'm using this amazing new social app called SHOWA and I think you'll love it too.
+Join me and let's connect! Download it here: ${appStoreLink}`;
+  
+  // Platform-specific SMS URL schemes
+  const smsUrl = Platform.OS === 'ios'
+    ? `sms:${phoneNumber}&body=${encodeURIComponent(message)}`  
+    : `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
+  
+  Linking.canOpenURL(smsUrl)
+    .then(supported => {
+      if (supported) {
+        return Linking.openURL(smsUrl);
+      } else {
+      
+        Alert.alert(
+          'Invite',
+          `Send this message to ${contact.displayName}: \n\n${message}`,
+          [
+            { text: 'Copy Message', onPress: () => copyToClipboard(message) },
+            { text: 'OK', style: 'cancel' }
+          ]
+        );
+      }
+    })
+    .catch(err => {
+      console.log('Error opening SMS app:', err);
+      Alert.alert('Error', 'Could not open messaging app');
+    });
+};
 
   const copyToClipboard = (text) => {
     // Implement clipboard copy functionality

@@ -241,9 +241,12 @@ class NotificationService {
       onRegister: function(token) {
         console.log('TOKEN:', token);
       },
+      // onNotification: function(notification) {
+      //   console.log('NOTIFICATION:', notification);
+      //   notification.finish(PushNotification.FetchResult.NoData);
+      // },
       onNotification: function(notification) {
         console.log('NOTIFICATION:', notification);
-        notification.finish(PushNotification.FetchResult.NoData);
       },
       onAction: function(notification) {
         console.log('ACTION:', notification.action);
@@ -539,7 +542,7 @@ class NotificationService {
         (created) => console.log(`CreateChannel returned '${created}'`)
       );
       
-      // Add a channel for rewards
+      
       PushNotification.createChannel(
         {
           channelId: "showa-rewards",

@@ -129,26 +129,26 @@ const fetchUnreadNotificationCount = async () => {
       try {
         const token = await AsyncStorage.getItem('userToken');
         const retrieveUserId = await AsyncStorage.getItem('userData');
-
+  
         if (!token || !retrieveUserId) {
           console.warn('Missing auth data, websocket not started');
           return;
         }
-
+  
         const userData = JSON.parse(retrieveUserId);
         const currentUserId = userData.id;
         const ROOM_ID = `user-${currentUserId}`;
         const SIGNALING_SERVER = 'wss://api.showapp.ng';
-
+  
         const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
-
+  
         ws.current = new WebSocket(url);
         ws.current.binaryType = 'arraybuffer';
-
+  
         ws.current.onopen = () => {
           console.log('[Call WS] Connected');
         };
-
+  
         ws.current.onmessage = (evt) => {
           let data;
           try {
@@ -157,7 +157,7 @@ const fetchUnreadNotificationCount = async () => {
             console.error('[WS] Invalid JSON', e);
             return;
           }
-
+  
           if (data.type === 'offer') {
             if (
               data.offer?.targetUserId &&
@@ -165,26 +165,46 @@ const fetchUnreadNotificationCount = async () => {
             ) {
               return;
             }
-
-            const callerData = data.offer.callerInfo || {
-              profileImage: data.offer.profileImage || '',
-              name: data.offer.callerName || 'Unknown Caller',
-            };
-
+  
+            // Extract caller information from the offer
+            const callerData = data.offer?.callerInfo || {};
+            
+            // Get profile image - could be in different places
+            const profileImage = callerData.profileImage || 
+                                 data.offer?.profileImage || 
+                                 '';
+            
+            const callerName = callerData.name || 
+                               data.offer?.callerName || 
+                               'Unknown Caller';
+  
+            // Extract video call information
+            const isVideo = data.offer?.isVideoCall || false;
+  
+            console.log('[Incoming Call] Caller info:', {
+              name: callerName,
+              hasProfileImage: !!profileImage,
+              profileImage: profileImage.substring(0, 50) + '...'
+            });
+  
+            // Set the states
+            setIsVideoCall(isVideo);
+            
             setCallerInfo({
-              profileImage: callerData.profileImage,
-              name: callerData.name,
+              profileImage: profileImage,
+              name: callerName,
               offer: data.offer,
             });
-
+  
+            // Show the modal
             setShowIncomingCallModal(true);
           }
         };
-
+  
         ws.current.onerror = (e) => {
           console.error('[Call WS] Error', e);
         };
-
+  
         ws.current.onclose = (e) => {
           console.log('[Call WS] Closed', e.code, e.reason);
         };
@@ -192,13 +212,90 @@ const fetchUnreadNotificationCount = async () => {
         console.error('[Call WS] Failed to connect', err);
       }
     };
-
+  
     connectCallWebSocket();
-
+  
     return () => {
       ws.current?.close();
     };
   }, []);
+
+  // useEffect(() => {
+  //   const connectCallWebSocket = async () => {
+  //     try {
+  //       const token = await AsyncStorage.getItem('userToken');
+  //       const retrieveUserId = await AsyncStorage.getItem('userData');
+
+  //       if (!token || !retrieveUserId) {
+  //         console.warn('Missing auth data, websocket not started');
+  //         return;
+  //       }
+
+  //       const userData = JSON.parse(retrieveUserId);
+  //       const currentUserId = userData.id;
+  //       const ROOM_ID = `user-${currentUserId}`;
+  //       const SIGNALING_SERVER = 'wss://api.showapp.ng';
+
+  //       const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
+
+  //       ws.current = new WebSocket(url);
+  //       ws.current.binaryType = 'arraybuffer';
+
+  //       ws.current.onopen = () => {
+  //         console.log('[Call WS] Connected');
+  //       };
+
+  //       ws.current.onmessage = (evt) => {
+  //         let data;
+  //         try {
+  //           data = JSON.parse(evt.data);
+  //         } catch (e) {
+  //           console.error('[WS] Invalid JSON', e);
+  //           return;
+  //         }
+
+  //         if (data.type === 'offer') {
+  //           if (
+  //             data.offer?.targetUserId &&
+  //             data.offer.targetUserId !== currentUserId
+  //           ) {
+  //             return;
+  //           }
+
+  //           const callerData = data.offer.callerInfo || {
+  //             profileImage: data.offer.profileImage || '',
+  //             name: data.offer.callerName || 'Unknown Caller',
+  //           };
+
+  //           setCallerInfo({
+  //             profileImage: callerData.profileImage,
+  //             name: callerData.name,
+  //             offer: data.offer,
+  //           });
+
+  //           setShowIncomingCallModal(true);
+  //         }
+  //       };
+
+  //       ws.current.onerror = (e) => {
+  //         console.error('[Call WS] Error', e);
+  //       };
+
+  //       ws.current.onclose = (e) => {
+  //         console.log('[Call WS] Closed', e.code, e.reason);
+  //       };
+  //     } catch (err) {
+  //       console.error('[Call WS] Failed to connect', err);
+  //     }
+  //   };
+
+  //   connectCallWebSocket();
+
+  //   return () => {
+  //     ws.current?.close();
+  //   };
+  // }, []);
+
 
   const sendMessage = (msg) => {
     if (ws.current?.readyState === WebSocket.OPEN) {

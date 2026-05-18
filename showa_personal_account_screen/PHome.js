@@ -78,11 +78,25 @@ const HomeScreen = ({ navigation }) => {
   const [showIncomingCallModal, setShowIncomingCallModal] = useState(false);
   const [isVideoCall, setIsVideoCall] = useState(false);
 
+     const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const searchInputRef = useRef(null);
   
   const [notificationSettings, setNotificationSettings] = useState({
     showNotifications: true,
     doNotDisturb: false,
   });
+
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchText !== searchQuery) {
+        setSearchQuery(searchText);
+      }
+    }, 300); 
+    
+    return () => clearTimeout(timeoutId);
+  }, [searchText]);
 
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
@@ -105,9 +119,9 @@ const fetchUnreadNotificationCount = async () => {
 };
 
 
-  // Dropdown Modal Component for iOS
+ 
       const DropdownModal = ({ visible, onClose, children, dropdownPosition }) => {
-  // On Android, don't render anything - we handle it separately
+ 
   if (Platform.OS === 'android') {
     return null;
   }
@@ -143,8 +157,7 @@ const fetchUnreadNotificationCount = async () => {
 
     return { top: 80, right: 20 };
   };
-
- 
+  
   const renderDropdownContent = () => (
   <>
     <Text style={[styles.dropdownItem, { fontWeight: 'bold', color: colors.text }]}>
@@ -164,16 +177,25 @@ const fetchUnreadNotificationCount = async () => {
     <TouchableOpacity
       onPress={async () => {
         setShowDropdown(false);
+
+        const safeUserName = (userName || "user")
+          .trim()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-zA-Z0-9-_]/g, "")
+          .toLowerCase();
+
         navigation.navigate('Broadcaster', {
-          roomName: `user-${userName}`,
-          streamId: `stream-${userName}`,
+          roomName: `user-${safeUserName}`,
+          streamId: `stream-${safeUserName}`,
           userName: userData?.name || 'User',
           userId: userId
         });
       }}
       style={styles.dropdownTouchable}
     >
-      <Text style={[styles.dropdownItem, { color: colors.text }]}>Go Live</Text>
+      <Text style={[styles.dropdownItem, { color: colors.text }]}>
+        Go Live
+      </Text>
     </TouchableOpacity>
     
     <TouchableOpacity
@@ -705,7 +727,7 @@ const fetchChatListSilently = async () => {
 
       const loadData = async () => {
         try {
-          await loadCachedChats(); // Load cached data immediately
+          await loadCachedChats(); 
           await fetchChatList(); // Fetch fresh data
           await fetchUserData();
         } catch (error) {
@@ -726,7 +748,7 @@ const fetchChatListSilently = async () => {
 
   useEffect(() => {
   const interval = setInterval(() => {
-    fetchChatListSilently(); // This now always uses personal mode
+    fetchChatListSilently(); 
   }, 30000);
 
   return () => clearInterval(interval);
@@ -1152,44 +1174,44 @@ useEffect(()=>{
   };
 
 
-const switchAccount = async (account) => {
-  setIsLoading(true);
-  try {
-    // Don't actually switch - force back to personal
-    if (account === 'business') {
-      Alert.alert('Notice', 'Business account switching is disabled in this view');
-      setIsLoading(false);
-      return;
-    }
+// const switchAccount = async (account) => {
+//   setIsLoading(true);
+//   try {
+//     // Don't actually switch - force back to personal
+//     if (account === 'business') {
+//       Alert.alert('Notice', 'Business account switching is disabled in this view');
+//       setIsLoading(false);
+//       return;
+//     }
     
-    await AsyncStorage.setItem('accountMode', 'personal');
-    setAccountMode('personal');
-    fetchChatList();
-  } finally {
-    setIsLoading(false);
-  }
-};
+//     await AsyncStorage.setItem('accountMode', 'personal');
+//     setAccountMode('personal');
+//     fetchChatList();
+//   } finally {
+//     setIsLoading(false);
+//   }
+// };
 
-  // const switchAccount = async (account) => {
-  //   setIsLoading(true);
-  //   try {
-  //     await AsyncStorage.setItem('accountMode', account);
-  //     setAccountMode(account);
+  const switchAccount = async (account) => {
+    setIsLoading(true);
+    try {
+      await AsyncStorage.setItem('accountMode', account);
+      setAccountMode(account);
 
-  //     if (account === 'personal') {
-  //       fetchChatList();
-  //     } else {
-  //       const profile = await fetchProfile();
-  //       if (profile && profile.name && profile.name.trim() !== '') {
-  //         navigation.navigate('BusinessHome');
-  //       } else {
-  //         navigation.navigate('BusinessSetup');
-  //       }
-  //     }
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+      if (account === 'personal') {
+        fetchChatList();
+      } else {
+        const profile = await fetchProfile();
+        if (profile && profile.name && profile.name.trim() !== '') {
+          navigation.navigate('BusinessHome');
+        } else {
+          navigation.navigate('BusinessSetup');
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handlePostStatus = async (media, caption) => {
     if (!media) {
@@ -1286,7 +1308,7 @@ const switchAccount = async (account) => {
       }
     } catch (error) {
       console.error('Error marking messages as read:', error);
-      Alert.alert('Error', 'Failed to mark messages as read. Please try again.');
+      //Alert.alert('Error', 'Failed to mark messages as read. Please try again.');
       // Revert local state on failure
       setReadChats(prev => {
         const newSet = new Set(prev);
@@ -1418,31 +1440,50 @@ const switchAccount = async (account) => {
           ))}
         </View>
       </LinearGradient>
+       <View style={[styles.searchBox]}>
+  <Icon name="search" size={20} color="#666" style={{ marginRight: 12 }} />
+  <TextInput
+    ref={searchInputRef}
+    placeholder="Search or start new chat"
+    style={styles.searchInput}
+    placeholderTextColor="#888"
+    value={searchText}
+    onChangeText={(text) => setSearchText(text)}
+    clearButtonMode="while-editing"
+    onFocus={() => setIsSearchFocused(true)}
+    onBlur={() => setIsSearchFocused(false)}
+    // Add these props to prevent keyboard dismissal
+    keyboardType="default"
+    returnKeyType="search"
+    onSubmitEditing={() => {
+      setSearchQuery(searchText);
+      Keyboard.dismiss();
+    }}
+  />
+  {searchText.length > 0 && (
+    <TouchableOpacity 
+      onPress={() => {
+        setSearchText('');
+        setSearchQuery('');
+        searchInputRef.current?.focus(); // Keep focus after clearing
+      }}
+    >
+      <Icon name="close-circle" size={20} color="#666" />
+    </TouchableOpacity>
+  )}
+</View>
       <FlatList
       data={filteredChatList}
       keyExtractor={(item) => `${item.id}-${item.type}-${item.unread_count}`}
       extraData={chatList}
       initialNumToRender={10}
+      keyboardShouldPersistTaps="handled"
       maxToRenderPerBatch={10}
       windowSize={21}
       ListHeaderComponent={() => (
         <>
-          <View style={[styles.searchBox]}>
-            <Icon name="search" size={20} color="#666" style={{ marginRight: 12 }} />
-            <TextInput
-              placeholder="Search or start new chat"
-              style={styles.searchInput}
-              placeholderTextColor="#888"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              clearButtonMode="while-editing"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Icon name="close-circle" size={20} color="#666" />
-              </TouchableOpacity>
-            )}
-          </View>
+         
+
           
           {/* Updated section tabs with user status */}
           <View style={styles.sectionTabs}>

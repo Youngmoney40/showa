@@ -1437,6 +1437,9 @@ const BOTTOM_SHEET_MIN_HEIGHT = 0;
 
 export default function Broadcaster({ route, navigation }) {
   const { roomName, streamId } = route.params;
+  const safeRoomName = encodeURIComponent(
+  roomName.replace(/\s+/g, "-")
+);
 
   const signaling = useRef(null);
   const localStream = useRef(null);
@@ -1507,220 +1510,6 @@ export default function Broadcaster({ route, navigation }) {
       setShowCommentsSheet(false);
     });
   };
-
-
-  // Initialize media and signaling with audio focus
-// useEffect(() => {
-//     let mounted = true;
-//     let connectionTimeout = null;
-
-//     const initializeStream = async () => {
-//       try {
-//         await getIceServers();
-
-//         // Configure audio for streaming with proper focus
-//         try {
-//           // Remove the problematic ringback setting
-//           InCallManager.start({ 
-//             media: 'video',  // Just use 'video' instead of 'audio' for streaming
-//             auto: true,
-//             // Remove ringback: '_stream_' - this was causing the ringing
-//           });
-          
-//           // Configure speaker for broadcast (not call)
-//           if (Platform.OS === 'android') {
-//             InCallManager.setSpeakerphoneOn(true);
-//             InCallManager.setMicrophoneMute(false);
-//           } else {
-//             InCallManager.setSpeakerphoneOn(false); // Set to false first
-//             InCallManager.setForceSpeakerphoneOn(false); // Don't force speakerphone for broadcaster
-//           }
-//           InCallManager.setKeepScreenOn(true);
-//         } catch (err) {
-//           console.warn("[Broadcaster] InCallManager setup error:", err);
-//         }
-
-//         // Get user media with high-quality audio - prevent feedback
-//         const stream = await mediaDevices.getUserMedia({
-//           audio: {
-//             echoCancellation: true,
-//             noiseSuppression: true,
-//             autoGainControl: true,
-//             channelCount: 1, // Changed to mono to prevent feedback
-//             sampleRate: 44100, // Standard sample rate
-//             sampleSize: 16,
-//             // Remove volume setting as it can cause issues
-//           },
-//           video: {
-//             facingMode: isFrontCamera ? "user" : "environment",
-//             width: 1280,
-//             height: 720,
-//             frameRate: 30,
-//           },
-//         });
-
-//         if (!mounted) {
-//           stream.getTracks().forEach((t) => t.stop());
-//           return;
-//         }
-
-//         localStream.current = stream;
-//         setLocalStreamState(stream);
-//         setStreamError(null);
-
-//         signaling.current = new Signaling(roomName, onSignalingMessage);
-        
-//         connectionTimeout = setTimeout(() => {
-//           if (!signaling.current?.isOpen && mounted) {
-//             console.warn("[Broadcaster] Signaling connection timeout");
-//             setStreamError("Connection timeout. Please check your internet and try again.");
-            
-//             Alert.alert(
-//               "Connection Error",
-//               "Failed to connect to streaming server. Please check your internet connection.",
-//               [{ text: "OK", onPress: () => navigation.goBack() }]
-//             );
-//           }
-//         }, 10000);
-
-//         await signaling.current.connect();
-
-//         setTimeout(() => {
-//           if (mounted && signaling.current?.isOpen) {
-//             console.log("[Broadcaster] Sending start-stream message");
-            
-//             signaling.current.send({
-//               type: "start-stream",
-//               streamId,
-//               streamInfo: { 
-//                 id: streamId,
-//                 broadcasterId: viewerId,
-//               },
-//             });
-
-//             if (connectionTimeout) {
-//               clearTimeout(connectionTimeout);
-//               connectionTimeout = null;
-//             }
-//           }
-//         }, 1000);
-
-//       } catch (err) {
-//         console.warn("[Broadcaster] Initialization failed:", err);
-        
-//         if (mounted) {
-//           setStreamError(err.message || "Failed to initialize stream");
-          
-//           Alert.alert(
-//             "Stream Error",
-//             err.message || "Could not access camera or microphone. Please check permissions and try again.",
-//             [{ text: "OK", onPress: () => navigation.goBack() }]
-//           );
-//         }
-//       }
-//     };
-
-//     initializeStream();
-
-//     return () => {
-//       mounted = false;
-      
-//       if (connectionTimeout) {
-//         clearTimeout(connectionTimeout);
-//       }
-      
-//       console.log("[Broadcaster] Cleanup in initialization effect");
-//     };
-//   }, []);
-
-  // const endStream = async (reason = "manual") => {
-  //   if (streamEndedRef.current || isStreamEnding) return;
-    
-  //   streamEndedRef.current = true;
-  //   setIsStreamEnding(true);
-    
-  //   console.log(`[Broadcaster] Ending stream - Reason: ${reason}`);
-
-  //   try {
-  //     if (endStreamTimeoutRef.current) {
-  //       clearTimeout(endStreamTimeoutRef.current);
-  //     }
-
-  //     if (signaling.current) {
-  //       try {
-  //         signaling.current.send({ 
-  //           type: "end-stream", 
-  //           streamId,
-  //           reason 
-  //         });
-  //         signaling.current.close();
-  //       } catch (e) {
-  //         console.warn("Error closing signaling:", e);
-  //       }
-  //     }
-
-  //     if (localStream.current) {
-  //       try {
-  //         localStream.current.getTracks().forEach(track => {
-  //           track.stop();
-  //           track.enabled = false;
-  //         });
-  //         localStream.current = null;
-  //         setLocalStreamState(null);
-  //       } catch (e) {
-  //         console.warn("Error stopping tracks:", e);
-  //       }
-  //     }
-
-  //     Object.values(peerConnections.current).forEach(pc => {
-  //       try {
-  //         pc.close();
-  //       } catch (e) {
-  //         console.warn("Error closing peer connection:", e);
-  //       }
-  //     });
-  //     peerConnections.current = {};
-
-  //     try {
-  //       InCallManager.stop();
-  //       InCallManager.setKeepScreenOn(false);
-  //       InCallManager.setSpeakerphoneOn(false);
-  //       if (Platform.OS === 'ios') {
-  //         InCallManager.setForceSpeakerphoneOn(false);
-  //       }
-  //     } catch (e) {
-  //       console.warn("Error stopping InCallManager:", e);
-  //     }
-
-  //     try {
-  //       const token = await AsyncStorage.getItem("userToken");
-  //       if (token) {
-  //         await fetch(`${API_ROUTE}/live-streams/end/`, {
-  //           method: "POST",
-  //           headers: {
-  //             "Content-Type": "application/json",
-  //             "Authorization": `Bearer ${token}`,
-  //           },
-  //           body: JSON.stringify({
-  //             stream_id: streamId,
-  //             ended_by: reason,
-  //           }),
-  //         });
-  //       }
-  //     } catch (err) {
-  //       console.warn("[Broadcaster] Failed to notify backend of stream end:", err);
-  //     }
-
-  //     setTimeout(() => {
-  //       navigation.goBack();
-  //     }, 300);
-      
-  //   } catch (err) {
-  //     console.warn("[Broadcaster] Error during stream cleanup:", err);
-  //     navigation.goBack();
-  //   }
-  // };
-
 
   const endStream = async (reason = "manual") => {
     if (streamEndedRef.current || isStreamEnding) return;
@@ -2275,7 +2064,8 @@ export default function Broadcaster({ route, navigation }) {
         setLocalStreamState(stream);
         setStreamError(null);
 
-        signaling.current = new Signaling(roomName, onSignalingMessage);
+
+        signaling.current = new Signaling(safeRoomName, onSignalingMessage);
         
         connectionTimeout = setTimeout(() => {
           if (!signaling.current?.isOpen && mounted) {
@@ -2292,7 +2082,10 @@ export default function Broadcaster({ route, navigation }) {
 
         await signaling.current.connect();
 
-        setTimeout(() => {
+        setTimeout(async () => {
+          const userData = await AsyncStorage.getItem("userData");
+          const parsed = JSON.parse(userData);
+          console.log('broadcaster_id',parsed.id)
           if (mounted && signaling.current?.isOpen) {
             console.log("[Broadcaster] Sending start-stream message");
             
@@ -2301,6 +2094,7 @@ export default function Broadcaster({ route, navigation }) {
               streamId,
               streamInfo: { 
                 id: streamId,
+                // broadcasterId: parsed.id
                 broadcasterId: viewerId,
               },
             });
@@ -2560,7 +2354,8 @@ export default function Broadcaster({ route, navigation }) {
       {showControls && (
         <SafeAreaView style={styles.header}>
           <View style={styles.headerContent}>
-            <TouchableOpacity style={styles.backButton} onPress={confirmEndStream}>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+              
               <Icon name="chevron-back" size={24} color="#fff" />
             </TouchableOpacity>
 

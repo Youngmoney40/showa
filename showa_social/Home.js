@@ -2871,6 +2871,8 @@ import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
 import BottomNav from '../components/BottomSocialNav';
 import Share from 'react-native-share';
 import videoBackgroundfetch from '../src/services/VideoBackgroundFetch';
+import { AppState } from 'react-native';
+
 const videoPlaceholder = require('../assets/images/dad.jpg');
 
 const { height, width } = Dimensions.get('window');
@@ -3007,82 +3009,6 @@ const VideoPreloader = memo(({ uri, onLoad, onError }) => {
 
 
 
-// OPTIMIZATION 4: Progressive video player with instant start and volume control
-// const ProgressiveVideo = memo(({ uri, isActive, onLoad, onError, thumbnail, isMuted = false }) => {
-//   const [usePoster, setUsePoster] = useState(true);
-//   const [isBuffering, setIsBuffering] = useState(false);
-//   const videoRef = useRef(null);
-//   const mountedRef = useRef(true);
-
-//   useEffect(() => {
-//     return () => {
-//       mountedRef.current = false;
-//     };
-//   }, []);
-
-//   const handleLoad = () => {
-//     if (mountedRef.current) {
-//       setUsePoster(false);
-//       setIsBuffering(false);
-//       onLoad?.();
-//     }
-//   };
-
-//   const handleBuffer = ({ isBuffering: buffering }) => {
-//     if (mountedRef.current) {
-//       setIsBuffering(buffering);
-//     }
-//   };
-
-//   return (
-//     <View style={StyleSheet.absoluteFill}>
-//       {/* Poster image shows instantly */}
-//       {usePoster && thumbnail && (
-//         <Image
-//           source={{ uri: thumbnail }}
-//           style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]}
-//           resizeMode="cover"
-//         />
-//       )}
-      
-//       {/* Video loads progressively with volume control */}
-//       <Video
-//         ref={videoRef}
-//         source={{ uri }}
-//         style={StyleSheet.absoluteFill}
-//         resizeMode="cover"
-//         repeat={true}
-//         paused={!isActive}
-//         muted={isMuted} // Control mute state here
-//         volume={isMuted ? 0 : 1.0} // Explicit volume control
-//         onLoad={handleLoad}
-//         onError={onError}
-//         onBuffer={handleBuffer}
-//         ignoreSilentSwitch="ignore" // Allow audio even when device is on silent
-//         playInBackground={false}
-//         playWhenInactive={false}
-//         bufferConfig={{
-//           minBufferMs: 0,
-//           maxBufferMs: 1000,
-//           bufferForPlaybackMs: 0,
-//           bufferForPlaybackAfterRebufferMs: 0,
-//         }}
-//         progressUpdateInterval={0}
-//         useTextureView={Platform.OS === 'android'}
-//         preferredForwardBufferDuration={0}
-//         audioOnly={false} // Ensure audio is enabled
-//       />
-      
-//       {/* Minimal buffering indicator */}
-//       {isBuffering && isActive && (
-//         <View style={styles.miniBufferingOverlay}>
-//           <ActivityIndicator size="small" color="#fff" />
-//         </View>
-//       )}
-//     </View>
-//   );
-// });
-
 const preloadAllThumbnails = async (shorts) => {
   console.log('🚀 Starting thumbnail preload...');
   
@@ -3110,6 +3036,77 @@ const preloadAllThumbnails = async (shorts) => {
   console.log('🎉 Thumbnail preloading complete');
 };
 
+// const ProgressiveVideo = memo(({ uri, videoId, isActive, onLoad, onError, isMuted = false }) => {
+//   const [videoSource, setVideoSource] = useState(uri);
+//   const [usePoster, setUsePoster] = useState(true);
+//   const [isBuffering, setIsBuffering] = useState(false);
+//   const [thumbnailError, setThumbnailError] = useState(false);
+//   const videoRef = useRef(null);
+//   const mountedRef = useRef(true);
+
+//   useEffect(() => {
+//     // Check for cached version
+//     const checkCache = async () => {
+//       const cachedPath = await videoPrefetchService.getOptimizedVideoUrl(videoId, uri);
+//       setVideoSource(cachedPath);
+//     };
+    
+//     if (videoId) {
+//       checkCache();
+//     }
+//   }, [videoId, uri]);
+
+//   const thumbnail = useMemo(() => {
+//     return getVideoThumbnail(uri);
+//   }, [uri]);
+
+//   return (
+//     <View style={StyleSheet.absoluteFill}>
+//       {usePoster && (
+//         <Image
+//           source={thumbnailError || !thumbnail ? videoPlaceholder : { uri: thumbnail }}
+//           style={[StyleSheet.absoluteFill, { backgroundColor: '#1a1a1a' }]}
+//           resizeMode="cover"
+//           onError={() => setThumbnailError(true)}
+//         />
+//       )}
+      
+//       <Video
+//         ref={videoRef}
+//         source={{ uri: videoSource }} // Use cached path if available
+//         style={StyleSheet.absoluteFill}
+//         resizeMode="cover"
+//         repeat={true}
+//         paused={!isActive}
+//         muted={isMuted}
+//         volume={isMuted ? 0 : 1.0}
+//         onLoad={() => {
+//           if (mountedRef.current) {
+//             setUsePoster(false);
+//             setIsBuffering(false);
+//             onLoad?.();
+//           }
+//         }}
+//         onError={onError}
+//         onBuffer={({ isBuffering: buffering }) => {
+//           if (mountedRef.current) {
+//             setIsBuffering(buffering);
+//           }
+//         }}
+//       />
+      
+//       {isBuffering && isActive && (
+//         <View style={styles.miniBufferingOverlay}>
+//           <ActivityIndicator size="small" color="#fff" />
+//         </View>
+//       )}
+//     </View>
+//   );
+// });
+
+// Search Video Thumbnail Component (optimized)
+
+
 const ProgressiveVideo = memo(({ uri, videoId, isActive, onLoad, onError, isMuted = false }) => {
   const [videoSource, setVideoSource] = useState(uri);
   const [usePoster, setUsePoster] = useState(true);
@@ -3119,15 +3116,29 @@ const ProgressiveVideo = memo(({ uri, videoId, isActive, onLoad, onError, isMute
   const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
+    
     // Check for cached version
     const checkCache = async () => {
       const cachedPath = await videoPrefetchService.getOptimizedVideoUrl(videoId, uri);
-      setVideoSource(cachedPath);
+      if (mountedRef.current) {
+        setVideoSource(cachedPath);
+      }
     };
     
     if (videoId) {
       checkCache();
     }
+    
+    // Cleanup function
+    return () => {
+      mountedRef.current = false;
+      if (videoRef.current) {
+        // Stop video playback and clear source
+        videoRef.current.seek(0);
+        videoRef.current = null;
+      }
+    };
   }, [videoId, uri]);
 
   const thumbnail = useMemo(() => {
@@ -3147,13 +3158,16 @@ const ProgressiveVideo = memo(({ uri, videoId, isActive, onLoad, onError, isMute
       
       <Video
         ref={videoRef}
-        source={{ uri: videoSource }} // Use cached path if available
+        source={{ uri: videoSource }}
         style={StyleSheet.absoluteFill}
         resizeMode="cover"
         repeat={true}
         paused={!isActive}
         muted={isMuted}
         volume={isMuted ? 0 : 1.0}
+        playInBackground={false} // Important: Don't play in background
+        playWhenInactive={false} // Important: Don't play when inactive
+        ignoreSilentSwitch="ignore" // Keep this as is
         onLoad={() => {
           if (mountedRef.current) {
             setUsePoster(false);
@@ -3178,7 +3192,6 @@ const ProgressiveVideo = memo(({ uri, videoId, isActive, onLoad, onError, isMute
   );
 });
 
-// Search Video Thumbnail Component (optimized)
 const SearchVideoThumbnail = memo(({ videoUrl, username, caption, onPress }) => {
   const [isLoading, setIsLoading] = useState(true);
 
@@ -3891,6 +3904,77 @@ const ShortFeedScreen = ({ navigation, route }) => {
   // Animations
   const fadeAnimEmpty = useRef(new Animated.Value(0)).current;
   const scaleAnimEmpty = useRef(new Animated.Value(0.8)).current;
+
+
+
+  useEffect(() => {
+  // Track app state to stop videos when app goes to background
+  const subscription = AppState.addEventListener('change', nextAppState => {
+    if (nextAppState === 'background' || nextAppState === 'inactive') {
+      // App is in background - stop all videos immediately
+      if (filteredShorts.length > 0) {
+        const pausedState = {};
+        filteredShorts.forEach((_, index) => {
+          pausedState[index] = true;
+        });
+        setPausedVideos(pausedState);
+      }
+      
+      // Force stop any playing video refs
+      Object.values(videoRefs.current).forEach(videoRef => {
+        if (videoRef && videoRef.seek) {
+          videoRef.seek(0);
+        }
+      });
+    }
+  });
+
+  return () => {
+    subscription.remove();
+  };
+}, [filteredShorts]);
+
+  useEffect(() => {
+  const stopAllVideos = () => {
+    // Stop all videos
+    Object.keys(videoRefs.current).forEach(key => {
+      if (videoRefs.current[key]) {
+        videoRefs.current[key].seek(0);
+        videoRefs.current[key] = null;
+      }
+    });
+    
+    // Reset all video states
+    if (filteredShorts.length > 0) {
+      const pausedState = {};
+      filteredShorts.forEach((_, index) => {
+        pausedState[index] = true;
+      });
+      setPausedVideos(pausedState);
+    }
+  };
+
+  // App state change listener (for React Native)
+  const appStateListener = AppState.addEventListener('change', (nextAppState) => {
+    if (nextAppState.match(/inactive|background/)) {
+      // App is closing or going to background - stop all videos
+      stopAllVideos();
+    }
+  });
+
+  // Component unmount cleanup
+  return () => {
+    stopAllVideos();
+    appStateListener.remove();
+    
+    // Clean up all video refs
+    Object.keys(videoRefs.current).forEach(key => {
+      if (videoRefs.current[key]) {
+        videoRefs.current[key] = null;
+      }
+    });
+  };
+}, [filteredShorts]);
 
   const toggleMute = useCallback((videoId) => {
     setMutedVideos(prev => ({
@@ -4626,27 +4710,30 @@ const likeShort = async (id) => {
     }
   };
 
-  const shareShort = async (id, url, caption) => {
-    try {
-      const shareOptions = {
-        title: 'Check out this video!',
-        message: `${caption}\nWatch it here: ${url}`,
-        url: url,
-      };
-
-      await Share.open(shareOptions);
-      
-      const headers = await getAuthHeader();
-      await axios.post(`${API_URL}/shorts/${id}/share/`, { shared_to: 'external' }, { headers });
-      
-      setSnackbarMessage('Shared successfully!');
-      setSnackbarVisible(true);
-    } catch (error) {
-      if (error.message !== 'User did not share') {
-        console.error('Share Error:', error.message);
-      }
+  const shareShort = async (id, videoUrl, caption) => {
+  try {
+    const deepLinkUrl = `showa://short/${id}`;
+    const webUrl = `https://showapp.com/short/${id}`;
+    
+    const shareOptions = {
+      title: 'Check out this short video!',
+      message: `${caption || 'Watch this amazing short video'}\n\n${webUrl}`,
+      url: webUrl,
+    };
+    
+    await Share.open(shareOptions);
+    
+    const headers = await getAuthHeader();
+    await axios.post(`${API_ROUTE}/shorts/${id}/share/`, { shared_to: 'external' }, { headers });
+    
+    setSnackbarMessage('Shared successfully!');
+    setSnackbarVisible(true);
+  } catch (error) {
+    if (error.message !== 'User did not share') {
+      console.error('Share Error:', error.message);
     }
-  };
+  }
+};
 
   const onRefresh = async () => {
     setRefreshing(true);

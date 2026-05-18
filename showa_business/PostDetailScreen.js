@@ -1,380 +1,6 @@
-// import React, { useState, useEffect } from 'react';
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   ScrollView,
-//   Image,
-//   TouchableOpacity,
-//   ActivityIndicator,
-//   Alert,
-//   Share,
-// } from 'react-native';
-// import { useRoute, useNavigation } from '@react-navigation/native';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-// import axios from 'axios';
-// import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
-// import dayjs from 'dayjs';
-// import relativeTime from 'dayjs/plugin/relativeTime';
-// import Ionicons from 'react-native-vector-icons/Ionicons';
-// import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-// import { useTheme } from '../src/context/ThemeContext';
-
-// dayjs.extend(relativeTime);
-
-// const PostDetailScreen = () => {
-//   const route = useRoute();
-//   const navigation = useNavigation();
-//   const { colors, isDark } = useTheme();
-//   const { postId } = route.params;
-  
-//   const [post, setPost] = useState(null);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(null);
-//   const [isLiked, setIsLiked] = useState(false);
-//   const [likeCount, setLikeCount] = useState(0);
 
 
-//   useEffect(() => {
-//     console.log('PostDetailScreen route params:', route.params);
-//     console.log('PostId from params:', postId);
-//   }, [route.params, postId]);
-  
-
-//   useEffect(() => {
-//     fetchPostDetails();
-//   }, [postId]);
-
-//   const fetchPostDetails = async () => {
-//     try {
-//       setLoading(true);
-//       const token = await AsyncStorage.getItem('userToken');
-      
-//       const response = await axios.get(`${API_ROUTE}/posts/${postId}/`, {
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-      
-//       if (response.status === 200) {
-//         setPost(response.data);
-//         setIsLiked(response.data.reactions?.user_reaction === 'like');
-//         setLikeCount(response.data.like_count || 0);
-//       }
-//     } catch (err) {
-//       console.error('Error fetching post:', err);
-//       setError('Failed to load post. It may have been deleted or you don\'t have access.');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handleLike = async () => {
-//     try {
-//       const token = await AsyncStorage.getItem('userToken');
-      
-//       // Optimistic update
-//       setIsLiked(!isLiked);
-//       setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
-      
-//       const response = await axios.post(
-//         `${API_ROUTE}/post-react/`,
-//         { post_id: postId, reaction_type: 'like' },
-//         { headers: { Authorization: `Bearer ${token}` } }
-//       );
-      
-//       if (response.data) {
-//         setLikeCount(response.data.like_count || 0);
-//         setIsLiked(response.data.reaction?.reaction_type === 'like');
-        
-//         if (response.data.reward) {
-//           Alert.alert('🎉 Reward!', `You earned ${response.data.reward.coins} coins!`);
-//         }
-//       }
-//     } catch (error) {
-//       console.error('Error liking post:', error);
-//       // Revert on error
-//       setIsLiked(!isLiked);
-//       setLikeCount(isLiked ? likeCount + 1 : likeCount - 1);
-//       Alert.alert('Error', 'Failed to like post');
-//     }
-//   };
-
-//   const handleShare = async () => {
-//     try {
-//       const shareUrl = `showa://post/${post.id}`;
-//       const shareMessage = `Check out this post on ShowApp!\n\n"${post.content}"\n\n${shareUrl}`;
-      
-//       const result = await Share.share({
-//         message: shareMessage,
-//         title: `Post by ${post.username}`,
-//       });
-      
-//       if (result.action === Share.sharedAction) {
-//         const token = await AsyncStorage.getItem('userToken');
-//         await axios.post(
-//           `${API_ROUTE}/post-react/`,
-//           { post_id: postId, reaction_type: 'share', share_platform: 'external' },
-//           { headers: { Authorization: `Bearer ${token}` } }
-//         );
-//       }
-//     } catch (error) {
-//       console.error('Error sharing:', error);
-//     }
-//   };
-
-//   const handleComment = () => {
-//     // You can implement comment modal or navigate to comments screen
-//     Alert.alert('Comments', 'Comment functionality coming soon');
-//   };
-
-//   if (loading) {
-//     return (
-//       <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
-//         <ActivityIndicator size="large" color={colors.primary} />
-//         <Text style={[styles.loadingText, { color: colors.text }]}>Loading post...</Text>
-//       </View>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
-//         <Ionicons name="sad-outline" size={64} color={colors.textSecondary} />
-//         <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
-//         <TouchableOpacity 
-//           style={[styles.retryButton, { backgroundColor: colors.primary }]}
-//           onPress={fetchPostDetails}
-//         >
-//           <Text style={styles.retryButtonText}>Try Again</Text>
-//         </TouchableOpacity>
-//       </View>
-//     );
-//   }
-
-//   if (!post) {
-//     return (
-//       <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
-//         <Text style={[styles.errorText, { color: colors.text }]}>Post not found</Text>
-//       </View>
-//     );
-//   }
-
-//   return (
-//     <ScrollView 
-//       style={[styles.container, { backgroundColor: colors.background }]}
-//       showsVerticalScrollIndicator={false}
-//     >
-//       {/* Header */}
-//       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-//         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-//           <Ionicons name="arrow-back" size={24} color={colors.text} />
-//         </TouchableOpacity>
-//         <Text style={[styles.headerTitle, { color: colors.text }]}>Post</Text>
-//         <View style={styles.headerRight} />
-//       </View>
-
-//       {/* User Info */}
-//       <TouchableOpacity 
-//         onPress={() => navigation.navigate('OtherUserProfile', { userId: post.user_id })}
-//         style={styles.userInfo}
-//       >
-//         <Image
-//           source={
-//             post.user_profile_picture
-//               ? { uri: post.user_profile_picture }
-//               : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-//           }
-//           style={styles.avatar}
-//         />
-//         <View style={styles.userTextInfo}>
-//           <Text style={[styles.username, { color: colors.text }]}>{post.username}</Text>
-//           <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
-//             {dayjs(post.created_at).fromNow()}
-//           </Text>
-//         </View>
-//       </TouchableOpacity>
-
-//       {/* Post Content */}
-//       <Text style={[styles.content, { color: colors.text }]}>{post.content}</Text>
-
-//       {/* Images */}
-//       {post.all_images && post.all_images.length > 0 && (
-//         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesContainer}>
-//           {post.all_images.map((img, index) => (
-//             <Image
-//               key={index}
-//               source={{ uri: img.url }}
-//               style={styles.postImage}
-//               resizeMode="cover"
-//             />
-//           ))}
-//         </ScrollView>
-//       )}
-
-//       {/* Stats */}
-//       <View style={[styles.statsContainer, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
-//         <View style={styles.stat}>
-//           <Ionicons name="eye-outline" size={20} color={colors.textSecondary} />
-//           <Text style={[styles.statText, { color: colors.textSecondary }]}>
-//             {post.views || 0} views
-//           </Text>
-//         </View>
-//         <View style={styles.stat}>
-//           <Ionicons name="chatbubble-outline" size={20} color={colors.textSecondary} />
-//           <Text style={[styles.statText, { color: colors.textSecondary }]}>
-//             {post.comment_count || 0} comments
-//           </Text>
-//         </View>
-//       </View>
-
-//       {/* Actions */}
-//       <View style={styles.actionsContainer}>
-//         <TouchableOpacity onPress={handleLike} style={styles.actionButton}>
-//           <MaterialIcons
-//             name={isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
-//             size={28}
-//             color={isLiked ? colors.primary : colors.textSecondary}
-//           />
-//           <Text style={[styles.actionText, { color: isLiked ? colors.primary : colors.textSecondary }]}>
-//             {likeCount > 0 ? likeCount : 'Like'}
-//           </Text>
-//         </TouchableOpacity>
-
-//         <TouchableOpacity onPress={handleComment} style={styles.actionButton}>
-//           <Ionicons name="chatbubble-outline" size={26} color={colors.textSecondary} />
-//           <Text style={[styles.actionText, { color: colors.textSecondary }]}>Comment</Text>
-//         </TouchableOpacity>
-
-//         <TouchableOpacity onPress={handleShare} style={styles.actionButton}>
-//           <Ionicons name="share-social-outline" size={26} color={colors.textSecondary} />
-//           <Text style={[styles.actionText, { color: colors.textSecondary }]}>Share</Text>
-//         </TouchableOpacity>
-//       </View>
-//     </ScrollView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//   },
-//   centerContainer: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     padding: 20,
-//   },
-//   header: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'space-between',
-//     paddingHorizontal: 16,
-//     paddingVertical: 12,
-//     borderBottomWidth: 1,
-//   },
-//   backButton: {
-//     padding: 4,
-//   },
-//   headerTitle: {
-//     fontSize: 18,
-//     fontWeight: '600',
-//   },
-//   headerRight: {
-//     width: 32,
-//   },
-//   userInfo: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     padding: 16,
-//   },
-//   avatar: {
-//     width: 50,
-//     height: 50,
-//     borderRadius: 25,
-//     marginRight: 12,
-//   },
-//   userTextInfo: {
-//     flex: 1,
-//   },
-//   username: {
-//     fontSize: 16,
-//     fontWeight: '600',
-//     marginBottom: 4,
-//   },
-//   timestamp: {
-//     fontSize: 12,
-//   },
-//   content: {
-//     fontSize: 16,
-//     lineHeight: 24,
-//     paddingHorizontal: 16,
-//     marginBottom: 16,
-//   },
-//   imagesContainer: {
-//     paddingHorizontal: 16,
-//     marginBottom: 16,
-//   },
-//   postImage: {
-//     width: 300,
-//     height: 300,
-//     borderRadius: 12,
-//     marginRight: 8,
-//   },
-//   statsContainer: {
-//     flexDirection: 'row',
-//     paddingVertical: 12,
-//     paddingHorizontal: 16,
-//     borderTopWidth: 1,
-//     borderBottomWidth: 1,
-//     marginVertical: 16,
-//   },
-//   stat: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginRight: 24,
-//   },
-//   statText: {
-//     marginLeft: 6,
-//     fontSize: 14,
-//   },
-//   actionsContainer: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-around',
-//     paddingVertical: 16,
-//     paddingHorizontal: 16,
-//   },
-//   actionButton: {
-//     alignItems: 'center',
-//     flex: 1,
-//   },
-//   actionText: {
-//     marginTop: 4,
-//     fontSize: 12,
-//   },
-//   loadingText: {
-//     marginTop: 12,
-//     fontSize: 14,
-//   },
-//   errorText: {
-//     fontSize: 16,
-//     textAlign: 'center',
-//     marginTop: 16,
-//     marginBottom: 24,
-//   },
-//   retryButton: {
-//     paddingHorizontal: 24,
-//     paddingVertical: 12,
-//     borderRadius: 24,
-//   },
-//   retryButtonText: {
-//     color: '#fff',
-//     fontSize: 14,
-//     fontWeight: '600',
-//   },
-// });
-
-// export default PostDetailScreen;
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -386,6 +12,14 @@ import {
   Alert,
   Share,
   Linking,
+  Platform,
+  Dimensions,
+  FlatList,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -395,16 +29,20 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../src/context/ThemeContext';
+import LinearGradient from 'react-native-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 dayjs.extend(relativeTime);
+
+const { width, height } = Dimensions.get('window');
 
 const PostDetailScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { colors, isDark } = useTheme();
   
-  // Get postId from route params - supports multiple param names
   const { postId, id, post_id } = route.params || {};
   const finalPostId = postId || id || post_id;
   
@@ -414,29 +52,37 @@ const PostDetailScreen = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [shareCount, setShareCount] = useState(0);
-  const [isShared, setIsShared] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const flatListRef = useRef(null);
 
-  // Debug logging
+  useEffect(() => {
+    const checkDeepLink = async () => {
+      const url = await Linking.getInitialURL();
+      console.log("🔗 PostDetailScreen - Initial URL:", url);
+      if (url) {
+        const match = url.match(/post\/(\d+)/);
+        if (match && !finalPostId) {
+          console.log("Using deep link ID:", match[1]);
+        }
+      }
+    };
+    checkDeepLink();
+  }, []);
+
   useEffect(() => {
     console.log('🔗 PostDetailScreen mounted');
     console.log('📦 Route params:', route.params);
     console.log('🆔 Final Post ID:', finalPostId);
     
-    // Log how we got here (deep link or navigation)
-    const checkHowOpened = async () => {
-      const initialUrl = await Linking.getInitialURL();
-      if (initialUrl && initialUrl.includes(`post/${finalPostId}`)) {
-        console.log('✅ Opened via deep link:', initialUrl);
-      } else {
-        console.log('✅ Opened via normal navigation');
-      }
-    };
-    checkHowOpened();
-  }, [route.params, finalPostId]);
-
-  useEffect(() => {
     if (finalPostId) {
       fetchPostDetails();
+      fetchComments();
     } else {
       setError('No post ID provided');
       setLoading(false);
@@ -466,6 +112,7 @@ const PostDetailScreen = () => {
         setIsLiked(response.data.reactions?.user_reaction === 'like');
         setLikeCount(response.data.like_count || 0);
         setShareCount(response.data.share_count || 0);
+        setIsBookmarked(response.data.is_bookmarked || false);
       }
     } catch (err) {
       console.error('❌ Error fetching post:', err);
@@ -481,6 +128,23 @@ const PostDetailScreen = () => {
     }
   };
 
+  const fetchComments = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+      
+      const response = await axios.get(`${API_ROUTE}/post/${finalPostId}/comments/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (response.status === 200) {
+        setComments(response.data.comments || response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    }
+  };
+
   const handleLike = async () => {
     if (!post) return;
     
@@ -491,7 +155,6 @@ const PostDetailScreen = () => {
         return;
       }
       
-      // Optimistic update
       const newLikedState = !isLiked;
       const newLikeCount = newLikedState ? likeCount + 1 : likeCount - 1;
       setIsLiked(newLikedState);
@@ -510,17 +173,37 @@ const PostDetailScreen = () => {
         if (response.data.reward) {
           Alert.alert(
             '🎉 Reward Earned!',
-            `You earned ${response.data.reward.coins} coins for liking this post!`,
+            `You earned ${response.data.reward.coins} coins!`,
             [{ text: 'Awesome!' }]
           );
         }
       }
     } catch (error) {
       console.error('Error liking post:', error);
-      // Revert on error
       setIsLiked(isLiked);
       setLikeCount(likeCount);
       Alert.alert('Error', 'Failed to like post. Please try again.');
+    }
+  };
+
+  const handleBookmark = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+      
+      const newBookmarkState = !isBookmarked;
+      setIsBookmarked(newBookmarkState);
+      
+      await axios.post(
+        `${API_ROUTE}/bookmark-post/`,
+        { post: post.id },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      Alert.alert('Success', newBookmarkState ? 'Post saved!' : 'Post removed from saved');
+    } catch (error) {
+      console.error('Error bookmarking post:', error);
+      setIsBookmarked(isBookmarked);
     }
   };
 
@@ -528,37 +211,16 @@ const PostDetailScreen = () => {
     if (!post) return;
     
     try {
-      // Create deep link URL
       const deepLinkUrl = `showa://post/${post.id}`;
       const webUrl = `https://showapp.com/post/${post.id}`;
       
-      // Get image for better preview
-      let imageUrl = post.image_url;
-      if (!imageUrl && post.all_images && post.all_images.length > 0) {
-        imageUrl = post.all_images[0].url;
-      }
+      const shareMessage = `${post.username} shared a post on ShowApp\n\n"${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}"\n\n${webUrl}`;
       
-      const shareMessage = 
-        `📱 Check out this post on ShowApp!\n\n` +
-        `"${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}"\n\n` +
-        `━━━━━━━━━━━━━━━━━━━\n` +
-        `👤 Author: ${post.username}\n` +
-        `❤️ Likes: ${post.like_count || 0}\n` +
-        `💬 Comments: ${post.comment_count || 0}\n` +
-        `━━━━━━━━━━━━━━━━━━━\n\n` +
-        `🔗 Open in app: ${deepLinkUrl}\n` +
-        `🌐 Or view online: ${webUrl}`;
-      
-      const shareOptions = {
+      const shareResult = await Share.share({
         message: shareMessage,
-        title: `ShowApp - Post by ${post.username}`,
-      };
-      
-      if (Platform.OS === 'ios') {
-        shareOptions.url = webUrl;
-      }
-      
-      const shareResult = await Share.share(shareOptions);
+        title: `ShowApp - ${post.username}'s post`,
+        url: webUrl,
+      });
       
       if (shareResult.action === Share.sharedAction) {
         console.log('Post shared successfully');
@@ -567,53 +229,113 @@ const PostDetailScreen = () => {
         if (token) {
           const response = await axios.post(
             `${API_ROUTE}/post-react/`,
-            { 
-              post_id: post.id, 
-              reaction_type: 'share',
-              share_platform: 'external'
-            },
+            { post_id: post.id, reaction_type: 'share', share_platform: 'external' },
             { headers: { Authorization: `Bearer ${token}` } }
           );
           
           if (response.data) {
             setShareCount(response.data.share_count || shareCount + 1);
-            setIsShared(true);
-            
             if (response.data.reward) {
-              Alert.alert(
-                '🎉 Share Reward!',
-                `You earned ${response.data.reward.coins} coins for sharing!`,
-                [{ text: 'Awesome!' }]
-              );
+              Alert.alert('🎉 Share Reward!', `You earned ${response.data.reward.coins} coins!`);
             }
           }
         }
       }
     } catch (error) {
       console.error('Error sharing post:', error);
-      Alert.alert('Error', 'Failed to share post');
     }
   };
 
-  // const handleComment = () => {
-  //   if (!post) return;
-  //   // Navigate to comments or open modal
-  //   navigation.navigate('CommentsScreen', { postId: post.id, post: post });
-  // };
-
-
   const handleComment = () => {
-  if (!post) return;
-  // Instead of navigating to non-existent screen, show alert or modal
-  Alert.alert('Comments', 'Comment feature coming soon');
-  // Or you can navigate to a modal or bottom sheet
-};
+    if (!post) return;
+    setShowCommentModal(true);
+  };
+
+  const submitComment = async () => {
+    if (!newComment.trim()) return;
+    
+    setSubmittingComment(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const userData = await AsyncStorage.getItem('userData');
+      const parsedUser = userData ? JSON.parse(userData) : null;
+      
+      const response = await axios.post(
+        `${API_ROUTE}/posts-comment/${post.id}/comments/`,
+        {
+          text: newComment.trim(),
+          post: post.id,
+          user: parsedUser?.id,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.status === 200 || response.status === 201) {
+        setNewComment('');
+        setShowCommentModal(false);
+        fetchComments(); // Refresh comments
+        setLikeCount(prev => prev + 1); // Update comment count in post stats
+        
+        if (response.data.reward) {
+          Alert.alert('💬 Reward!', `You earned ${response.data.reward.coins} coins!`);
+        }
+      }
+    } catch (error) {
+      console.error('Error posting comment:', error);
+      Alert.alert('Error', 'Failed to post comment');
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
 
   const handleViewProfile = () => {
     if (post?.user_id) {
       navigation.navigate('OtherUserProfile', { userId: post.user_id });
     }
   };
+
+  const handleImagePress = (index) => {
+    setSelectedImageIndex(index);
+    setImageModalVisible(true);
+  };
+
+  const renderCommentItem = ({ item }) => (
+    <View style={[styles.commentItem, { borderBottomColor: colors.border }]}>
+      <Image
+        source={
+          item.user?.profile_picture
+            ? { uri: item.user.profile_picture }
+            : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+        }
+        style={styles.commentAvatar}
+      />
+      <View style={styles.commentContent}>
+        <View style={styles.commentHeader}>
+          <Text style={[styles.commentUsername, { color: colors.text }]}>
+            {item.user?.username || 'Anonymous'}
+          </Text>
+          <Text style={[styles.commentTime, { color: colors.textSecondary }]}>
+            {dayjs(item.created_at).fromNow()}
+          </Text>
+        </View>
+        <Text style={[styles.commentText, { color: colors.text }]}>{item.text}</Text>
+        <View style={styles.commentActions}>
+          <TouchableOpacity style={styles.commentAction}>
+            <Ionicons name="heart-outline" size={14} color={colors.textSecondary} />
+            <Text style={[styles.commentActionText, { color: colors.textSecondary }]}>
+              {item.like_count || 0}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.commentAction}>
+            <Ionicons name="chatbubble-outline" size={14} color={colors.textSecondary} />
+            <Text style={[styles.commentActionText, { color: colors.textSecondary }]}>
+              Reply
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
 
   if (loading) {
     return (
@@ -635,151 +357,294 @@ const PostDetailScreen = () => {
         >
           <Text style={styles.retryButtonText}>Try Again</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.backButton, { marginTop: 10 }]}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={[styles.backButtonText, { color: colors.primary }]}>Go Back</Text>
-        </TouchableOpacity>
       </View>
     );
   }
 
-  if (!post) {
-    return (
-      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
-        <Text style={[styles.errorText, { color: colors.text }]}>Post not found</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={[styles.backButtonText, { color: colors.primary }]}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  if (!post) return null;
 
   return (
-    <ScrollView 
-      style={[styles.container, { backgroundColor: colors.background }]}
-      showsVerticalScrollIndicator={false}
-    >
+    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+      <LinearGradient
+        colors={[colors.card, colors.background]}
+        style={[styles.header, { borderBottomColor: colors.border }]}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Post</Text>
-        <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
+        <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
           <Ionicons name="share-social-outline" size={22} color={colors.text} />
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
-      {/* User Info */}
-      <TouchableOpacity onPress={handleViewProfile} style={styles.userInfo}>
-        <Image
-          source={
-            post.user_profile_picture
-              ? { uri: post.user_profile_picture }
-              : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-          }
-          style={styles.avatar}
-        />
-        <View style={styles.userTextInfo}>
-          <View style={styles.userNameRow}>
-            <Text style={[styles.username, { color: colors.text }]}>{post.username}</Text>
-            {post.is_verified && (
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* User Info Card */}
+        <TouchableOpacity onPress={handleViewProfile} activeOpacity={0.7}>
+          <View style={[styles.userCard, { backgroundColor: colors.card }]}>
+            <Image
+              source={
+                post.user_profile_picture
+                  ? { uri: post.user_profile_picture }
+                  : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+              }
+              style={styles.avatar}
+            />
+            <View style={styles.userInfo}>
+              <View style={styles.userNameRow}>
+                <Text style={[styles.username, { color: colors.text }]}>{post.username}</Text>
+                {post.is_verified && (
+                  <View style={styles.verifiedBadge}>
+                    <Icon name="check-circle" size={16} color={colors.primary} />
+                  </View>
+                )}
               </View>
+              <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
+                {dayjs(post.created_at).fromNow()}
+              </Text>
+            </View>
+            
+          </View>
+        </TouchableOpacity>
+
+        {/* Post Content */}
+        <View style={styles.contentContainer}>
+          <Text style={[styles.content, { color: colors.text }]}>{post.content}</Text>
+        </View>
+
+        {/* Images Gallery */}
+        {post.all_images && post.all_images.length > 0 && (
+          <View style={styles.galleryContainer}>
+            {post.all_images.length === 1 ? (
+              <TouchableOpacity onPress={() => handleImagePress(0)} activeOpacity={0.9}>
+                <Image
+                  source={{ uri: post.all_images[0].url }}
+                  style={styles.singleImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ) : (
+              <FlatList
+                ref={flatListRef}
+                data={post.all_images}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(_, index) => index.toString()}
+                renderItem={({ item, index }) => (
+                  <TouchableOpacity onPress={() => handleImagePress(index)} activeOpacity={0.9}>
+                    <Image
+                      source={{ uri: item.url }}
+                      style={styles.galleryImage}
+                      resizeMode="cover"
+                    />
+                    {index === 0 && post.all_images.length > 1 && (
+                      <View style={styles.imageCountBadge}>
+                        <Text style={styles.imageCountText}>
+                          {index + 1}/{post.all_images.length}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                )}
+              />
             )}
           </View>
-          <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
-            {dayjs(post.created_at).fromNow()}
-          </Text>
+        )}
+
+        {/* Stats Row */}
+        <View style={[styles.statsRow, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
+          {/* <View style={styles.statItem}>
+            <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
+            <Text style={[styles.statText, { color: colors.textSecondary }]}>
+              {post.views || 0} views
+            </Text>
+          </View>
+          <View style={styles.statDivider} /> */}
+          <View style={styles.statItem}>
+            <Ionicons name="heart-outline" size={18} color={colors.textSecondary} />
+            <Text style={[styles.statText, { color: colors.textSecondary }]}>
+              {likeCount} likes
+            </Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Ionicons name="chatbubble-outline" size={18} color={colors.textSecondary} />
+            <Text style={[styles.statText, { color: colors.textSecondary }]}>
+              {post.comment_count || 0} comments
+            </Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Ionicons name="share-social-outline" size={18} color={colors.textSecondary} />
+            <Text style={[styles.statText, { color: colors.textSecondary }]}>
+                {shareCount > 0 ? shareCount : 'Share'}
+            </Text>
+          </View>
         </View>
-      </TouchableOpacity>
+         
 
-      {/* Post Content */}
-      <Text style={[styles.content, { color: colors.text }]}>{post.content}</Text>
-
-      {/* Images */}
-      {post.all_images && post.all_images.length > 0 && (
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          style={styles.imagesContainer}
-          pagingEnabled
-        >
-          {post.all_images.map((img, index) => (
-            <TouchableOpacity key={index} activeOpacity={0.9}>
-              <Image
-                source={{ uri: img.url }}
-                style={styles.postImage}
-                resizeMode="cover"
+        {/* Action Buttons */}
+        <View style={styles.actionBar}>
+          <TouchableOpacity onPress={handleLike} style={styles.actionBtn}>
+            <LinearGradient
+              colors={isLiked ? [colors.primary, colors.primaryDark || colors.primary] : ['transparent', 'transparent']}
+              style={[styles.actionBtnGradient, isLiked && styles.actionBtnActive]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <MaterialIcons
+                name={isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
+                size={24}
+                color={isLiked ? '#fff' : colors.textSecondary}
               />
-              {post.all_images.length > 1 && (
-                <View style={styles.imageCounter}>
-                  <Text style={styles.imageCounterText}>
-                    {index + 1} / {post.all_images.length}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
+              <Text style={[styles.actionBtnText, { color: isLiked ? '#fff' : colors.textSecondary }]}>
+                {likeCount > 0 ? likeCount : 'Like'}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
 
-      {/* Stats */}
-      <View style={[styles.statsContainer, { 
-        borderTopColor: colors.border, 
-        borderBottomColor: colors.border 
-      }]}>
-        <View style={styles.stat}>
-          <Ionicons name="eye-outline" size={20} color={colors.textSecondary} />
-          <Text style={[styles.statText, { color: colors.textSecondary }]}>
-            {post.views || 0} views
-          </Text>
-        </View>
-        <View style={styles.stat}>
-          <Ionicons name="chatbubble-outline" size={20} color={colors.textSecondary} />
-          <Text style={[styles.statText, { color: colors.textSecondary }]}>
-            {post.comment_count || 0} comments
-          </Text>
-        </View>
-        <View style={styles.stat}>
-          <Ionicons name="share-social-outline" size={20} color={colors.textSecondary} />
-          <Text style={[styles.statText, { color: colors.textSecondary }]}>
-            {shareCount} shares
-          </Text>
-        </View>
-      </View>
+          <TouchableOpacity onPress={handleComment} style={styles.actionBtn}>
+            <LinearGradient
+              colors={['transparent', 'transparent']}
+              style={styles.actionBtnGradient}
+            >
+              <Ionicons name="chatbubble-outline" size={22} color={colors.textSecondary} />
+              <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>
+                {post.comment_count > 0 ? post.comment_count : 'Comment'}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
 
-      {/* Actions */}
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity onPress={handleLike} style={styles.actionButton}>
-          <MaterialIcons
-            name={isLiked ? 'thumb-up' : 'thumb-up-off-alt'}
-            size={28}
-            color={isLiked ? colors.primary : colors.textSecondary}
+          <TouchableOpacity onPress={handleShare} style={styles.actionBtn}>
+            <LinearGradient
+              colors={['transparent', 'transparent']}
+              style={styles.actionBtnGradient}
+            >
+              <Ionicons name="share-social-outline" size={22} color={colors.textSecondary} />
+              <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>
+                {shareCount > 0 ? shareCount : 'Share'}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        {/* Comments Section Preview */}
+        {comments.length > 0 && (
+          <View style={styles.commentsSection}>
+            <View style={styles.commentsHeader}>
+              <Text style={[styles.commentsTitle, { color: colors.text }]}>
+                Comments ({comments.length})
+              </Text>
+              <TouchableOpacity onPress={handleComment}>
+                <Text style={[styles.viewAllText, { color: colors.primary }]}>View all</Text>
+              </TouchableOpacity>
+            </View>
+            {comments.slice(0, 2).map((comment, index) => (
+              <View key={comment.id || index}>
+                {renderCommentItem({ item: comment })}
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Comment Modal */}
+      <Modal
+        visible={showCommentModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCommentModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalOverlay}
+          >
+            <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Add Comment</Text>
+                <TouchableOpacity onPress={() => setShowCommentModal(false)}>
+                  <Ionicons name="close" size={24} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+              
+              <TextInput
+                style={[styles.modalInput, { 
+                  backgroundColor: colors.background,
+                  color: colors.text,
+                  borderColor: colors.border 
+                }]}
+                placeholder="Write your comment..."
+                placeholderTextColor={colors.textSecondary}
+                value={newComment}
+                onChangeText={setNewComment}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+              
+              <TouchableOpacity
+                style={[styles.submitButton, { backgroundColor: colors.primary }]}
+                onPress={submitComment}
+                disabled={submittingComment || !newComment.trim()}
+              >
+                {submittingComment ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Post Comment</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Image Modal */}
+      <Modal
+        visible={imageModalVisible}
+        transparent={true}
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        <View style={styles.imageModalOverlay}>
+          <TouchableOpacity 
+            style={styles.imageModalClose}
+            onPress={() => setImageModalVisible(false)}
+          >
+            <Ionicons name="close" size={30} color="#fff" />
+          </TouchableOpacity>
+          
+          <FlatList
+            data={post.all_images}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            initialScrollIndex={selectedImageIndex}
+            getItemLayout={(_, index) => ({
+              length: width,
+              offset: width * index,
+              index,
+            })}
+            renderItem={({ item }) => (
+              <View style={styles.imageModalPage}>
+                <Image
+                  source={{ uri: item.url }}
+                  style={styles.imageModalImage}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
+            keyExtractor={(_, index) => index.toString()}
           />
-          <Text style={[styles.actionText, { color: isLiked ? colors.primary : colors.textSecondary }]}>
-            {likeCount > 0 ? likeCount : 'Like'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={handleComment} style={styles.actionButton}>
-          <Ionicons name="chatbubble-outline" size={26} color={colors.textSecondary} />
-          <Text style={[styles.actionText, { color: colors.textSecondary }]}>
-            {post.comment_count > 0 ? post.comment_count : 'Comment'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={handleShare} style={styles.actionButton}>
-          <Ionicons name="share-social-outline" size={26} color={colors.textSecondary} />
-          <Text style={[styles.actionText, { color: colors.textSecondary }]}>
-            {shareCount > 0 ? shareCount : 'Share'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        </View>
+      </Modal>
+    </View>
+    </SafeAreaView>
   );
 };
 
@@ -801,37 +666,46 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
   },
-  backButton: {
-    padding: 8,
-  },
-  shareButton: {
+  headerButton: {
     padding: 8,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
   },
-  userInfo: {
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  userCard: {
     flexDirection: 'row',
-    padding: 16,
     alignItems: 'center',
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     marginRight: 12,
   },
-  userTextInfo: {
+  userInfo: {
     flex: 1,
   },
   userNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 4,
   },
   username: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginRight: 4,
   },
   verifiedBadge: {
@@ -839,65 +713,159 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 12,
-    marginTop: 2,
+  },
+  bookmarkButton: {
+    padding: 8,
+  },
+  contentContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
   },
   content: {
     fontSize: 16,
     lineHeight: 24,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
   },
-  imagesContainer: {
+  galleryContainer: {
     marginVertical: 8,
   },
-  postImage: {
-    width: 350,
-    height: 350,
-    marginHorizontal: 8,
+  singleImage: {
+    width: width - 32,
+    height: width - 32,
     borderRadius: 12,
+    marginHorizontal: 16,
   },
-  imageCounter: {
+  galleryImage: {
+    width: width - 32,
+    height: width - 32,
+    borderRadius: 12,
+    marginHorizontal: 16,
+  },
+  imageCountBadge: {
     position: 'absolute',
-    bottom: 10,
-    right: 20,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 8,
+    bottom: 16,
+    right: 24,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 15,
   },
-  imageCounterText: {
+  imageCountText: {
     color: '#fff',
     fontSize: 12,
+    fontWeight: '500',
   },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    marginTop: 8,
-  },
-  stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 24,
-  },
-  statText: {
-    marginLeft: 6,
-    fontSize: 14,
-  },
-  actionsContainer: {
+  statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 16,
+    paddingVertical: 14,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statText: {
+    fontSize: 13,
+  },
+  statDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: '#e0e0e0',
+  },
+  actionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  actionBtn: {
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  actionBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 25,
+    gap: 8,
+  },
+  actionBtnActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  commentsSection: {
+    marginTop: 8,
     paddingHorizontal: 16,
   },
-  actionButton: {
+  commentsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 12,
+  },
+  commentsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  viewAllText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  commentItem: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  commentAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 12,
+  },
+  commentContent: {
     flex: 1,
   },
-  actionText: {
-    marginTop: 4,
+  commentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    gap: 8,
+  },
+  commentUsername: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  commentTime: {
+    fontSize: 11,
+  },
+  commentText: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 6,
+  },
+  commentActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  commentAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  commentActionText: {
     fontSize: 12,
   },
   loadingText: {
@@ -920,9 +888,67 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  backButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContainer: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    minHeight: 200,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    minHeight: 100,
+    fontSize: 15,
+    marginBottom: 15,
+  },
+  submitButton: {
+    paddingVertical: 12,
+    borderRadius: 25,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  imageModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+  },
+  imageModalClose: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 10,
+    padding: 8,
+  },
+  imageModalPage: {
+    width: width,
+    height: height,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageModalImage: {
+    width: width,
+    height: height * 0.8,
   },
 });
 

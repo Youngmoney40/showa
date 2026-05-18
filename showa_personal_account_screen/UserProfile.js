@@ -48,7 +48,7 @@ const UserProfile = ({ navigation }) => {
     } catch (error) {
       console.error('Error fetching users:', error.response?.data || error.message);
       if (error.response?.status === 401) {
-        navigation.navigate('Login');
+        navigation.navigate('Signin');
       }
       setUserProfileImage(null);
     }
