@@ -380,11 +380,11 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   Dimensions,
-  SafeAreaView,
   StatusBar,
   TextInput,
   Modal
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Video from "react-native-video";
 import axios from "axios";
 import { API_ROUTE } from "../api_routing/api";
@@ -639,9 +639,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    
     marginBottom: 15,
-    marginTop:10,
+    marginTop:50,
     fontFamily:'Lato-Black'
   },
   toggleContainer: {

@@ -366,20 +366,38 @@ const MemoizedTweetItem = memo(({
 
 
   // Prefetch images when component mounts
-  useEffect(() => {
-    if (post.all_images?.length > 0) {
-      // High priority for first image, low for others
-      post.all_images.forEach((img, index) => {
-        const priority = index === 0 ? 'high' : 'low';
-        if (priority === 'high') {
-          Image.prefetch(img.url);
-        } else {
-          // Delay low priority images
-          setTimeout(() => Image.prefetch(img.url), index * 500);
-        }
-      });
+  // useEffect(() => {
+  //   console.log('alll post',post)
+
+  //   if (post.all_images?.length > 0) {
+  //     // High priority for first image, low for others
+  //     post.all_images.forEach((img, index) => {
+  //       const priority = index === 0 ? 'high' : 'low';
+  //       if (priority === 'high') {
+  //         Image.prefetch(img.url);
+  //       } else {
+  //         // Delay low priority images
+  //         setTimeout(() => Image.prefetch(img.url), index * 500);
+  //       }
+  //     });
+  //   }
+  // }, [post.id]);
+
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+useEffect(() => {
+  // Don't prefetch - let the Image component handle it
+  // Only prefetch when post is about to become visible
+  const timer = setTimeout(() => {
+    if (!imagesLoaded && post.all_images?.[0]) {
+      // Prefetch only first image of visible posts
+      Image.prefetch(post.all_images[0].url).catch(() => {});
+      setImagesLoaded(true);
     }
-  }, [post.id]);
+  }, 500); // Delay prefetching
+  
+  return () => clearTimeout(timer);
+}, [post.id, imagesLoaded]);
 
   const displayImages = post.all_images || 
     (post.image_url ? [{ url: post.image_url, is_main: true }] : []);
@@ -600,7 +618,7 @@ const handleFollowPress = () => {
 
   return (
     <View style={[styles.tweetContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-      <TouchableOpacity 
+      {/* <TouchableOpacity 
         onPress={() => navigation.navigate('OtherUserProfile', { userId: post.user_id })}
       >
         <View style={styles.avatarContainer}>
@@ -613,23 +631,40 @@ const handleFollowPress = () => {
             style={[styles.avatar, { borderColor: colors.border }]}
           />
         </View>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
       
       <View style={styles.tweetContent}>
         <View style={styles.tweetHeader}>
+          <TouchableOpacity 
+              onPress={() => navigation.navigate('OtherUserProfile', { userId: post.user_id })}
+            >
+              <View style={[styles.avatarContainer,{}]}>
+                <Image
+                  source={
+                    post.user_profile_picture
+                      ? { uri: post.user_profile_picture }
+                      : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+                  }
+                  style={[styles.avatar, { borderColor: colors.border }]}
+                />
+              </View>
+            </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('OtherUserProfile', { userId: post.user_id })}>
-            <Text style={[styles.name, { color: colors.text }]}>{post.username}</Text>
-          </TouchableOpacity>
-         
-          {post.is_verified && (
-            <View style={styles.verifiedBadge}>
-              <Icontt name="check-bold" size={11} color="#fff" />
-            </View>
-          )}
-          <Text style={[styles.dot, { color: colors.textSecondary }]}>·</Text>
-          <Text style={[styles.time, { color: colors.textSecondary }]}>
+            <Text style={[styles.name, { color: colors.text, marginLeft:10 }]}>{post.username}
+              {post.is_verified && (
+                  <View style={styles.verifiedBadge}>
+                    <Icontt name="check-bold" size={11} color="#fff" />
+                  </View>
+                )}
+            </Text>
+          <Text style={[styles.time, { color: colors.textSecondary,marginLeft:10 }]}>
             {dayjs(post.created_at).fromNow()}
           </Text>
+          </TouchableOpacity>
+         
+          
+          {/* <Text style={[styles.dot, { color: colors.textSecondary }]}>·</Text> */}
+          
           
           {type === 'allposts' ? (
             <TouchableOpacity
@@ -947,7 +982,7 @@ const formatStatusTime = (date) => {
             const userId = userData?.id || 'unknown';
             const username = userData?.name || 'unknown';
             setUserName(username)
-            console.log('login_user_data', username)
+            //console.log('login_user_data', username)
           } catch (error) {
             console.error('Error fetching user data:', error);
           }
@@ -1116,7 +1151,7 @@ const handleCommentLike = useCallback(async (commentId) => {
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    console.log('Comment like response:', response.data);
+    //console.log('Comment like response:', response.data);
 
     if (response.status === 200 || response.status === 201) {
       // Update with actual data from server
@@ -1525,7 +1560,7 @@ const fetchPosts = useCallback(async () => {
       const postsData = Array.isArray(response.data) ? response.data : 
                        (response.data.results || []);
       
-      console.log('fetchPosts response:', postsData);
+      //console.log('fetchPosts response:', postsData);
       
       const enhancedPosts = await Promise.all(
         postsData.map(async (post) => ({
@@ -1563,7 +1598,7 @@ const fetchAllPosts = useCallback(async () => {
       const postsData = Array.isArray(postsResponse.data) ? postsResponse.data : 
                        (postsResponse.data.results || []);
       
-      console.log('fetch-AllPosts response:', postsData);
+      //console.log('fetch-AllPosts response:', postsData);
       
       // Create a copy safely
       const dataCopy = postsData.slice();
@@ -2522,30 +2557,95 @@ const onCommentSubmitPost = useCallback(async () => {
     setRefreshing(false);
   }, [fetchPosts, fetchAllPosts, fetchStatus, fetchSuggestedFriends, fetchLiveStreams]);
 
-  useEffect(() => {
+// useEffect(() => {
+//   const initializeData = async () => {
+//     setInitialLoading(true);
+//     await Promise.all([
+//       loadPostsFromCache(),
+//       loadAllPostsFromCache(),
+//       fetchCurrentUser(),
+//       fetchStatus(),
+//     ]);
+    
+//     // Fetch fresh data in background
+//     Promise.all([
+//       fetchPosts(1),
+//       fetchAllPosts(1),
+//       fetchReactions(),
+//       fetchSuggestedFriends(),
+//       fetchLiveStreams(),
+//     ]).finally(() => {
+//       setInitialLoading(false);
+//     });
+//   };
+
+//   initializeData();
+// }, []);
+
+useEffect(() => {
+  let isMounted = true;
+  
   const initializeData = async () => {
+    if (!isMounted) return;
+    
+    // Show loading skeleton immediately
     setInitialLoading(true);
-    await Promise.all([
+    
+    // CRITICAL: Load cache first (synchronous-like)
+    const [cachedPosts, cachedAllPosts] = await Promise.all([
       loadPostsFromCache(),
       loadAllPostsFromCache(),
-      fetchCurrentUser(),
-      fetchStatus(),
     ]);
     
-    // Fetch fresh data in background
-    Promise.all([
-      fetchPosts(1),
-      fetchAllPosts(1),
-      fetchReactions(),
-      fetchSuggestedFriends(),
-      fetchLiveStreams(),
-    ]).finally(() => {
+    // If we have cache, show content immediately
+    if ((cachedPosts || cachedAllPosts) && isMounted) {
       setInitialLoading(false);
-    });
+    }
+    
+    // Fetch data in background without blocking UI
+    const fetchBackgroundData = async () => {
+      try {
+        await Promise.all([
+          fetchCurrentUser(),
+          fetchStatus(),
+        ]);
+        
+        // Fetch posts but don't block rendering
+        const postsPromise = fetchPosts();
+        const allPostsPromise = fetchAllPosts();
+        const reactionsPromise = fetchReactions();
+        const friendsPromise = fetchSuggestedFriends();
+        const streamsPromise = fetchLiveStreams();
+        
+        await Promise.all([
+          postsPromise, 
+          allPostsPromise, 
+          reactionsPromise,
+          friendsPromise,
+          streamsPromise
+        ]);
+      } catch (error) {
+        console.error('Background fetch error:', error);
+      } finally {
+        if (isMounted) {
+          setInitialLoading(false);
+        }
+      }
+    };
+    
+    fetchBackgroundData();
   };
-
+  
   initializeData();
+  
+  return () => {
+    isMounted = false;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
 }, []);
+
   // Memoized data
   const myStatus = React.useMemo(() => 
     groupedStatuses.find(status => 
@@ -4081,13 +4181,14 @@ modalImagePage: {
   },
   tweetContent: { 
     flex: 1, 
-    marginLeft: 12,
+ 
   },
   tweetHeader: { 
     flexDirection: "row", 
     alignItems: "center", 
     flexWrap: "wrap",
     marginBottom: 8,
+    paddingHorizontal:20
   },
   name: { 
     fontWeight: "bold", 
@@ -4104,6 +4205,7 @@ modalImagePage: {
     fontSize: 15, 
     lineHeight: 20,
     marginBottom: 8,
+    paddingHorizontal:20
   },
 
   imageContainer: {
@@ -4150,7 +4252,7 @@ modalImagePage: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 0,
+    paddingHorizontal: 10,
   },
   actionButton: {
     flexDirection: 'column',
@@ -4428,7 +4530,7 @@ commentContent: {
 singleImageContainer: {
   width: '100%',
   aspectRatio: 1,
-  borderRadius: 12,
+  borderRadius: 0,
   overflow: 'hidden',
   marginBottom: 8,
 },
@@ -4445,7 +4547,7 @@ doubleImageContainer: {
 },
 doubleImageWrapper: {
   flex: 1,
-  borderRadius: 12,
+  borderRadius: 0,
   overflow: 'hidden',
 },
 doubleImage: {
@@ -4461,7 +4563,7 @@ tripleImageContainer: {
 },
 tripleMainImageWrapper: {
   flex: 1,
-  borderRadius: 12,
+  borderRadius: 0,
   overflow: 'hidden',
 },
 tripleMainImage: {
@@ -4474,7 +4576,7 @@ tripleSideContainer: {
 },
 tripleSideImageWrapper: {
   flex: 1,
-  borderRadius: 12,
+  borderRadius: 0,
   overflow: 'hidden',
 },
 tripleSideImage: {
@@ -4490,9 +4592,9 @@ quadImageContainer: {
   marginBottom: 8,
 },
 quadImageWrapper: {
-  width: '48%', // Slightly less than 50% to account for gap
+  width: '48%', 
   aspectRatio: 1,
-  borderRadius: 12,
+  borderRadius: 0,
   overflow: 'hidden',
   position: 'relative',
 },

@@ -63,21 +63,40 @@ jobs:
             --bundle-output android/app/src/main/assets/index.android.bundle \
             --assets-dest android/app/src/main/res
 
-      - name: Clean Gradle
+      - name: Build Debug APK
         run: |
           cd android
-          ./gradlew clean
+          ./gradlew assembleDebug
 
-      # ✅ CHANGED HERE
-      - name: Build AAB
-        run: |
-          cd android
-          ./gradlew bundleRelease
-
-      # ✅ CHANGED HERE
-      - name: Upload AAB
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-aab
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      - name: Upload Debug APK (app-debug)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-alternative
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      # - name: Clean Gradle
+      #   run: |
+      #     cd android
+      #     ./gradlew clean
+
+      # # ✅ CHANGED HERE
+      # - name: Build AAB
+      #   run: |
+      #     cd android
+      #     ./gradlew bundleRelease
+
+      # # ✅ CHANGED HERE
+      # - name: Upload AAB
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: app-release-aab
+      #     path: android/app/build/outputs/bundle/release/app-release.aab
+      #     retention-days: 30

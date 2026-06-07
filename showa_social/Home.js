@@ -2888,7 +2888,7 @@ const getBottomSafeArea = () => {
   if (Platform.OS === 'ios') {
     return 34;
   }
-  return 16;
+  return 46;
 };
 
 const BOTTOM_SAFE_AREA = getBottomSafeArea();
@@ -3322,6 +3322,7 @@ const styles = StyleSheet.create({
   captionContainer: {
     width: '80%',
     marginBottom: BOTTOM_SAFE_AREA,
+    marginTop:-90
   },
   caption: {
     color: '#fff',
@@ -5794,7 +5795,7 @@ const renderItem = useCallback(({ item, index }) => {
         </SafeAreaView>
       </Modal>
 
-      {/* <BottomNav navigation={navigation} activeRoute="ShortFeed" /> */}
+      <BottomNav navigation={navigation} activeRoute="ShortFeed" /> 
 
       <Snackbar
         visible={snackbarVisible}
