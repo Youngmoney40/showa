@@ -22,3 +22,13 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://www.jitpack.io" }
+        // For CallKeep and WebRTC
+        maven { url "https://github.com/jitsi/jitsi-maven-repository/raw/master/releases" }
+    }
+}

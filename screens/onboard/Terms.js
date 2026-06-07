@@ -189,8 +189,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  header: {
-    paddingTop: Platform.OS === 'ios' ? 0 : 40,
+  head2er: {
+    paddingTop: Platform.OS === 'ios' ? 0 : 0,
     paddingBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     justifyContent: 'center',
-    marginTop:50
+    marginTop:0
   },
   headerTextContainer: {
     flex: 1,

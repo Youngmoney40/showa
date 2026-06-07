@@ -6169,8 +6169,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   AppState,
-  Platform,
   View,
+  NativeModules,
+  NativeEventEmitter,
+  DeviceEventEmitter,
+  Platform,
   ActivityIndicator,
   StatusBar as RNStatusBar,
   InteractionManager,
@@ -6183,6 +6186,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useOnlineStatus } from "./src/hooks/useOnlineStatus";
+import RNCallKeep from 'react-native-callkeep';
 import {
   NotificationProvider,
   useNotification,
@@ -6207,6 +6211,7 @@ const saveNavigationState = (state) => {
     (err) => console.error("Failed to save navigation state:", err)
   );
 };
+
 
 const loadNavigationState = async () => {
   try {
@@ -6246,6 +6251,10 @@ import Signin_two from "./screens/onboard/SignIn2_two";
 import TermsCondition from "./screens/onboard/Terms";
 import PrivacyPolicy from "./screens/onboard/PrivacyPolicy";
 import Register from "./screens/onboard/Register";
+import EmailLogin from "./screens/onboard/EmailLogin";
+import EmailRegister from "./screens/onboard/EmailRegisterScreen";
+import ForgotPassword from "./screens/onboard/ForgotPasswordScreen";
+import LoginMethod from "./screens/onboard/LoginMethod";
 import Biometric from "./screens/onboard/Biometric";
 import LinkingScreen from "./screens/onboard/LinkingScreen";
 import VerificationCode from "./screens/onboard/VerifyEmail";
@@ -6371,38 +6380,13 @@ import GlobalIssueReport from "./components/GlobalIssueReport";
 import NewsList from "./components/NewsList";
 import Broadcaster from "./src/Broadcaster";
 import Viewer from "./src/Viewer";
+import CallKeepService from './src/services/CallKeepService';
+import CompleteSignupProfile from "./screens/onboard/CompleteSignupProfile";
+
+
 
 // ─── Linking ──────────────────────────────────────────────────────────────────
 import { Linking } from "react-native";
-
-// const linking = {
-//   prefixes: ["showa://", "https://showapp.com", "http://showapp.com"],
-//   config: {
-//     screens: {
-//       PostDetails: {
-//         path: "post/:postId",
-//         parse: { postId: (id) => id },
-//       },
-//       ShortVideoDetails: {
-//         path: "short/:shortId",
-//         parse: { shortId: (id) => id },
-//       },
-//       OtherUserProfile: {
-//         path: "user/:userId",
-//         parse: { userId: (id) => id },
-//       },
-//     },
-//   },
-//   getInitialURL: async () => {
-//     const url = await Linking.getInitialURL();
-//     console.log("Initial URL:", url);
-//     return url;
-//   },
-//   subscribe: (listener) => {
-//     const sub = Linking.addEventListener("url", ({ url }) => listener(url));
-//     return () => sub.remove();
-//   },
-// };
 
 
 const linking = {
@@ -6542,7 +6526,19 @@ const useDeepLinkHandler = () => {
       
       console.log("⚠️ No matching deep link pattern found for URL:", url);
     };
+
+//     useEffect(() => {
+//   // Initialize CallKeep when app starts
+//   const initCallKeep = async () => {
+//     await CallKeepService.initialize();
+//   };
+//   initCallKeep();
+// }, []);
+
+
     
+
+
     // Check initial URL when app starts
     const checkInitialUrl = async () => {
       try {
@@ -6776,6 +6772,239 @@ function AppContent() {
     checkForUpdate,
   } = useAppUpdate(false);
 
+
+  // App.js — inside your root component
+// useEffect(() => {
+//   const initCallKeep = async () => {
+//     const initialized = await CallKeepService.initialize();
+//     console.log('[App] CallKeep initialized:', initialized);
+
+//     // On Android, log phone account status for debugging
+//     if (Platform.OS === 'android') {
+//       try {
+//         const hasAccount = await RNCallKeep.hasPhoneAccount();
+//         console.log('[App] Phone account active:', hasAccount);
+//         if (!hasAccount) {
+//           // Show user a one-time prompt explaining they need to enable it
+//           Alert.alert(
+//             'Enable Call Features',
+//             'To receive calls, please enable Showa in your phone accounts settings.',
+//             [
+//               { text: 'Later', style: 'cancel' },
+//               { text: 'Enable Now', onPress: () => RNCallKeep.openPhoneAccounts() },
+//             ]
+//           );
+//         }
+//       } catch (e) {
+//         console.warn('[App] Could not check phone account:', e);
+//       }
+//     }
+//   };
+
+//   initCallKeep();
+// }, []);
+
+// useEffect(() => {
+//   const ensurePhoneAccount = async () => {
+//     if (Platform.OS !== 'android') return;
+//     try {
+//       await CallKeepService.initialize(); // setup first
+//       const hasAccount = await RNCallKeep.hasPhoneAccount();
+//       console.log('[App] Phone account enabled:', hasAccount);
+
+//       if (!hasAccount) {
+//         Alert.alert(
+//           'Enable Incoming Calls',
+//           'Showa needs to be enabled as a calling account so you can receive calls. This is a one-time setup.',
+//           [
+//             { text: 'Later', style: 'cancel' },
+//             {
+//               text: 'Enable Now',
+//               onPress: () => RNCallKeep.openPhoneAccounts(),
+//             },
+//           ]
+//         );
+//       }
+//     } catch (e) {
+//       console.warn('[App] Phone account check failed:', e);
+//     }
+//   };
+
+//   ensurePhoneAccount();
+// }, []);
+
+useEffect(() => {
+  // Listen for incoming calls from notification (app in foreground/background)
+  const callSubscription = DeviceEventEmitter.addListener(
+    'incomingCallFromNotification',
+    (callData) => {
+      console.log('[App] Incoming call from notification:', callData);
+      handleIncomingCallNavigation(callData);
+    }
+  );
+
+  // Check for pending call if app was opened from killed state
+  const checkPendingCall = async () => {
+    try {
+      if (NativeModules.CallModule) {
+        const pending = await NativeModules.CallModule.getPendingCall();
+        if (pending) {
+          console.log('[App] Pending call on startup:', pending);
+          // Small delay to let navigation stack initialize
+          setTimeout(() => handleIncomingCallNavigation(pending), 1000);
+        }
+      }
+    } catch (e) {
+      console.warn('[App] getPendingCall error:', e);
+    }
+  };
+
+  // Setup calling + check phone account
+  const setupCalling = async () => {
+    if (Platform.OS !== 'android') return;
+
+    await CallKeepService.initialize();
+
+    const apiLevel = parseInt(Platform.Version, 10);
+
+    // Check phone account (required for CallKeep on Android)
+    try {
+      const hasAccount = await RNCallKeep.hasPhoneAccount();
+      console.log('[App] Phone account enabled:', hasAccount);
+
+      if (!hasAccount) {
+        Alert.alert(
+          'One-time Setup Required',
+          'To receive calls, please enable Showa in your phone calling accounts. This only needs to be done once.',
+          [
+            { text: 'Later', style: 'cancel' },
+            { text: 'Enable Now', onPress: () => RNCallKeep.openPhoneAccounts() },
+          ]
+        );
+      }
+    } catch (e) {
+      console.warn('[App] Phone account check error:', e);
+    }
+
+    // Android 14+ needs explicit full-screen intent permission
+    if (apiLevel >= 34) {
+      try {
+        const hasPermission =
+          await NativeModules.CallModule?.hasFullScreenIntentPermission();
+        console.log('[App] Full screen intent permission:', hasPermission);
+
+        if (!hasPermission) {
+          Alert.alert(
+            'Enable Call Screen',
+            'To show incoming calls on your lock screen, please grant the display permission.',
+            [
+              { text: 'Later', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => Linking.openSettings() },
+            ]
+          );
+        }
+      } catch (e) {
+        console.warn('[App] Full screen intent check error:', e);
+      }
+    }
+  };
+
+  setupCalling();
+  checkPendingCall();
+
+  return () => {
+    callSubscription.remove();
+  };
+}, []);
+
+// const handleIncomingCallNavigation = (callData) => {
+//   try {
+//     NativeModules.CallModule?.stopCallService();
+//   } catch (e) {}
+
+//   if (callData.autoAccept && navigationRef.current) {
+//     try {
+//       navigationRef.current.dispatch(
+//         CommonActions.navigate('VoiceCalls', {
+//           name: callData.callerName,
+//           targetUserId: callData.callerId,
+//           isIncomingCall: true,
+//           isInitiator: false,
+//           incomingOffer: null,
+//           callType: callData.callType,
+//           roomId: callData.roomId,
+//           callId: callData.callId,
+//         })
+//       );
+//     } catch (error) {
+//       console.error('Failed to navigate to VoiceCalls:', error);
+//       // Fallback: Show in-app modal instead
+//       if (global.__callNotificationHandler) {
+//         global.__callNotificationHandler(callData);
+//       }
+//     }
+//   } else if (global.__callNotificationHandler) {
+//     global.__callNotificationHandler(callData);
+//   }
+// };
+
+const handleIncomingCallNavigation = (callData) => {
+  console.log("========== APP.JS NAVIGATION ==========");
+console.log("callData:", JSON.stringify(callData, null, 2));
+console.log("callData.offer:", JSON.stringify(callData.offer, null, 2));
+console.log("callData.sdp exists:", !!callData.sdp);
+console.log("callData.offer.sdp exists:", !!callData.offer?.sdp);
+console.log("=======================================");
+
+  try {
+    NativeModules.CallModule?.stopCallService();
+  } catch (e) {}
+
+  if (callData.autoAccept && navigationRef.current) {
+    try {
+      // ✅ Build the complete offer object
+      const fullOffer = callData.offer || {
+        type: 'offer',
+        sdp: callData.sdp,
+        callerInfo: {
+          name: callData.callerName,
+          profileImage: callData.profileImage || ''
+        },
+        isVideoCall: callData.callType === 'video',
+        targetUserId: callData.callerId,
+        roomId: callData.roomId
+      };
+      console.log("FULL OFFER:");
+console.log(JSON.stringify(fullOffer, null, 2));
+console.log("FULL OFFER SDP:", !!fullOffer?.sdp);
+
+      navigationRef.current.dispatch(
+        CommonActions.navigate('PHome', {
+          name: callData.callerName,
+          profile_image: callData.profileImage || '',
+          targetUserId: callData.callerId,
+          isIncomingCall: true,
+          isInitiator: false,
+          incomingOffer: fullOffer,  // ✅ Pass the actual offer, NOT null!
+          isVideoCall: callData.callType === 'video',
+          callType: callData.callType,
+          roomId: callData.roomId,
+          callId: callData.callId,
+          autoAnswerOnOffer: false, 
+        }));
+
+       
+    } catch (error) {
+      console.error('Failed to navigate to VoiceCalls:', error);
+      if (global.__callNotificationHandler) {
+        global.__callNotificationHandler(callData);
+      }
+    }
+  } else if (global.__callNotificationHandler) {
+    global.__callNotificationHandler(callData);
+  }
+};
+
   // ── Sequenced boot ────────────────────────────────────────────────────────
   useEffect(() => {
     isMountedRef.current = true;
@@ -6830,6 +7059,10 @@ function AppContent() {
       if (isMountedRef.current) setIsAuthenticated(false);
     }
   };
+
+  useEffect(() => {
+  CallKeepService.initialize();
+}, []);
 
   // ── Video prefetch ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -7303,9 +7536,27 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         <Stack.Screen name="AddQuickReply">
           {(p) => <ScreenWrapper><AddQuickReply {...p} /></ScreenWrapper>}
         </Stack.Screen>
+
         <Stack.Screen name="EssentialPlatforms">
           {(p) => <ScreenWrapper><EssentialPlatformsScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
+
+        <Stack.Screen name="LoginMethod">
+          {(p) => <ScreenWrapper><LoginMethod {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
+        <Stack.Screen name="EmailLogin">
+          {(p) => <ScreenWrapper><EmailLogin {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
+        <Stack.Screen name="EmailRegister">
+          {(p) => <ScreenWrapper><EmailRegister {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
+        <Stack.Screen name="ForgotPassword">
+          {(p) => <ScreenWrapper><ForgotPassword {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
         <Stack.Screen name="Advertise">
           {(p) => <ScreenWrapper><Advertise {...p} /></ScreenWrapper>}
         </Stack.Screen>
@@ -7357,9 +7608,14 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         <Stack.Screen name="Broadcast">
           {(p) => <ScreenWrapper><Broadcast {...p} /></ScreenWrapper>}
         </Stack.Screen>
+
         <Stack.Screen name="OfficialSearch">
           {(p) => <ScreenWrapper><OfficialSearch {...p} /></ScreenWrapper>}
         </Stack.Screen>
+        <Stack.Screen name="CompleteSignupProfile">
+          {(p) => <ScreenWrapper><CompleteSignupProfile {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
         <Stack.Screen name="Live">
           {(p) => <ScreenWrapper><Live {...p} /></ScreenWrapper>}
         </Stack.Screen>

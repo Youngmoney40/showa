@@ -613,6 +613,7 @@
 
 // export default IncomingCallModal;
 
+
 import React, { useEffect, useRef, useState, memo } from 'react';
 import {
   View,
@@ -765,6 +766,19 @@ const IncomingCallModal = ({
     };
 
   }, [visible]);
+
+useEffect(() => {
+  if (visible) {
+    console.log('========== INCOMING CALL DETAILS from icm_call page ==========');
+    console.log('📞 Caller Name:', callerName || 'Unknown Caller');
+    console.log('🖼️ Profile Image:', profileImage || 'No profile image');
+    console.log('🎥 Call Type:', isVideoCall ? 'Video Call' : 'Voice Call');
+    console.log('🔗 Full Image URL:', profileImage 
+      ? `${API_ROUTE_IMAGE}${profileImage}` 
+      : 'https://via.placeholder.com/150');
+    console.log('==========================================');
+  }
+}, [visible, callerName, profileImage, isVideoCall]);
 
   // =========================
   // BUTTON ANIMATION

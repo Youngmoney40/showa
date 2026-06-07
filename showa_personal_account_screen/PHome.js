@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
@@ -77,6 +78,7 @@ const HomeScreen = ({ navigation }) => {
   const [callerInfo, setCallerInfo] = useState({ profileImage: '', name: 'Incoming Call' });
   const [showIncomingCallModal, setShowIncomingCallModal] = useState(false);
   const [isVideoCall, setIsVideoCall] = useState(false);
+  
 
      const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -460,7 +462,7 @@ const fetchChatList = async () => {
   const token = await AsyncStorage.getItem('userToken');
   try {
     // FORCE personal account mode only
-    const response = await axios.get(`${API_ROUTE}/api/chat/list/?account_mode=personal`, { // Hardcoded to 'personal'
+    const response = await axios.get(`${API_ROUTE}/api/chat/list/?account_mode=personal`, { 
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
@@ -763,6 +765,207 @@ const fetchChatListSilently = async () => {
   //   return () => clearInterval(interval);
   // }, [accountMode, searchQuery, readChats]);
 
+ // ─── Global call notification handler (from FCM foreground) ──────────────────
+useEffect(() => {
+//   global.__callNotificationHandler = (callData) => {
+//     console.log('📞 Call notification received in HomeScreen:', callData);
+
+//     if (global.__onCallScreen) {
+//       console.log('Already on call screen, ignoring');
+//       return;
+//     }
+
+//     InCallManager.stopRingtone();
+//     Vibration.cancel();
+
+//     // Store caller info for when the WebSocket offer arrives
+//     // Do NOT navigate yet — wait for the offer with SDP via WebSocket
+//     // setCallerInfo({
+//     //   profileImage: callData.profileImage || '',
+//     //   name: callData.callerName || 'Unknown Caller',
+//     //   offer: null, // will be filled when WS offer arrives
+//     // });
+
+//     // setCallerInfo(prev => ({
+//     //   profileImage:
+//     //     callData.profileImage ||
+//     //     prev?.profileImage ||
+//     //     '',
+//     //   name:
+//     //     callData.callerName ||
+//     //     prev?.name ||
+//     //     'Unknown Caller',
+
+//     //   // preserve existing SDP offer
+//     //   offer: prev?.offer || null,
+//     // }));
+//     setCallerInfo(prev => {
+//   if (prev?.offer?.sdp) {
+//     console.log(
+//       '[HomeScreen] Keeping existing SDP offer'
+//     );
+//     return prev;
+//   }
+
+//   return {
+//     profileImage: callData.profileImage || '',
+//     name: callData.callerName || 'Unknown Caller',
+//     offer: null,
+//   };
+// });
+
+//     setIsVideoCall(callData.callType === 'video');
+//     // Don't show modal yet — show it when offer with SDP arrives via WebSocket
+//   };
+
+// global.__callNotificationHandler = (callData) => {
+//   console.log(
+//     '📞 Call notification received in HomeScreen:',
+//     callData
+//   );
+
+//   if (global.__onCallScreen) {
+//     console.log('Already on call screen, ignoring');
+//     return;
+//   }
+
+//   InCallManager.stopRingtone();
+//   Vibration.cancel();
+
+//   setCallerInfo(prev => {
+//     console.log(
+//       '[Notification Handler] Previous SDP exists:',
+//       !!prev?.offer?.sdp
+//     );
+
+//     // KEEP EXISTING OFFER IF ALREADY RECEIVED
+//     if (prev?.offer?.sdp) {
+//       console.log(
+//         '[Notification Handler] Keeping existing SDP'
+//       );
+
+//       return {
+//         ...prev,
+//         profileImage:
+//           callData.profileImage ||
+//           prev.profileImage,
+//         name:
+//           callData.callerName ||
+//           prev.name,
+//       };
+//     }
+
+//     return {
+//       profileImage:
+//         callData.profileImage || '',
+//       name:
+//         callData.callerName ||
+//         'Unknown Caller',
+//       offer: null,
+//     };
+//   });
+
+//   setIsVideoCall(callData.callType === 'video');
+// };
+
+global.__callNotificationHandler = (callData) => {
+  console.log('📞 Call notification received in HomeScreen:', callData);
+  console.log('🔍 CallData structure:', JSON.stringify(callData, null, 2));
+  console.log('Profile Image in notification:', callData.profileImage);
+  console.log('Caller Name in notification:', callData.callerName);
+  
+  // ✅ Check if profile image is nested
+  const profileImagePath = 
+    callData.profileImage || 
+    callData.callerInfo?.profileImage || 
+    '';
+  
+  console.log('📸 Extracted profile image path:', profileImagePath);
+  console.log('🔗 Full URL would be:', profileImagePath ? `${API_ROUTE_IMAGE}${profileImagePath}` : 'No image');
+
+  if (global.__onCallScreen) {
+    console.log('Already on call screen, ignoring');
+    return;
+  }
+
+  InCallManager.stopRingtone();
+  Vibration.cancel();
+
+  setCallerInfo(prev => {
+    console.log('[Notification Handler] Previous SDP exists:', !!prev?.offer?.sdp);
+
+    if (prev?.offer?.sdp) {
+      console.log('[Notification Handler] Keeping existing SDP');
+      return {
+        ...prev,
+        profileImage: profileImagePath || prev.profileImage,
+        name: callData.callerName || callData.callerInfo?.name || prev.name,
+      };
+    }
+
+    return {
+      profileImage: profileImagePath,
+      name: callData.callerName || callData.callerInfo?.name || 'Unknown Caller',
+      offer: null,
+    };
+  });
+
+  setIsVideoCall(callData.callType === 'video' || callData.isVideoCall || false);
+};
+
+  return () => {
+    global.__callNotificationHandler = null;
+  };
+}, [navigation]);
+
+// ─── Global call accept handler (from notification accept button) ────────────
+useEffect(() => {
+  global.__callAcceptHandler = async (callData) => {
+    console.log('📞 Call acceptance from notification:', callData);
+
+    setShowIncomingCallModal(false);
+    InCallManager.stopRingtone();
+    Vibration.cancel();
+
+    // Navigate with autoAnswerOnOffer: true
+    // VoiceVideoCallScreen will wait for the WebSocket offer (with SDP) then auto-answer
+    setTimeout(() => {
+      navigation.navigate('VoiceCalls', {
+        profile_image: '',
+        name: callData.callerName,
+        targetUserId: callData.callerId,
+        incomingOffer: null,       // no SDP yet — comes via WebSocket
+        isIncomingCall: true,
+        isInitiator: false,
+        autoAnswerOnOffer: true,   // ← KEY: auto-answer when offer arrives
+      });
+    }, 100);
+  };
+
+  const checkForPendingCallAccept = async () => {
+    try {
+      const acceptPending = await AsyncStorage.getItem('accept_pending_call');
+      if (acceptPending) {
+        const callData = JSON.parse(acceptPending);
+        await AsyncStorage.removeItem('accept_pending_call');
+        if (callData?.roomId) {
+          global.__callAcceptHandler(callData);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking pending call accept:', error);
+    }
+  };
+
+  checkForPendingCallAccept();
+
+  return () => {
+    global.__callAcceptHandler = null;
+  };
+}, [navigation]);
+
+
+// ─── Home screen WebSocket — listens for incoming offers ─────────────────────
 useEffect(() => {
   const connectCallWebSocket = async () => {
     try {
@@ -774,12 +977,16 @@ useEffect(() => {
         return;
       }
 
-      const userData = JSON.parse(retrieveUserId);
-      const currentUserId = userData.id;
+      const userDataObj = JSON.parse(retrieveUserId);
+      const currentUserId = userDataObj.id;
       const ROOM_ID = `user-${currentUserId}`;
       const SIGNALING_SERVER = 'wss://api.showapp.ng';
-
       const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
+
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        console.log('[Call WS] Already connected');
+        return;
+      }
 
       ws.current = new WebSocket(url);
       ws.current.binaryType = 'arraybuffer';
@@ -788,57 +995,156 @@ useEffect(() => {
         console.log('[Call WS] Connected');
       };
 
+      // ws.current.onmessage = (evt) => {
+      //   let data;
+      //  // try { data = JSON.parse(evt.data); } catch { return; }
+
+      //   try {
+      //       data = JSON.parse(evt.data);
+      //     } catch (e) {
+      //       console.log("WS PARSE ERROR", e);
+      //       return;
+      //     }
+
+      //     console.log("========== HOME WS RECEIVED ==========");
+      //     console.log(JSON.stringify(data, null, 2));
+      //     console.log("TYPE:", data.type);
+      //     console.log("HAS OFFER:", !!data.offer);
+      //     console.log("HAS SDP:", !!data.offer?.sdp);
+      //     console.log("======================================");
+        
+
+      //   console.log('[Call WS Home] Message:', data?.type);
+
+      //   if (data.type === 'incoming_call' && data.offer?.sdp) {
+      //     // If already on call screen, ignore — VoiceVideoCallScreen handles it
+      //     if (global.__onCallScreen) {
+      //       console.log('[Call WS Home] On call screen, ignoring offer');
+      //       return;
+      //     }
+
+      //     const offer = data.offer;
+
+      //     // VALIDATE: offer must have SDP to be useful
+      //     if (!offer?.sdp) {
+      //       console.warn('[Call WS Home] Offer missing SDP — ignoring');
+      //       return;
+      //     }
+
+      //     console.log('[Call WS Home] Valid offer received, SDP length:', offer.sdp.length);
+
+      //     InCallManager.stopRingtone();
+      //     Vibration.cancel();
+
+      //     const callerName = offer.callerInfo?.name || offer.callerName || 'Unknown Caller';
+      //     const profileImage = offer.callerInfo?.profileImage || '';
+      //     const isVideo = offer.isVideoCall || false;
+
+      //     setIsVideoCall(isVideo);
+      //     setCallerInfo({
+      //       profileImage,
+      //       name: callerName,
+      //       offer, // ← FULL offer WITH SDP stored here
+      //     });
+
+      //     setShowIncomingCallModal(true);
+      //   }
+      // };
+
+      // ws.current.onmessage = (evt) => {
+      //   let data;
+      //   try {
+      //     data = JSON.parse(evt.data);
+      //   } catch {
+      //     return;
+      //   }
+
+      //   console.log("========== HOME WS RECEIVED ==========");
+      //   console.log(JSON.stringify(data, null, 2));
+      //   console.log("TYPE:", data?.type);
+      //   console.log("HAS OFFER:", !!data?.offer);
+      //   console.log("HAS SDP:", !!data?.offer?.sdp);
+      //   console.log("======================================");
+
+      //   // SERVER SENDS incoming_call
+      //   if (
+      //     data.type === 'incoming_call' &&
+      //     data.offer?.sdp
+      //   ) {
+      //     console.log(
+      //       '[Call WS Home] Valid offer received, SDP length:',
+      //       data.offer.sdp.length
+      //     );
+
+      //     setCallerInfo({
+      //       profileImage:
+      //         data.offer?.callerInfo?.profileImage || '',
+      //       name:
+      //         data.caller_name ||
+      //         data.offer?.callerInfo?.name ||
+      //         'Unknown Caller',
+      //       offer: data.offer,
+      //     });
+
+      //     setShowIncomingCallModal(true);
+      //     return;
+      //   }
+      // };
       ws.current.onmessage = (evt) => {
-        let data;
-        try {
-          data = JSON.parse(evt.data);
-        } catch (e) {
-          console.error('[WS] Invalid JSON', e);
-          return;
-        }
+  let data;
+  try {
+    data = JSON.parse(evt.data);
+  } catch {
+    return;
+  }
 
-        if (data.type === 'offer') {
-          if (
-            data.offer?.targetUserId &&
-            data.offer.targetUserId !== currentUserId
-          ) {
-            return;
-          }
+  console.log("========== HOME WS RECEIVED ==========");
+  console.log("Full data:", JSON.stringify(data, null, 2));
+  console.log("TYPE:", data?.type);
+  console.log("HAS OFFER:", !!data?.offer);
+  console.log("HAS SDP:", !!data?.offer?.sdp);
+  
+  // ✅ CRITICAL: Log where the profile image is in the message
+  console.log("🔍 CHECKING IMAGE LOCATION:");
+  console.log("  - data.offer.callerInfo:", data?.offer?.callerInfo);
+  console.log("  - data.offer.callerInfo.profileImage:", data?.offer?.callerInfo?.profileImage);
+  console.log("  - data.callerInfo:", data?.callerInfo);
+  console.log("  - data.profile_image:", data?.profile_image);
+  console.log("======================================");
 
-          // Extract caller information from the offer
-          const callerData = data.offer?.callerInfo || {};
-          
-          // Get profile image - could be in different places
-          const profileImage = callerData.profileImage || 
-                               data.offer?.profileImage || 
-                               '';
-          
-          const callerName = callerData.name || 
-                             data.offer?.callerName || 
-                             'Unknown Caller';
-
-          // Extract video call information
-          const isVideo = data.offer?.isVideoCall || false;
-
-          console.log('[Incoming Call] Caller info:', {
-            name: callerName,
-            hasProfileImage: !!profileImage,
-            profileImage: profileImage.substring(0, 50) + '...' // Log partial for debugging
-          });
-
-          // Set the states
-          setIsVideoCall(isVideo);
-          
-          setCallerInfo({
-            profileImage: profileImage,
-            name: callerName,
-            offer: data.offer,
-          });
-
-          // Show the modal
-          setShowIncomingCallModal(true);
-        }
-      };
+  // SERVER SENDS incoming_call
+  if (data.type === 'incoming_call' && data.offer?.sdp) {
+    console.log('[Call WS Home] Valid offer received, SDP length:', data.offer.sdp.length);
+    
+    // ✅ FIX: Extract profile image from the correct location
+    // Based on your log, it should be in data.offer.callerInfo.profileImage
+    const profileImagePath = 
+      data.offer?.callerInfo?.profileImage ||  // This is where you're sending it
+      data.callerInfo?.profileImage ||
+      data.profile_image ||
+      '';
+    
+    const callerName = 
+      data.offer?.callerInfo?.name ||
+      data.caller_name ||
+      data.offer?.callerName ||
+      'Unknown Caller';
+    
+    console.log('[Call WS Home] ✅ Extracted Profile Image Path:', profileImagePath);
+    console.log('[Call WS Home] ✅ Extracted Caller Name:', callerName);
+    console.log('[Call WS Home] 📸 Full Image URL would be:', profileImagePath ? `${API_ROUTE_IMAGE}${profileImagePath}` : 'No image');
+    
+    setCallerInfo({
+      profileImage: profileImagePath,
+      name: callerName,
+      offer: data.offer,
+    });
+    
+    setIsVideoCall(data.offer.isVideoCall || false);
+    setShowIncomingCallModal(true);
+    return;
+  }
+};
 
       ws.current.onerror = (e) => {
         console.error('[Call WS] Error', e);
@@ -846,7 +1152,13 @@ useEffect(() => {
 
       ws.current.onclose = (e) => {
         console.log('[Call WS] Closed', e.code, e.reason);
+        setTimeout(() => {
+          if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
+            connectCallWebSocket();
+          }
+        }, 5000);
       };
+
     } catch (err) {
       console.error('[Call WS] Failed to connect', err);
     }
@@ -855,10 +1167,12 @@ useEffect(() => {
   connectCallWebSocket();
 
   return () => {
-    ws.current?.close();
+    if (ws.current) {
+      ws.current.close();
+      ws.current = null;
+    }
   };
-}, []);
-
+}, [navigation]);
 
   const sendMessage = (msg) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
@@ -907,48 +1221,51 @@ useEffect(() => {
 //   setShowIncomingCallModal(false);
 // };
 
-
-
 const handleAcceptCall = () => {
-  console.log('accept call pressed with offer:', callerInfo.offer);
-  
-  // IMPORTANT: Stop ringtone and vibration immediately
+
+  console.log("========== ACCEPT ==========");
+console.log("callerInfo:", callerInfo);
+console.log("offer exists:", !!callerInfo?.offer);
+console.log("sdp exists:", !!callerInfo?.offer?.sdp);
+console.log("============================");
+  setShowIncomingCallModal(false);
+  InCallManager.stopRingtone();
+  Vibration.cancel();
+
+  if (!callerInfo?.offer?.sdp) {
+    console.error('[Accept] Offer has no SDP!');
+    Alert.alert('Error', 'Call offer expired. Please ask them to call again.');
+    return;
+  }
+
+  console.log('[Accept] Navigating with full offer, SDP length:', callerInfo.offer.sdp.length);
+
+  navigation.navigate('VoiceCalls', {
+    profile_image: callerInfo.profileImage || '',
+    name: callerInfo.name || 'Unknown',
+    targetUserId: callerInfo.offer?.targetUserId || callerInfo.offer?.callerId || '',
+    incomingOffer: callerInfo.offer,  // ← FULL offer WITH SDP
+    isIncomingCall: true,
+    isInitiator: false,
+    autoAnswerOnOffer: false,         // ← false: offer already has SDP, handle directly
+  });
+};
+
+const handleRejectCall = () => {
   InCallManager.stopRingtone();
   Vibration.cancel();
   
-  // Small delay to ensure ringtone is stopped before navigation
-  setTimeout(() => {
-    navigation.navigate('VoiceCalls', {
-      profile_image: callerInfo.profileImage,
-      name: callerInfo.name,
-      incomingOffer: callerInfo.offer,
-      isIncomingCall: true,
-      isInitiator: false,
-      isVideoCall: isVideoCall
-    });
-    setShowIncomingCallModal(false);
-  }, 50);
+  if (ws.current?.readyState === WebSocket.OPEN) {
+    ws.current.send(JSON.stringify({ 
+      type: 'reject_call',
+      caller_id: callerInfo.offer?.targetUserId,
+      room_id: callerInfo.offer?.roomId
+    }));
+  }
+  
+  setShowIncomingCallModal(false);
+  setCallerInfo({ profileImage: '', name: 'Unknown', offer: null });
 };
-
-
-  // const handleRejectCall = () => {
-  //   sendMessage({ type: 'call-ended' });
-  //   setShowIncomingCallModal(false);
-  //   setCallerInfo({ profileImage: '', name: 'Unknown', offer: null });
-  // };
-
-
-  const handleRejectCall = () => {
-    // Stop ringtone and vibration immediately
-    InCallManager.stopRingtone();
-    Vibration.cancel();
-    
-    sendMessage({ type: 'call-ended' });
-    setShowIncomingCallModal(false);
-    setCallerInfo({ profileImage: '', name: 'Unknown', offer: null });
-  };
-
-
 const handleCameraLaunch = async () => {
   try {
     // Check and request camera permissions based on platform
@@ -1688,6 +2005,16 @@ useEffect(()=>{
         // }
       />
       <BottomNav navigation={navigation} setShowAccountModal={setShowAccountModal} />
+
+      {console.log('========== INCOMING CALL MODAL DEBUG from home page ==========')}
+      {console.log('showIncomingCallModal:', showIncomingCallModal)}
+      {console.log('Caller Name:', callerInfo.name)}
+      {console.log('Caller Profile Image Path:', callerInfo.profileImage)}
+      {console.log('Is Video Call:', isVideoCall)}
+      {console.log('Full Image URL:', callerInfo.profileImage ? `${API_ROUTE_IMAGE}${callerInfo.profileImage}` : 'No image provided')}
+      {console.log('Caller Info Object:', JSON.stringify(callerInfo, null, 2))}
+      {console.log('============================================')}
+
        <IncomingCallModal
         visible={showIncomingCallModal}
         onAccept={handleAcceptCall}

@@ -1,3 +1,4 @@
+
 // import React, { useState, useRef, useEffect } from 'react';
 // import {
 //   View,
@@ -48,9 +49,10 @@
 //   const [loading, setLoading] = useState(false);
 //   const [emailError, setEmailError] = useState('');
 //   const [modalVisible, setModalVisible] = useState(false);
+//   const [loginLoading, setLoginLoading] = useState(false);
 //   const emailInputRef = useRef(null);
 
-//   // Auto-focus email input when screen loads
+
 //   useEffect(() => {
 //     const focusTimer = setTimeout(() => {
 //       emailInputRef.current?.focus();
@@ -158,17 +160,18 @@
 //       console.error('Error sending OTP:', error);
 //       Alert.alert(
 //         'Sending Failed',
-//         'Unable to send verification code. Please check your email address and try again.'
+//         'Unable to send verification code. Please check your network and try again.'
 //       );
 //     } finally {
 //       setLoading(false);
+//       setLoginLoading(false);
 //       setModalVisible(false);
 //     }
 //   };
 
-//   const handleLoginInstead = () => {
-//     setModalVisible(false);
-//     sendOTP('login');
+//   const handleLoginInstead = async () => {
+//     setLoginLoading(true);
+//     await sendOTP('login');
 //   };
 
 //   const handleUseDifferentEmail = () => {
@@ -189,10 +192,10 @@
 //   return (
 //     <SafeAreaView style={styles.container}>
 //       <StatusBar
-//               barStyle="dark-content"
-//               backgroundColor={COLORS.white}
-//               translucent={false}
-//             />
+//         barStyle="dark-content"
+//         backgroundColor={COLORS.white}
+//         translucent={false}
+//       />
       
 //       {/* Header */}
 //       <LinearGradient 
@@ -274,6 +277,7 @@
 //                   keyboardType="email-address"
 //                   autoComplete="email"
 //                   autoCapitalize="none"
+//                   placeholderTextColor='#000000'
 //                   autoCorrect={false}
 //                   textContentType="emailAddress"
 //                   value={email}
@@ -281,7 +285,7 @@
 //                     setEmail(text.trim());
 //                     if (emailError) setEmailError('');
 //                   }}
-//                   placeholderTextColor={COLORS.placeholder}
+                 
 //                   returnKeyType="send"
 //                   onSubmitEditing={handleEmailSentOTP}
 //                   blurOnSubmit={false}
@@ -337,21 +341,16 @@
 //                 ) : (
 //                   <>
 //                     <Text style={styles.buttonText}>Continue</Text>
-              
 //                   </>
 //                 )}
 //               </LinearGradient>
 //             </TouchableOpacity>
 
-          
-            
 //           </View>
-
-          
 //         </ScrollView>
 //       </KeyboardAvoidingView>
 
-//       {/* Email Already Registered Modal */}
+//       {/* Professional Email Already Registered Modal */}
 //       <Modal
 //         visible={modalVisible}
 //         transparent={true}
@@ -361,76 +360,72 @@
 //       >
 //         <View style={styles.modalOverlay}>
 //           <View style={styles.modalContainer}>
-//             {/* Modal Header */}
-//             <LinearGradient 
-//               colors={[COLORS.primary, COLORS.primary]} 
-//               style={[styles.modalHegader,{paddingBottom:0, marginBottom:0}]}
-//               start={{ x: 0, y: 0 }}
-//               end={{ x: 1, y: 0 }}
-//             >
-//               <TouchableOpacity 
-//                 onPress={() => setModalVisible(false)}
-//                 style={[styles.modalCloseButton,{margin:0,}]}
-//                 activeOpacity={0.7}
-//               >
-//                 <Icon name="close" size={22} color={COLORS.white} />
-//               </TouchableOpacity>
-//               <Text style={[styles.modalTitle,{padding:10, marginTop:10, marginBottom:0}]}>Email Already Registered</Text>
-//               <View style={styles.modalPlaceholder} />
-//             </LinearGradient>
-
+        
 //             {/* Modal Body */}
 //             <View style={styles.modalBody}>
 //               <View style={styles.modalIconContainer}>
 //                 <View style={styles.modalIconCircle}>
-//                   <Icon name="person-circle-outline" size={44} color={COLORS.primary} />
+//                   <Icon name="checkmark-circle" size={48} color={COLORS.primary} />
 //                 </View>
 //               </View>
               
+              
 //               <Text style={styles.modalMainText}>
-//                 <Text style={styles.emailHighlight}>{email}</Text>
+//                <Text style={[styles.modalTitle,{color:'black',fontSize:24,fontWeight:'800'}]}>Account Found</Text>
 //               </Text>
               
 //               <Text style={styles.modalSubtext}>
-//                 This email is already associated with an existing account. 
-//                 Would you like to login instead?
+//                 We found an existing account associated with:
+//               </Text>
+
+//               <View style={styles.emailContainer}>
+//                 <Icon name="mail" size={18} color={COLORS.primary} style={styles.emailIcon} />
+//                 <Text style={styles.emailText}>{email}</Text>
+//               </View>
+
+//               <Text style={styles.modalDescription}>
+//                 Would you like to login to your existing account or use a different email address?
 //               </Text>
 
 //               {/* Modal Buttons */}
 //               <View style={styles.modalButtons}>
-//                 {/* <TouchableOpacity 
+//                 <TouchableOpacity 
 //                   style={[styles.modalButton, styles.primaryModalButton]}
 //                   onPress={handleLoginInstead}
 //                   activeOpacity={0.8}
+//                   disabled={loginLoading}
 //                 >
-//                   <LinearGradient 
-//                     colors={[COLORS.primary, COLORS.primaryLight]} 
-//                     style={[styles.modalButtonGradient,{}]}
-//                     start={{ x: 0, y: 0 }}
-//                     end={{ x: 1, y: 0 }}
-//                   >
-//                     <Icon name="log-in-outline" size={18} color={COLORS.white} style={styles.modalButtonIcon} />
-//                     <Text style={[styles.primaryModalButtonText,{padding:15, marginBottom:10, justifyContent:'center',alignItems:'flex-end'}]}>Login Instead</Text>
-//                   </LinearGradient>
-//                 </TouchableOpacity> */}
-
-//                 <TouchableOpacity 
-//                   style={[[styles.modalButton, styles.secondaryModalButton,{backgroundColor:COLORS.primary}]]}
-//                   onPress={handleLoginInstead}
-//                   activeOpacity={0.7}
-//                 >
-//                   <Icon name="log-in-outline" size={18} color={COLORS.white} style={styles.modalButtonIcon} />
-//                   <Text style={[styles.secondaryModalButtonText,{color:'white'}]}>Login Instead</Text>
+//                   {loginLoading ? (
+//                     <ActivityIndicator size="small" color={COLORS.white} />
+//                   ) : (
+//                     <>
+//                       <Icon name="log-in-outline" size={18} color={COLORS.white} style={styles.modalButtonIcon} />
+//                       <Text style={styles.primaryModalButtonText}>Login with OTP</Text>
+//                     </>
+//                   )}
 //                 </TouchableOpacity>
+
 //                 <TouchableOpacity 
 //                   style={[styles.modalButton, styles.secondaryModalButton]}
 //                   onPress={handleUseDifferentEmail}
 //                   activeOpacity={0.7}
+//                   disabled={loginLoading}
 //                 >
 //                   <Icon name="create-outline" size={18} color={COLORS.textPrimary} style={styles.modalButtonIcon} />
 //                   <Text style={styles.secondaryModalButtonText}>Use Different Email</Text>
 //                 </TouchableOpacity>
 //               </View>
+
+//               {/* Loading Overlay */}
+//               {loginLoading && (
+//                 <View style={styles.modalLoadingOverlay}>
+//                   <View style={styles.loadingContent}>
+//                     <ActivityIndicator size="large" color={COLORS.primary} />
+//                     <Text style={styles.loadingText}>Sending OTP...</Text>
+//                     <Text style={styles.loadingSubtext}>Please wait while we send your login code</Text>
+//                   </View>
+//                 </View>
+//               )}
 //             </View>
 //           </View>
 //         </View>
@@ -456,7 +451,6 @@
 //     backgroundColor: COLORS.primary,
 //     ...Platform.select({
 //       ios: {
-        
 //         shadowColor: '#000',
 //         shadowOffset: { width: 0, height: 2 },
 //         shadowOpacity: 0.1,
@@ -487,7 +481,7 @@
 //   },
 //   headerTitle: {
 //     color: COLORS.white,
-//     fontSize: 20,
+//     fontSize: 25,
 //     fontWeight: '700',
 //     letterSpacing: 0.5,
 //   },
@@ -525,7 +519,7 @@
 //         shadowRadius: 8,
 //       },
 //       android: {
-//         elevation: 6,
+//         elevation: 0,
 //       },
 //     }),
 //   },
@@ -625,8 +619,6 @@
 //   /* Continue Button */
 //   continueButton: {
 //     borderRadius: 12,
-  
-
 //     overflow: 'hidden',
 //     marginBottom: SPACING.lg,
 //     ...Platform.select({
@@ -641,8 +633,8 @@
 //       },
 //     }),
 //   },
-//   buttonDisyabled: {
-//     opacity: 50,
+//   buttonDisabled: {
+//     opacity: 0.5,
 //   },
 //   buttonGradient: {
 //     alignItems: 'center',
@@ -650,57 +642,17 @@
 //     flexDirection: 'row',
 //   },
 //   buttonText: {
-//     padding:20,
+//     padding: 20,
 //     color: COLORS.white,
 //     fontSize: 17,
 //     fontWeight: '700',
 //     letterSpacing: 0.5,
 //   },
-//   buttonIcon: {
-//     marginLeft: SPACING.sm,
-//   },
 
-//   /* Security Note */
-//   securityNote: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     backgroundColor: 'rgba(40, 167, 69, 0.05)',
-//     padding: SPACING.md,
-//     borderRadius: 10,
-//     marginBottom: SPACING.xl,
-//   },
-//   securityText: {
-//     fontSize: 13,
-//     color: COLORS.success,
-//     marginLeft: SPACING.sm,
-//     fontWeight: '500',
-//     flex: 1,
-//   },
-
-//   /* Privacy Notice */
-//   privacyContainer: {
-//     paddingHorizontal: SPACING.lg,
-//     paddingTop: SPACING.lg,
-//     borderTopWidth: 1,
-//     borderTopColor: COLORS.grayMedium,
-//     marginTop: 'auto',
-//   },
-//   privacyText: {
-//     fontSize: 12,
-//     color: COLORS.textSecondary,
-//     textAlign: 'center',
-//     lineHeight: 18,
-//   },
-//   linkText: {
-//     color: COLORS.primary,
-//     fontWeight: '600',
-//   },
-
-//   /* Modal Styles */
+//   /* Professional Modal Styles */
 //   modalOverlay: {
 //     flex: 1,
-//     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+//     backgroundColor: 'rgba(0, 0, 0, 0.6)',
 //     justifyContent: 'center',
 //     alignItems: 'center',
 //     padding: SPACING.lg,
@@ -715,7 +667,7 @@
 //       ios: {
 //         shadowColor: '#000',
 //         shadowOffset: { width: 0, height: 10 },
-//         shadowOpacity: 0.1,
+//         shadowOpacity: 0.15,
 //         shadowRadius: 20,
 //       },
 //       android: {
@@ -731,12 +683,12 @@
 //     paddingVertical: SPACING.md,
 //   },
 //   modalCloseButton: {
-//     width: 44,
-//     height: 44,
+//     width: 36,
+//     height: 36,
 //     justifyContent: 'center',
 //     alignItems: 'center',
-//     borderRadius: 22,
-//     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+//     borderRadius: 18,
+//     backgroundColor: 'rgba(255, 255, 255, 0.15)',
 //   },
 //   modalTitle: {
 //     color: COLORS.white,
@@ -746,7 +698,7 @@
 //     flex: 1,
 //   },
 //   modalPlaceholder: {
-//     width: 44,
+//     width: 36,
 //   },
 //   modalBody: {
 //     padding: SPACING.xl,
@@ -764,26 +716,44 @@
 //     alignItems: 'center',
 //   },
 //   modalMainText: {
-//     fontSize: 20,
+//     fontSize: 22,
 //     fontWeight: '700',
 //     color: COLORS.textPrimary,
 //     textAlign: 'center',
 //     marginBottom: SPACING.md,
-//     lineHeight: 28,
-//   },
-//   emailHighlight: {
-//     color: COLORS.primary,
-//     backgroundColor: 'rgba(13, 100, 221, 0.1)',
-//     paddingHorizontal: SPACING.sm,
-//     paddingVertical: 2,
-//     borderRadius: 6,
 //   },
 //   modalSubtext: {
 //     fontSize: 15,
 //     color: COLORS.textSecondary,
 //     textAlign: 'center',
-//     marginBottom: SPACING.xl,
+//     marginBottom: SPACING.sm,
 //     lineHeight: 22,
+//   },
+//   emailContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: 'rgba(13, 100, 221, 0.08)',
+//     paddingHorizontal: SPACING.md,
+//     paddingVertical: SPACING.sm,
+//     borderRadius: 10,
+//     marginBottom: SPACING.lg,
+//     borderWidth: 1,
+//     borderColor: 'rgba(13, 100, 221, 0.2)',
+//   },
+//   emailIcon: {
+//     marginRight: SPACING.sm,
+//   },
+//   emailText: {
+//     fontSize: 16,
+//     fontWeight: '600',
+//     color: COLORS.primary,
+//   },
+//   modalDescription: {
+//     fontSize: 14,
+//     color: COLORS.textSecondary,
+//     textAlign: 'center',
+//     marginBottom: SPACING.xl,
+//     lineHeight: 20,
 //   },
 //   modalButtons: {
 //     width: '100%',
@@ -791,9 +761,14 @@
 //   },
 //   modalButton: {
 //     borderRadius: 12,
-//     overflow: 'hidden',
+//     paddingVertical: SPACING.md,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     flexDirection: 'row',
+//     minHeight: 52,
 //   },
 //   primaryModalButton: {
+//     backgroundColor: COLORS.primary,
 //     ...Platform.select({
 //       ios: {
 //         shadowColor: COLORS.primary,
@@ -802,32 +777,19 @@
 //         shadowRadius: 8,
 //       },
 //       android: {
-//         elevation: 6,
+//         elevation: 4,
 //       },
 //     }),
 //   },
-//   modalButtonGradient: {
-//     paddingVertical: SPACING.md,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     flexDirection: 'row',
-//     borderRadius:20
-    
-//   },
 //   primaryModalButtonText: {
 //     color: COLORS.white,
-//     fontWeight: '700',
+//     fontWeight: '600',
 //     fontSize: 16,
-//     marginLeft: SPACING.sm,
 //   },
 //   modalButtonIcon: {
 //     marginRight: SPACING.sm,
 //   },
 //   secondaryModalButton: {
-//     paddingVertical: SPACING.md,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     flexDirection: 'row',
 //     borderWidth: 1.5,
 //     borderColor: COLORS.border,
 //     backgroundColor: COLORS.white,
@@ -836,6 +798,31 @@
 //     color: COLORS.textPrimary,
 //     fontWeight: '600',
 //     fontSize: 16,
+//   },
+//   modalLoadingOverlay: {
+//     ...StyleSheet.absoluteFillObject,
+//     backgroundColor: 'rgba(255, 255, 255, 0.9)',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     borderRadius: 20,
+//   },
+//   loadingContent: {
+//     alignItems: 'center',
+//     padding: SPACING.xl,
+//   },
+//   loadingText: {
+//     fontSize: 18,
+//     fontWeight: '600',
+//     color: COLORS.textPrimary,
+//     marginTop: SPACING.lg,
+//     marginBottom: SPACING.sm,
+//   },
+//   loadingSubtext: {
+//     fontSize: 14,
+//     color: COLORS.textSecondary,
+//     textAlign: 'center',
+//     maxWidth: 250,
+//     lineHeight: 20,
 //   },
 // });
 
@@ -885,172 +872,203 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export default function EmailScreen({ navigation, route }) {
   const phoneNumber = route.params?.phoneNumberID;
   const navigate = useNavigation();
-  const [email, setEmail] = useState('');
+  const [contact, setContact] = useState(''); // Can be email OR phone
+  const [contactType, setContactType] = useState('email'); // 'email' or 'phone'
   const [loading, setLoading] = useState(false);
-  const [emailError, setEmailError] = useState('');
+  const [contactError, setContactError] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
-  const emailInputRef = useRef(null);
-
+  const [usingEmailFallback, setUsingEmailFallback] = useState(false);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     const focusTimer = setTimeout(() => {
-      emailInputRef.current?.focus();
+      inputRef.current?.focus();
     }, 400);
-
     return () => clearTimeout(focusTimer);
   }, []);
 
   const redirectBack = () => {
-    navigation.navigate('Signin');
+    navigation.goBack();
   };
 
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) {
-      return 'Please enter your email address';
+  const validateContact = (value) => {
+    if (!value) {
+      return 'Please enter your email or phone number';
     }
-    if (!emailRegex.test(email)) {
-      return 'Please enter a valid email address';
-    }
-    return '';
-  };
-
-  // const register = async () =>{
-  //   try {
-  //     const payload = new FormData();
-  //     payload.append('email', 'johness@gmail.com');
-  //     payload.append('phone_number', '09037102599');
-  //     payload.append('name', 'John');
-  //     const response = await axios.post('http://api.showapp.ng/api/showa/register/', 
-  //       payload, 
-  //       {
-  //           headers: { 
-  //             'Content-Type': 'multipart/form-data',
-  //             'Accept': 'application/json'
-  //           },
-  //           timeout: 15000
-  //         });
-
-  //         console.log('Registration Response:', response.data);
-      
-  //   } catch (error) {
-  //     console.error('Error registering user:', error);
-  //   }
     
-  // }
+    // Check if it's an email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (emailRegex.test(value)) {
+      setContactType('email');
+      return '';
+    }
+    
+    // Check if it's a phone number (basic validation)
+    const phoneRegex = /^[0-9+\-\s()]{8,15}$/;
+    if (phoneRegex.test(value)) {
+      setContactType('phone');
+      return '';
+    }
+    
+    return 'Please enter a valid email or phone number';
+  };
 
-  const checkEmailExists = async () => {
+  const checkContactExists = async () => {
     try {
-      const response = await axios.post(`${API_ROUTE}/check-email/`, { email });
+      const payload = contactType === 'email' 
+        ? { email: contact }
+        : { phone: contact };
+      
+      const response = await axios.post(`${API_ROUTE}/check-contact/`, payload);
       return response.data.exists;
     } catch (error) {
-      console.error('Error checking email:', error);
+      console.error('Error checking contact:', error);
       return false;
     }
   };
 
-  const handleEmailSentOTP = async () => {
-    const validationError = validateEmail(email);
-    if (validationError) {
-      setEmailError(validationError);
-      return;
-    }
-
-    setLoading(true);
-    setEmailError('');
-
+  const sendOTP = async (useEmailFallback = false) => {
     try {
-      const emailExists = await checkEmailExists();
+      let payload;
       
-      if (emailExists) {
-        setModalVisible(true);
-        setLoading(false);
-        return;
-      }
-
-      await sendOTP('registration');
-    } catch (error) {
-      console.error('Error:', error.response || error);
-      if (error.response?.data?.email) {
-        setEmailError(error.response.data.email[0]);
+      if (useEmailFallback) {
+        // Force send to email even if it's a phone number
+        payload = { email: contact, purpose: 'login' };
+      } else if (contactType === 'email') {
+        payload = { email: contact, purpose: 'registration' };
       } else {
-        Alert.alert(
-          'Network Error',
-          'Unable to connect. Please check your internet connection and try again.',
-          [{ text: 'OK', style: 'default' }]
-        );
+        // Phone number - try SMS first
+        payload = { phone: contact, purpose: 'registration' };
       }
-      setLoading(false);
-    }
-  };
-
-  const sendOTP = async (purpose) => {
-    try {
-      const response = await axios.post(`${API_ROUTE}/send-otp/`, { 
-        email, 
-        purpose,
-        phoneNumber 
-      });
+      
+      const response = await axios.post(`${API_ROUTE}/send-otp/`, payload);
       
       if (response.status === 200 || response.status === 201) {
+        const method = response.data.method;
+        const message = response.data.message;
+        
         Alert.alert(
           'Verification Sent ✓',
-          `A 6-digit OTP has been sent to:\n${email}\n\nPlease check your inbox and enter the code to ${purpose === 'login' ? 'login' : 'complete your registration'}.`,
+          `${message}\n\nPlease check ${method === 'sms' ? 'your phone' : 'your email'} for the 6-digit code.`,
           [
             { 
               text: 'OK', 
               style: 'default',
               onPress: () => {
-                if (purpose === 'login') {
-                  navigation.navigate('VerificationCode', {
-                    emailID: email,
-                    purpose: 'login'
-                  });
-                } else {
-                  navigation.navigate('LinkingScreen', {
-                    phoneNumberID: phoneNumber,
-                    emailID: email,
-                  });
-                }
+                // navigation.navigate('VerificationCode', {
+                //   contactID: contact,
+                //   contactType: useEmailFallback ? 'email' : contactType,
+                //   purpose: 'login',
+                //   phoneNumberID: phoneNeeeumbffer
+                // });
+                navigation.navigate('VerificationCode', {
+                  contactID: contact,  
+                  contactType: contactType,  
+                  purpose: 'login',
+                  phoneNumberID: phoneNumber
+                });
               }
             }
           ]
         );
       } else {
-        Alert.alert('Error', 'Failed to send OTP. Please try again.');
+        Alert.alert('Error', 'Failed to send verification code. Please try again.');
       }
     } catch (error) {
       console.error('Error sending OTP:', error);
-      Alert.alert(
-        'Sending Failed',
-        'Unable to send verification code. Please check your network and try again.'
-      );
+      
+      // If phone SMS fails and we haven't tried email yet, offer email fallback
+      if (contactType === 'phone' && !usingEmailFallback && error.response?.status === 500) {
+        Alert.alert(
+          'SMS Delivery Failed',
+          "We couldn't send an SMS to this number. Would you like to receive the code via email instead?",
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Use Email', 
+              onPress: () => {
+                setUsingEmailFallback(true);
+                sendOTP(true); // Retry with email
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Sending Failed',
+          'Unable to send verification code. Please check your contact info and try again.'
+        );
+      }
     } finally {
       setLoading(false);
       setLoginLoading(false);
       setModalVisible(false);
+      setUsingEmailFallback(false);
+    }
+  };
+
+  const handleSendOTP = async () => {
+    const validationError = validateContact(contact);
+    if (validationError) {
+      setContactError(validationError);
+      return;
+    }
+
+    setLoading(true);
+    setContactError('');
+
+    try {
+      const contactExists = await checkContactExists();
+      
+      if (contactExists) {
+        setModalVisible(true);
+        setLoading(false);
+        return;
+      }
+
+      await sendOTP(false);
+    } catch (error) {
+      console.error('Error:', error.response || error);
+      setContactError('Unable to verify. Please try again.');
+      setLoading(false);
     }
   };
 
   const handleLoginInstead = async () => {
     setLoginLoading(true);
-    await sendOTP('login');
+    await sendOTP(false);
   };
 
-  const handleUseDifferentEmail = () => {
+  const handleUseDifferentContact = () => {
     setModalVisible(false);
-    setEmail('');
-    // Re-focus on the input after clearing
+    setContact('');
     setTimeout(() => {
-      emailInputRef.current?.focus();
+      inputRef.current?.focus();
     }, 100);
   };
 
   const handleKeyPress = ({ nativeEvent }) => {
     if (nativeEvent.key === 'Enter' || nativeEvent.key === 'done') {
-      handleEmailSentOTP();
+      handleSendOTP();
     }
+  };
+
+  const getIconName = () => {
+    if (contactType === 'email') return 'mail-outline';
+    if (contactType === 'phone') return 'call-outline';
+    return 'person-outline';
+  };
+
+  const getPlaceholder = () => {
+    return 'Enter email or phone number';
+  };
+
+  const getHelperText = () => {
+    if (contactType === 'email') {
+      return "We'll send a 6-digit verification code to this email";
+    }
+    return "We'll send a 6-digit verification code via SMS to this number";
   };
 
   return (
@@ -1078,8 +1096,8 @@ export default function EmailScreen({ navigation, route }) {
           </TouchableOpacity>
           
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>Email Verification</Text>
-            <Text style={styles.headerSubtitle}>Step 2 of 3</Text>
+            <Text style={styles.headerTitle}>Account Setup</Text>
+            <Text style={styles.headerSubtitle}>Step 2 of 4</Text>
           </View>
           
           <TouchableOpacity 
@@ -1087,7 +1105,7 @@ export default function EmailScreen({ navigation, route }) {
             style={styles.headerButton}
             activeOpacity={0.7}
           >
-            <Icon name="close" size={24} color={COLORS.white} />
+            {/* <Icon name="close" size={24} color={COLORS.white} /> */}
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -1109,60 +1127,58 @@ export default function EmailScreen({ navigation, route }) {
               colors={['rgba(13,100,221,0.1)', 'rgba(74,144,226,0.05)']}
               style={styles.heroIconContainer}
             >
-              <Icon name="mail-outline" size={42} color={COLORS.primary} />
+              <Icon name={getIconName()} size={42} color={COLORS.primary} />
             </LinearGradient>
             
-            <Text style={styles.heroTitle}>Add Your Email</Text>
+            <Text style={styles.heroTitle}>Verify Your Contact</Text>
             <Text style={styles.heroSubtitle}>
-              Enter your email address to receive a verification code and secure your account
+              Enter your email address or phone number to receive a verification code
             </Text>
           </View>
 
           {/* Form Section */}
           <View style={styles.formContainer}>
-            {/* Email Input */}
+            {/* Contact Input */}
             <View style={styles.inputSection}>
-              <Text style={styles.inputLabel}>Email Address</Text>
+              <Text style={styles.inputLabel}>Email or Phone Number</Text>
               <View style={[
                 styles.inputWrapper,
-                emailError && styles.inputWrapperError,
-                email && !emailError && styles.inputWrapperSuccess,
+                contactError && styles.inputWrapperError,
+                contact && !contactError && styles.inputWrapperSuccess,
               ]}>
                 <Icon 
-                  name="mail-outline" 
+                  name={getIconName()} 
                   size={20} 
-                  color={emailError ? COLORS.error : email ? COLORS.success : COLORS.textSecondary} 
+                  color={contactError ? COLORS.error : contact ? COLORS.success : COLORS.textSecondary} 
                   style={styles.inputIcon} 
                 />
                 <TextInput
-                  ref={emailInputRef}
-                  placeholder="Enter your email"
+                  ref={inputRef}
+                  placeholder={getPlaceholder()}
                   style={styles.input}
-                  keyboardType="email-address"
-                  autoComplete="email"
+                  keyboardType="default"
+                  autoComplete="off"
                   autoCapitalize="none"
                   placeholderTextColor='#000000'
                   autoCorrect={false}
-                  textContentType="emailAddress"
-                  value={email}
+                  value={contact}
                   onChangeText={(text) => {
-                    setEmail(text.trim());
-                    if (emailError) setEmailError('');
+                    setContact(text);
+                    if (contactError) setContactError('');
                   }}
-                 
                   returnKeyType="send"
-                  onSubmitEditing={handleEmailSentOTP}
+                  onSubmitEditing={handleSendOTP}
                   blurOnSubmit={false}
                   editable={!loading}
                   onKeyPress={handleKeyPress}
                   autoFocus={true}
                 />
                 
-                {email.length > 0 && (
+                {contact.length > 0 && (
                   <TouchableOpacity
                     onPress={() => {
-                      setEmail('');
-                      emailInputRef.current?.focus();
+                      setContact('');
+                      inputRef.current?.focus();
                     }}
                     style={styles.clearButton}
                     activeOpacity={0.6}
@@ -1172,27 +1188,27 @@ export default function EmailScreen({ navigation, route }) {
                 )}
               </View>
               
-              {emailError ? (
+              {contactError ? (
                 <View style={styles.errorContainer}>
                   <Icon name="alert-circle-outline" size={16} color={COLORS.error} />
-                  <Text style={styles.errorText}>{emailError}</Text>
+                  <Text style={styles.errorText}>{contactError}</Text>
                 </View>
               ) : (
                 <Text style={styles.helperText}>
-                  We'll send a 6-digit verification code to this email
+                  {getHelperText()}
                 </Text>
               )}
             </View>
 
             {/* Continue Button */}
             <TouchableOpacity
-              onPress={handleEmailSentOTP}
+              onPress={handleSendOTP}
               style={[
                 styles.continueButton,
-                (!email || loading) && styles.buttonDisabled,
+                (!contact || loading) && styles.buttonDisabled,
               ]}
               activeOpacity={0.8}
-              disabled={!email || loading}
+              disabled={!contact || loading}
             >
               <LinearGradient 
                 colors={[COLORS.primary, COLORS.primary]} 
@@ -1214,7 +1230,7 @@ export default function EmailScreen({ navigation, route }) {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Professional Email Already Registered Modal */}
+      {/* Account Found Modal */}
       <Modal
         visible={modalVisible}
         transparent={true}
@@ -1224,15 +1240,12 @@ export default function EmailScreen({ navigation, route }) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-        
-            {/* Modal Body */}
             <View style={styles.modalBody}>
               <View style={styles.modalIconContainer}>
                 <View style={styles.modalIconCircle}>
                   <Icon name="checkmark-circle" size={48} color={COLORS.primary} />
                 </View>
               </View>
-              
               
               <Text style={styles.modalMainText}>
                <Text style={[styles.modalTitle,{color:'black',fontSize:24,fontWeight:'800'}]}>Account Found</Text>
@@ -1243,12 +1256,12 @@ export default function EmailScreen({ navigation, route }) {
               </Text>
 
               <View style={styles.emailContainer}>
-                <Icon name="mail" size={18} color={COLORS.primary} style={styles.emailIcon} />
-                <Text style={styles.emailText}>{email}</Text>
+                <Icon name={contactType === 'email' ? "mail" : "call"} size={18} color={COLORS.primary} style={styles.emailIcon} />
+                <Text style={styles.emailText}>{contact}</Text>
               </View>
 
               <Text style={styles.modalDescription}>
-                Would you like to login to your existing account or use a different email address?
+                Would you like to login to your existing account or use a different contact?
               </Text>
 
               {/* Modal Buttons */}
@@ -1264,20 +1277,20 @@ export default function EmailScreen({ navigation, route }) {
                   ) : (
                     <>
                       <Icon name="log-in-outline" size={18} color={COLORS.white} style={styles.modalButtonIcon} />
-                      <Text style={styles.primaryModalButtonText}>Login with OTP</Text>
+                      <Text style={styles.primaryModalButtonText}>Verify</Text>
                     </>
                   )}
                 </TouchableOpacity>
 
-                <TouchableOpacity 
+                {/* <TouchableOpacity 
                   style={[styles.modalButton, styles.secondaryModalButton]}
-                  onPress={handleUseDifferentEmail}
+                  onPress={handleUseDifferentContact}
                   activeOpacity={0.7}
                   disabled={loginLoading}
                 >
                   <Icon name="create-outline" size={18} color={COLORS.textPrimary} style={styles.modalButtonIcon} />
-                  <Text style={styles.secondaryModalButtonText}>Use Different Email</Text>
-                </TouchableOpacity>
+                  <Text style={styles.secondaryModalButtonText}>Use Different Contact</Text>
+                </TouchableOpacity> */}
               </View>
 
               {/* Loading Overlay */}
@@ -1286,7 +1299,7 @@ export default function EmailScreen({ navigation, route }) {
                   <View style={styles.loadingContent}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
                     <Text style={styles.loadingText}>Sending OTP...</Text>
-                    <Text style={styles.loadingSubtext}>Please wait while we send your login code</Text>
+                    <Text style={styles.loadingSubtext}>Please wait while we send your verification code</Text>
                   </View>
                 </View>
               )}
@@ -1338,7 +1351,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    ///backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   headerTitleContainer: {
     alignItems: 'center',
@@ -1513,7 +1526,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  /* Professional Modal Styles */
+  /* Modal Styles */
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -1538,31 +1551,6 @@ const styles = StyleSheet.create({
         elevation: 10,
       },
     }),
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-  },
-  modalCloseButton: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  modalTitle: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-    flex: 1,
-  },
-  modalPlaceholder: {
-    width: 36,
   },
   modalBody: {
     padding: SPACING.xl,

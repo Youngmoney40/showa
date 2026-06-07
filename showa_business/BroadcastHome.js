@@ -4043,9 +4043,10 @@ modalImagePage: {
   },
 
   tweetContainer: {
-    flexDirection: "row",
-    padding: 15,
-    borderBottomWidth: 0.5,
+    // flexDirection: "row",
+    paddingVertical: 20,
+    
+    borderBottomWidth: 1.5,
   },
   avatarContainer: {
     position: 'relative',

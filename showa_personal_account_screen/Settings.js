@@ -98,7 +98,7 @@ const ContactProfile = ({ navigation }) => {
       ]);
       
       setSignOutModalVisible(false);
-      navigation.navigate('Signin_two');
+      navigation.navigate('EmailLogin');
     } catch (error) {
       console.error('Error signing out:', error);
       Alert.alert('Error', 'Failed to sign out. Please try again.');
@@ -253,7 +253,7 @@ const ContactProfile = ({ navigation }) => {
           {userData && userData.id && (
             <View style={styles.profileContainer}>
               <Image
-                source={userProfileImage ? { uri: userProfileImage } : require('../assets/images/dad.jpg')}
+                source={userProfileImage ? { uri: userProfileImage } : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')}
                 style={dynamicStyles.profileImage}
               />
               <View>

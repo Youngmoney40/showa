@@ -23,48 +23,9 @@ const SyncContactsScreen = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncComplete, setSyncComplete] = useState(false);
 
-  // const handleSyncContacts = async () => {
-  //   setIsSyncing(true);
-  //   const authToken = await AsyncStorage.getItem('userToken');
-    
-  //   if (!authToken) {
-  //     Alert.alert('Error', 'Please login first.');
-  //     setIsSyncing(false);
-  //     return;
-  //   }
-
-  //   try {
-  //     const result = await syncContacts(authToken);
-  //    // console.log('Contact sync successful:', result.data);
-
-  //     if (result.success) {
-  //       const message =
-  //         result.syncedContacts > 0
-  //           ? `${result.syncedContacts} of your contacts are now connected and ready to chat.`
-  //           : 'No matching contacts were found. Invite your friends to join the app!';
-
-  //       setSyncComplete(true);
-  //       setTimeout(() => {
-  //         setModalVisible(false);
-  //        // navigation.navigate('UserContactList');
-  //         navigation.reset({
-  //         index: 0,
-  //         routes: [{ name: 'ProceedOptions' }],
-  //       });
-  //       }, 2000);
-  //     } else {
-  //       Alert.alert('Error', result.error || 'Failed to sync contacts.');
-  //     }
-  //   } catch (error) {
-  //     //console.log('Sync error:', error.message);
-  //     Alert.alert('Error', 'An error occurred while syncing your contacts.');
-  //   } finally {
-  //     setIsSyncing(false);
-  //   }
-  // };
 
   const handleSkip = () => {
-    navigation.navigate('ProceedOptions');
+    navigation.navigate('CompleteSignupProfile');
   };
 
 
@@ -72,7 +33,7 @@ const SyncContactsScreen = () => {
     setModalVisible(false);
     navigation.reset({
       index: 0,
-      routes: [{ name: 'ProceedOptions' }],
+      routes: [{ name: 'CompleteSignupProfile' }],
     });
 
     await startBackgroundContactSync();

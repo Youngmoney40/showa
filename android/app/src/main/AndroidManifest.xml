@@ -10,6 +10,18 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
     
+   
+    <!-- ========== CALL PERMISSION  ========== -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.BIND_TELECOM_CONNECTION_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
+   
+
+    
     <!-- ========== CAMERA & MICROPHONE ========== -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
@@ -30,13 +42,11 @@
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     
     <!-- ========== STORAGE - ANDROID 15 COMPATIBLE ========== -->
-    <!-- Android 15 uses these -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-        
+    
     <!-- For older Android versions -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
         android:maxSdkVersion="32" />
@@ -47,8 +57,6 @@
     <!-- ========== DOWNLOADS ========== -->
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
 
-    
-   
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -85,7 +93,13 @@
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize"
             android:exported="true"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:showWhenLocked="true"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true">
+
+
+            
             
             <!-- LAUNCHER Intent Filter -->
             <intent-filter>
@@ -111,8 +125,7 @@
                 <data android:pathPattern="/.*" />
             </intent-filter>
             
-            <!-- UNIVERSAL LINKS - For website domain (optional but recommended) -->
-            <!-- You'll need to host assetlinks.json at https://showapp.com/.well-known/assetlinks.json -->
+            <!-- UNIVERSAL LINKS -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -146,8 +159,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-         <!-- Firebase Messaging Service -->
-
+        <!-- Firebase Messaging Service -->
         <service
             android:name="io.invertase.firebase.messaging.ReactNativeFirebaseMessagingService"
             android:exported="false"
@@ -156,6 +168,35 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        
+        <!-- Transparent activity shown over lock screen for incoming calls -->
+        <activity
+            android:name=".IncomingCallActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:launchMode="singleTop"
+            android:exported="true" />
+
+        <!-- CallKeep connection service -->
+        <service
+            android:name="io.wazo.callkeep.VoiceConnectionService"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE"
+            android:foregroundServiceType="phoneCall"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.telecom.ConnectionService" />
+            </intent-filter>
+        </service>
+
+        <!-- Our foreground call service -->
+        <service
+            android:name=".CallForegroundService"
+            android:foregroundServiceType="phoneCall"
+            android:exported="false" />
+        
         
     </application>
 

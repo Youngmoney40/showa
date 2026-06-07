@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
 
   header: {
     height: 100,
-    paddingTop: Platform.OS === 'ios' ? 50 : 20, // iOS notch
+    paddingTop: Platform.OS === 'ios' ? 50 : 20, // iOS notfch
     paddingHorizontal: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
