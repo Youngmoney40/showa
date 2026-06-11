@@ -97,9 +97,6 @@
             android:showWhenLocked="true"
             android:showOnLockScreen="true"
             android:turnScreenOn="true">
-
-
-            
             
             <!-- LAUNCHER Intent Filter -->
             <intent-filter>

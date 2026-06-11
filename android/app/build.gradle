@@ -15,6 +15,7 @@ android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
+    
 
     namespace "com.showa"
 
@@ -22,7 +23,7 @@ android {
         applicationId "com.showa"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 31
+        versionCode 32
         versionName "1.0.3"
 
         // For Android 15 compatibility
@@ -85,8 +86,8 @@ dependencies {
 
 
     implementation 'com.facebook.react:react-native:+'
-    implementation 'androidx.appcompat:appcompat:1.6.1'  // Use AndroidX instead of support library
-    implementation 'androidx.mediarouter:mediarouter:1.6.0'  // AndroidX version
+    implementation 'androidx.appcompat:appcompat:1.6.1'  
+    implementation 'androidx.mediarouter:mediarouter:1.6.0'  
     implementation 'com.google.android.material:material:1.11.0'
     
     
