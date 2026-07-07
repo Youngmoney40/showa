@@ -2039,7 +2039,7 @@ const handleDeletePost = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.card} />
       
-      <View style={[styles.header, { 
+      {/* <View style={[styles.header, { 
         backgroundColor: colors.card,
         borderBottomColor: colors.border 
       }]}>
@@ -2052,7 +2052,7 @@ const handleDeletePost = () => {
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Manage Posts</Text>
         <View style={styles.headerRight} />
-      </View>
+      </View> */}
 
     
       <View style={[styles.tabContainer, { 

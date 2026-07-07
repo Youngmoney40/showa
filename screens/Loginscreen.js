@@ -39,7 +39,7 @@ export default function SplashScreen() {
       }
       return null;
     } catch (err) {
-      console.error('fetchProfile error:', err);
+      //console.error('fetchProfile error:', err);
       return null;
     }
   };
@@ -48,12 +48,13 @@ export default function SplashScreen() {
     try {
       const profile = await fetchProfile();
       if (profile?.name?.trim()) {
-        return 'BusinessHome';
+        return 'BroadcastHome';
       } else {
-        return 'ProceedOptions';
+        return 'BroadcastHome';
       }
     } catch (error) {
-      return 'EmailLogin';
+      return 'Onboard';
+      // return 'EmailLogin';
       //return 'Signin';
     }
   };
@@ -95,11 +96,13 @@ export default function SplashScreen() {
       }
 
       //return 'Signin';
-      return 'EmailLogin';
+      return 'Onboard';
+      // return 'EmailLogin';
     } catch (error) {
       console.error('checkAuth error:', error);
       //return 'Signin';
-      return 'EmailLogin';
+      return 'Onboard';
+      // return 'EmailLogin';
     }
   };
 

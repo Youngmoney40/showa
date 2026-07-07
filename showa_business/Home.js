@@ -30,7 +30,8 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
-import BottomNav from '../components/BottomNavBusiness';
+// import BottomNav from '../components/BottomNavBusiness';
+import BottomNav from '../components/BottomNavSocialMedia';
 import { Divider } from 'react-native-paper';
 import SwitchAccountSheet from '../components/SwitchAccountSheet';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
@@ -69,6 +70,7 @@ const HomeScreen = ({ navigation }) => {
   const [readChats, setReadChats] = useState(new Set());
   const [buttonLayout, setButtonLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const insets = useSafeAreaInsets();
+  
   
   const styles = createStyles(colors, isDark, insets); 
 
@@ -202,14 +204,14 @@ const fetchUnreadNotificationCount = async () => {
         };
   
         ws.current.onerror = (e) => {
-          console.error('[Call WS] Error', e);
+          //console.error('[Call WS] Error', e);
         };
   
         ws.current.onclose = (e) => {
-          console.log('[Call WS] Closed', e.code, e.reason);
+          //console.log('[Call WS] Closed', e.code, e.reason);
         };
       } catch (err) {
-        console.error('[Call WS] Failed to connect', err);
+       // console.error('[Call WS] Failed to connect', err);
       }
     };
   
@@ -734,12 +736,12 @@ const fetchUnreadNotificationCount = async () => {
     }
   };
 
-  useEffect(() => {
-    if (!isInitialLoading && chatList.length === 0 && !hasDismissedModal) {
-      fetchUserData();
-      setShowStartChatModal(true);
-    }
-  }, [chatList, isInitialLoading, hasDismissedModal]);
+  // useEffect(() => {
+  //   if (!isInitialLoading && chatList.length === 0 && !hasDismissedModal) {
+  //     fetchUserData();
+  //     setShowStartChatModal(true);
+  //   }
+  // }, [chatList, isInitialLoading, hasDismissedModal]);
 
   useEffect(() => {
     if (showAccountModal) {
@@ -949,7 +951,7 @@ const fetchUnreadNotificationCount = async () => {
         style={styles.header}
       >
         <View style={[styles.headerTop,{ paddingTop: insets.top }]}>
-          <Text style={styles.headerTitle}>Showa</Text>
+          <Text style={styles.headerTitle}>Chat</Text>
           <View style={styles.headerIcons}>
             <TouchableOpacity
                           style={styles.exploreIconContainer}
@@ -1159,22 +1161,40 @@ const fetchUnreadNotificationCount = async () => {
           ) : (
             <View style={styles.emptyList}>
               <Text style={styles.emptyText}>
+                {/* <LottieView
+              source={require("../assets/animations/Chat.json")}
+              autoPlay
+              loop={true}
+              style={styles.lottie}
+            /> */}
                 {searchQuery ? 'No matching chats found' : 'No chats available'}
               </Text>
+              {/* <LottieView
+              source={require("../assets/animations/Chat.json")}
+              autoPlay
+              loop={true}
+              style={styles.lottie}
+            /> */}
               {!searchQuery && (
                 <TouchableOpacity onPress={()=>{
                   setShowStartChatModal(true)
                   navigation.navigate('UserContactList');
                 }}>
-                  <Text style={[styles.emptyText, {color: colors.primary}]}>Start a new chat</Text>
+                  <Text style={[styles.emptyText, {color: colors.primary,marginTop:10, fontFamily: 'SourceSansPro-Medium'}]}>Start a new chat</Text>
                 </TouchableOpacity>
               )}
             </View>
           )
         )}
       />
+      <BottomNav 
+            navigation={navigation} 
+            setShowAccountModal={setShowAccountModal}
+            activeRoute="Home" 
+              style={{ zIndex: 9999 }}
+          />
       
-      <BottomNav navigation={navigation} setShowAccountModal={setShowAccountModal} />
+      {/* <BottomNav navigation={navigation} setShowAccountModal={setShowAccountModal} /> */}
       
       <IncomingCallModal
         visible={showIncomingCallModal}
@@ -1233,7 +1253,7 @@ const fetchUnreadNotificationCount = async () => {
         </View>
       </Modal>
       
-      <Modal
+      {/* <Modal
         visible={showStartChatModal}
         animationType="slide"
         transparent={true}
@@ -1276,7 +1296,7 @@ const fetchUnreadNotificationCount = async () => {
           </View>
         </View>
       </Modal>
-      
+       */}
       <Modal
         visible={showAccountModal}
         transparent
@@ -1500,6 +1520,14 @@ const fetchUnreadNotificationCount = async () => {
               <TouchableOpacity
                 onPress={() => {
                   setShowDropdown(false);
+                  navigation.navigate('Explore');
+                }}
+              >
+                    <Text style={[styles.dropdownItem, { color: colors.text }]}>Business Tools</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowDropdown(false);
                   navigation.navigate('EarningDashbord');
                 }}
               >
@@ -1596,8 +1624,9 @@ const createStyles = (colors, isDark, insets) => StyleSheet.create({
     zIndex: 1000,
   },
   headerTop: {
+    marginTop: Platform.OS === 'android' ? 10 : 10,
     paddingHorizontal: 20,
-    height: Platform.OS === 'android' ? 80 : 130,
+    height: Platform.OS === 'android' ? 90 : 130,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1660,12 +1689,12 @@ const createStyles = (colors, isDark, insets) => StyleSheet.create({
   tabRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 16,
+    marginTop: 15,
   },
   tabText: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 16,
-    fontFamily: 'SourceSansPro-Regular',
+    fontFamily: 'SourceSansPro-Bold',
     paddingVertical: 6,
   },
   tabTextActive: {

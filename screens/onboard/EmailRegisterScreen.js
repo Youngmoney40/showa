@@ -1,1092 +1,6 @@
 
-// // // import React, { useState, useRef, useEffect } from 'react';
-// // // import {
-// // //   View,
-// // //   Text,
-// // //   TextInput,
-// // //   StyleSheet,
-// // //   TouchableOpacity,
-// // //   Platform,
-// // //   ActivityIndicator,
-// // //   Alert,
-// // //   KeyboardAvoidingView,
-// // //   ScrollView,
-// // //   StatusBar,
-// // // } from 'react-native';
-// // // import { SafeAreaView } from 'react-native-safe-area-context';
-// // // import LinearGradient from 'react-native-linear-gradient';
-// // // import Icon from 'react-native-vector-icons/Ionicons';
-// // // import axios from 'axios';
-// // // import { API_ROUTE } from '../../api_routing/api';
-// // // import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// // // const COLORS = {
-// // //   primary: '#0d64dd',
-// // //   white: '#ffffff',
-// // //   textPrimary: '#1a1a1a',
-// // //   textSecondary: '#6c757d',
-// // //   border: '#e1e5eb',
-// // //   error: '#dc3545',
-// // //   success: '#28a745',
-// // // };
-
-// // // export default function EmailRegisterScreen({ navigation }) {
-// // //   const [formData, setFormData] = useState({
-// // //     email: '',
-// // //     password: '',
-// // //     confirmPassword: '',
-// // //     name: '',
-// // //   });
-// // //   const [showPassword, setShowPassword] = useState(false);
-// // //   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-// // //   const [loading, setLoading] = useState(false);
-// // //   const [errors, setErrors] = useState({});
-// // //   const [termsAccepted, setTermsAccepted] = useState(false);
-
-// // //   const inputs = {
-// // //     name: useRef(null),
-// // //     email: useRef(null),
-// // //     password: useRef(null),
-// // //     confirmPassword: useRef(null),
-// // //   };
-
-// // //   useEffect(() => {
-// // //     setTimeout(() => inputs.name.current?.focus(), 300);
-// // //   }, []);
-
-// // //   const validateForm = () => {
-// // //     const newErrors = {};
-// // //     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
-// // //     if (!formData.name.trim()) {
-// // //       newErrors.name = 'Full name is required';
-// // //     }
-    
-// // //     if (!formData.email.trim()) {
-// // //       newErrors.email = 'Email is required';
-// // //     } else if (!emailRegex.test(formData.email)) {
-// // //       newErrors.email = 'Please enter a valid email address';
-// // //     }
-    
-// // //     if (!formData.password) {
-// // //       newErrors.password = 'Password is required';
-// // //     } else if (formData.password.length < 6) {
-// // //       newErrors.password = 'Password must be at least 6 characters';
-// // //     }
-    
-// // //     if (!formData.confirmPassword) {
-// // //       newErrors.confirmPassword = 'Please confirm your password';
-// // //     } else if (formData.password !== formData.confirmPassword) {
-// // //       newErrors.confirmPassword = 'Passwords do not match';
-// // //     }
-    
-// // //     if (!termsAccepted) {
-// // //       newErrors.terms = 'You must accept the terms to continue';
-// // //     }
-    
-// // //     setErrors(newErrors);
-// // //     return Object.keys(newErrors).length === 0;
-// // //   };
-
-// // //   const handleRegister = async () => {
-// // //     if (!validateForm()) return;
-    
-// // //     setLoading(true);
-    
-// // //     try {
-// // //       const response = await axios.post(`${API_ROUTE}/email-register/`, {
-// // //         email: formData.email.trim().toLowerCase(),
-// // //         password: formData.password,
-// // //         name: formData.name.trim(),
-// // //       });
-      
-// // //       if (response.status === 201 && response.data.success) {
-// // //         const { token, refresh, user, reward } = response.data;
-        
-// // //         await AsyncStorage.multiSet([
-// // //           ['userToken', token],
-// // //           ['refreshToken', refresh],
-// // //           ['userData', JSON.stringify(user)],
-// // //           ['isVerified', 'true'],
-// // //           ['userEmail', user.email],
-// // //           ['userId', user.id.toString()],
-// // //           ['loginMethod', 'email'],
-// // //         ]);
-        
-// // //         // Show welcome bonus alert
-// // //         if (reward) {
-// // //           Alert.alert(
-// // //             'Welcome! 🎉',
-// // //             `You've received ${reward.coins} bonus coins!`,
-// // //             [{ text: 'Continue', onPress: () => navigation.replace('SynMessage') }]
-// // //           );
-// // //         } else {
-// // //           navigation.replace('SynMessage');
-// // //         }
-// // //       }
-// // //     } catch (error) {
-// // //       console.error('Registration error:', error);
-      
-// // //       let errorMessage = 'Unable to register. Please try again.';
-// // //       if (error.response?.data?.error) {
-// // //         errorMessage = error.response.data.error;
-// // //       } else if (error.response?.data?.email) {
-// // //         errorMessage = error.response.data.email[0];
-// // //       }
-      
-// // //       Alert.alert('Registration Failed', errorMessage);
-// // //     } finally {
-// // //       setLoading(false);
-// // //     }
-// // //   };
-
-// // //   const navigateToTerms = () => {
-// // //     navigation.navigate('TermsCondition');
-// // //   };
-
-// // //   const navigateToLogin = () => {
-// // //     navigation.navigate('EmailLogin');
-// // //   };
-
-// // //   return (
-// // //     <SafeAreaView style={styles.container}>
-// // //       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} translucent={false} />
-      
-// // //       <KeyboardAvoidingView
-// // //         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-// // //         style={styles.keyboardView}
-// // //       >
-// // //         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
-// // //           {/* Back Button */}
-// // //           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-// // //             <Icon name="arrow-back" size={24} color={COLORS.textPrimary} />
-// // //           </TouchableOpacity>
-
-// // //           {/* Header */}
-// // //           <View style={styles.header}>
-// // //             <LinearGradient
-// // //               colors={['rgba(13,100,221,0.1)', 'rgba(74,144,226,0.05)']}
-// // //               style={styles.iconContainer}
-// // //             >
-// // //               <Icon name="person-add" size={42} color={COLORS.primary} />
-// // //             </LinearGradient>
-// // //             <Text style={styles.title}>Create Account</Text>
-// // //             <Text style={styles.subtitle}>Sign up with email and password</Text>
-// // //           </View>
-
-// // //           {/* Form */}
-// // //           <View style={styles.formContainer}>
-// // //             {/* Full Name */}
-// // //             <View style={styles.inputGroup}>
-// // //               <Text style={styles.inputLabel}>Full Name</Text>
-// // //               <View style={[styles.inputWrapper, errors.name && styles.inputError]}>
-// // //                 <Icon name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-// // //                 <TextInput
-// // //                   ref={inputs.name}
-// // //                   placeholder="Enter your full name"
-// // //                   style={styles.input}
-// // //                   value={formData.name}
-// // //                   onChangeText={(text) => {
-// // //                     setFormData({ ...formData, name: text });
-// // //                     if (errors.name) setErrors({ ...errors, name: null });
-// // //                   }}
-// // //                   returnKeyType="next"
-// // //                   onSubmitEditing={() => inputs.email.current?.focus()}
-// // //                   editable={!loading}
-// // //                 />
-// // //               </View>
-// // //               {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
-// // //             </View>
-
-// // //             {/* Email */}
-// // //             <View style={styles.inputGroup}>
-// // //               <Text style={styles.inputLabel}>Email Address</Text>
-// // //               <View style={[styles.inputWrapper, errors.email && styles.inputError]}>
-// // //                 <Icon name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-// // //                 <TextInput
-// // //                   ref={inputs.email}
-// // //                   placeholder="Enter your email"
-// // //                   style={styles.input}
-// // //                   keyboardType="email-address"
-// // //                   autoCapitalize="none"
-// // //                   autoCorrect={false}
-// // //                   value={formData.email}
-// // //                   onChangeText={(text) => {
-// // //                     setFormData({ ...formData, email: text });
-// // //                     if (errors.email) setErrors({ ...errors, email: null });
-// // //                   }}
-// // //                   returnKeyType="next"
-// // //                   onSubmitEditing={() => inputs.password.current?.focus()}
-// // //                   editable={!loading}
-// // //                 />
-// // //               </View>
-// // //               {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-// // //             </View>
-
-// // //             {/* Password */}
-// // //             <View style={styles.inputGroup}>
-// // //               <Text style={styles.inputLabel}>Password</Text>
-// // //               <View style={[styles.inputWrapper, errors.password && styles.inputError]}>
-// // //                 <Icon name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-// // //                 <TextInput
-// // //                   ref={inputs.password}
-// // //                   placeholder="Create a password"
-// // //                   style={styles.input}
-// // //                   secureTextEntry={!showPassword}
-// // //                   value={formData.password}
-// // //                   onChangeText={(text) => {
-// // //                     setFormData({ ...formData, password: text });
-// // //                     if (errors.password) setErrors({ ...errors, password: null });
-// // //                   }}
-// // //                   returnKeyType="next"
-// // //                   onSubmitEditing={() => inputs.confirmPassword.current?.focus()}
-// // //                   editable={!loading}
-// // //                 />
-// // //                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-// // //                   <Icon name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textSecondary} />
-// // //                 </TouchableOpacity>
-// // //               </View>
-// // //               {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-// // //             </View>
-
-// // //             {/* Confirm Password */}
-// // //             <View style={styles.inputGroup}>
-// // //               <Text style={styles.inputLabel}>Confirm Password</Text>
-// // //               <View style={[styles.inputWrapper, errors.confirmPassword && styles.inputError]}>
-// // //                 <Icon name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-// // //                 <TextInput
-// // //                   ref={inputs.confirmPassword}
-// // //                   placeholder="Confirm your password"
-// // //                   style={styles.input}
-// // //                   secureTextEntry={!showConfirmPassword}
-// // //                   value={formData.confirmPassword}
-// // //                   onChangeText={(text) => {
-// // //                     setFormData({ ...formData, confirmPassword: text });
-// // //                     if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: null });
-// // //                   }}
-// // //                   returnKeyType="done"
-// // //                   onSubmitEditing={handleRegister}
-// // //                   editable={!loading}
-// // //                 />
-// // //                 <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
-// // //                   <Icon name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textSecondary} />
-// // //                 </TouchableOpacity>
-// // //               </View>
-// // //               {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
-// // //             </View>
-
-// // //             {/* Terms Checkbox */}
-// // //             <View style={styles.termsContainer}>
-// // //               <TouchableOpacity
-// // //                 style={styles.checkboxContainer}
-// // //                 onPress={() => {
-// // //                   setTermsAccepted(!termsAccepted);
-// // //                   if (errors.terms) setErrors({ ...errors, terms: null });
-// // //                 }}
-// // //               >
-// // //                 <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
-// // //                   {termsAccepted && <Icon name="checkmark" size={14} color="#fff" />}
-// // //                 </View>
-// // //                 <Text style={styles.termsText}>
-// // //                   I agree to the{' '}
-// // //                   <Text style={styles.termsLink} onPress={navigateToTerms}>
-// // //                     Terms & Conditions
-// // //                   </Text>
-// // //                 </Text>
-// // //               </TouchableOpacity>
-// // //               {errors.terms && <Text style={styles.errorText}>{errors.terms}</Text>}
-// // //             </View>
-
-// // //             {/* Register Button */}
-// // //             <TouchableOpacity
-// // //               onPress={handleRegister}
-// // //               style={[styles.registerButton, loading && styles.buttonDisabled]}
-// // //               disabled={loading}
-// // //               activeOpacity={0.8}
-// // //             >
-// // //               <LinearGradient colors={[COLORS.primary, COLORS.primary]} style={styles.buttonGradient}>
-// // //                 {loading ? (
-// // //                   <ActivityIndicator size="small" color={COLORS.white} />
-// // //                 ) : (
-// // //                   <>
-// // //                     <Text style={styles.buttonText}>Sign Up</Text>
-// // //                     <Icon name="arrow-forward" size={20} color={COLORS.white} style={styles.buttonIcon} />
-// // //                   </>
-// // //                 )}
-// // //               </LinearGradient>
-// // //             </TouchableOpacity>
-// // //           </View>
-
-// // //           {/* Login Link */}
-// // //           <View style={styles.loginContainer}>
-// // //             <Text style={styles.loginText}>Already have an account? </Text>
-// // //             <TouchableOpacity onPress={navigateToLogin}>
-// // //               <Text style={styles.loginLink}>Sign In</Text>
-// // //             </TouchableOpacity>
-// // //           </View>
-// // //         </ScrollView>
-// // //       </KeyboardAvoidingView>
-// // //     </SafeAreaView>
-// // //   );
-// // // }
-
-// // // const styles = StyleSheet.create({
-// // //   container: {
-// // //     flex: 1,
-// // //     backgroundColor: COLORS.white,
-// // //   },
-// // //   keyboardView: {
-// // //     flex: 1,
-// // //   },
-// // //   scrollContent: {
-// // //     flexGrow: 1,
-// // //     paddingHorizontal: 24,
-// // //     paddingBottom: 32,
-// // //   },
-// // //   backButton: {
-// // //     width: 40,
-// // //     height: 40,
-// // //     justifyContent: 'center',
-// // //     marginTop: 16,
-// // //   },
-// // //   header: {
-// // //     alignItems: 'center',
-// // //     marginTop: 24,
-// // //     marginBottom: 32,
-// // //   },
-// // //   iconContainer: {
-// // //     width: 100,
-// // //     height: 100,
-// // //     borderRadius: 50,
-// // //     justifyContent: 'center',
-// // //     alignItems: 'center',
-// // //     marginBottom: 20,
-// // //   },
-// // //   title: {
-// // //     fontSize: 28,
-// // //     fontWeight: '700',
-// // //     color: COLORS.textPrimary,
-// // //     marginBottom: 8,
-// // //   },
-// // //   subtitle: {
-// // //     fontSize: 16,
-// // //     color: COLORS.textSecondary,
-// // //     textAlign: 'center',
-// // //   },
-// // //   formContainer: {
-// // //     marginBottom: 24,
-// // //   },
-// // //   inputGroup: {
-// // //     marginBottom: 20,
-// // //   },
-// // //   inputLabel: {
-// // //     fontSize: 14,
-// // //     fontWeight: '600',
-// // //     color: COLORS.textPrimary,
-// // //     marginBottom: 8,
-// // //   },
-// // //   inputWrapper: {
-// // //     flexDirection: 'row',
-// // //     alignItems: 'center',
-// // //     borderWidth: 1.5,
-// // //     borderColor: COLORS.border,
-// // //     borderRadius: 12,
-// // //     backgroundColor: COLORS.white,
-// // //     paddingHorizontal: 16,
-// // //     height: 56,
-// // //   },
-// // //   inputError: {
-// // //     borderColor: COLORS.error,
-// // //   },
-// // //   inputIcon: {
-// // //     marginRight: 12,
-// // //   },
-// // //   input: {
-// // //     flex: 1,
-// // //     fontSize: 16,
-// // //     color: COLORS.textPrimary,
-// // //     paddingVertical: 0,
-// // //   },
-// // //   eyeButton: {
-// // //     padding: 8,
-// // //   },
-// // //   errorText: {
-// // //     color: COLORS.error,
-// // //     fontSize: 12,
-// // //     marginTop: 6,
-// // //     paddingLeft: 4,
-// // //   },
-// // //   termsContainer: {
-// // //     marginBottom: 24,
-// // //   },
-// // //   checkboxContainer: {
-// // //     flexDirection: 'row',
-// // //     alignItems: 'center',
-// // //   },
-// // //   checkbox: {
-// // //     width: 22,
-// // //     height: 22,
-// // //     borderRadius: 6,
-// // //     borderWidth: 2,
-// // //     borderColor: COLORS.border,
-// // //     justifyContent: 'center',
-// // //     alignItems: 'center',
-// // //     marginRight: 12,
-// // //   },
-// // //   checkboxChecked: {
-// // //     backgroundColor: COLORS.primary,
-// // //     borderColor: COLORS.primary,
-// // //   },
-// // //   termsText: {
-// // //     flex: 1,
-// // //     fontSize: 13,
-// // //     color: COLORS.textSecondary,
-// // //   },
-// // //   termsLink: {
-// // //     color: COLORS.primary,
-// // //     fontWeight: '600',
-// // //   },
-// // //   registerButton: {
-// // //     borderRadius: 12,
-// // //     overflow: 'hidden',
-// // //   },
-// // //   buttonDisabled: {
-// // //     opacity: 0.6,
-// // //   },
-// // //   buttonGradient: {
-// // //     flexDirection: 'row',
-// // //     alignItems: 'center',
-// // //     justifyContent: 'center',
-// // //     paddingVertical: 16,
-// // //   },
-// // //   buttonText: {
-// // //     color: COLORS.white,
-// // //     fontSize: 17,
-// // //     fontWeight: '700',
-// // //   },
-// // //   buttonIcon: {
-// // //     marginLeft: 8,
-// // //   },
-// // //   loginContainer: {
-// // //     flexDirection: 'row',
-// // //     justifyContent: 'center',
-// // //     paddingVertical: 16,
-// // //   },
-// // //   loginText: {
-// // //     fontSize: 14,
-// // //     color: COLORS.textSecondary,
-// // //   },
-// // //   loginLink: {
-// // //     fontSize: 14,
-// // //     fontWeight: '600',
-// // //     color: COLORS.primary,
-// // //   },
-// // // });
-
-
-// // import React, { useState, useRef, useEffect } from 'react';
-// // import {
-// //   View,
-// //   Text,
-// //   TextInput,
-// //   StyleSheet,
-// //   TouchableOpacity,
-// //   Platform,
-// //   ActivityIndicator,
-// //   Alert,
-// //   KeyboardAvoidingView,
-// //   ScrollView,
-// //   StatusBar,
-// // } from 'react-native';
-// // import { SafeAreaView } from 'react-native-safe-area-context';
-// // import LinearGradient from 'react-native-linear-gradient';
-// // import Icon from 'react-native-vector-icons/Ionicons';
-// // import axios from 'axios';
-// // import { API_ROUTE } from '../../api_routing/api';
-// // import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// // const COLORS = {
-// //   primary: '#0d64dd',
-// //   white: '#ffffff',
-// //   textPrimary: '#1a1a1a',
-// //   textSecondary: '#6c757d',
-// //   border: '#e1e5eb',
-// //   error: '#dc3545',
-// //   success: '#28a745',
-// // };
-
-// // export default function EmailRegisterScreen({ route, navigation }) {
-// //   const [formData, setFormData] = useState({
-// //     email: '',
-// //     password: '',
-// //     confirmPassword: '',
-// //     name: '',
-// //     phone: '',        
-// //     username: '',     
-// //   });
-
-// //   const emailId = route.params?.emailID;
-// //   const phoneNumberID = route.params?.phoneNumberID;
-// //   const contactType = route.params?.contactType || 'email';
-
-// //   const [showPassword, setShowPassword] = useState(false);
-// //   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-// //   const [loading, setLoading] = useState(false);
-// //   const [errors, setErrors] = useState({});
-// //   const [termsAccepted, setTermsAccepted] = useState(false);
-
-// //   const inputs = {
-// //     name: useRef(null),
-// //     email: useRef(null),
-// //     phone: useRef(null),      
-// //     username: useRef(null),   
-// //     password: useRef(null),
-// //     confirmPassword: useRef(null),
-// //   };
-
-// //   useEffect(() => {
-// //     setTimeout(() => inputs.name.current?.focus(), 300);
-// //   }, []);
-
-// //   // Generate random username from name + random numbers
-// //   const generateUsername = (name) => {
-// //     if (!name.trim()) return '';
-// //     const base = name.trim().toLowerCase().replace(/\s+/g, '');
-// //     const randomNum = Math.floor(Math.random() * 10000);
-// //     return `${base}${randomNum}`;
-// //   };
-
-// //   // Auto-generate username when name changes
-// //   useEffect(() => {
-// //     if (formData.name && !formData.username) {
-// //       const suggestedUsername = generateUsername(formData.name);
-// //       setFormData(prev => ({ ...prev, username: suggestedUsername }));
-// //     }
-// //   }, [formData.name]);
-
-// //   const validateForm = () => {
-// //     const newErrors = {};
-// //     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// //     const phoneRegex = /^[0-9]{10,15}$/;
-    
-// //     if (!formData.name.trim()) {
-// //       newErrors.name = 'Full name is required';
-// //     }
-    
-// //     if (!formData.email.trim()) {
-// //       newErrors.email = 'Email is required';
-// //     } else if (!emailRegex.test(formData.email)) {
-// //       newErrors.email = 'Please enter a valid email address';
-// //     }
-    
-// //     // ADD PHONE VALIDATION
-// //     if (!formData.phone.trim()) {
-// //       newErrors.phone = 'Phone number is required';
-// //     } else if (!phoneRegex.test(formData.phone.replace(/[^0-9]/g, ''))) {
-// //       newErrors.phone = 'Please enter a valid phone number (10-15 digits)';
-// //     }
-    
-// //     // ADD USERNAME VALIDATION
-// //     if (!formData.username.trim()) {
-// //       newErrors.username = 'Username is required';
-// //     } else if (formData.username.length < 3) {
-// //       newErrors.username = 'Username must be at least 3 characters';
-// //     } else if (!/^[a-zA-Z0-9_.]+$/.test(formData.username)) {
-// //       newErrors.username = 'Username can only contain letters, numbers, underscores and dots';
-// //     }
-    
-// //     if (!formData.password) {
-// //       newErrors.password = 'Password is required';
-// //     } else if (formData.password.length < 6) {
-// //       newErrors.password = 'Password must be at least 6 characters';
-// //     }
-    
-// //     if (!formData.confirmPassword) {
-// //       newErrors.confirmPassword = 'Please confirm your password';
-// //     } else if (formData.password !== formData.confirmPassword) {
-// //       newErrors.confirmPassword = 'Passwords do not match';
-// //     }
-    
-// //     if (!termsAccepted) {
-// //       newErrors.terms = 'You must accept the terms to continue';
-// //     }
-    
-// //     setErrors(newErrors);
-// //     return Object.keys(newErrors).length === 0;
-// //   };
-
-// //   const handleRegister = async () => {
-// //     if (!validateForm()) return;
-    
-// //     setLoading(true);
-    
-// //     // Clean phone number (remove spaces, dashes)
-// //     const cleanPhone = formData.phone.replace(/[^0-9]/g, '');
-    
-// //     try {
-// //       const response = await axios.post(`${API_ROUTE}/email-register/`, {
-// //         email: formData.email.trim().toLowerCase(),
-// //         password: formData.password,
-// //         name: formData.name.trim(),
-// //         phone: cleanPhone,                    // ADD THIS
-// //         username: formData.username.trim().toLowerCase(),  // ADD THIS
-// //       });
-      
-// //       if (response.status === 201 && response.data.success) {
-// //         const { token, refresh, user, reward } = response.data;
-        
-// //         await AsyncStorage.multiSet([
-// //           ['userToken', token],
-// //           ['refreshToken', refresh],
-// //           ['userData', JSON.stringify(user)],
-// //           ['isVerified', 'true'],
-// //           ['userEmail', user.email],
-// //           ['userId', user.id.toString()],
-// //           ['loginMethod', 'email'],
-// //         ]);
-        
-// //         // Show welcome bonus alert
-// //         if (reward) {
-// //           Alert.alert(
-// //             'Welcome! ',
-// //             `You've received ${reward.coins} bonus coins!`,
-// //             [{ text: 'Continue', onPress: () => navigation.replace('SynMessage') }]
-// //           );
-// //         } else {
-// //           navigation.replace('SynMessage');
-// //         }
-// //       }
-// //     } catch (error) {
-// //       console.error('Registration error:', error);
-      
-// //       let errorMessage = 'Unable to register. Please try again.';
-      
-// //       // Handle different error formats
-// //       if (error.response?.data?.error) {
-// //         errorMessage = error.response.data.error;
-// //       } else if (error.response?.data?.errors) {
-// //         const errorsList = error.response.data.errors;
-// //         const firstError = Object.values(errorsList)[0];
-// //         errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
-// //       } else if (error.response?.data?.email) {
-// //         errorMessage = error.response.data.email[0];
-// //       } else if (error.response?.data?.phone) {
-// //         errorMessage = error.response.data.phone[0];
-// //       } else if (error.response?.data?.username) {
-// //         errorMessage = error.response.data.username[0];
-// //       }
-      
-// //       Alert.alert('Registration Failed', errorMessage);
-// //     } finally {
-// //       setLoading(false);
-// //     }
-// //   };
-
-// //   const navigateToTerms = () => {
-// //     navigation.navigate('TermsCondition');
-// //   };
-
-// //   const navigateToLogin = () => {
-// //     navigation.navigate('EmailLogin');
-// //   };
-
-// //   return (
-// //     <SafeAreaView style={styles.container}>
-// //       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} translucent={false} />
-      
-// //       <KeyboardAvoidingView
-// //         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-// //         style={styles.keyboardView}
-// //       >
-// //         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
-// //           {/* Back Button */}
-// //           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-// //             <Icon name="arrow-back" size={24} color={COLORS.textPrimary} />
-// //           </TouchableOpacity>
-
-// //           {/* Header */}
-// //           <View style={styles.header}>
-// //             <LinearGradient
-// //               colors={['rgba(13,100,221,0.1)', 'rgba(74,144,226,0.05)']}
-// //               style={styles.iconContainer}
-// //             >
-// //               <Icon name="person-add" size={42} color={COLORS.primary} />
-// //             </LinearGradient>
-// //             <Text style={styles.title}>Create Account</Text>
-// //             <Text style={styles.subtitle}>Sign up with email and password</Text>
-// //           </View>
-
-// //           {/* Form */}
-// //           <View style={styles.formContainer}>
-// //             {/* Full Name */}
-// //             <View style={styles.inputGroup}>
-// //               <Text style={styles.inputLabel}>Full Name </Text>
-// //               <View style={[styles.inputWrapper, errors.name && styles.inputError]}>
-// //                 <Icon name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-// //                 <TextInput
-// //                   ref={inputs.name}
-// //                   placeholder="Enter your full name"
-// //                   style={styles.input}
-// //                   value={formData.name}
-// //                   onChangeText={(text) => {
-// //                     setFormData({ ...formData, name: text });
-// //                     if (errors.name) setErrors({ ...errors, name: null });
-// //                   }}
-// //                   returnKeyType="next"
-// //                   onSubmitEditing={() => inputs.email.current?.focus()}
-// //                   editable={!loading}
-// //                 />
-// //               </View>
-// //               {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
-// //             </View>
-
-// //             {/* Email */}
-// //             <View style={styles.inputGroup}>
-// //               <Text style={styles.inputLabel}>Email Address {emailId}</Text>
-// //               <View style={[styles.inputWrapper, errors.email && styles.inputError]}>
-// //                 <Icon name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-// //                 <TextInput
-// //                   ref={inputs.email}
-// //                   placeholder="Enter your email"
-// //                   style={styles.input}
-// //                   keyboardType="email-address"
-// //                   autoCapitalize="none"
-// //                   autoCorrect={false}
-// //                   value={formData.email}
-// //                   onChangeText={(text) => {
-// //                     setFormData({ ...formData, email: text });
-// //                     if (errors.email) setErrors({ ...errors, email: null });
-// //                   }}
-// //                   returnKeyType="next"
-// //                   onSubmitEditing={() => inputs.phone.current?.focus()}
-// //                   editable={!loading}
-// //                 />
-// //               </View>
-// //               {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-// //             </View>
-
-// //             {/* Phone Number  */}
-// //             <View style={styles.inputGroup}>
-// //               <Text style={styles.inputLabel}>Phone Number {phoneNumberID}</Text>
-// //               <View style={[styles.inputWrapper, errors.phone && styles.inputError]}>
-// //                 <Icon name="call-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-// //                 <TextInput
-// //                   ref={inputs.phone}
-// //                   placeholder="Enter your phone number (e.g., 08012345678)"
-// //                   style={styles.input}
-// //                   keyboardType="phone-pad"
-// //                   value={formData.phone}
-// //                   onChangeText={(text) => {
-// //                     setFormData({ ...formData, phone: text });
-// //                     if (errors.phone) setErrors({ ...errors, phone: null });
-// //                   }}
-// //                   returnKeyType="next"
-// //                   onSubmitEditing={() => inputs.username.current?.focus()}
-// //                   editable={!loading}
-// //                 />
-// //               </View>
-// //               {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
-// //             </View>
-
-// //             {/* Username - NEW FIELD */}
-// //             <View style={styles.inputGroup}>
-// //               <Text style={styles.inputLabel}>Username</Text>
-// //               <View style={[styles.inputWrapper, errors.username && styles.inputError]}>
-// //                 <Icon name="at-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-// //                 <TextInput
-// //                   ref={inputs.username}
-// //                   placeholder="Choose a username"
-// //                   style={styles.input}
-// //                   autoCapitalize="none"
-// //                   autoCorrect={false}
-// //                   value={formData.username}
-// //                   onChangeText={(text) => {
-// //                     setFormData({ ...formData, username: text });
-// //                     if (errors.username) setErrors({ ...errors, username: null });
-// //                   }}
-// //                   returnKeyType="next"
-// //                   onSubmitEditing={() => inputs.password.current?.focus()}
-// //                   editable={!loading}
-// //                 />
-// //               </View>
-// //               {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
-// //               {!formData.username && formData.name && (
-// //                 <Text style={styles.suggestionText}>
-// //                   Suggested: {generateUsername(formData.name)}
-// //                 </Text>
-// //               )}
-// //             </View>
-
-// //             {/* Password */}
-// //             <View style={styles.inputGroup}>
-// //               <Text style={styles.inputLabel}>Password</Text>
-// //               <View style={[styles.inputWrapper, errors.password && styles.inputError]}>
-// //                 <Icon name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-// //                 <TextInput
-// //                   ref={inputs.password}
-// //                   placeholder="Create a password (min 6 characters)"
-// //                   style={styles.input}
-// //                   secureTextEntry={!showPassword}
-// //                   value={formData.password}
-// //                   onChangeText={(text) => {
-// //                     setFormData({ ...formData, password: text });
-// //                     if (errors.password) setErrors({ ...errors, password: null });
-// //                   }}
-// //                   returnKeyType="next"
-// //                   onSubmitEditing={() => inputs.confirmPassword.current?.focus()}
-// //                   editable={!loading}
-// //                 />
-// //                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-// //                   <Icon name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textSecondary} />
-// //                 </TouchableOpacity>
-// //               </View>
-// //               {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-// //             </View>
-
-// //             {/* Confirm Password */}
-// //             <View style={styles.inputGroup}>
-// //               <Text style={styles.inputLabel}>Confirm Password</Text>
-// //               <View style={[styles.inputWrapper, errors.confirmPassword && styles.inputError]}>
-// //                 <Icon name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-// //                 <TextInput
-// //                   ref={inputs.confirmPassword}
-// //                   placeholder="Confirm your password"
-// //                   style={styles.input}
-// //                   secureTextEntry={!showConfirmPassword}
-// //                   value={formData.confirmPassword}
-// //                   onChangeText={(text) => {
-// //                     setFormData({ ...formData, confirmPassword: text });
-// //                     if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: null });
-// //                   }}
-// //                   returnKeyType="done"
-// //                   onSubmitEditing={handleRegister}
-// //                   editable={!loading}
-// //                 />
-// //                 <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
-// //                   <Icon name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textSecondary} />
-// //                 </TouchableOpacity>
-// //               </View>
-// //               {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
-// //             </View>
-
-// //             {/* Terms Checkbox */}
-// //             <View style={styles.termsContainer}>
-// //               <TouchableOpacity
-// //                 style={styles.checkboxContainer}
-// //                 onPress={() => {
-// //                   setTermsAccepted(!termsAccepted);
-// //                   if (errors.terms) setErrors({ ...errors, terms: null });
-// //                 }}
-// //               >
-// //                 <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
-// //                   {termsAccepted && <Icon name="checkmark" size={14} color="#fff" />}
-// //                 </View>
-// //                 <Text style={styles.termsText}>
-// //                   I agree to the{' '}
-// //                   <Text style={styles.termsLink} onPress={navigateToTerms}>
-// //                     Terms & Conditions
-// //                   </Text>
-// //                 </Text>
-// //               </TouchableOpacity>
-// //               {errors.terms && <Text style={styles.errorText}>{errors.terms}</Text>}
-// //             </View>
-
-// //             {/* Register Button */}
-// //             <TouchableOpacity
-// //               onPress={handleRegister}
-// //               style={[styles.registerButton, loading && styles.buttonDisabled]}
-// //               disabled={loading}
-// //               activeOpacity={0.8}
-// //             >
-// //               <LinearGradient colors={[COLORS.primary, COLORS.primary]} style={styles.buttonGradient}>
-// //                 {loading ? (
-// //                   <ActivityIndicator size="small" color={COLORS.white} />
-// //                 ) : (
-// //                   <>
-// //                     <Text style={styles.buttonText}>Sign Up</Text>
-// //                     <Icon name="arrow-forward" size={20} color={COLORS.white} style={styles.buttonIcon} />
-// //                   </>
-// //                 )}
-// //               </LinearGradient>
-// //             </TouchableOpacity>
-// //           </View>
-
-// //           {/* Login Link */}
-// //           <View style={styles.loginContainer}>
-// //             <Text style={styles.loginText}>Already have an account? </Text>
-// //             <TouchableOpacity onPress={navigateToLogin}>
-// //               <Text style={styles.loginLink}>Sign In</Text>
-// //             </TouchableOpacity>
-// //           </View>
-// //         </ScrollView>
-// //       </KeyboardAvoidingView>
-// //     </SafeAreaView>
-// //   );
-// // }
-
-// // const styles = StyleSheet.create({
-// //   container: {
-// //     flex: 1,
-// //     backgroundColor: COLORS.white,
-// //   },
-// //   keyboardView: {
-// //     flex: 1,
-// //   },
-// //   scrollContent: {
-// //     flexGrow: 1,
-// //     paddingHorizontal: 24,
-// //     paddingBottom: 32,
-// //   },
-// //   backButton: {
-// //     width: 40,
-// //     height: 40,
-// //     justifyContent: 'center',
-// //     marginTop: 16,
-// //   },
-// //   header: {
-// //     alignItems: 'center',
-// //     marginTop: 24,
-// //     marginBottom: 32,
-// //   },
-// //   iconContainer: {
-// //     width: 100,
-// //     height: 100,
-// //     borderRadius: 50,
-// //     justifyContent: 'center',
-// //     alignItems: 'center',
-// //     marginBottom: 20,
-// //   },
-// //   title: {
-// //     fontSize: 28,
-// //     fontWeight: '700',
-// //     color: COLORS.textPrimary,
-// //     marginBottom: 8,
-// //   },
-// //   subtitle: {
-// //     fontSize: 16,
-// //     color: COLORS.textSecondary,
-// //     textAlign: 'center',
-// //   },
-// //   formContainer: {
-// //     marginBottom: 24,
-// //   },
-// //   inputGroup: {
-// //     marginBottom: 20,
-// //   },
-// //   inputLabel: {
-// //     fontSize: 14,
-// //     fontWeight: '600',
-// //     color: COLORS.textPrimary,
-// //     marginBottom: 8,
-// //   },
-// //   inputWrapper: {
-// //     flexDirection: 'row',
-// //     alignItems: 'center',
-// //     borderWidth: 1.5,
-// //     borderColor: COLORS.border,
-// //     borderRadius: 12,
-// //     backgroundColor: COLORS.white,
-// //     paddingHorizontal: 16,
-// //     height: 56,
-// //   },
-// //   inputError: {
-// //     borderColor: COLORS.error,
-// //   },
-// //   inputIcon: {
-// //     marginRight: 12,
-// //   },
-// //   input: {
-// //     flex: 1,
-// //     fontSize: 16,
-// //     color: COLORS.textPrimary,
-// //     paddingVertical: 0,
-// //   },
-// //   eyeButton: {
-// //     padding: 8,
-// //   },
-// //   errorText: {
-// //     color: COLORS.error,
-// //     fontSize: 12,
-// //     marginTop: 6,
-// //     paddingLeft: 4,
-// //   },
-// //   suggestionText: {
-// //     color: COLORS.textSecondary,
-// //     fontSize: 12,
-// //     marginTop: 6,
-// //     paddingLeft: 4,
-// //     fontStyle: 'italic',
-// //   },
-// //   termsContainer: {
-// //     marginBottom: 24,
-// //   },
-// //   checkboxContainer: {
-// //     flexDirection: 'row',
-// //     alignItems: 'center',
-// //   },
-// //   checkbox: {
-// //     width: 22,
-// //     height: 22,
-// //     borderRadius: 6,
-// //     borderWidth: 2,
-// //     borderColor: COLORS.border,
-// //     justifyContent: 'center',
-// //     alignItems: 'center',
-// //     marginRight: 12,
-// //   },
-// //   checkboxChecked: {
-// //     backgroundColor: COLORS.primary,
-// //     borderColor: COLORS.primary,
-// //   },
-// //   termsText: {
-// //     flex: 1,
-// //     fontSize: 13,
-// //     color: COLORS.textSecondary,
-// //   },
-// //   termsLink: {
-// //     color: COLORS.primary,
-// //     fontWeight: '600',
-// //   },
-// //   registerButton: {
-// //     borderRadius: 12,
-// //     overflow: 'hidden',
-// //   },
-// //   buttonDisabled: {
-// //     opacity: 0.6,
-// //   },
-// //   buttonGradient: {
-// //     flexDirection: 'row',
-// //     alignItems: 'center',
-// //     justifyContent: 'center',
-// //     paddingVertical: 16,
-// //   },
-// //   buttonText: {
-// //     color: COLORS.white,
-// //     fontSize: 17,
-// //     fontWeight: '700',
-// //   },
-// //   buttonIcon: {
-// //     marginLeft: 8,
-// //   },
-// //   loginContainer: {
-// //     flexDirection: 'row',
-// //     justifyContent: 'center',
-// //     paddingVertical: 16,
-// //   },
-// //   loginText: {
-// //     fontSize: 14,
-// //     color: COLORS.textSecondary,
-// //   },
-// //   loginLink: {
-// //     fontSize: 14,
-// //     fontWeight: '600',
-// //     color: COLORS.primary,
-// //   },
-// // });
-
-// import React, { useState, useRef, useEffect } from 'react';
+// import React, { useState, useRef, useEffect, useCallback } from 'react';
 // import {
 //   View,
 //   Text,
@@ -1099,10 +13,13 @@
 //   KeyboardAvoidingView,
 //   ScrollView,
 //   StatusBar,
+//   Image,
+//   PermissionsAndroid,
 // } from 'react-native';
 // import { SafeAreaView } from 'react-native-safe-area-context';
 // import LinearGradient from 'react-native-linear-gradient';
 // import Icon from 'react-native-vector-icons/Ionicons';
+// import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 // import axios from 'axios';
 // import { API_ROUTE } from '../../api_routing/api';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1131,8 +48,9 @@
 //     password: '',
 //     confirmPassword: '',
 //     name: '',
-//     phone: verifiedPhone,        
-//     username: '',     
+//     phone: verifiedPhone,
+//     username: '',
+//     profilePic: null,
 //   });
 
 //   const [showPassword, setShowPassword] = useState(false);
@@ -1140,18 +58,44 @@
 //   const [loading, setLoading] = useState(false);
 //   const [errors, setErrors] = useState({});
 //   const [termsAccepted, setTermsAccepted] = useState(false);
+//   const [showConfirmation, setShowConfirmation] = useState(false);
+//   const [termsError, setTermsError] = useState(false);
+//   const [isFormValid, setIsFormValid] = useState(false);
 
 //   const inputs = {
 //     name: useRef(null),
 //     email: useRef(null),
-//     phone: useRef(null),      
-//     username: useRef(null),   
+//     phone: useRef(null),
+//     username: useRef(null),
 //     password: useRef(null),
 //     confirmPassword: useRef(null),
 //   };
 
 //   useEffect(() => {
 //     setTimeout(() => inputs.name.current?.focus(), 300);
+//   }, []);
+
+//   // Request storage permission for Android
+//   const requestStoragePermission = useCallback(async () => {
+//     if (Platform.OS === 'android') {
+//       try {
+//         const granted = await PermissionsAndroid.request(
+//           PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+//           {
+//             title: 'Storage Permission',
+//             message: 'App needs access to your gallery to select profile picture',
+//             buttonNeutral: 'Ask Me Later',
+//             buttonNegative: 'Cancel',
+//             buttonPositive: 'OK',
+//           }
+//         );
+//         return granted === PermissionsAndroid.RESULTS.GRANTED;
+//       } catch (err) {
+//         console.warn(err);
+//         return false;
+//       }
+//     }
+//     return true;
 //   }, []);
 
 //   // Generate random username from name + random numbers
@@ -1170,13 +114,14 @@
 //     }
 //   }, [formData.name]);
 
-//   const validateForm = () => {
+//   // Validate form in real-time
+//   const validateForm = useCallback(() => {
 //     const newErrors = {};
 //     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 //     const phoneRegex = /^[0-9]{10,15}$/;
     
 //     if (!formData.name.trim()) {
-//       newErrors.name = 'Full name is required';
+//       newErrors.name = 'First name and Surname is required';
 //     }
     
 //     if (!formData.email.trim()) {
@@ -1211,33 +156,156 @@
 //       newErrors.confirmPassword = 'Passwords do not match';
 //     }
     
-//     if (!termsAccepted) {
-//       newErrors.terms = 'You must accept the terms to continue';
-//     }
-    
 //     setErrors(newErrors);
-//     return Object.keys(newErrors).length === 0;
-//   };
+//     const isValid = Object.keys(newErrors).length === 0;
+//     setIsFormValid(isValid);
+//     return isValid;
+//   }, [formData]);
+
+//   // Debounced validation
+//   useEffect(() => {
+//     const timeoutId = setTimeout(() => {
+//       validateForm();
+//     }, 300);
+//     return () => clearTimeout(timeoutId);
+//   }, [formData.name, formData.email, formData.phone, formData.username, formData.password, formData.confirmPassword, validateForm]);
+
+//   const handleInputChange = useCallback((field, value) => {
+//     setFormData(prev => ({ ...prev, [field]: value }));
+//     if (errors[field]) {
+//       setErrors(prev => ({ ...prev, [field]: null }));
+//     }
+//   }, [errors]);
+
+//   const handleChoosePhoto = useCallback(async () => {
+//     const hasPermission = await requestStoragePermission();
+//     if (!hasPermission && Platform.OS === 'android') {
+//       Alert.alert(
+//         'Permission Required',
+//         'Please grant storage permission to select a profile picture.',
+//         [{ text: 'OK' }]
+//       );
+//       return;
+//     }
+
+//     Alert.alert(
+//       'Add Profile Picture',
+//       'Choose an option',
+//       [
+//         { text: 'Cancel', style: 'cancel' },
+//         { text: 'Take Photo', onPress: () => openCamera() },
+//         { text: 'Choose from Gallery', onPress: () => openGallery() }
+//       ],
+//       { cancelable: true }
+//     );
+//   }, []);
+
+//   const openCamera = useCallback(() => {
+//     const options = {
+//       mediaType: 'photo',
+//       maxWidth: 1024,
+//       maxHeight: 1024,
+//       quality: 0.8,
+//       includeBase64: false,
+//       saveToPhotos: true
+//     };
+
+//     launchCamera(options, (response) => {
+//       if (response.didCancel) return;
+//       if (response.errorCode) {
+//         Alert.alert('Error', 'Failed to open camera: ' + response.errorMessage);
+//         return;
+//       }
+//       if (response.assets && response.assets[0]) {
+//         const asset = response.assets[0];
+//         if (asset.uri) {
+//           handleInputChange('profilePic', asset);
+//         }
+//       }
+//     });
+//   }, [handleInputChange]);
+
+//   const openGallery = useCallback(() => {
+//     const options = {
+//       mediaType: 'photo',
+//       maxWidth: 1024,
+//       maxHeight: 1024,
+//       quality: 0.8,
+//       includeBase64: false,
+//       selectionLimit: 1
+//     };
+
+//     launchImageLibrary(options, (response) => {
+//       if (response.didCancel) return;
+//       if (response.errorCode) {
+//         Alert.alert('Error', 'Failed to select image: ' + response.errorMessage);
+//         return;
+//       }
+//       if (response.assets && response.assets[0]) {
+//         const asset = response.assets[0];
+//         if (asset.uri) {
+//           handleInputChange('profilePic', asset);
+//         }
+//       }
+//     });
+//   }, [handleInputChange]);
+
+//   const handleConfirmDetails = useCallback(() => {
+//     if (validateForm()) {
+//       setShowConfirmation(true);
+//       setTermsError(false);
+//     }
+//   }, [validateForm]);
+
+//   const handleEditDetails = useCallback(() => {
+//     setShowConfirmation(false);
+//     setTermsAccepted(false);
+//     setTermsError(false);
+//   }, []);
 
 //   const handleRegister = async () => {
-//     if (!validateForm()) return;
-    
+//     if (!termsAccepted) {
+//       setTermsError(true);
+//       Alert.alert(
+//         'Terms Required',
+//         'Please accept the terms of service to continue.',
+//         [{ text: 'OK' }]
+//       );
+//       return;
+//     }
+
+//     if (loading) return;
+
 //     setLoading(true);
-    
-//     const cleanPhone = formData.phone.replace(/[^0-9]/g, '');
-    
+
+//     const payload = new FormData();
+//     payload.append('email', formData.email.trim().toLowerCase());
+//     payload.append('password', formData.password);
+//     payload.append('name', formData.name.trim());
+//     payload.append('phone', formData.phone.replace(/[^0-9]/g, ''));
+//     payload.append('username', formData.username.trim().toLowerCase());
+
+//     if (formData.profilePic) {
+//       const imageData = {
+//         uri: formData.profilePic.uri,
+//         type: formData.profilePic.type || 'image/jpeg',
+//         name: formData.profilePic.fileName || `profile_${Date.now()}.jpg`,
+//       };
+//       payload.append('profile_picture', imageData);
+//     }
+
 //     try {
-//       const response = await axios.post(`${API_ROUTE}/email-register/`, {
-//         email: formData.email.trim().toLowerCase(),
-//         password: formData.password,
-//         name: formData.name.trim(),
-//         phone: cleanPhone,
-//         username: formData.username.trim().toLowerCase(),
+//       const response = await axios.post(`${API_ROUTE}/email-register/`, payload, {
+//         headers: { 
+//           'Content-Type': 'multipart/form-data',
+//           'Accept': 'application/json'
+//         },
+//         timeout: 30000
 //       });
-      
+
 //       if (response.status === 201 && response.data.success) {
 //         const { token, refresh, user, reward } = response.data;
-        
+
 //         await AsyncStorage.multiSet([
 //           ['userToken', token],
 //           ['refreshToken', refresh],
@@ -1247,10 +315,10 @@
 //           ['userId', user.id.toString()],
 //           ['loginMethod', 'email'],
 //         ]);
-        
+
 //         if (reward) {
 //           Alert.alert(
-//             'Welcome! 🎉',
+//             'Welcome Your account has been successfull Register and ',
 //             `You've received ${reward.coins} bonus coins!`,
 //             [{ text: 'Continue', onPress: () => navigation.replace('SynMessage') }]
 //           );
@@ -1260,9 +328,9 @@
 //       }
 //     } catch (error) {
 //       console.error('Registration error:', error);
-      
+
 //       let errorMessage = 'Unable to register. Please try again.';
-      
+
 //       if (error.response?.data?.error) {
 //         errorMessage = error.response.data.error;
 //       } else if (error.response?.data?.errors) {
@@ -1276,7 +344,7 @@
 //       } else if (error.response?.data?.username) {
 //         errorMessage = error.response.data.username[0];
 //       }
-      
+
 //       Alert.alert('Registration Failed', errorMessage);
 //     } finally {
 //       setLoading(false);
@@ -1287,11 +355,6 @@
 //     navigation.navigate('TermsCondition');
 //   };
 
-//   const navigateToLogin = () => {
-//     navigation.navigate('EmailLogin');
-//   };
-
-//   // Helper to check if a field should be readonly
 //   const isFieldReadonly = (fieldName) => {
 //     if (!isVerified) return false;
 //     if (fieldName === 'email' && verifiedEmail && contactType === 'email') return true;
@@ -1299,14 +362,215 @@
 //     return false;
 //   };
 
-//   // Get verified badge icon
-//   const getVerifiedIcon = (fieldName) => {
-//     if (isFieldReadonly(fieldName)) {
-//       return <Icon name="checkmark-circle" size={16} color={COLORS.success} style={styles.verifiedIcon} />;
-//     }
-//     return null;
-//   };
+//   // Input Form View
+//   if (!showConfirmation) {
+//     return (
+//       <SafeAreaView style={styles.container}>
+//         <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} translucent={false} />
+        
+//         <KeyboardAvoidingView
+//           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+//           style={styles.keyboardView}
+//         >
+//           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            
+//             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+//               <Icon name="arrow-back" size={24} color={COLORS.textPrimary} />
+//             </TouchableOpacity>
 
+//             <View style={styles.header}>
+//               {/* <LinearGradient
+//                 colors={['rgba(13,100,221,0.1)', 'rgba(74,144,226,0.05)']}
+//                 style={styles.iconContainer}
+//               >
+//                 <Icon name="person-add" size={42} color={COLORS.primary} />
+//               </LinearGradient> */}
+//                <View style={styles.logoWrapper}>
+//                                       <LinearGradient
+//                                         colors={['#0066FF', '#0052CC']}
+//                                         style={styles.logoGradient}
+//                                       >
+//                                         <Image
+//                                           source={require('../../assets/images/showaAppLogo.png')} 
+//                                           style={styles.logoImage}
+//                                           resizeMode="contain"
+//                                         />
+//                                       </LinearGradient>
+//                                     </View>
+//               <Text style={styles.title}>Get Started on Showa</Text>
+//               <Text style={styles.subtitle}>Create an account to connect with friends and communities of people who share your interests.</Text>
+//             </View>
+
+//             <View style={styles.formContainer}>
+
+//               {/* Full Name */}
+//               <View style={styles.inputGroup}>
+//                 <Text style={styles.inputLabel}>Name *   ( First name and Surname )</Text>
+//                 <View style={[styles.inputWrapper, errors.name && styles.inputError]}>
+//                   <Icon name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+//                   <TextInput
+//                     ref={inputs.name}
+//                     placeholder="Enter your first name and surname"
+//                     style={styles.input}
+//                     value={formData.name}
+//                     onChangeText={(text) => handleInputChange('name', text)}
+//                     returnKeyType="next"
+//                     onSubmitEditing={() => inputs.username.current?.focus()}
+//                     editable={!loading}
+//                   />
+//                 </View>
+//                 {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+//               </View>
+
+//               {/* Username */}
+//               <View style={styles.inputGroup}>
+//                 <Text style={styles.inputLabel}>Username *</Text>
+//                 <View style={[styles.inputWrapper, errors.username && styles.inputError]}>
+//                   <Icon name="at-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+//                   <TextInput
+//                     ref={inputs.username}
+//                     placeholder="Choose a username"
+//                     style={styles.input}
+//                     autoCapitalize="none"
+//                     autoCorrect={false}
+//                     value={formData.username}
+//                     onChangeText={(text) => handleInputChange('username', text)}
+//                     returnKeyType="next"
+//                     onSubmitEditing={() => inputs.email.current?.focus()}
+//                     editable={!loading}
+//                   />
+//                 </View>
+//                 {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
+//               </View>
+
+//               {/* Email */}
+//               <View style={styles.inputGroup}>
+//                 <Text style={styles.inputLabel}>Email Address *</Text>
+//                 <View style={[
+//                   styles.inputWrapper, 
+//                   errors.email && styles.inputError,
+//                   isFieldReadonly('email') && styles.verifiedInput
+//                 ]}>
+//                   <Icon name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+//                   <TextInput
+//                     ref={inputs.email}
+//                     placeholder="Enter your email"
+//                     style={styles.input}
+//                     keyboardType="email-address"
+//                     autoCapitalize="none"
+//                     autoCorrect={false}
+//                     value={formData.email}
+//                     onChangeText={(text) => handleInputChange('email', text)}
+//                     returnKeyType="next"
+//                     onSubmitEditing={() => inputs.phone.current?.focus()}
+//                     editable={!loading && !isFieldReadonly('email')}
+//                   />
+//                 </View>
+//                 {isFieldReadonly('email') && (
+//                   <Text style={styles.verifiedText}>✓ Email verified</Text>
+//                 )}
+//                 {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+//               </View>
+
+//               {/* Phone */}
+//               <View style={styles.inputGroup}>
+//                 <Text style={styles.inputLabel}>Phone Number *</Text>
+//                 <View style={[
+//                   styles.inputWrapper, 
+//                   errors.phone && styles.inputError,
+//                   isFieldReadonly('phone') && styles.verifiedInput
+//                 ]}>
+//                   <Icon name="call-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+//                   <TextInput
+//                     ref={inputs.phone}
+//                     placeholder="Enter your phone number"
+//                     style={styles.input}
+//                     keyboardType="phone-pad"
+//                     value={formData.phone}
+//                     onChangeText={(text) => handleInputChange('phone', text)}
+//                     returnKeyType="next"
+//                     onSubmitEditing={() => inputs.password.current?.focus()}
+//                     editable={!loading && !isFieldReadonly('phone')}
+//                   />
+//                 </View>
+//                 {isFieldReadonly('phone') && (
+//                   <Text style={styles.verifiedText}> Phone number verified</Text>
+//                 )}
+//                 {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+//               </View>
+
+//               {/* Password */}
+//               <View style={styles.inputGroup}>
+//                 <Text style={styles.inputLabel}>Password *</Text>
+//                 <View style={[styles.inputWrapper, errors.password && styles.inputError]}>
+//                   <Icon name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+//                   <TextInput
+//                     ref={inputs.password}
+//                     placeholder="Create a password (min 6 characters)"
+//                     style={styles.input}
+//                     secureTextEntry={!showPassword}
+//                     value={formData.password}
+//                     onChangeText={(text) => handleInputChange('password', text)}
+//                     returnKeyType="next"
+//                     onSubmitEditing={() => inputs.confirmPassword.current?.focus()}
+//                     editable={!loading}
+//                   />
+//                   <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+//                     <Icon name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textSecondary} />
+//                   </TouchableOpacity>
+//                 </View>
+//                 {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+//               </View>
+
+//               {/* Confirm Password */}
+//               <View style={styles.inputGroup}>
+//                 <Text style={styles.inputLabel}>Confirm Password *</Text>
+//                 <View style={[styles.inputWrapper, errors.confirmPassword && styles.inputError]}>
+//                   <Icon name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+//                   <TextInput
+//                     ref={inputs.confirmPassword}
+//                     placeholder="Confirm your password"
+//                     style={styles.input}
+//                     secureTextEntry={!showConfirmPassword}
+//                     value={formData.confirmPassword}
+//                     onChangeText={(text) => handleInputChange('confirmPassword', text)}
+//                     returnKeyType="done"
+//                     onSubmitEditing={handleConfirmDetails}
+//                     editable={!loading}
+//                   />
+//                   <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
+//                     <Icon name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textSecondary} />
+//                   </TouchableOpacity>
+//                 </View>
+//                 {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+//               </View>
+
+//               {/* Continue Button */}
+//               <TouchableOpacity
+//                 onPress={handleConfirmDetails}
+//                 style={[styles.registerButton, (!isFormValid || loading) && styles.buttonDisabled]}
+//                 disabled={!isFormValid || loading}
+//                 activeOpacity={0.8}
+//               >
+//                 <LinearGradient colors={[COLORS.primary, COLORS.primary]} style={styles.buttonGradient}>
+//                   {loading ? (
+//                     <ActivityIndicator size="small" color={COLORS.white} />
+//                   ) : (
+//                     <>
+//                       <Text style={styles.buttonText}>Continue</Text>
+//                       <Icon name="arrow-forward" size={20} color={COLORS.white} style={styles.buttonIcon} />
+//                     </>
+//                   )}
+//                 </LinearGradient>
+//               </TouchableOpacity>
+//             </View>
+//           </ScrollView>
+//         </KeyboardAvoidingView>
+//       </SafeAreaView>
+//     );
+//   }
+
+//   // Confirmation View
 //   return (
 //     <SafeAreaView style={styles.container}>
 //       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} translucent={false} />
@@ -1317,250 +581,105 @@
 //       >
 //         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           
-//           {/* Back Button */}
-//           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+//           <TouchableOpacity onPress={handleEditDetails} style={styles.backButton}>
 //             <Icon name="arrow-back" size={24} color={COLORS.textPrimary} />
 //           </TouchableOpacity>
 
-//           {/* Header */}
 //           <View style={styles.header}>
 //             <LinearGradient
 //               colors={['rgba(13,100,221,0.1)', 'rgba(74,144,226,0.05)']}
 //               style={styles.iconContainer}
 //             >
-//               <Icon name="person-add" size={42} color={COLORS.primary} />
+//               <Icon name="checkmark-circle" size={42} color={COLORS.primary} />
 //             </LinearGradient>
-//             <Text style={styles.title}>Create Account</Text>
-//             <Text style={styles.subtitle}>Complete your registration</Text>
+//             <Text style={styles.title}>Confirm Details</Text>
+//             <Text style={styles.subtitle}>Please verify your information</Text>
 //           </View>
 
-//           {/* Form */}
 //           <View style={styles.formContainer}>
-//             {/* Full Name */}
-//             <View style={styles.inputGroup}>
-//               <Text style={styles.inputLabel}>Full Name *</Text>
-//               <View style={[styles.inputWrapper, errors.name && styles.inputError]}>
-//                 <Icon name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-//                 <TextInput
-//                   ref={inputs.name}
-//                   placeholder="Enter your full name"
-//                   style={styles.input}
-//                   value={formData.name}
-//                   onChangeText={(text) => {
-//                     setFormData({ ...formData, name: text });
-//                     if (errors.name) setErrors({ ...errors, name: null });
-//                   }}
-//                   returnKeyType="next"
-//                   onSubmitEditing={() => inputs.username.current?.focus()}
-//                   editable={!loading}
-//                 />
+//             {/* Profile Picture Preview */}
+            
+
+//             <View style={styles.confirmationCard}>
+//               <View style={styles.confirmationRow}>
+//                 <Text style={styles.confirmationLabel}>Name</Text>
+//                 <Text style={styles.confirmationValue}>{formData.name}</Text>
 //               </View>
-//               {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+              
+//               <View style={styles.confirmationDivider} />
+              
+//               <View style={styles.confirmationRow}>
+//                 <Text style={styles.confirmationLabel}>Username</Text>
+//                 <Text style={styles.confirmationValue}>@{formData.username}</Text>
+//               </View>
+              
+//               <View style={styles.confirmationDivider} />
+              
+//               <View style={styles.confirmationRow}>
+//                 <Text style={styles.confirmationLabel}>Email</Text>
+//                 <Text style={styles.confirmationValue}>{formData.email}</Text>
+//               </View>
+              
+//               <View style={styles.confirmationDivider} />
+              
+//               <View style={styles.confirmationRow}>
+//                 <Text style={styles.confirmationLabel}>Phone</Text>
+//                 <Text style={styles.confirmationValue}>{formData.phone}</Text>
+//               </View>
 //             </View>
 
-//             {/* Username */}
-//             <View style={styles.inputGroup}>
-//               <Text style={styles.inputLabel}>Username *</Text>
-//               <View style={[styles.inputWrapper, errors.username && styles.inputError]}>
-//                 <Icon name="at-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-//                 <TextInput
-//                   ref={inputs.username}
-//                   placeholder="Choose a username"
-//                   style={styles.input}
-//                   autoCapitalize="none"
-//                   autoCorrect={false}
-//                   value={formData.username}
-//                   onChangeText={(text) => {
-//                     setFormData({ ...formData, username: text });
-//                     if (errors.username) setErrors({ ...errors, username: null });
-//                   }}
-//                   returnKeyType="next"
-//                   onSubmitEditing={() => inputs.password.current?.focus()}
-//                   editable={!loading}
-//                 />
-//               </View>
-//               {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
-//               {!formData.username && formData.name && (
-//                 <Text style={styles.suggestionText}>
-//                   Suggested: {generateUsername(formData.name)}
-//                 </Text>
-//               )}
-//             </View>
-
-//             {/* Email - READONLY if verified */}
-//             <View style={styles.inputGroup}>
-//               <Text style={styles.inputLabel}>
-//                 Email Address *
-//                 {getVerifiedIcon('email')}
-//               </Text>
-//               <View style={[
-//                 styles.inputWrapper, 
-//                 errors.email && styles.inputError,
-//                 isFieldReadonly('email') && styles.verifiedInput
-//               ]}>
-//                 <Icon name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-//                 <TextInput
-//                   ref={inputs.email}
-//                   placeholder="Enter your email"
-//                   style={styles.input}
-//                   keyboardType="email-address"
-//                   autoCapitalize="none"
-//                   autoCorrect={false}
-//                   value={formData.email}
-//                   onChangeText={(text) => {
-//                     setFormData({ ...formData, email: text });
-//                     if (errors.email) setErrors({ ...errors, email: null });
-//                   }}
-//                   returnKeyType="next"
-//                   onSubmitEditing={() => inputs.phone.current?.focus()}
-//                   editable={!loading && !isFieldReadonly('email')}
-//                   pointerEvents={isFieldReadonly('email') ? 'none' : 'auto'}
-//                 />
-//               </View>
-//               {isFieldReadonly('email') && (
-//                 <Text style={styles.verifiedText}>
-//                   ✓ Email verified. Click the pencil icon to change if needed.
-//                 </Text>
-//               )}
-//               {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-//             </View>
-
-//             {/* Phone Number - READONLY if verified */}
-//             <View style={styles.inputGroup}>
-//               <Text style={styles.inputLabel}>
-//                 Phone Number *
-//                 {getVerifiedIcon('phone')}
-//               </Text>
-//               <View style={[
-//                 styles.inputWrapper, 
-//                 errors.phone && styles.inputError,
-//                 isFieldReadonly('phone') && styles.verifiedInput
-//               ]}>
-//                 <Icon name="call-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-//                 <TextInput
-//                   ref={inputs.phone}
-//                   placeholder="Enter your phone number"
-//                   style={styles.input}
-//                   keyboardType="phone-pad"
-//                   value={formData.phone}
-//                   onChangeText={(text) => {
-//                     setFormData({ ...formData, phone: text });
-//                     if (errors.phone) setErrors({ ...errors, phone: null });
-//                   }}
-//                   returnKeyType="next"
-//                   onSubmitEditing={() => inputs.password.current?.focus()}
-//                   editable={!loading && !isFieldReadonly('phone')}
-//                   pointerEvents={isFieldReadonly('phone') ? 'none' : 'auto'}
-//                 />
-//               </View>
-//               {isFieldReadonly('phone') && (
-//                 <Text style={styles.verifiedText}>
-//                   ✓ Phone number verified. Click the pencil icon to change if needed.
-//                 </Text>
-//               )}
-//               {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
-//             </View>
-
-//             {/* Password */}
-//             <View style={styles.inputGroup}>
-//               <Text style={styles.inputLabel}>Password *</Text>
-//               <View style={[styles.inputWrapper, errors.password && styles.inputError]}>
-//                 <Icon name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-//                 <TextInput
-//                   ref={inputs.password}
-//                   placeholder="Create a password (min 6 characters)"
-//                   style={styles.input}
-//                   secureTextEntry={!showPassword}
-//                   value={formData.password}
-//                   onChangeText={(text) => {
-//                     setFormData({ ...formData, password: text });
-//                     if (errors.password) setErrors({ ...errors, password: null });
-//                   }}
-//                   returnKeyType="next"
-//                   onSubmitEditing={() => inputs.confirmPassword.current?.focus()}
-//                   editable={!loading}
-//                 />
-//                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-//                   <Icon name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textSecondary} />
-//                 </TouchableOpacity>
-//               </View>
-//               {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-//             </View>
-
-//             {/* Confirm Password */}
-//             <View style={styles.inputGroup}>
-//               <Text style={styles.inputLabel}>Confirm Password *</Text>
-//               <View style={[styles.inputWrapper, errors.confirmPassword && styles.inputError]}>
-//                 <Icon name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-//                 <TextInput
-//                   ref={inputs.confirmPassword}
-//                   placeholder="Confirm your password"
-//                   style={styles.input}
-//                   secureTextEntry={!showConfirmPassword}
-//                   value={formData.confirmPassword}
-//                   onChangeText={(text) => {
-//                     setFormData({ ...formData, confirmPassword: text });
-//                     if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: null });
-//                   }}
-//                   returnKeyType="done"
-//                   onSubmitEditing={handleRegister}
-//                   editable={!loading}
-//                 />
-//                 <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
-//                   <Icon name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={COLORS.textSecondary} />
-//                 </TouchableOpacity>
-//               </View>
-//               {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
-//             </View>
-
-//             {/* Terms Checkbox */}
-//             <View style={styles.termsContainer}>
+//             {/* Terms of Service */}
+//             <View style={[styles.termsContainer, termsError && styles.termsErrorBorder]}>
 //               <TouchableOpacity
 //                 style={styles.checkboxContainer}
 //                 onPress={() => {
-//                   setTermsAccepted(!termsAccepted);
-//                   if (errors.terms) setErrors({ ...errors, terms: null });
+//                   setTermsAccepted(prev => !prev);
+//                   if (termsError) setTermsError(false);
 //                 }}
+//                 activeOpacity={0.7}
 //               >
 //                 <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
-//                   {termsAccepted && <Icon name="checkmark" size={14} color="#fff" />}
+//                   {termsAccepted && <Icon name="checkmark" size={14} color="#FFF" />}
 //                 </View>
-//                 <Text style={styles.termsText}>
-//                   I agree to the{' '}
-//                   <Text style={styles.termsLink} onPress={navigateToTerms}>
-//                     Terms & Conditions
+//                 <View style={styles.termsTextContainer}>
+//                   <Text style={styles.termsText}>
+//                     I agree to the{' '}
+//                     <Text style={styles.termsLink} onPress={navigateToTerms}>
+//                       Terms & Conditions
+//                     </Text>
 //                   </Text>
-//                 </Text>
+//                 </View>
 //               </TouchableOpacity>
-//               {errors.terms && <Text style={styles.errorText}>{errors.terms}</Text>}
+//               {termsError && (
+//                 <Text style={styles.termsErrorText}>You must accept the terms to continue</Text>
+//               )}
 //             </View>
 
-//             {/* Register Button */}
-//             <TouchableOpacity
-//               onPress={handleRegister}
-//               style={[styles.registerButton, loading && styles.buttonDisabled]}
-//               disabled={loading}
-//               activeOpacity={0.8}
-//             >
-//               <LinearGradient colors={[COLORS.primary, COLORS.primary]} style={styles.buttonGradient}>
-//                 {loading ? (
-//                   <ActivityIndicator size="small" color={COLORS.white} />
-//                 ) : (
-//                   <>
-//                     <Text style={styles.buttonText}>Sign Up</Text>
-//                     <Icon name="arrow-forward" size={20} color={COLORS.white} style={styles.buttonIcon} />
-//                   </>
-//                 )}
-//               </LinearGradient>
-//             </TouchableOpacity>
-//           </View>
+//             <View style={styles.buttonGroup}>
+//               <TouchableOpacity
+//                 onPress={handleEditDetails}
+//                 style={styles.editButton}
+//                 disabled={loading}
+//                 activeOpacity={0.8}
+//               >
+//                 <Text style={styles.editButtonText}>EDIT</Text>
+//               </TouchableOpacity>
 
-//           {/* Login Link */}
-//           <View style={styles.loginContainer}>
-//             <Text style={styles.loginText}>Already have an account? </Text>
-//             <TouchableOpacity onPress={navigateToLogin}>
-//               <Text style={styles.loginLink}>Sign In</Text>
-//             </TouchableOpacity>
+//               <TouchableOpacity
+//                 onPress={handleRegister}
+//                 style={[styles.confirmButton, loading && styles.buttonDisabled]}
+//                 disabled={loading}
+//                 activeOpacity={0.8}
+//               >
+//                 <LinearGradient colors={[COLORS.primary, COLORS.primary]} style={styles.buttonGradient}>
+//                   {loading ? (
+//                     <ActivityIndicator size="small" color={COLORS.white} />
+//                   ) : (
+//                     <Text style={styles.confirmButtonText}>SIGN UP</Text>
+//                   )}
+//                 </LinearGradient>
+//               </TouchableOpacity>
+//             </View>
 //           </View>
 //         </ScrollView>
 //       </KeyboardAvoidingView>
@@ -1614,6 +733,67 @@
 //   formContainer: {
 //     marginBottom: 24,
 //   },
+//   avatarSection: {
+//     alignItems: 'center',
+//     marginBottom: 32,
+//   },
+  
+//   logoImage: {
+//     width: 60,
+//     height: 60,
+//     tintColor: '#fff',
+//   },
+  
+    
+//     logoWrapper: {
+//       marginTop:-20,
+//       marginBottom: 20,
+//       shadowColor: '#0066FF',
+//       shadowOffset: { width: 0, height: 4 },
+//       shadowOpacity: 0.2,
+//       shadowRadius: 12,
+//       elevation: 8,
+//     },
+//     logoGradient: {
+//       width: 100,
+//       height: 100,
+//       borderRadius: 50,
+//       justifyContent: 'center',
+//       alignItems: 'center',
+//     },
+//   avatarContainer: {
+//     width: 100,
+//     height: 100,
+//     borderRadius: 50,
+//     backgroundColor: '#F0F4FE',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     borderWidth: 2,
+//     borderColor: '#E2E8F0',
+//     overflow: 'hidden',
+//   },
+//   avatarImage: {
+//     width: '100%',
+//     height: '100%',
+//   },
+//   cameraBadge: {
+//     position: 'absolute',
+//     bottom: 0,
+//     right: 0,
+//     backgroundColor: COLORS.primary,
+//     width: 32,
+//     height: 32,
+//     borderRadius: 16,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     borderWidth: 2,
+//     borderColor: COLORS.white,
+//   },
+//   avatarHint: {
+//     fontSize: 12,
+//     color: COLORS.textSecondary,
+//     marginTop: 8,
+//   },
 //   inputGroup: {
 //     marginBottom: 20,
 //   },
@@ -1622,8 +802,6 @@
 //     fontWeight: '600',
 //     color: COLORS.textPrimary,
 //     marginBottom: 8,
-//     flexDirection: 'row',
-//     alignItems: 'center',
 //   },
 //   inputWrapper: {
 //     flexDirection: 'row',
@@ -1666,49 +844,10 @@
 //     marginTop: 6,
 //     paddingLeft: 4,
 //   },
-//   verifiedIcon: {
-//     marginLeft: 8,
-//   },
-//   suggestionText: {
-//     color: COLORS.textSecondary,
-//     fontSize: 12,
-//     marginTop: 6,
-//     paddingLeft: 4,
-//     fontStyle: 'italic',
-//   },
-//   termsContainer: {
-//     marginBottom: 24,
-//   },
-//   checkboxContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   checkbox: {
-//     width: 22,
-//     height: 22,
-//     borderRadius: 6,
-//     borderWidth: 2,
-//     borderColor: COLORS.border,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     marginRight: 12,
-//   },
-//   checkboxChecked: {
-//     backgroundColor: COLORS.primary,
-//     borderColor: COLORS.primary,
-//   },
-//   termsText: {
-//     flex: 1,
-//     fontSize: 13,
-//     color: COLORS.textSecondary,
-//   },
-//   termsLink: {
-//     color: COLORS.primary,
-//     fontWeight: '600',
-//   },
 //   registerButton: {
 //     borderRadius: 12,
 //     overflow: 'hidden',
+//     marginTop: 8,
 //   },
 //   buttonDisabled: {
 //     opacity: 0.6,
@@ -1727,19 +866,117 @@
 //   buttonIcon: {
 //     marginLeft: 8,
 //   },
-//   loginContainer: {
+//   // Confirmation screen styles
+//   confirmationCard: {
+//     backgroundColor: '#FFF',
+//     borderRadius: 16,
+//     padding: 20,
+//     marginBottom: 24,
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowOpacity: 0.1,
+//     shadowRadius: 8,
+//     elevation: 4,
+//   },
+//   confirmationRow: {
 //     flexDirection: 'row',
-//     justifyContent: 'center',
-//     paddingVertical: 16,
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//     paddingVertical: 12,
 //   },
-//   loginText: {
+//   confirmationLabel: {
+//     color: '#64748B',
 //     fontSize: 14,
-//     color: COLORS.textSecondary,
+//     fontWeight: '500',
 //   },
-//   loginLink: {
-//     fontSize: 14,
+//   confirmationValue: {
+//     color: '#1E293B',
+//     fontSize: 15,
 //     fontWeight: '600',
+//   },
+//   confirmationDivider: {
+//     height: 1,
+//     backgroundColor: '#E2E8F0',
+//   },
+//   buttonGroup: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     gap: 12,
+//   },
+//   editButton: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     backgroundColor: '#FFF',
+//     borderRadius: 12,
+//     paddingVertical: 16,
+//     borderWidth: 1.5,
+//     borderColor: COLORS.primary,
+//   },
+//   editButtonText: {
 //     color: COLORS.primary,
+//     fontSize: 16,
+//     fontWeight: '600',
+//   },
+//   confirmButton: {
+//     flex: 2,
+//     borderRadius: 12,
+//     overflow: 'hidden',
+//   },
+//   confirmButtonText: {
+//     color: COLORS.white,
+//     fontSize: 16,
+//     fontWeight: '700',
+//   },
+//   termsContainer: {
+//     marginBottom: 24,
+//     backgroundColor: '#FFF',
+//     borderRadius: 12,
+//     padding: 16,
+//     borderWidth: 1,
+//     borderColor: '#E2E8F0',
+//   },
+//   termsErrorBorder: {
+//     borderColor: COLORS.error,
+//     backgroundColor: '#FEF2F2',
+//   },
+//   checkboxContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'flex-start',
+//   },
+//   checkbox: {
+//     width: 22,
+//     height: 22,
+//     borderRadius: 6,
+//     borderWidth: 2,
+//     borderColor: '#CBD5E1',
+//     backgroundColor: '#FFF',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginRight: 12,
+//     marginTop: 2,
+//   },
+//   checkboxChecked: {
+//     backgroundColor: COLORS.primary,
+//     borderColor: COLORS.primary,
+//   },
+//   termsTextContainer: {
+//     flex: 1,
+//   },
+//   termsText: {
+//     color: '#334155',
+//     fontSize: 13,
+//     lineHeight: 18,
+//   },
+//   termsLink: {
+//     color: COLORS.primary,
+//     fontWeight: '600',
+//   },
+//   termsErrorText: {
+//     color: COLORS.error,
+//     fontSize: 12,
+//     marginTop: 8,
+//     marginLeft: 34,
 //   },
 // });
 
@@ -1758,6 +995,7 @@ import {
   StatusBar,
   Image,
   PermissionsAndroid,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -1766,26 +1004,171 @@ import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import axios from 'axios';
 import { API_ROUTE } from '../../api_routing/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
+import NetInfo from '@react-native-community/netinfo';
+import messaging from '@react-native-firebase/messaging';
 
 const COLORS = {
   primary: '#0d64dd',
+  primaryDark: '#0a50b0',
+  primaryLight: '#4a90e2',
   white: '#ffffff',
+  background: '#f5f6fa',
   textPrimary: '#1a1a1a',
   textSecondary: '#6c757d',
-  border: '#e1e5eb',
+  textLight: '#8e8e93',
+  border: '#e8ecf1',
+  placeholder: '#adb5bd',
   error: '#dc3545',
   success: '#28a745',
-  verifiedBg: '#e8f5e9',
+  warning: '#ffc107',
+  verifiedBg: '#f0f9f0',
   verifiedBorder: '#4caf50',
+  cardShadow: '#000',
 };
 
+// ─── Network Status Modal ───────────────────────────────────────────────────
+const NetworkStatusModal = ({ visible, message, onRetry, onCancel, loading }) => (
+  <Modal
+    transparent={true}
+    visible={visible}
+    animationType="fade"
+    statusBarTranslucent={true}
+  >
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalContainer}>
+        <View style={styles.modalIconContainer}>
+          <Icon name="wifi-outline" size={50} color={COLORS.warning} />
+        </View>
+        <Text style={styles.modalTitle}>Connection Issue</Text>
+        <Text style={styles.modalMessage}>{message}</Text>
+        <View style={styles.modalButtonContainer}>
+          <TouchableOpacity 
+            style={[styles.modalButton, styles.modalCancelButton]} 
+            onPress={onCancel}
+            disabled={loading}
+          >
+            <Text style={styles.modalCancelText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.modalButton, styles.modalRetryButton, loading && styles.modalButtonDisabled]} 
+            onPress={onRetry}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <Text style={styles.modalRetryText}>Retry</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
+);
+
+// ─── FCM Service ─────────────────────────────────────────────────────────────
+class FCMService {
+  static async getToken() {
+    try {
+      const token = await messaging().getToken();
+      console.log('📱 FCM Token:', token);
+      return token;
+    } catch (error) {
+      console.error('❌ Failed to get FCM token:', error);
+      return null;
+    }
+  }
+
+  static async registerDevice(userId, userToken, retryCount = 0) {
+    const maxRetries = 3;
+    const baseDelay = 2000;
+
+    try {
+      const netState = await NetInfo.fetch();
+      if (!netState.isConnected) {
+        throw new Error('No internet connection');
+      }
+
+      const fcmToken = await this.getToken();
+      if (!fcmToken) {
+        console.warn('⚠️ No FCM token available');
+        return { success: false, error: 'No FCM token' };
+      }
+
+      console.log(`📱 Registering device (attempt ${retryCount + 1})`);
+
+      const response = await axios.post(
+        `${API_ROUTE}/register-device/`,
+        {
+          device_token: fcmToken,
+          device_type: Platform.OS,
+          device_name: await this.getDeviceName(),
+          user_id: userId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 15000,
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        console.log('✅ Device registered successfully');
+        return { success: true };
+      }
+
+      return { success: false, error: `Server error: ${response.status}` };
+
+    } catch (error) {
+      console.error('❌ FCM registration failed:', error);
+
+      const isRetryable = this.isRetryableError(error);
+      
+      if (isRetryable && retryCount < maxRetries) {
+        const delay = baseDelay * Math.pow(2, retryCount);
+        console.log(`⏳ Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.registerDevice(userId, userToken, retryCount + 1);
+      }
+
+      return {
+        success: false,
+        error: error.message || 'Device registration failed',
+        retryable: isRetryable,
+      };
+    }
+  }
+
+  static isRetryableError(error) {
+    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') return true;
+    if (error.response?.status >= 500 && error.response?.status < 600) return true;
+    if (error.response?.status === 429) return true;
+    if (error.message?.includes('network')) return true;
+    return false;
+  }
+
+  static async getDeviceName() {
+    try {
+      const deviceInfo = await import('react-native-device-info');
+      return `${deviceInfo.getBrand()} ${deviceInfo.getModel()}`;
+    } catch {
+      return Platform.OS === 'ios' ? 'iPhone' : 'Android Device';
+    }
+  }
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────
 export default function EmailRegisterScreen({ route, navigation }) {
-  // Get verified contact info from route params
+  // ── Params ────────────────────────────────────────────────────────────────
   const verifiedEmail = route.params?.verifiedEmail || '';
   const verifiedPhone = route.params?.verifiedPhone || '';
   const contactType = route.params?.contactType || 'email';
   const isVerified = route.params?.isVerified || false;
 
+  // ── State ──────────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
     email: verifiedEmail,
     password: '',
@@ -1804,7 +1187,11 @@ export default function EmailRegisterScreen({ route, navigation }) {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [termsError, setTermsError] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [networkModalVisible, setNetworkModalVisible] = useState(false);
+  const [networkMessage, setNetworkMessage] = useState('');
+  const [networkLoading, setNetworkLoading] = useState(false);
 
+  // ── Refs ──────────────────────────────────────────────────────────────────
   const inputs = {
     name: useRef(null),
     email: useRef(null),
@@ -1813,12 +1200,46 @@ export default function EmailRegisterScreen({ route, navigation }) {
     password: useRef(null),
     confirmPassword: useRef(null),
   };
+  const isMounted = useRef(true);
 
+  // ─── Network Listener ──────────────────────────────────────────────────────
+  useEffect(() => {
+    isMounted.current = true;
+    const unsubscribe = NetInfo.addEventListener(state => {
+      console.log('📶 Network state:', state.isConnected);
+      if (state.isConnected && networkModalVisible) {
+        setNetworkModalVisible(false);
+      }
+    });
+
+    return () => {
+      isMounted.current = false;
+      unsubscribe();
+    };
+  }, [networkModalVisible]);
+
+  // ─── Network Error Helpers ────────────────────────────────────────────────
+  const showNetworkError = useCallback((message, retryFn) => {
+    setNetworkMessage(message);
+    setNetworkModalVisible(true);
+  }, []);
+
+  const hideNetworkModal = useCallback(() => {
+    setNetworkModalVisible(false);
+    setNetworkLoading(false);
+  }, []);
+
+  const retryRegistration = useCallback(() => {
+    setNetworkLoading(true);
+    handleRegister();
+  }, []);
+
+  // ─── Initial Focus ──────────────────────────────────────────────────────
   useEffect(() => {
     setTimeout(() => inputs.name.current?.focus(), 300);
   }, []);
 
-  // Request storage permission for Android
+  // ─── Permission Request ──────────────────────────────────────────────────
   const requestStoragePermission = useCallback(async () => {
     if (Platform.OS === 'android') {
       try {
@@ -1834,14 +1255,14 @@ export default function EmailRegisterScreen({ route, navigation }) {
         );
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       } catch (err) {
-        console.warn(err);
+        console.warn('Storage permission error:', err);
         return false;
       }
     }
     return true;
   }, []);
 
-  // Generate random username from name + random numbers
+  // ─── Username Generation ──────────────────────────────────────────────────
   const generateUsername = (name) => {
     if (!name.trim()) return '';
     const base = name.trim().toLowerCase().replace(/\s+/g, '');
@@ -1849,7 +1270,6 @@ export default function EmailRegisterScreen({ route, navigation }) {
     return `${base}${randomNum}`;
   };
 
-  // Auto-generate username when name changes
   useEffect(() => {
     if (formData.name && !formData.username) {
       const suggestedUsername = generateUsername(formData.name);
@@ -1857,14 +1277,14 @@ export default function EmailRegisterScreen({ route, navigation }) {
     }
   }, [formData.name]);
 
-  // Validate form in real-time
+  // ─── Form Validation ──────────────────────────────────────────────────────
   const validateForm = useCallback(() => {
     const newErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^[0-9]{10,15}$/;
     
     if (!formData.name.trim()) {
-      newErrors.name = 'First name and Surname is required';
+      newErrors.name = 'Full name is required';
     }
     
     if (!formData.email.trim()) {
@@ -1905,14 +1325,25 @@ export default function EmailRegisterScreen({ route, navigation }) {
     return isValid;
   }, [formData]);
 
-  // Debounced validation
+  // ─── Debounced Validation ─────────────────────────────────────────────────
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      validateForm();
+      if (isMounted.current) {
+        validateForm();
+      }
     }, 300);
     return () => clearTimeout(timeoutId);
-  }, [formData.name, formData.email, formData.phone, formData.username, formData.password, formData.confirmPassword, validateForm]);
+  }, [
+    formData.name,
+    formData.email,
+    formData.phone,
+    formData.username,
+    formData.password,
+    formData.confirmPassword,
+    validateForm
+  ]);
 
+  // ─── Handlers ──────────────────────────────────────────────────────────────
   const handleInputChange = useCallback((field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -1941,7 +1372,7 @@ export default function EmailRegisterScreen({ route, navigation }) {
       ],
       { cancelable: true }
     );
-  }, []);
+  }, [requestStoragePermission]);
 
   const openCamera = useCallback(() => {
     const options = {
@@ -2006,7 +1437,8 @@ export default function EmailRegisterScreen({ route, navigation }) {
     setTermsError(false);
   }, []);
 
-  const handleRegister = async () => {
+  // ─── Registration Handler ──────────────────────────────────────────────────
+  const handleRegister = useCallback(async () => {
     if (!termsAccepted) {
       setTermsError(true);
       Alert.alert(
@@ -2018,8 +1450,19 @@ export default function EmailRegisterScreen({ route, navigation }) {
     }
 
     if (loading) return;
-
     setLoading(true);
+    setNetworkLoading(true);
+
+    const netState = await NetInfo.fetch();
+    if (!netState.isConnected) {
+      setLoading(false);
+      setNetworkLoading(false);
+      showNetworkError(
+        'No internet connection. Please check your network and try again.',
+        handleRegister
+      );
+      return;
+    }
 
     const payload = new FormData();
     payload.append('email', formData.email.trim().toLowerCase());
@@ -2038,65 +1481,157 @@ export default function EmailRegisterScreen({ route, navigation }) {
     }
 
     try {
+      console.log('📤 Sending registration request...');
+      
       const response = await axios.post(`${API_ROUTE}/email-register/`, payload, {
         headers: { 
           'Content-Type': 'multipart/form-data',
           'Accept': 'application/json'
         },
-        timeout: 30000
+        timeout: 30000,
       });
+
+      console.log('📥 Registration response:', response.status);
 
       if (response.status === 201 && response.data.success) {
         const { token, refresh, user, reward } = response.data;
 
-        await AsyncStorage.multiSet([
-          ['userToken', token],
-          ['refreshToken', refresh],
-          ['userData', JSON.stringify(user)],
-          ['isVerified', 'true'],
-          ['userEmail', user.email],
-          ['userId', user.id.toString()],
-          ['loginMethod', 'email'],
-        ]);
-
-        if (reward) {
-          Alert.alert(
-            'Welcome Your account has been successfull Register and ',
-            `You've received ${reward.coins} bonus coins!`,
-            [{ text: 'Continue', onPress: () => navigation.replace('SynMessage') }]
-          );
-        } else {
-          navigation.replace('SynMessage');
+        if (!token) {
+          throw new Error('No token received from server');
         }
+
+        if (isMounted.current) {
+          await EncryptedStorage.setItem('userToken', token);
+          await EncryptedStorage.setItem('refreshToken', refresh || '');
+          await EncryptedStorage.setItem('userData', JSON.stringify(user));
+          
+          await AsyncStorage.multiSet([
+            ['userToken', token],
+            ['refreshToken', refresh || ''],
+            ['userData', JSON.stringify(user)],
+            ['isVerified', 'true'],
+            ['userEmail', user.email],
+            ['userId', user.id.toString()],
+            ['loginMethod', 'email'],
+            ['username', formData.username.trim().toLowerCase()],
+          ]);
+
+          const registerDevice = async () => {
+            try {
+              const result = await FCMService.registerDevice(user.id, token);
+              if (result.success) {
+                console.log('✅ Device registered for notifications');
+              } else {
+                console.warn('⚠️ Device registration failed:', result.error);
+                if (result.retryable) {
+                  setTimeout(() => {
+                    FCMService.registerDevice(user.id, token);
+                  }, 30000);
+                }
+              }
+            } catch (fcmError) {
+              console.error('❌ FCM error (non-blocking):', fcmError);
+            }
+          };
+          registerDevice();
+
+          if (reward) {
+            Alert.alert(
+              'Welcome to Showa!',
+              'Your account is ready. Connect, share, and discover amazing content on Showa.\n\nBonus coins have been added to your account.',
+              [
+                {
+                  text: 'Get Started',
+                  onPress: () => navigation.replace('SynMessage'),
+                },
+              ]
+            );
+          } else {
+            navigation.replace('SynMessage');
+          }
+        }
+      } else {
+        throw new Error(`Unexpected status code: ${response.status}`);
       }
+
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('❌ Registration error:', error);
+
+      if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+        setLoading(false);
+        setNetworkLoading(false);
+        showNetworkError(
+          'Connection timeout. Please check your network and try again.',
+          handleRegister
+        );
+        return;
+      }
+
+      if (!error.response) {
+        setLoading(false);
+        setNetworkLoading(false);
+        showNetworkError(
+          'Cannot connect to server. Please check your internet connection.',
+          handleRegister
+        );
+        return;
+      }
+
+      if (error.response.status >= 500 && error.response.status < 600) {
+        setLoading(false);
+        setNetworkLoading(false);
+        showNetworkError(
+          'Server is currently experiencing issues. Please try again later.',
+          handleRegister
+        );
+        return;
+      }
 
       let errorMessage = 'Unable to register. Please try again.';
+      const backendError = error.response.data;
 
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.response?.data?.errors) {
-        const errorsList = error.response.data.errors;
+      if (backendError.error) {
+        errorMessage = backendError.error;
+      } else if (backendError.errors) {
+        const errorsList = backendError.errors;
         const firstError = Object.values(errorsList)[0];
-        errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
-      } else if (error.response?.data?.email) {
-        errorMessage = error.response.data.email[0];
-      } else if (error.response?.data?.phone) {
-        errorMessage = error.response.data.phone[0];
-      } else if (error.response?.data?.username) {
-        errorMessage = error.response.data.username[0];
+        errorMessage = Array.isArray(firstError) ? firstError[0] : firstError || errorMessage;
+      } else if (backendError.email) {
+        errorMessage = backendError.email[0] || 'Email is invalid';
+      } else if (backendError.phone) {
+        errorMessage = backendError.phone[0] || 'Phone number is invalid';
+      } else if (backendError.username) {
+        errorMessage = backendError.username[0] || 'Username is invalid';
+      } else if (backendError.password) {
+        errorMessage = backendError.password[0] || 'Password is invalid';
       }
 
-      Alert.alert('Registration Failed', errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (error.response.status === 409) {
+        errorMessage = 'Account already exists. Please try logging in instead.';
+      }
 
-  const navigateToTerms = () => {
+      if (isMounted.current) {
+        Alert.alert('Registration Failed', errorMessage);
+      }
+
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+        setNetworkLoading(false);
+      }
+    }
+  }, [
+    termsAccepted,
+    loading,
+    formData,
+    navigation,
+    showNetworkError
+  ]);
+
+  // ─── Navigation ────────────────────────────────────────────────────────────
+  const navigateToTerms = useCallback(() => {
     navigation.navigate('TermsCondition');
-  };
+  }, [navigation]);
 
   const isFieldReadonly = (fieldName) => {
     if (!isVerified) return false;
@@ -2105,55 +1640,74 @@ export default function EmailRegisterScreen({ route, navigation }) {
     return false;
   };
 
-  // Input Form View
+  // ─── Render Input Form ──────────────────────────────────────────────────
   if (!showConfirmation) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} translucent={false} />
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} translucent={false} />
         
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
         >
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent} 
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
               <Icon name="arrow-back" size={24} color={COLORS.textPrimary} />
             </TouchableOpacity>
 
             <View style={styles.header}>
-              {/* <LinearGradient
-                colors={['rgba(13,100,221,0.1)', 'rgba(74,144,226,0.05)']}
-                style={styles.iconContainer}
-              >
-                <Icon name="person-add" size={42} color={COLORS.primary} />
-              </LinearGradient> */}
-               <View style={styles.logoWrapper}>
-                                      <LinearGradient
-                                        colors={['#0066FF', '#0052CC']}
-                                        style={styles.logoGradient}
-                                      >
-                                        <Image
-                                          source={require('../../assets/images/showaAppLogo.png')} 
-                                          style={styles.logoImage}
-                                          resizeMode="contain"
-                                        />
-                                      </LinearGradient>
-                                    </View>
-              <Text style={styles.title}>Get Started on Showa</Text>
-              <Text style={styles.subtitle}>Create an account to connect with friends and communities of people who share your interests.</Text>
+              <View style={styles.logoWrapper}>
+                <LinearGradient
+                  colors={['#0066FF', '#0052CC']}
+                  style={styles.logoGradient}
+                >
+                  <Image
+                    source={require('../../assets/images/showaAppLogo.png')} 
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                  />
+                </LinearGradient>
+              </View>
+              <Text style={styles.title}>Create Account</Text>
+              <Text style={styles.subtitle}>Join the Showa community today</Text>
             </View>
 
             <View style={styles.formContainer}>
+              {/* Profile Picture */}
+              {/* <View style={styles.avatarSection}>
+                <TouchableOpacity 
+                  onPress={handleChoosePhoto}
+                  style={styles.avatarContainer}
+                  activeOpacity={0.7}
+                >
+                  {formData.profilePic ? (
+                    <Image 
+                      source={{ uri: formData.profilePic.uri }} 
+                      style={styles.avatarImage} 
+                    />
+                  ) : (
+                    <Icon name="person" size={40} color="#C7D2E8" />
+                  )}
+                  <View style={styles.cameraBadge}>
+                    <Icon name="camera" size={16} color="#FFF" />
+                  </View>
+                </TouchableOpacity>
+                <Text style={styles.avatarHint}>Add profile photo</Text>
+              </View> */}
 
               {/* Full Name */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Name *   ( First name and Surname )</Text>
+                <Text style={styles.inputLabel}>Full Name</Text>
                 <View style={[styles.inputWrapper, errors.name && styles.inputError]}>
                   <Icon name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     ref={inputs.name}
-                    placeholder="Enter your first name and surname"
+                    placeholder="Enter your full name"
+                    placeholderTextColor={COLORS.placeholder}
                     style={styles.input}
                     value={formData.name}
                     onChangeText={(text) => handleInputChange('name', text)}
@@ -2167,12 +1721,13 @@ export default function EmailRegisterScreen({ route, navigation }) {
 
               {/* Username */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Username *</Text>
+                <Text style={styles.inputLabel}>Username</Text>
                 <View style={[styles.inputWrapper, errors.username && styles.inputError]}>
                   <Icon name="at-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     ref={inputs.username}
-                    placeholder="Choose a username"
+                    placeholder="Choose a unique username"
+                    placeholderTextColor={COLORS.placeholder}
                     style={styles.input}
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -2188,7 +1743,7 @@ export default function EmailRegisterScreen({ route, navigation }) {
 
               {/* Email */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Email Address *</Text>
+                <Text style={styles.inputLabel}>Email Address</Text>
                 <View style={[
                   styles.inputWrapper, 
                   errors.email && styles.inputError,
@@ -2197,7 +1752,8 @@ export default function EmailRegisterScreen({ route, navigation }) {
                   <Icon name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     ref={inputs.email}
-                    placeholder="Enter your email"
+                    placeholder="Enter your email address"
+                    placeholderTextColor={COLORS.placeholder}
                     style={styles.input}
                     keyboardType="email-address"
                     autoCapitalize="none"
@@ -2208,6 +1764,9 @@ export default function EmailRegisterScreen({ route, navigation }) {
                     onSubmitEditing={() => inputs.phone.current?.focus()}
                     editable={!loading && !isFieldReadonly('email')}
                   />
+                  {isFieldReadonly('email') && (
+                    <Icon name="checkmark-circle" size={20} color={COLORS.success} />
+                  )}
                 </View>
                 {isFieldReadonly('email') && (
                   <Text style={styles.verifiedText}>✓ Email verified</Text>
@@ -2217,7 +1776,7 @@ export default function EmailRegisterScreen({ route, navigation }) {
 
               {/* Phone */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Phone Number *</Text>
+                <Text style={styles.inputLabel}>Phone Number</Text>
                 <View style={[
                   styles.inputWrapper, 
                   errors.phone && styles.inputError,
@@ -2227,6 +1786,7 @@ export default function EmailRegisterScreen({ route, navigation }) {
                   <TextInput
                     ref={inputs.phone}
                     placeholder="Enter your phone number"
+                    placeholderTextColor={COLORS.placeholder}
                     style={styles.input}
                     keyboardType="phone-pad"
                     value={formData.phone}
@@ -2235,21 +1795,25 @@ export default function EmailRegisterScreen({ route, navigation }) {
                     onSubmitEditing={() => inputs.password.current?.focus()}
                     editable={!loading && !isFieldReadonly('phone')}
                   />
+                  {isFieldReadonly('phone') && (
+                    <Icon name="checkmark-circle" size={20} color={COLORS.success} />
+                  )}
                 </View>
                 {isFieldReadonly('phone') && (
-                  <Text style={styles.verifiedText}> Phone number verified</Text>
+                  <Text style={styles.verifiedText}>✓ Phone number verified</Text>
                 )}
                 {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
               </View>
 
               {/* Password */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Password *</Text>
+                <Text style={styles.inputLabel}>Password</Text>
                 <View style={[styles.inputWrapper, errors.password && styles.inputError]}>
                   <Icon name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     ref={inputs.password}
                     placeholder="Create a password (min 6 characters)"
+                    placeholderTextColor={COLORS.placeholder}
                     style={styles.input}
                     secureTextEntry={!showPassword}
                     value={formData.password}
@@ -2267,12 +1831,13 @@ export default function EmailRegisterScreen({ route, navigation }) {
 
               {/* Confirm Password */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Confirm Password *</Text>
+                <Text style={styles.inputLabel}>Confirm Password</Text>
                 <View style={[styles.inputWrapper, errors.confirmPassword && styles.inputError]}>
                   <Icon name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     ref={inputs.confirmPassword}
                     placeholder="Confirm your password"
+                    placeholderTextColor={COLORS.placeholder}
                     style={styles.input}
                     secureTextEntry={!showConfirmPassword}
                     value={formData.confirmPassword}
@@ -2291,11 +1856,11 @@ export default function EmailRegisterScreen({ route, navigation }) {
               {/* Continue Button */}
               <TouchableOpacity
                 onPress={handleConfirmDetails}
-                style={[styles.registerButton, (!isFormValid || loading) && styles.buttonDisabled]}
+                style={[styles.continueButton, (!isFormValid || loading) && styles.buttonDisabled]}
                 disabled={!isFormValid || loading}
                 activeOpacity={0.8}
               >
-                <LinearGradient colors={[COLORS.primary, COLORS.primary]} style={styles.buttonGradient}>
+                <LinearGradient colors={[COLORS.primary, COLORS.primaryDark]} style={styles.buttonGradient}>
                   {loading ? (
                     <ActivityIndicator size="small" color={COLORS.white} />
                   ) : (
@@ -2306,6 +1871,14 @@ export default function EmailRegisterScreen({ route, navigation }) {
                   )}
                 </LinearGradient>
               </TouchableOpacity>
+
+              {/* Sign In Link */}
+              <View style={styles.signinContainer}>
+                <Text style={styles.signinText}>Already have an account? </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('EmailLogin')}>
+                  <Text style={styles.signinLink}>Sign In</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -2313,60 +1886,88 @@ export default function EmailRegisterScreen({ route, navigation }) {
     );
   }
 
-  // Confirmation View
+  // ─── Render Confirmation View ──────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} translucent={false} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} translucent={false} />
       
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <TouchableOpacity onPress={handleEditDetails} style={styles.backButton}>
             <Icon name="arrow-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
 
           <View style={styles.header}>
-            <LinearGradient
-              colors={['rgba(13,100,221,0.1)', 'rgba(74,144,226,0.05)']}
-              style={styles.iconContainer}
-            >
-              <Icon name="checkmark-circle" size={42} color={COLORS.primary} />
-            </LinearGradient>
+            <View style={styles.confirmIconContainer}>
+              <LinearGradient
+                colors={['rgba(13,100,221,0.1)', 'rgba(74,144,226,0.05)']}
+                style={styles.iconGradient}
+              >
+                <Icon name="checkmark-circle" size={42} color={COLORS.primary} />
+              </LinearGradient>
+            </View>
             <Text style={styles.title}>Confirm Details</Text>
-            <Text style={styles.subtitle}>Please verify your information</Text>
+            <Text style={styles.subtitle}>Please verify your information before proceeding</Text>
           </View>
 
           <View style={styles.formContainer}>
             {/* Profile Picture Preview */}
-            
+            {/* <View style={styles.avatarSection}>
+              <View style={styles.avatarContainer}>
+                {formData.profilePic ? (
+                  <Image 
+                    source={{ uri: formData.profilePic.uri }} 
+                    style={styles.avatarImage} 
+                  />
+                ) : (
+                  <Icon name="person" size={40} color="#C7D2E8" />
+                )}
+              </View>
+            </View> */}
 
             <View style={styles.confirmationCard}>
               <View style={styles.confirmationRow}>
-                <Text style={styles.confirmationLabel}>Name</Text>
+                <View style={styles.confirmationLabelContainer}>
+                  <Icon name="person-outline" size={16} color={COLORS.textSecondary} />
+                  <Text style={styles.confirmationLabel}>Name</Text>
+                </View>
                 <Text style={styles.confirmationValue}>{formData.name}</Text>
               </View>
               
               <View style={styles.confirmationDivider} />
               
               <View style={styles.confirmationRow}>
-                <Text style={styles.confirmationLabel}>Username</Text>
+                <View style={styles.confirmationLabelContainer}>
+                  <Icon name="at-outline" size={16} color={COLORS.textSecondary} />
+                  <Text style={styles.confirmationLabel}>Username</Text>
+                </View>
                 <Text style={styles.confirmationValue}>@{formData.username}</Text>
               </View>
               
               <View style={styles.confirmationDivider} />
               
               <View style={styles.confirmationRow}>
-                <Text style={styles.confirmationLabel}>Email</Text>
+                <View style={styles.confirmationLabelContainer}>
+                  <Icon name="mail-outline" size={16} color={COLORS.textSecondary} />
+                  <Text style={styles.confirmationLabel}>Email</Text>
+                </View>
                 <Text style={styles.confirmationValue}>{formData.email}</Text>
               </View>
               
               <View style={styles.confirmationDivider} />
               
               <View style={styles.confirmationRow}>
-                <Text style={styles.confirmationLabel}>Phone</Text>
+                <View style={styles.confirmationLabelContainer}>
+                  <Icon name="call-outline" size={16} color={COLORS.textSecondary} />
+                  <Text style={styles.confirmationLabel}>Phone</Text>
+                </View>
                 <Text style={styles.confirmationValue}>{formData.phone}</Text>
               </View>
             </View>
@@ -2405,7 +2006,7 @@ export default function EmailRegisterScreen({ route, navigation }) {
                 disabled={loading}
                 activeOpacity={0.8}
               >
-                <Text style={styles.editButtonText}>EDIT</Text>
+                <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -2414,11 +2015,11 @@ export default function EmailRegisterScreen({ route, navigation }) {
                 disabled={loading}
                 activeOpacity={0.8}
               >
-                <LinearGradient colors={[COLORS.primary, COLORS.primary]} style={styles.buttonGradient}>
+                <LinearGradient colors={[COLORS.primary, COLORS.primaryDark]} style={styles.buttonGradient}>
                   {loading ? (
                     <ActivityIndicator size="small" color={COLORS.white} />
                   ) : (
-                    <Text style={styles.confirmButtonText}>SIGN UP</Text>
+                    <Text style={styles.confirmButtonText}>Create Account</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
@@ -2426,14 +2027,24 @@ export default function EmailRegisterScreen({ route, navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Network Error Modal */}
+      <NetworkStatusModal
+        visible={networkModalVisible}
+        message={networkMessage}
+        onRetry={retryRegistration}
+        onCancel={hideNetworkModal}
+        loading={networkLoading}
+      />
     </SafeAreaView>
   );
 }
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#f5f6fa',
   },
   keyboardView: {
     flex: 1,
@@ -2447,73 +2058,77 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: 8,
   },
   header: {
     alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 32,
-  },
-  iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginTop: 4,
     marginBottom: 20,
   },
+  logoWrapper: {
+    marginBottom: 12,
+    shadowColor: '#0066FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  logoGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: 45,
+    height: 45,
+    tintColor: '#fff',
+  },
+  confirmIconContainer: {
+    marginBottom: 12,
+  },
+  iconGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
     color: COLORS.textPrimary,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.textSecondary,
     textAlign: 'center',
+    paddingHorizontal: 20,
   },
   formContainer: {
     marginBottom: 24,
   },
   avatarSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 20,
   },
-  
-  logoImage: {
-    width: 60,
-    height: 60,
-    tintColor: '#fff',
-  },
-  
-    
-    logoWrapper: {
-      marginTop:-20,
-      marginBottom: 20,
-      shadowColor: '#0066FF',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 12,
-      elevation: 8,
-    },
-    logoGradient: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
   avatarContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#F0F4FE',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#E2E8F0',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   avatarImage: {
     width: '100%',
@@ -2524,73 +2139,78 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: 0,
     backgroundColor: COLORS.primary,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: COLORS.white,
+    borderColor: '#FFF',
   },
   avatarHint: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    marginTop: 8,
+    marginTop: 6,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 14,
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.textPrimary,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: '#E2E8F0',
     borderRadius: 12,
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 16,
-    height: 56,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    height: 52,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   verifiedInput: {
-    backgroundColor: COLORS.verifiedBg,
-    borderColor: COLORS.verifiedBorder,
+    backgroundColor: '#F0F9F0',
+    borderColor: '#4CAF50',
   },
   inputError: {
     borderColor: COLORS.error,
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: 10,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.textPrimary,
     paddingVertical: 0,
   },
   eyeButton: {
-    padding: 8,
+    padding: 6,
   },
   errorText: {
     color: COLORS.error,
     fontSize: 12,
-    marginTop: 6,
+    marginTop: 4,
     paddingLeft: 4,
   },
   verifiedText: {
     color: COLORS.success,
     fontSize: 12,
-    marginTop: 6,
+    marginTop: 4,
     paddingLeft: 4,
   },
-  registerButton: {
+  continueButton: {
     borderRadius: 12,
     overflow: 'hidden',
-    marginTop: 8,
+    marginTop: 4,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -2599,33 +2219,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 15,
   },
   buttonText: {
     color: COLORS.white,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
   },
   buttonIcon: {
     marginLeft: 8,
   },
+  signinContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingVertical: 4,
+  },
+  signinText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  signinLink: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
   // Confirmation screen styles
   confirmationCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
-    marginBottom: 24,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E8ECF1',
   },
   confirmationRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
+  },
+  confirmationLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   confirmationLabel: {
     color: '#64748B',
@@ -2634,31 +2276,30 @@ const styles = StyleSheet.create({
   },
   confirmationValue: {
     color: '#1E293B',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
   confirmationDivider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#F1F3F5',
   },
   buttonGroup: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 12,
   },
   editButton: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: 15,
     borderWidth: 1.5,
     borderColor: COLORS.primary,
   },
   editButtonText: {
     color: COLORS.primary,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   confirmButton: {
@@ -2668,16 +2309,16 @@ const styles = StyleSheet.create({
   },
   confirmButtonText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   termsContainer: {
-    marginBottom: 24,
-    backgroundColor: '#FFF',
+    marginBottom: 20,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#E8ECF1',
   },
   termsErrorBorder: {
     borderColor: COLORS.error,
@@ -2688,16 +2329,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 5,
     borderWidth: 2,
     borderColor: '#CBD5E1',
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-    marginTop: 2,
+    marginRight: 10,
+    marginTop: 1,
   },
   checkboxChecked: {
     backgroundColor: COLORS.primary,
@@ -2718,7 +2359,76 @@ const styles = StyleSheet.create({
   termsErrorText: {
     color: COLORS.error,
     fontSize: 12,
-    marginTop: 8,
-    marginLeft: 34,
+    marginTop: 6,
+    marginLeft: 30,
+  },
+  // Network Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: 24,
+    width: '85%',
+    maxWidth: 340,
+    alignItems: 'center',
+  },
+  modalIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 6,
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 11,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelButton: {
+    backgroundColor: '#F1F3F5',
+  },
+  modalRetryButton: {
+    backgroundColor: COLORS.primary,
+  },
+  modalButtonDisabled: {
+    opacity: 0.6,
+  },
+  modalCancelText: {
+    color: COLORS.textSecondary,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  modalRetryText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

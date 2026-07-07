@@ -781,7 +781,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  Image, // Add this for profile images
+  Image,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -1526,7 +1526,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(74, 158, 255, 0.15)',
     alignSelf: 'flex-end',
   },
-  // ... rest of your existing styles
+ 
 });
 
 

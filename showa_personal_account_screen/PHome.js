@@ -30,7 +30,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
-import BottomNav from '../components/BottomNav';
+import BottomNav from '../components/BottomNavSocialMedia';
 import { Divider } from 'react-native-paper';
 import { launchCamera } from 'react-native-image-picker';
 import SwitchAccountSheet from '../components/SwitchAccountSheet';
@@ -44,6 +44,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PinUnlockModal from '../screens/PinUnlockModal'; 
 import EarningsSlideInManager from '../components/EarningsSlideInManager';
 import OnlineStatusBadge from '../components/OnlineStatusBadge';
+
 
 
 
@@ -78,6 +79,8 @@ const HomeScreen = ({ navigation }) => {
   const [callerInfo, setCallerInfo] = useState({ profileImage: '', name: 'Incoming Call' });
   const [showIncomingCallModal, setShowIncomingCallModal] = useState(false);
   const [isVideoCall, setIsVideoCall] = useState(false);
+
+  const isCallBeingHandledRef = useRef(false);
   
 
      const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -122,45 +125,45 @@ const fetchUnreadNotificationCount = async () => {
 
 
  
-      const DropdownModal = ({ visible, onClose, children, dropdownPosition }) => {
+// const DropdownModal = ({ visible, onClose, children, dropdownPosition }) => {
  
-  if (Platform.OS === 'android') {
-    return null;
-  }
+//   if (Platform.OS === 'android') {
+//     return null;
+//   }
   
-  // On iOS, render the modal
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.3)' }]}>
-          <View style={[
-            styles.dropdownMenuIOS, 
-            { 
-              backgroundColor: colors.backgroundSecondary,
-              borderColor: colors.border,
-              ...dropdownPosition 
-            }
-          ]}>
-            {children}
-          </View>
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
-  );
-};
+//   // On iOS, render the modal
+//   return (
+//     <Modal
+//       visible={visible}
+//       transparent
+//       animationType="fade"
+//       onRequestClose={onClose}
+//       statusBarTranslucent
+//     >
+//       <TouchableWithoutFeedback onPress={onClose}>
+//         <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.3)' }]}>
+//           <View style={[
+//             styles.dropdownMenuIOS, 
+//             { 
+//               backgroundColor: colors.backgroundSecondary,
+//               borderColor: colors.border,
+//               ...dropdownPosition 
+//             }
+//           ]}>
+//             {children}
+//           </View>
+//         </View>
+//       </TouchableWithoutFeedback>
+//     </Modal>
+//   );
+// };
 
   const calculateDropdownPosition = () => {
 
     return { top: 80, right: 20 };
   };
   
-  const renderDropdownContent = () => (
+const renderDropdownContent = () => (
   <>
     <Text style={[styles.dropdownItem, { fontWeight: 'bold', color: colors.text }]}>
       Personal Account
@@ -192,6 +195,9 @@ const fetchUnreadNotificationCount = async () => {
           userName: userData?.name || 'User',
           userId: userId
         });
+
+
+        
       }}
       style={styles.dropdownTouchable}
     >
@@ -995,102 +1001,64 @@ useEffect(() => {
         console.log('[Call WS] Connected');
       };
 
-      // ws.current.onmessage = (evt) => {
-      //   let data;
-      //  // try { data = JSON.parse(evt.data); } catch { return; }
+      
+//       ws.current.onmessage = (evt) => {
+//   let data;
+//   try {
+//     data = JSON.parse(evt.data);
+//   } catch {
+//     return;
+//   }
 
-      //   try {
-      //       data = JSON.parse(evt.data);
-      //     } catch (e) {
-      //       console.log("WS PARSE ERROR", e);
-      //       return;
-      //     }
+//   console.log("========== HOME WS RECEIVED ==========");
+//   console.log("Full data:", JSON.stringify(data, null, 2));
+//   console.log("TYPE:", data?.type);
+//   console.log("HAS OFFER:", !!data?.offer);
+//   console.log("HAS SDP:", !!data?.offer?.sdp);
+  
+//   // ✅ CRITICAL: Log where the profile image is in the message
+//   console.log("🔍 CHECKING IMAGE LOCATION:");
+//   console.log("  - data.offer.callerInfo:", data?.offer?.callerInfo);
+//   console.log("  - data.offer.callerInfo.profileImage:", data?.offer?.callerInfo?.profileImage);
+//   console.log("  - data.callerInfo:", data?.callerInfo);
+//   console.log("  - data.profile_image:", data?.profile_image);
+//   console.log("======================================");
 
-      //     console.log("========== HOME WS RECEIVED ==========");
-      //     console.log(JSON.stringify(data, null, 2));
-      //     console.log("TYPE:", data.type);
-      //     console.log("HAS OFFER:", !!data.offer);
-      //     console.log("HAS SDP:", !!data.offer?.sdp);
-      //     console.log("======================================");
-        
+//   // SERVER SENDS incoming_call
+//   if (data.type === 'incoming_call' && data.offer?.sdp) {
+//     console.log('[Call WS Home] Valid offer received, SDP length:', data.offer.sdp.length);
+    
+//     // ✅ FIX: Extract profile image from the correct location
+//     // Based on your log, it should be in data.offer.callerInfo.profileImage
+//     const profileImagePath = 
+//       data.offer?.callerInfo?.profileImage ||  // This is where you're sending it
+//       data.callerInfo?.profileImage ||
+//       data.profile_image ||
+//       '';
+    
+//     const callerName = 
+//       data.offer?.callerInfo?.name ||
+//       data.caller_name ||
+//       data.offer?.callerName ||
+//       'Unknown Caller';
+    
+//     console.log('[Call WS Home] ✅ Extracted Profile Image Path:', profileImagePath);
+//     console.log('[Call WS Home] ✅ Extracted Caller Name:', callerName);
+//     console.log('[Call WS Home] 📸 Full Image URL would be:', profileImagePath ? `${API_ROUTE_IMAGE}${profileImagePath}` : 'No image');
+    
+//     setCallerInfo({
+//       profileImage: profileImagePath,
+//       name: callerName,
+//       offer: data.offer,
+//     });
+    
+//     setIsVideoCall(data.offer.isVideoCall || false);
+//     setShowIncomingCallModal(true);
+//     return;
+//   }
+// };
 
-      //   console.log('[Call WS Home] Message:', data?.type);
-
-      //   if (data.type === 'incoming_call' && data.offer?.sdp) {
-      //     // If already on call screen, ignore — VoiceVideoCallScreen handles it
-      //     if (global.__onCallScreen) {
-      //       console.log('[Call WS Home] On call screen, ignoring offer');
-      //       return;
-      //     }
-
-      //     const offer = data.offer;
-
-      //     // VALIDATE: offer must have SDP to be useful
-      //     if (!offer?.sdp) {
-      //       console.warn('[Call WS Home] Offer missing SDP — ignoring');
-      //       return;
-      //     }
-
-      //     console.log('[Call WS Home] Valid offer received, SDP length:', offer.sdp.length);
-
-      //     InCallManager.stopRingtone();
-      //     Vibration.cancel();
-
-      //     const callerName = offer.callerInfo?.name || offer.callerName || 'Unknown Caller';
-      //     const profileImage = offer.callerInfo?.profileImage || '';
-      //     const isVideo = offer.isVideoCall || false;
-
-      //     setIsVideoCall(isVideo);
-      //     setCallerInfo({
-      //       profileImage,
-      //       name: callerName,
-      //       offer, // ← FULL offer WITH SDP stored here
-      //     });
-
-      //     setShowIncomingCallModal(true);
-      //   }
-      // };
-
-      // ws.current.onmessage = (evt) => {
-      //   let data;
-      //   try {
-      //     data = JSON.parse(evt.data);
-      //   } catch {
-      //     return;
-      //   }
-
-      //   console.log("========== HOME WS RECEIVED ==========");
-      //   console.log(JSON.stringify(data, null, 2));
-      //   console.log("TYPE:", data?.type);
-      //   console.log("HAS OFFER:", !!data?.offer);
-      //   console.log("HAS SDP:", !!data?.offer?.sdp);
-      //   console.log("======================================");
-
-      //   // SERVER SENDS incoming_call
-      //   if (
-      //     data.type === 'incoming_call' &&
-      //     data.offer?.sdp
-      //   ) {
-      //     console.log(
-      //       '[Call WS Home] Valid offer received, SDP length:',
-      //       data.offer.sdp.length
-      //     );
-
-      //     setCallerInfo({
-      //       profileImage:
-      //         data.offer?.callerInfo?.profileImage || '',
-      //       name:
-      //         data.caller_name ||
-      //         data.offer?.callerInfo?.name ||
-      //         'Unknown Caller',
-      //       offer: data.offer,
-      //     });
-
-      //     setShowIncomingCallModal(true);
-      //     return;
-      //   }
-      // };
-      ws.current.onmessage = (evt) => {
+ws.current.onmessage = (evt) => {
   let data;
   try {
     data = JSON.parse(evt.data);
@@ -1104,7 +1072,6 @@ useEffect(() => {
   console.log("HAS OFFER:", !!data?.offer);
   console.log("HAS SDP:", !!data?.offer?.sdp);
   
-  // ✅ CRITICAL: Log where the profile image is in the message
   console.log("🔍 CHECKING IMAGE LOCATION:");
   console.log("  - data.offer.callerInfo:", data?.offer?.callerInfo);
   console.log("  - data.offer.callerInfo.profileImage:", data?.offer?.callerInfo?.profileImage);
@@ -1114,12 +1081,17 @@ useEffect(() => {
 
   // SERVER SENDS incoming_call
   if (data.type === 'incoming_call' && data.offer?.sdp) {
+    // 🔴 CRITICAL FIX: Prevent multiple modals
+    if (isCallBeingHandledRef.current) {
+      console.log('[Call WS] Already handling a call, ignoring duplicate');
+      return;
+    }
+    
     console.log('[Call WS Home] Valid offer received, SDP length:', data.offer.sdp.length);
     
     // ✅ FIX: Extract profile image from the correct location
-    // Based on your log, it should be in data.offer.callerInfo.profileImage
     const profileImagePath = 
-      data.offer?.callerInfo?.profileImage ||  // This is where you're sending it
+      data.offer?.callerInfo?.profileImage || 
       data.callerInfo?.profileImage ||
       data.profile_image ||
       '';
@@ -1132,7 +1104,9 @@ useEffect(() => {
     
     console.log('[Call WS Home] ✅ Extracted Profile Image Path:', profileImagePath);
     console.log('[Call WS Home] ✅ Extracted Caller Name:', callerName);
-    console.log('[Call WS Home] 📸 Full Image URL would be:', profileImagePath ? `${API_ROUTE_IMAGE}${profileImagePath}` : 'No image');
+    
+    // Set the lock
+    isCallBeingHandledRef.current = true;
     
     setCallerInfo({
       profileImage: profileImagePath,
@@ -1146,12 +1120,13 @@ useEffect(() => {
   }
 };
 
+
       ws.current.onerror = (e) => {
-        console.error('[Call WS] Error', e);
+        // console.error('[Call WS] Error', e);
       };
 
       ws.current.onclose = (e) => {
-        console.log('[Call WS] Closed', e.code, e.reason);
+        //console.log('[Call WS] Closed', e.code, e.reason);
         setTimeout(() => {
           if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
             connectCallWebSocket();
@@ -1160,7 +1135,7 @@ useEffect(() => {
       };
 
     } catch (err) {
-      console.error('[Call WS] Failed to connect', err);
+     // console.error('[Call WS] Failed to connect', err);
     }
   };
 
@@ -1221,13 +1196,46 @@ useEffect(() => {
 //   setShowIncomingCallModal(false);
 // };
 
-const handleAcceptCall = () => {
+// const handleAcceptCall = () => {
 
+//   console.log("========== ACCEPT ==========");
+// console.log("callerInfo:", callerInfo);
+// console.log("offer exists:", !!callerInfo?.offer);
+// console.log("sdp exists:", !!callerInfo?.offer?.sdp);
+// console.log("============================");
+//   setShowIncomingCallModal(false);
+//   InCallManager.stopRingtone();
+//   Vibration.cancel();
+
+//   if (!callerInfo?.offer?.sdp) {
+//     console.error('[Accept] Offer has no SDP!');
+//     Alert.alert('Error', 'Call offer expired. Please ask them to call again.');
+//     return;
+//   }
+
+//   console.log('[Accept] Navigating with full offer, SDP length:', callerInfo.offer.sdp.length);
+
+//   navigation.navigate('VoiceCalls', {
+//     profile_image: callerInfo.profileImage || '',
+//     name: callerInfo.name || 'Unknown',
+//     targetUserId: callerInfo.offer?.targetUserId || callerInfo.offer?.callerId || '',
+//     incomingOffer: callerInfo.offer,  // ← FULL offer WITH SDP
+//     isIncomingCall: true,
+//     isInitiator: false,
+//     autoAnswerOnOffer: false,         // ← false: offer already has SDP, handle directly
+//   });
+// };
+
+const handleAcceptCall = () => {
   console.log("========== ACCEPT ==========");
-console.log("callerInfo:", callerInfo);
-console.log("offer exists:", !!callerInfo?.offer);
-console.log("sdp exists:", !!callerInfo?.offer?.sdp);
-console.log("============================");
+  console.log("callerInfo:", callerInfo);
+  console.log("offer exists:", !!callerInfo?.offer);
+  console.log("sdp exists:", !!callerInfo?.offer?.sdp);
+  console.log("============================");
+  
+  // Release the lock
+  isCallBeingHandledRef.current = false;
+  
   setShowIncomingCallModal(false);
   InCallManager.stopRingtone();
   Vibration.cancel();
@@ -1244,14 +1252,18 @@ console.log("============================");
     profile_image: callerInfo.profileImage || '',
     name: callerInfo.name || 'Unknown',
     targetUserId: callerInfo.offer?.targetUserId || callerInfo.offer?.callerId || '',
-    incomingOffer: callerInfo.offer,  // ← FULL offer WITH SDP
+    incomingOffer: callerInfo.offer,
     isIncomingCall: true,
     isInitiator: false,
-    autoAnswerOnOffer: false,         // ← false: offer already has SDP, handle directly
+    autoAnswerOnOffer: false,
   });
 };
 
+// Update handleRejectCall to release the lock
 const handleRejectCall = () => {
+  // Release the lock
+  isCallBeingHandledRef.current = false;
+  
   InCallManager.stopRingtone();
   Vibration.cancel();
   
@@ -1266,6 +1278,23 @@ const handleRejectCall = () => {
   setShowIncomingCallModal(false);
   setCallerInfo({ profileImage: '', name: 'Unknown', offer: null });
 };
+
+// const handleRejectCall = () => {
+//   InCallManager.stopRingtone();
+//   Vibration.cancel();
+  
+//   if (ws.current?.readyState === WebSocket.OPEN) {
+//     ws.current.send(JSON.stringify({ 
+//       type: 'reject_call',
+//       caller_id: callerInfo.offer?.targetUserId,
+//       room_id: callerInfo.offer?.roomId
+//     }));
+//   }
+  
+//   setShowIncomingCallModal(false);
+//   setCallerInfo({ profileImage: '', name: 'Unknown', offer: null });
+// };
+
 const handleCameraLaunch = async () => {
   try {
     // Check and request camera permissions based on platform
@@ -1652,14 +1681,14 @@ useEffect(()=>{
         style={styles.header}
       >
         <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>Showa</Text>
+          <Text style={styles.headerTitle}>Chat</Text>
           <View style={styles.headerIcons}>
             <TouchableOpacity
               style={styles.exploreIconContainer}
               onPress={toggleTheme}
             >
               <Icon 
-                style={{ marginRight: 10 }}
+                style={{ marginRight: 15 }}
                 name={isDark ? 'moon' : 'sunny'}
                 size={25} 
                 color="#FFFFFF" 
@@ -1669,7 +1698,7 @@ useEffect(()=>{
               onPress={() => navigation.navigate('EssentialPlatforms')}
               style={styles.exploreIconContainer}
             >
-              <Icon name="compass-outline" size={27} color="#fff" style={{ marginRight: 25 }} />
+              <Icon name="compass-outline" size={27} color="#fff" style={{ marginRight: 31 }} />
               <View style={styles.exploreBadge}>
                 <Text style={[styles.exploreBadgeText,{fontWeight:'800'}]}>Explore</Text>
               </View>
@@ -1699,7 +1728,7 @@ useEffect(()=>{
         
         {/* Dropdown for Android */}
         
-          {Platform.OS === 'android' && showDropdown && (
+          {/* {Platform.OS === 'android' && showDropdown && (
             <View style={[styles.dropdownContainer]}>
               <TouchableWithoutFeedback onPress={handleOutsidePress}>
                 <View style={styles.dropdownOverlay} />
@@ -1717,16 +1746,42 @@ useEffect(()=>{
                 {renderDropdownContent()}
               </View>
             </View>
-          )}
+          )} */}
+          {/* Unified Dropdown Modal - Works for both iOS and Android */}
+<Modal
+  visible={showDropdown}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setShowDropdown(false)}
+  statusBarTranslucent
+>
+  <TouchableWithoutFeedback onPress={() => setShowDropdown(false)}>
+    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} />
+  </TouchableWithoutFeedback>
+  
+  <View style={[
+    styles.dropdownMenu, 
+    { 
+      backgroundColor: colors.backgroundSecondary, 
+      borderColor: colors.border,
+      position: 'absolute',
+      top: 80 + (insets.top || 0),
+      right: 20,
+      zIndex: 10000,
+    }
+  ]}>
+    {renderDropdownContent()}
+  </View>
+</Modal>
         
         {/* Dropdown Modal for iOS */}
-        <DropdownModal 
+        {/* <DropdownModal 
           visible={showDropdown && Platform.OS === 'ios'} 
           onClose={() => setShowDropdown(false)}
           dropdownPosition={dropdownPosition}
         >
           {renderDropdownContent()}
-        </DropdownModal>
+        </DropdownModal> */}
         
         <SwitchAccountSheet
           showConfirmSwitch={showConfirmSwitch}
@@ -1769,7 +1824,7 @@ useEffect(()=>{
     clearButtonMode="while-editing"
     onFocus={() => setIsSearchFocused(true)}
     onBlur={() => setIsSearchFocused(false)}
-    // Add these props to prevent keyboard dismissal
+
     keyboardType="default"
     returnKeyType="search"
     onSubmitEditing={() => {
@@ -1805,7 +1860,7 @@ useEffect(()=>{
           {/* Updated section tabs with user status */}
           <View style={styles.sectionTabs}>
             <Text style={[styles.sectionTab, { fontWeight: '600', color: '#0d64dd' }]}>
-              {searchQuery ? 'SEARCH RESULTS' : 'ALL CHATS'}
+              {searchQuery ? 'SEARCH RESULTS' : 'ALL PERSONAL CHATS'}
             </Text>
 
             {/* Show current user's online status */}
@@ -1973,7 +2028,7 @@ useEffect(()=>{
             <View style={{ alignItems: "center" }}>
               <Text style={styles.emptyText}>No matching found</Text>
               <TouchableOpacity onPress={() => navigation.navigate("ChatAi")}>
-                <Text style={styles.askAiText}>Ask Showa Ai </Text>
+                <Text style={[styles.emptyText,{marginTop:10}]}>Ask Showa Ai </Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -1986,8 +2041,8 @@ useEffect(()=>{
                 
               >
                 
-                <Icon name="add-comment" size={20} color="#fff" />
-                <Text style={styles.startChatText}>Start New Chat</Text>
+                {/* <Icon name="add-comment" size={20} color="#fff" /> */}
+              <Text style={[styles.emptyText,{marginTop:15}]}>Start New Chat</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -2004,16 +2059,23 @@ useEffect(()=>{
         //   />
         // }
       />
-      <BottomNav navigation={navigation} setShowAccountModal={setShowAccountModal} />
+      {/* <BottomNav navigation={navigation} setShowAccountModal={setShowAccountModal} /> */}
 
-      {console.log('========== INCOMING CALL MODAL DEBUG from home page ==========')}
+      <BottomNav 
+            navigation={navigation} 
+            setShowAccountModal={setShowAccountModal}
+            activeRoute="Home" 
+              style={{ zIndex: 9999 }}
+          />
+
+      {/* {console.log('========== INCOMING CALL MODAL DEBUG from home page ==========')}
       {console.log('showIncomingCallModal:', showIncomingCallModal)}
       {console.log('Caller Name:', callerInfo.name)}
       {console.log('Caller Profile Image Path:', callerInfo.profileImage)}
       {console.log('Is Video Call:', isVideoCall)}
       {console.log('Full Image URL:', callerInfo.profileImage ? `${API_ROUTE_IMAGE}${callerInfo.profileImage}` : 'No image provided')}
       {console.log('Caller Info Object:', JSON.stringify(callerInfo, null, 2))}
-      {console.log('============================================')}
+      {console.log('============================================')} */}
 
        <IncomingCallModal
         visible={showIncomingCallModal}
@@ -2245,8 +2307,8 @@ useEffect(()=>{
         onPress={() => navigation.navigate('UserContactListPersonalAccount')}
        // onPress={() => navigation.navigate('ChatAi')}
       >
-        <Text style={{color:"#0d64dd"}}>Contact</Text>
-        {/* <Icon name="add" size={24} color="#0d64dd" /> */}
+        {/* <Text style={{color:"#0d64dd"}}>Contact</Text> */}
+        <Icon name="add" size={24} color="#0d64dd" />
       </TouchableOpacity>
 
       <EarningsSlideInManager />
@@ -2256,14 +2318,15 @@ useEffect(()=>{
   );
 };
 
+
 const createStyles = (colors, insets, isDark)=> StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundSecondary,
   },
   fab: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 125,
     right: 20,
     width: 60,
     height: 60,
@@ -2282,7 +2345,7 @@ const createStyles = (colors, insets, isDark)=> StyleSheet.create({
   },
   fabAi: {
     position: 'absolute',
-    bottom: 180,
+    bottom: 200,
     right: 20,
     width: 55,
     height: 55,
@@ -2326,10 +2389,10 @@ const createStyles = (colors, insets, isDark)=> StyleSheet.create({
 // },
 
 header: {
-  paddingBottom: Platform.OS === 'android' ? 16 : 0,
+  paddingBottom: Platform.OS === 'android' ? 0 : 0,
   paddingTop: Platform.OS === 'android' ? 14 : 0,
-  borderBottomLeftRadius: Platform.OS === 'android' ? 20 : 0,
-  borderBottomRightRadius: Platform.OS === 'android' ? 20 : 0,
+  borderBottomLeftRadius: Platform.OS === 'android' ? 0 : 0,
+  borderBottomRightRadius: Platform.OS === 'android' ? 0 : 0,
   backgroundColor: '#0d64dd',
   elevation: 2,
   zIndex: 1000,
@@ -2443,7 +2506,7 @@ header: {
     flex: 1,
     fontSize: 15,
     fontFamily: 'SourceSansPro-Regular',
-    color: '#333',
+    color: colors.textSecondary,
     paddingRight: 8,
   },
   sectionTabs: {

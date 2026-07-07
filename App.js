@@ -6246,7 +6246,10 @@ import {
 } from "./components/BackgroundSync";
 import backgroundFetchService from "./src/services/BackgroundFetchService";
 import Loginscreen from "./screens/Loginscreen";
+import ExplorePostDetails from "./screens/ExplorePostDetailScreen";
+import SuggestionUser from "./screens/SuggestionUser";
 import Signin from "./screens/onboard/SignIn";
+import Onboard from "./screens/onboard/OnboardingScreen";
 import Signin_two from "./screens/onboard/SignIn2_two";
 import TermsCondition from "./screens/onboard/Terms";
 import PrivacyPolicy from "./screens/onboard/PrivacyPolicy";
@@ -6295,6 +6298,7 @@ import Advertise from "./showa_business/Advertise";
 import ManageProfile from "./showa_business/ManageProfile";
 import CreateCatalog from "./showa_business/CreateCatalog";
 import AddItemToCatalog from "./showa_business/AddItemToCatalog";
+import ExplorePost from "./showa_business/ExplorePost";
 import Explore from "./showa_business/Explore";
 import LabelChats from "./showa_business/LabelChatsScreen";
 import Labels from "./showa_business/LabelsScreen";
@@ -6348,6 +6352,7 @@ import Discover from "./showa_social/Discover";
 import UploadshortVideo from "./showa_social/UploadshortVideo";
 import SearchShort from "./showa_social/SearchShort";
 import GroupCreate from "./screens/GroupCreate";
+import EdateProfile from "./screens/EdateProfile";
 import GroupConnect from "./screens/GroupConnect";
 import UserContactListPersonalAccount from "./components/UserContactListPersonalAccount";
 import UpdateModal from "./components/UpdateModal";
@@ -6382,6 +6387,16 @@ import Broadcaster from "./src/Broadcaster";
 import Viewer from "./src/Viewer";
 import CallKeepService from './src/services/CallKeepService';
 import CompleteSignupProfile from "./screens/onboard/CompleteSignupProfile";
+import Channelist from "./screens/Channelist";
+import HangoutPlaces from "./screens/HangoutPlaces";
+import HangoutPlacesExplore from "./screens/HangoutPlacesExplore";
+import HangoutPlaceDetail from "./screens/HangoutPlaceDetail";
+import ShowaPremium from "./screens/ShowaPremium";
+import Games from "./screens/Games";
+import GamesDetail from "./screens/Gamesdetails";
+import ExploreFeaturePersonalAcount from "./components/ExploreFeaturePersonalAcount";
+import MusicPlayer from "./components/MusicPlayer";
+
 
 
 
@@ -7474,9 +7489,16 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         <Stack.Screen name="WallpaperSetting">
           {(p) => <ScreenWrapper><WallpaperSetting {...p} /></ScreenWrapper>}
         </Stack.Screen>
+
         <Stack.Screen name="FaceSecuritySetting">
           {(p) => <ScreenWrapper><FaceSecuritySetting {...p} /></ScreenWrapper>}
         </Stack.Screen>
+
+        <Stack.Screen name="MusicPlayer">
+          {(p) => <ScreenWrapper><MusicPlayer {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
+
         <Stack.Screen name="PrivateChat">
           {(p) => <ScreenWrapper><PrivateChat {...p} /></ScreenWrapper>}
         </Stack.Screen>
@@ -7566,9 +7588,18 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         <Stack.Screen name="CreateCatalog">
           {(p) => <ScreenWrapper><CreateCatalog {...p} /></ScreenWrapper>}
         </Stack.Screen>
+
+        <Stack.Screen name="EdateProfile">
+          {(p) => <ScreenWrapper><EdateProfile {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
         <Stack.Screen name="Explore">
           {(p) => <ScreenWrapper><Explore {...p} /></ScreenWrapper>}
         </Stack.Screen>
+        <Stack.Screen name="HangoutPlaceDetail">
+          {(p) => <ScreenWrapper><HangoutPlaceDetail {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
         <Stack.Screen name="AddItemToCatalog">
           {(p) => <ScreenWrapper><AddItemToCatalog {...p} /></ScreenWrapper>}
         </Stack.Screen>
@@ -7596,9 +7627,15 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         <Stack.Screen name="BusinessSetup">
           {(p) => <ScreenWrapper><BusinessSetup {...p} /></ScreenWrapper>}
         </Stack.Screen>
+
         <Stack.Screen name="ProductDetails">
           {(p) => <ScreenWrapper><ProductDetails {...p} /></ScreenWrapper>}
         </Stack.Screen>
+        
+        <Stack.Screen name="ExplorePost">
+          {(p) => <ScreenWrapper><ExplorePost {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
         <Stack.Screen name="Cart">
           {(p) => <ScreenWrapper><Cart {...p} /></ScreenWrapper>}
         </Stack.Screen>
@@ -7612,8 +7649,25 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         <Stack.Screen name="OfficialSearch">
           {(p) => <ScreenWrapper><OfficialSearch {...p} /></ScreenWrapper>}
         </Stack.Screen>
+
+        <Stack.Screen name="Onboard">
+          {(p) => <ScreenWrapper><Onboard {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
         <Stack.Screen name="CompleteSignupProfile">
           {(p) => <ScreenWrapper><CompleteSignupProfile {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
+        <Stack.Screen name="SuggestionUser">
+          {(p) => <ScreenWrapper><SuggestionUser {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
+        <Stack.Screen name="ExplorePostDetails">
+          {(p) => <ScreenWrapper><ExplorePostDetails {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
+        <Stack.Screen name="Channelist">
+          {(p) => <ScreenWrapper><Channelist {...p} /></ScreenWrapper>}
         </Stack.Screen>
 
         <Stack.Screen name="Live">
@@ -7646,9 +7700,23 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         <Stack.Screen name="SupplyRequestDetailScreen">
           {(p) => <ScreenWrapper><SupplyRequestDetailScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
+
         <Stack.Screen name="BroadcastHome">
           {(p) => <ScreenWrapper><BroadcastHome {...p} /></ScreenWrapper>}
         </Stack.Screen>
+
+        <Stack.Screen name="Games">
+          {(p) => <ScreenWrapper><Games {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
+        <Stack.Screen name="GamesDetail">
+          {(p) => <ScreenWrapper><GamesDetail {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
+        <Stack.Screen name="ShowaPremium">
+          {(p) => <ScreenWrapper><ShowaPremium {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
         <Stack.Screen name="CreateBroadcastPost">
           {(p) => <ScreenWrapper><CreateBroadcastPost {...p} /></ScreenWrapper>}
         </Stack.Screen>
@@ -7729,8 +7797,23 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         <Stack.Screen name="UploadshortVideo">
           {(p) => <ScreenWrapper><UploadshortVideo {...p} /></ScreenWrapper>}
         </Stack.Screen>
+
         <Stack.Screen name="SearchShort">
           {(p) => <ScreenWrapper><SearchShort {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
+        <Stack.Screen name="HangoutPlaces">
+          {(p) => <ScreenWrapper><HangoutPlaces {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
+        
+
+        <Stack.Screen name="HangoutPlacesExplore">
+          {(p) => <ScreenWrapper><HangoutPlacesExplore {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+
+        <Stack.Screen name="HangoutDetail">
+          {(p) => <ScreenWrapper><HangoutDetail {...p} /></ScreenWrapper>}
         </Stack.Screen>
 
         {/* ── Features ───────────────────────────────────────────────────── */}
@@ -7745,6 +7828,9 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         </Stack.Screen>
         <Stack.Screen name="UserContactList">
           {(p) => <ScreenWrapper><UserContactList {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+        <Stack.Screen name="ExploreFeaturePersonalAcount">
+          {(p) => <ScreenWrapper><ExploreFeaturePersonalAcount {...p} /></ScreenWrapper>}
         </Stack.Screen>
         <Stack.Screen name="SynMessage">
           {(p) => <ScreenWrapper><SynMessage {...p} /></ScreenWrapper>}

@@ -1,617 +1,4 @@
 
-// import React, { useEffect, useRef, useState } from 'react';
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   TouchableOpacity,
-//   Modal,
-//   Image,
-//   Vibration,
-//   Platform,
-//   Animated,
-//   Easing,
-//   Dimensions,
-//   ActivityIndicator,
-// } from 'react-native';
-// import LinearGradient from 'react-native-linear-gradient';
-// import Icon from 'react-native-vector-icons/MaterialIcons';
-// import { API_ROUTE_IMAGE } from '../api_routing/api';
-// import InCallManager from 'react-native-incall-manager';
-
-// const { width } = Dimensions.get('window');
-
-// const IncomingCallModal = ({
-//   visible,
-//   onAccept,
-//   onReject,
-//   profileImage,
-//   callerName,
-//   isVideoCall = false,
-// }) => {
-//   const [buttonPressed, setButtonPressed] = useState(null);
-//   const [isAccepting, setIsAccepting] = useState(false);
-//   const [isRejecting, setIsRejecting] = useState(false);
-  
-  
-//   const hasCleanedUp = useRef(false);
-  
-//   // Animation values
-//   const pulseAnim = useRef(new Animated.Value(1)).current;
-//   const slideAnim = useRef(new Animated.Value(0)).current;
-//   const fadeAnim = useRef(new Animated.Value(0)).current;
-//   const scaleAnim = useRef(new Animated.Value(0.9)).current;
-//   const rotateAnim = useRef(new Animated.Value(0)).current;
-//   const buttonScale1 = useRef(new Animated.Value(1)).current;
-//   const buttonScale2 = useRef(new Animated.Value(1)).current;
-
-//   const isCallShowing = useRef(false);
-
-//   // Centralized cleanup function
-//   const stopRingingAndVibration = () => {
-//     if (hasCleanedUp.current) return;
-    
-//     console.log('[IncomingCallModal] Stopping ringtone and vibration');
-//     InCallManager.stopRingtone();
-//     Vibration.cancel();
-//     hasCleanedUp.current = true;
-//   };
-
-//   // Ringtone handling
-//   useEffect(() => {
-//     if (visible) {
-//       // Reset cleanup flag when becoming
-//       hasCleanedUp.current = false;
-      
-//       // Start ringtone
-//       console.log('[IncomingCallModal] Starting ringtone');
-//       if (Platform.OS === 'android') {
-//         InCallManager.startRingtone('_BUNDLE_');
-//       } else {
-//         InCallManager.startRingtone('_BUNDLE_');
-//       }
-      
-//       // Vibrate with professional pattern
-//       Vibration.vibrate([0, 500, 1000, 500], true);
-
-//       // Start entrance animations
-//       Animated.parallel([
-//         Animated.timing(fadeAnim, {
-//           toValue: 1,
-//           duration: 20,
-//           useNativeDriver: true,
-//         }),
-//         Animated.spring(scaleAnim, {
-//           toValue: 1,
-//           friction: 10,
-//           tension: 50,
-//           useNativeDriver: true,
-//         }),
-//         Animated.timing(slideAnim, {
-//           toValue: 1,
-//           duration: 300,
-//           easing: Easing.out(Easing.cubic),
-//           useNativeDriver: true,
-//         }),
-//       ]).start();
-
-//       // Start pulse animation for avatar
-//       Animated.loop(
-//         Animated.sequence([
-//           Animated.timing(pulseAnim, {
-//             toValue: 1.1,
-//             duration: 1000,
-//             easing: Easing.inOut(Easing.ease),
-//             useNativeDriver: true,
-//           }),
-//           Animated.timing(pulseAnim, {
-//             toValue: 1,
-//             duration: 1000,
-//             easing: Easing.inOut(Easing.ease),
-//             useNativeDriver: true,
-//           }),
-//         ])
-//       ).start();
-
-//       // Start rotation animation for video badge
-//       Animated.loop(
-//         Animated.timing(rotateAnim, {
-//           toValue: 1,
-//           duration: 2000,
-//           easing: Easing.linear,
-//           useNativeDriver: true,
-//         })
-//       ).start();
-
-//     } else {
-//       // Stop immediately when modal becomes invisible
-//       stopRingingAndVibration();
-      
-//       // Reset states
-//       setButtonPressed(null);
-//       setIsAccepting(false);
-//       setIsRejecting(false);
-      
-//       // Reset animations
-//       pulseAnim.setValue(1);
-//       rotateAnim.setValue(0);
-//       fadeAnim.setValue(0);
-//       scaleAnim.setValue(0.9);
-//       slideAnim.setValue(0);
-//     }
-
-//     // Cleanup on unmount
-//     return () => {
-//       stopRingingAndVibration();
-//     };
-//   }, [visible]);
-
-//   // Button animations
-//   const handlePressIn = (button) => {
-//     Animated.spring(button === 'accept' ? buttonScale1 : buttonScale2, {
-//       toValue: 0.85,
-//       friction: 5,
-//       tension: 40,
-//       useNativeDriver: true,
-//     }).start();
-//   };
-
-//   const handlePressOut = (button) => {
-//     Animated.spring(button === 'accept' ? buttonScale1 : buttonScale2, {
-//       toValue: 1,
-//       friction: 5,
-//       tension: 40,
-//       useNativeDriver: true,
-//     }).start();
-//   };
-
-//   // Optimized accept handler
-//   const handleAccept = () => {
-//     // Prevent multiple taps
-//     if (buttonPressed === 'accept' || isAccepting) return;
-    
-//     console.log('[IncomingCallModal] Accepting call - stopping ringtone');
-    
-//     // Set loading state
-//     setIsAccepting(true);
-//     setButtonPressed('accept');
-    
-//     // STOP RINGTONE IMMEDIATELY - before any other operations
-//     stopRingingAndVibration();
-    
-//     // INSTANT button press animation
-//     Animated.parallel([
-//       Animated.timing(buttonScale1, {
-//         toValue: 0.7,
-//         duration: 50,
-//         useNativeDriver: true,
-//       }),
-//       Animated.timing(fadeAnim, {
-//         toValue: 0,
-//         duration: 100,
-//         useNativeDriver: true,
-//       }),
-//     ]).start();
-
-//     // Call onAccept (parent will handle navigation)
-//     onAccept();
-//   };
-
-//   // Optimized reject handler
-//   const handleReject = () => {
-//     // Prevent multiple taps
-//     if (buttonPressed === 'reject' || isRejecting) return;
-    
-//     console.log('[IncomingCallModal] Rejecting call - stopping ringtone');
-    
-//     // Set loading state
-//     setIsRejecting(true);
-//     setButtonPressed('reject');
-    
-//     // STOP RINGTONE IMMEDIATELY
-//     stopRingingAndVibration();
-    
-//     // INSTANT button press animation
-//     Animated.parallel([
-//       Animated.timing(buttonScale2, {
-//         toValue: 0.7,
-//         duration: 50,
-//         useNativeDriver: true,
-//       }),
-//       Animated.timing(fadeAnim, {
-//         toValue: 0,
-//         duration: 100,
-//         useNativeDriver: true,
-//       }),
-//     ]).start();
-
-//     // Call onReject
-//     onReject();
-//   };
-
-//   const spin = rotateAnim.interpolate({
-//     inputRange: [0, 1],
-//     outputRange: ['0deg', '360deg'],
-//   });
-
-//   const slideIn = slideAnim.interpolate({
-//     inputRange: [0, 1],
-//     outputRange: [50, 0],
-//   });
-
-//   return (
-//     <Modal
-//       visible={visible}
-//       transparent={true}
-//       animationType="none"
-//       onRequestClose={handleReject}
-//       statusBarTranslucent
-//     >
-//       <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
-//         <Animated.View
-//           style={[
-//             styles.modalContainer,
-//             {
-//               transform: [
-//                 { scale: scaleAnim },
-//                 { translateY: slideIn },
-//               ],
-//             },
-//           ]}
-//         >
-//           <LinearGradient
-//             colors={
-//               isVideoCall
-//                 ? ['#1a2a3a', '#0d1b2a', '#0a0f1a']
-//                 : ['#0f2027', '#203a43', '#2c5364']
-//             }
-//             style={styles.gradient}
-//             start={{ x: 0, y: 0 }}
-//             end={{ x: 1, y: 1 }}
-//           >
-//             {/* Animated background pattern */}
-//             <View style={styles.backgroundPattern}>
-//               {[...Array(5)].map((_, i) => (
-//                 <Animated.View
-//                   key={i}
-//                   style={[
-//                     styles.patternCircle,
-//                     {
-//                       transform: [{ rotate: spin }],
-//                       opacity: 0.1 - i * 0.02,
-//                       right: -30 + i * 20,
-//                       bottom: -30 + i * 20,
-//                     },
-//                   ]}
-//                 />
-//               ))}
-//             </View>
-
-//             <View style={styles.modalContent}>
-//               <Animated.Text style={[styles.incomingCallText, { opacity: fadeAnim }]}>
-//                 {isVideoCall ? '📱 Incoming Video Call' : '📞 Incoming Voice Call'}
-//               </Animated.Text>
-
-//               <View style={styles.callerInfo}>
-//                 <Animated.View
-//                   style={[
-//                     styles.avatarContainer,
-//                     { transform: [{ scale: pulseAnim }] },
-//                   ]}
-//                 >
-//                   <LinearGradient
-//                     colors={
-//                       isVideoCall
-//                         ? ['#4a90e2', '#357abd', '#2a5f8a']
-//                         : ['#38a169', '#2f855a', '#276749']
-//                     }
-//                     style={styles.avatarBorder}
-//                     start={{ x: 0, y: 0 }}
-//                     end={{ x: 1, y: 1 }}
-//                   >
-//                     <View style={styles.modalAvatar}>
-//                       <Image
-//                         source={{
-//                           uri: profileImage
-//                             ? `${API_ROUTE_IMAGE}${profileImage}`
-//                             : 'https://via.placeholder.com/100',
-//                         }}
-//                         style={styles.modalAvatarImage}
-//                         resizeMode="cover"
-//                       />
-//                     </View>
-//                   </LinearGradient>
-                  
-//                   {isVideoCall && (
-//                     <Animated.View
-//                       style={[
-//                         styles.videoBadge,
-//                         { transform: [{ rotate: spin }] },
-//                       ]}
-//                     >
-//                       <Icon name="videocam" size={18} color="white" />
-//                     </Animated.View>
-//                   )}
-//                 </Animated.View>
-
-//                 <Animated.Text style={[styles.modalCallerName, { opacity: fadeAnim }]}>
-//                   {callerName || 'Caller'}
-//                 </Animated.Text>
-                
-//                 <Animated.View style={[styles.callTypeContainer, { opacity: fadeAnim }]}>
-//                   <View style={styles.callTypeIndicator}>
-//                     <Icon 
-//                       name={isVideoCall ? "videocam" : "call"} 
-//                       size={16} 
-//                       color={isVideoCall ? "#4a90e2" : "#38a169"} 
-//                     />
-//                     <Text style={styles.modalCallType}>
-//                       {isVideoCall ? 'Video Call' : 'Voice Call'}
-//                     </Text>
-//                   </View>
-//                 </Animated.View>
-//               </View>
-
-//               <View style={styles.modalButtons}>
-//                 <TouchableOpacity
-//                   style={styles.rejectButton}
-//                   onPress={handleReject}
-//                   onPressIn={() => handlePressIn('reject')}
-//                   onPressOut={() => handlePressOut('reject')}
-//                   activeOpacity={1}
-//                   disabled={buttonPressed !== null}
-//                 >
-//                   <Animated.View
-//                     style={[
-//                       styles.rejectButtonInner,
-//                       { transform: [{ scale: buttonScale2 }] },
-//                     ]}
-//                   >
-//                     <LinearGradient
-//                       colors={['#e53e3e', '#c53030', '#9b2c2c']}
-//                       style={styles.buttonGradient}
-//                       start={{ x: 0, y: 0 }}
-//                       end={{ x: 1, y: 1 }}
-//                     >
-//                       {isRejecting ? (
-//                         <ActivityIndicator size="small" color="white" />
-//                       ) : (
-//                         <Icon name="call-end" size={30} color="white" />
-//                       )}
-//                     </LinearGradient>
-//                   </Animated.View>
-//                   <Text style={styles.buttonText}>
-//                     {isRejecting ? 'Declining...' : 'Decline'}
-//                   </Text>
-//                 </TouchableOpacity>
-
-//                 <TouchableOpacity
-//                   style={styles.acceptButton}
-//                   onPress={handleAccept}
-//                   onPressIn={() => handlePressIn('accept')}
-//                   onPressOut={() => handlePressOut('accept')}
-//                   activeOpacity={1}
-//                   disabled={buttonPressed !== null}
-//                 >
-//                   <Animated.View
-//                     style={[
-//                       styles.acceptButtonInner,
-//                       { transform: [{ scale: buttonScale1 }] },
-//                     ]}
-//                   >
-//                     <LinearGradient
-//                       colors={isVideoCall 
-//                         ? ['#4a90e2', '#357abd', '#2a5f8a']
-//                         : ['#38a169', '#2f855a', '#276749']
-//                       }
-//                       style={styles.buttonGradient}
-//                       start={{ x: 0, y: 0 }}
-//                       end={{ x: 1, y: 1 }}
-//                     >
-//                       {isAccepting ? (
-//                         <ActivityIndicator size="small" color="white" />
-//                       ) : (
-//                         <Icon 
-//                           name={isVideoCall ? "videocam" : "call"} 
-//                           size={30} 
-//                           color="white" 
-//                         />
-//                       )}
-//                     </LinearGradient>
-//                   </Animated.View>
-//                   <Text style={styles.buttonText}>
-//                     {isAccepting ? 'Connecting...' : 'Accept'}
-//                   </Text>
-//                 </TouchableOpacity>
-//               </View>
-//             </View>
-//           </LinearGradient>
-//         </Animated.View>
-//       </Animated.View>
-//     </Modal>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   modalOverlay: {
-//     flex: 1,
-//     backgroundColor: 'rgba(0,0,0,0.85)',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   modalContainer: {
-//     width: width * 0.9,
-//     maxWidth: 400,
-//     borderRadius: 28,
-//     overflow: 'hidden',
-//     elevation: 24,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 8 },
-//     shadowOpacity: 0.44,
-//     shadowRadius: 10.32,
-//   },
-//   gradient: {
-//     position: 'relative',
-//   },
-//   backgroundPattern: {
-//     position: 'absolute',
-//     top: 0,
-//     left: 0,
-//     right: 0,
-//     bottom: 0,
-//     overflow: 'hidden',
-//   },
-//   patternCircle: {
-//     position: 'absolute',
-//     width: 200,
-//     height: 200,
-//     borderRadius: 100,
-//     backgroundColor: 'white',
-//     opacity: 0.05,
-//   },
-//   modalContent: {
-//     padding: 30,
-//     alignItems: 'center',
-//     zIndex: 1,
-//   },
-//   incomingCallText: {
-//     fontSize: 26,
-//     color: 'white',
-//     fontWeight: '700',
-//     marginBottom: 25,
-//     textShadowColor: 'rgba(0, 0, 0, 0.3)',
-//     textShadowOffset: { width: 0, height: 2 },
-//     textShadowRadius: 4,
-//     letterSpacing: 0.5,
-//   },
-//   callerInfo: {
-//     alignItems: 'center',
-//     marginBottom: 40,
-//   },
-//   avatarContainer: {
-//     marginBottom: 20,
-//     position: 'relative',
-//   },
-//   avatarBorder: {
-//     padding: 3,
-//     borderRadius: 63,
-//   },
-//   modalAvatar: {
-//     width: 110,
-//     height: 110,
-//     borderRadius: 55,
-//     backgroundColor: '#4a5568',
-//     borderWidth: 3,
-//     borderColor: 'rgba(255,255,255,0.3)',
-//     overflow: 'hidden',
-//   },
-//   modalAvatarImage: {
-//     width: '100%',
-//     height: '100%',
-//   },
-//   videoBadge: {
-//     position: 'absolute',
-//     bottom: 0,
-//     right: 0,
-//     backgroundColor: '#4a90e2',
-//     width: 34,
-//     height: 34,
-//     borderRadius: 17,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     borderWidth: 3,
-//     borderColor: 'white',
-//     elevation: 4,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.25,
-//     shadowRadius: 3.84,
-//   },
-//   modalCallerName: {
-//     fontSize: 28,
-//     color: 'white',
-//     fontWeight: '700',
-//     marginBottom: 10,
-//     textShadowColor: 'rgba(0, 0, 0, 0.3)',
-//     textShadowOffset: { width: 0, height: 2 },
-//     textShadowRadius: 4,
-//   },
-//   callTypeContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-//   callTypeIndicator: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     backgroundColor: 'rgba(255,255,255,0.15)',
-//     paddingHorizontal: 16,
-//     paddingVertical: 8,
-//     borderRadius: 20,
-//     borderWidth: 1,
-//     borderColor: 'rgba(255,255,255,0.2)',
-//   },
-//   modalCallType: {
-//     fontSize: 16,
-//     color: 'rgba(255,255,255,0.9)',
-//     marginLeft: 8,
-//     fontWeight: '500',
-//   },
-//   modalButtons: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-around',
-//     width: '100%',
-//     paddingHorizontal: 10,
-//   },
-//   rejectButton: {
-//     alignItems: 'center',
-//     marginRight: 20,
-//   },
-//   acceptButton: {
-//     alignItems: 'center',
-//     marginLeft: 20,
-//   },
-//   rejectButtonInner: {
-//     width: 80,
-//     height: 80,
-//     borderRadius: 40,
-//     marginBottom: 10,
-//     elevation: 8,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 4 },
-//     shadowOpacity: 0.3,
-//     shadowRadius: 5,
-//     overflow: 'hidden',
-//   },
-//   acceptButtonInner: {
-//     width: 80,
-//     height: 80,
-//     borderRadius: 40,
-//     marginBottom: 10,
-//     elevation: 8,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 4 },
-//     shadowOpacity: 0.3,
-//     shadowRadius: 5,
-//     overflow: 'hidden',
-//   },
-//   buttonGradient: {
-//     width: '100%',
-//     height: '100%',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   buttonText: {
-//     color: 'white',
-//     fontSize: 15,
-//     fontWeight: '600',
-//     textShadowColor: 'rgba(0, 0, 0, 0.3)',
-//     textShadowOffset: { width: 0, height: 1 },
-//     textShadowRadius: 2,
-//   },
-// });
-
-// export default IncomingCallModal;
 
 
 import React, { useEffect, useRef, useState, memo } from 'react';
@@ -666,25 +53,105 @@ const IncomingCallModal = ({
   const buttonScaleAccept = useRef(new Animated.Value(1)).current;
   const buttonScaleReject = useRef(new Animated.Value(1)).current;
 
+
+  useEffect(() => {
+  if (visible && !hasStartedRef.current) {
+    console.log('[IncomingCallModal] OPENING');
+    hasStartedRef.current = true;
+    hasHandledActionRef.current = false;
+    setLoadingAction(null);
+
+    // 🔴 CRITICAL FIX for Android 14+: Stop any existing ringtone first
+    try {
+      InCallManager.stopRingtone();
+      Vibration.cancel();
+      
+      // Small delay to ensure cleanup is complete
+      setTimeout(() => {
+        InCallManager.startRingtone('_BUNDLE_');
+      }, 200);
+    } catch (e) {
+      console.log('Ringtone error:', e);
+    }
+
+    // Start vibration pattern (simpler pattern for Android 14+)
+    Vibration.vibrate([500, 400, 500, 400], true);
+
+    // Entrance animation
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 7,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Pulse loop
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.06,
+          duration: 900,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }
+
+  if (!visible) {
+    stopEverything();
+    fadeAnim.setValue(0);
+    scaleAnim.setValue(0.9);
+    pulseAnim.setValue(1);
+    setLoadingAction(null);
+    
+    // 🔴 CRITICAL FIX: Ensure ringtone is fully stopped
+    try {
+      InCallManager.stopRingtone();
+      Vibration.cancel();
+      InCallManager.stop(); // Force stop audio session
+    } catch (e) {
+      console.log('Cleanup error:', e);
+    }
+  }
+
+  return () => {
+    stopEverything();
+  };
+}, [visible]);
+
   // =========================
   // CLEANUP
   // =========================
 
-  const stopEverything = () => {
-    try {
+  // const stopEverything = () => {
+  //   try {
 
-      Animated.timing(pulseAnim).stop?.();
+  //     Animated.timing(pulseAnim).stop?.();
 
-      Vibration.cancel();
+  //     Vibration.cancel();
 
-      InCallManager.stopRingtone();
+  //     InCallManager.stopRingtone();
 
-      hasStartedRef.current = false;
+  //     hasStartedRef.current = false;
 
-    } catch (e) {
-      console.log('Cleanup error:', e);
-    }
-  };
+  //   } catch (e) {
+  //     console.log('Cleanup error:', e);
+  //   }
+  // };
 
   // =========================
   // EFFECT
@@ -803,67 +270,160 @@ useEffect(() => {
   // ACCEPT
   // =========================
 
+  // const handleAccept = async () => {
+
+  //   if (hasHandledActionRef.current) return;
+
+  //   hasHandledActionRef.current = true;
+
+  //   setLoadingAction('accept');
+
+  //   stopEverything();
+
+  //   Animated.parallel([
+  //     Animated.timing(fadeAnim, {
+  //       toValue: 0,
+  //       duration: 150,
+  //       useNativeDriver: true,
+  //     }),
+
+  //     Animated.timing(scaleAnim, {
+  //       toValue: 0.92,
+  //       duration: 150,
+  //       useNativeDriver: true,
+  //     }),
+  //   ]).start();
+
+  //   setTimeout(() => {
+  //     onAccept?.();
+  //   }, 150);
+  // };
+
   const handleAccept = async () => {
+  if (hasHandledActionRef.current) return;
+  hasHandledActionRef.current = true;
+  setLoadingAction('accept');
 
-    if (hasHandledActionRef.current) return;
+  // 🔴 CRITICAL FIX: Stop ringtone FIRST
+  try {
+    InCallManager.stopRingtone();
+    Vibration.cancel();
+    InCallManager.stop(); // Force stop audio session
+  } catch (e) {
+    console.log('Stop ringtone error:', e);
+  }
 
-    hasHandledActionRef.current = true;
+  Animated.parallel([
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+    }),
+    Animated.timing(scaleAnim, {
+      toValue: 0.92,
+      duration: 150,
+      useNativeDriver: true,
+    }),
+  ]).start();
 
-    setLoadingAction('accept');
+  setTimeout(() => {
+    onAccept?.();
+  }, 150);
+};
 
-    stopEverything();
+// Update handleReject
+const handleReject = async () => {
+  if (hasHandledActionRef.current) return;
+  hasHandledActionRef.current = true;
+  setLoadingAction('reject');
 
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
+  // 🔴 CRITICAL FIX: Stop ringtone FIRST
+  try {
+    InCallManager.stopRingtone();
+    Vibration.cancel();
+    InCallManager.stop(); // Force stop audio session
+  } catch (e) {
+    console.log('Stop ringtone error:', e);
+  }
 
-      Animated.timing(scaleAnim, {
-        toValue: 0.92,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start();
+  Animated.parallel([
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+    }),
+    Animated.timing(scaleAnim, {
+      toValue: 0.92,
+      duration: 150,
+      useNativeDriver: true,
+    }),
+  ]).start();
 
-    setTimeout(() => {
-      onAccept?.();
-    }, 150);
-  };
+  setTimeout(() => {
+    onReject?.();
+  }, 150);
+};
+
+// Add this helper function at the top of IncomingCallModal
+const stopEverything = () => {
+  try {
+    Animated.timing(pulseAnim).stop?.();
+    Vibration.cancel();
+    
+    // 🔴 CRITICAL FIX for Android 14+:
+    // Stop ringtone AND stop audio session
+    InCallManager.stopRingtone();
+    InCallManager.stop({ busytone: '_BUNDLE_' }); // Force stop
+    
+    // For Android 14+, sometimes need to reset the audio session
+    if (Platform.OS === 'android') {
+      setTimeout(() => {
+        // Re-initialize audio session if needed
+        InCallManager.start({ media: 'audio' });
+        setTimeout(() => {
+          InCallManager.stop();
+        }, 100);
+      }, 100);
+    }
+    
+    hasStartedRef.current = false;
+  } catch (e) {
+    console.log('Cleanup error:', e);
+  }
+};
 
   // =========================
   // REJECT
   // =========================
 
-  const handleReject = async () => {
+  // const handleReject = async () => {
 
-    if (hasHandledActionRef.current) return;
+  //   if (hasHandledActionRef.current) return;
 
-    hasHandledActionRef.current = true;
+  //   hasHandledActionRef.current = true;
 
-    setLoadingAction('reject');
+  //   setLoadingAction('reject');
 
-    stopEverything();
+  //   stopEverything();
 
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
+  //   Animated.parallel([
+  //     Animated.timing(fadeAnim, {
+  //       toValue: 0,
+  //       duration: 150,
+  //       useNativeDriver: true,
+  //     }),
 
-      Animated.timing(scaleAnim, {
-        toValue: 0.92,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start();
+  //     Animated.timing(scaleAnim, {
+  //       toValue: 0.92,
+  //       duration: 150,
+  //       useNativeDriver: true,
+  //     }),
+  //   ]).start();
 
-    setTimeout(() => {
-      onReject?.();
-    }, 150);
-  };
+  //   setTimeout(() => {
+  //     onReject?.();
+  //   }, 150);
+  // };
 
   return (
     <Modal

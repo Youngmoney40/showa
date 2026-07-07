@@ -154,7 +154,7 @@ const ContactProfile = ({ navigation }) => {
           [
             {
               text: 'OK',
-              onPress: () => navigation.navigate('Signin')
+              onPress: () => navigation.navigate('EmailSIgnin')
             }
           ]
         );

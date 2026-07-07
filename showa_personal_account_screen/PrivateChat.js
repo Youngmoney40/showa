@@ -1524,7 +1524,7 @@ return (
                 >
                   <Icon name="call" size={24} color="#FFF" />
                 </TouchableOpacity>
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   onPress={() => navigation.navigate('VideoCalls', {
                     targetUserId: receiverId,
                     name: name,
@@ -1535,7 +1535,7 @@ return (
                   style={styles.headerButton}
                 >
                   <Icon name="videocam" size={24} color="#FFF" />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
             </View>
           </LinearGradient>
@@ -1671,7 +1671,7 @@ return (
                   >
                     <Icon name="call" size={24} color="#FFF" />
                   </TouchableOpacity>
-                  <TouchableOpacity
+                  {/* <TouchableOpacity
                     onPress={() => navigation.navigate('VideoCalls', {
                       targetUserId: receiverId,
                       name: name,
@@ -1682,7 +1682,7 @@ return (
                     style={styles.headerButton}
                   >
                     <Icon name="videocam" size={24} color="#FFF" />
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </View>
               </View>
             </LinearGradient>

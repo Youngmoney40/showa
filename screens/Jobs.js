@@ -118,31 +118,7 @@ const PremiumJobCard = ({ job, colors, isDark }) => {
       {/* Main Content */}
       <View style={styles.mainContent}>
        
-        {/* <View style={styles.metricsGrid}>
-          <View style={[styles.metricItem, { backgroundColor: colors.backgroundSecondary }]}>
-            <View style={[styles.metricIconContainer, { backgroundColor: colors.card }]}>
-              <Icon name="award" size={14} color={colors.primary} />
-            </View>
-            <View>
-              <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Experience</Text>
-              <Text style={[styles.metricValue, { color: colors.text }]} numberOfLines={1}>
-                {job.experienceLength || 'Not specified'}
-              </Text>
-            </View>
-          </View>
-          
-          <View style={[styles.metricItem, { backgroundColor: colors.backgroundSecondary }]}>
-            <View style={[styles.metricIconContainer, { backgroundColor: colors.card }]}>
-              <Icon name="layers" size={14} color="#16A34A" />
-            </View>
-            <View>
-              <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Salary</Text>
-              <Text style={[styles.metricValue, { color: colors.text }]} numberOfLines={1}>
-                {formatSalary(job.salary)}
-              </Text>
-            </View>
-          </View>
-        </View> */}
+        
 
         {/* Job Description */}
         <View style={styles.descriptionSection}>
@@ -156,7 +132,7 @@ const PremiumJobCard = ({ job, colors, isDark }) => {
         </View>
 
         {/* Tags Section */}
-        {job.jobTag?.length > 0 && (
+        {/* {job.jobTag?.length > 0 && (
           <View style={styles.tagsSection}>
             <View style={styles.tagsContainer}>
               {job.jobTag.slice(0, 3).map((tag, index) => (
@@ -176,23 +152,12 @@ const PremiumJobCard = ({ job, colors, isDark }) => {
             </View>
             
           </View>
-        )}
+        )} */}
       </View>
 
       {/* Footer Section */}
       <View style={[styles.footer, { borderTopColor: colors.border }]}>
-        <View style={styles.footerLeft}>
-          <View style={styles.ratingContainer}>
-            <Icon name="star" size={14} color="#F59E0B" />
-            <Text style={[styles.ratingText, { color: colors.text }]}>
-              {job.rating?.toFixed(1) || '4.8'}
-            </Text>
-          </View>
-          <View style={[styles.separator, { backgroundColor: colors.border }]} />
-          <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>
-            {getTimeAgo(job.createdAt.slice(0,5)+'..')}
-          </Text>
-        </View>
+        
         
         <TouchableOpacity 
           onPress={() => Linking.openURL(`https://ejobs.com.ng/job/${job._id}`)}
@@ -209,7 +174,7 @@ const PremiumJobCard = ({ job, colors, isDark }) => {
             isPressed ? styles.viewDetailsTextPressed : styles.viewDetailsTextNormal,
             { color: isPressed ? '#fff' : colors.primary }
           ]}>
-            View 
+           Apply
           </Text>
          
         </TouchableOpacity>
@@ -341,26 +306,6 @@ const PremiumJobScroll = () => {
         </View>
       )}
 
-        {/* <View style={styles.navButtons}>
-          <TouchableOpacity 
-            onPress={scrollLeft}
-            style={[styles.navButton, { 
-              backgroundColor: colors.card,
-              borderColor: colors.border 
-            }]}
-          >
-            <Icon name="chevron-left" size={20} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={scrollRight}
-            style={[styles.navButton, { 
-              backgroundColor: colors.card,
-              borderColor: colors.border 
-            }]}
-          >
-            <Icon name="chevron-right" size={20} color={colors.text} />
-          </TouchableOpacity>
-        </View> */}
       </View>
 
       {/* Job Cards Container */}
@@ -393,18 +338,7 @@ const PremiumJobScroll = () => {
         )}
       </ScrollView>
 
-      {/* View All Link */}
-      {/* {!loading && jobs.length > 0 && (
-        <View style={styles.viewAllContainer}>
-          <TouchableOpacity 
-            onPress={() => Linking.openURL('https://ejobs.com.ng/jobs')}
-            style={styles.viewAllButton}
-          >
-            <Text style={[styles.viewAllText, { color: colors.primary }]}>View all Jobs</Text>
-            <Icon name="external-link" size={16} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-      )} */}
+     
     </View>
   );
 };
@@ -413,7 +347,7 @@ const styles = StyleSheet.create({
   // Main container
   mainContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 24,
+    paddingVertical: 20,
   },
   
   // Title section
@@ -425,7 +359,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   mainTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 4,
   },
@@ -559,12 +493,15 @@ const styles = StyleSheet.create({
   
   // Main content
   mainContent: {
-    padding: 16,
+    paddingLeft:16,
+    paddingRight:16,
+    paddingTop:16,
+
   },
   metricsGrid: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   metricItem: {
     flex: 1,
@@ -826,3 +763,711 @@ const styles = StyleSheet.create({
 });
 
 export default PremiumJobScroll;
+
+
+// import { useState, useEffect, useRef, useCallback } from 'react';
+// import axios from 'axios';
+// import { 
+//   View, 
+//   Text, 
+//   ScrollView, 
+//   TouchableOpacity, 
+//   Linking, 
+//   StyleSheet, 
+//   Dimensions, 
+//   Pressable, 
+//   Platform,
+//   RefreshControl,
+// } from 'react-native';
+// import Icon from 'react-native-vector-icons/Feather';
+// import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+// import { useTheme } from '../src/context/ThemeContext'; 
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// const { width } = Dimensions.get('window');
+
+// const CACHE_KEY = '@job_listings_cache';
+// const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// const formatSalary = (salary) => {
+//   if (!salary || salary === 'Negotiable') return 'Negotiable';
+//   const num = parseInt(salary);
+//   if (num >= 1000000) return `₦${(num / 1000000).toFixed(1)}M`;
+//   if (num >= 1000) return `₦${(num / 1000).toFixed(0)}K`;
+//   return `₦${num}`;
+// };
+
+// const getTimeAgo = (dateString) => {
+//   if (!dateString) return 'Recently';
+//   const date = new Date(dateString);
+//   const now = new Date();
+//   const diffMs = now - date;
+//   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+//   if (diffDays === 0) return 'Today';
+//   if (diffDays === 1) return 'Yesterday';
+//   if (diffDays < 7) return `${diffDays}d ago`;
+//   if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+//   return 'Over a month ago';
+// };
+
+// // Enhanced Professional Job Card
+// const PremiumJobCard = ({ job, colors, isDark }) => {
+//   const [isPressed, setIsPressed] = useState(false);
+
+//   const getGradientColor = () => {
+//     if (job.isFeatured) return colors.primary;
+//     if (job.isUrgent) return '#FF6B6B';
+//     return colors.primary;
+//   };
+
+//   return (
+//     <Pressable 
+//       onPressIn={() => setIsPressed(true)}
+//       onPressOut={() => setIsPressed(false)}
+//       style={[
+//         styles.cardContainer,
+//         { 
+//           backgroundColor: colors.card,
+//           borderColor: colors.border,
+//         },
+//         isPressed && styles.cardPressed
+//       ]}
+//       onPress={() => Linking.openURL(`https://ejobs.com.ng/job/${job._id}`)}
+//     >
+//       <View style={[styles.accentBar, { backgroundColor: getGradientColor() }]} />
+
+//       {job.isFeatured && (
+//         <View style={[styles.premiumBadge, { backgroundColor: colors.primary + '15' }]}>
+//           <MaterialCommunityIcon name="star" size={10} color={colors.primary} />
+//           <Text style={[styles.premiumBadgeText, { color: colors.primary }]}>Featured</Text>
+//         </View>
+//       )}
+
+//       <View style={styles.header}>
+//         <View style={styles.headerTop}>
+//           <View style={styles.titleContainer}>
+//             <View style={[styles.titleIcon, { backgroundColor: colors.primary + '10' }]}>
+//               <MaterialCommunityIcon name="briefcase" size={14} color={colors.primary} />
+//             </View>
+//             <Text style={[styles.jobTitle, { color: colors.text }]} numberOfLines={1}>
+//               {job.jobTitle}
+//             </Text>
+//           </View>
+//           {job.isUrgent && (
+//             <View style={[styles.urgentTag, { backgroundColor: '#FF4444' }]}>
+//               <Text style={styles.urgentText}>●</Text>
+//             </View>
+//           )}
+//         </View>
+        
+//         <View style={styles.companyContainer}>
+//           <View style={[styles.companyIcon, { backgroundColor: colors.backgroundSecondary }]}>
+//             <MaterialCommunityIcon name="office-building" size={12} color={colors.textSecondary} />
+//           </View>
+//           <Text style={[styles.companyName, { color: colors.textSecondary }]} numberOfLines={1}>
+//             {job.employer?.companyName || 'Confidential'}
+//           </Text>
+//         </View>
+//       </View>
+
+//       <View style={styles.detailsRow}>
+//         <View style={styles.detailItem}>
+//           <View style={[styles.detailIcon, { backgroundColor: colors.primary + '08' }]}>
+//             <Icon name="map-pin" size={10} color={colors.primary} />
+//           </View>
+//           <Text style={[styles.detailText, { color: colors.textSecondary }]} numberOfLines={1}>
+//             {job.city || 'Remote'}, {job.state || ''}
+//           </Text>
+//         </View>
+        
+//         <View style={styles.detailDivider} />
+        
+//         <View style={styles.detailItem}>
+//           <View style={[styles.detailIcon, { backgroundColor: colors.primary + '08' }]}>
+//             <Icon name="clock" size={10} color={colors.primary} />
+//           </View>
+//           <Text style={[styles.detailText, { color: colors.textSecondary }]} numberOfLines={1}>
+//             {job.workType || 'Full-time'}
+//           </Text>
+//         </View>
+        
+//         <View style={styles.detailDivider} />
+        
+//         <View style={styles.detailItem}>
+//           <View style={[styles.detailIcon, { backgroundColor: colors.primary + '08' }]}>
+//             <Icon name="dollar-sign" size={10} color={colors.primary} />
+//           </View>
+//           <Text style={[styles.salaryText, { color: colors.primary }]} numberOfLines={1}>
+//             {formatSalary(job.salary)}
+//           </Text>
+//         </View>
+//       </View>
+
+//       {job.jobTag?.length > 0 && (
+//         <View style={styles.tagsContainer}>
+//           {job.jobTag.slice(0, 2).map((tag, index) => (
+//             <View 
+//               key={index}
+//               style={[styles.tagWrapper, { 
+//                 backgroundColor: colors.primary + '08',
+//                 borderColor: colors.primary + '15',
+//               }]}
+//             >
+//               <Text style={[styles.tagText, { color: colors.primary }]}>
+//                 #{tag}
+//               </Text>
+//             </View>
+//           ))}
+//           {job.jobTag.length > 2 && (
+//             <View style={[styles.tagWrapper, { 
+//               backgroundColor: colors.backgroundSecondary,
+//               borderColor: colors.border,
+//             }]}>
+//               <Text style={[styles.tagText, { color: colors.textSecondary }]}>
+//                 +{job.jobTag.length - 2} more
+//               </Text>
+//             </View>
+//           )}
+//         </View>
+//       )}
+
+//       <View style={[styles.footer, { borderTopColor: colors.border }]}>
+//         <View style={styles.footerLeft}>
+//           <View style={styles.ratingContainer}>
+//             <Icon name="star" size={12} color="#F59E0B" />
+//             <Text style={[styles.ratingText, { color: colors.text }]}>
+//               {job.rating?.toFixed(1) || '4.8'}
+//             </Text>
+//           </View>
+//           <View style={[styles.separator, { backgroundColor: colors.border }]} />
+//           <View style={styles.timeContainer}>
+//             <Icon name="clock" size={10} color={colors.textSecondary} />
+//             <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>
+//               {getTimeAgo(job.createdAt)}
+//             </Text>
+//           </View>
+//         </View>
+        
+//         <TouchableOpacity 
+//           onPress={() => Linking.openURL(`https://ejobs.com.ng/job/${job._id}`)}
+//           style={[
+//             styles.viewButton,
+//             { 
+//               backgroundColor: colors.primary,
+//               shadowColor: colors.primary,
+//             }
+//           ]}
+//           activeOpacity={0.8}
+//         >
+//           <Text style={styles.viewButtonText}>Apply</Text>
+//           <Icon name="arrow-right" size={14} color="#fff" />
+//         </TouchableOpacity>
+//       </View>
+//     </Pressable>
+//   );
+// };
+
+// // Placeholder Card (shown while loading)
+// const PlaceholderCard = ({ colors }) => (
+//   <View style={[styles.cardContainer, { 
+//     backgroundColor: colors.card,
+//     borderColor: colors.border,
+//     opacity: 0.6,
+//   }]}>
+//     <View style={[styles.accentBar, { backgroundColor: colors.primary }]} />
+//     <View style={styles.header}>
+//       <View style={styles.headerTop}>
+//         <View style={styles.titleContainer}>
+//           <View style={[styles.titleIcon, { backgroundColor: colors.primary + '10' }]}>
+//             <MaterialCommunityIcon name="briefcase" size={14} color={colors.primary} />
+//           </View>
+//           <Text style={[styles.jobTitle, { color: colors.text, opacity: 0.5 }]} numberOfLines={1}>
+//             Loading...
+//           </Text>
+//         </View>
+//       </View>
+//       <View style={styles.companyContainer}>
+//         <View style={[styles.companyIcon, { backgroundColor: colors.backgroundSecondary }]}>
+//           <MaterialCommunityIcon name="office-building" size={12} color={colors.textSecondary} />
+//         </View>
+//         <Text style={[styles.companyName, { color: colors.textSecondary, opacity: 0.5 }]} numberOfLines={1}>
+//           Loading...
+//         </Text>
+//       </View>
+//     </View>
+//     <View style={styles.detailsRow}>
+//       {[1, 2, 3].map((i) => (
+//         <View key={i} style={styles.detailItem}>
+//           <View style={[styles.detailIcon, { backgroundColor: colors.primary + '08' }]}>
+//             <Icon name="map-pin" size={10} color={colors.primary} />
+//           </View>
+//           <Text style={[styles.detailText, { color: colors.textSecondary, opacity: 0.5 }]}>•••••</Text>
+//         </View>
+//       ))}
+//     </View>
+//     <View style={[styles.footer, { borderTopColor: colors.border }]}>
+//       <View style={styles.footerLeft}>
+//         <View style={styles.ratingContainer}>
+//           <Icon name="star" size={12} color="#F59E0B" />
+//           <Text style={[styles.ratingText, { color: colors.text, opacity: 0.5 }]}>4.8</Text>
+//         </View>
+//       </View>
+//       <View style={[styles.viewButton, { backgroundColor: colors.primary, opacity: 0.5 }]}>
+//         <Text style={styles.viewButtonText}>Apply</Text>
+//         <Icon name="arrow-right" size={14} color="#fff" />
+//       </View>
+//     </View>
+//   </View>
+// );
+
+// // Main Component - Optimized for Speed
+// const PremiumJobScroll = () => {
+//   const { colors, isDark } = useTheme();
+//   const [jobs, setJobs] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [refreshing, setRefreshing] = useState(false);
+//   const [error, setError] = useState(null);
+//   const scrollRef = useRef(null);
+//   const isMounted = useRef(true);
+
+//   // Load cached data immediately
+//   const loadCachedData = useCallback(async () => {
+//     try {
+//       const cached = await AsyncStorage.getItem(CACHE_KEY);
+//       if (cached) {
+//         const { data, timestamp } = JSON.parse(cached);
+//         const isExpired = Date.now() - timestamp > CACHE_DURATION;
+        
+//         if (!isExpired && data.length > 0) {
+//           setJobs(data);
+//           setLoading(false);
+//           return true;
+//         }
+//       }
+//       return false;
+//     } catch (error) {
+//       console.log('Cache read error:', error);
+//       return false;
+//     }
+//   }, []);
+
+//   // Fetch fresh data
+//   const fetchJobs = useCallback(async (isRefresh = false) => {
+//     if (isRefresh) {
+//       setRefreshing(true);
+//     }
+
+//     try {
+//       const response = await axios.get('https://backend.ejobs.com.ng/api/v1/job/jobs/', {
+//         timeout: 8000, // 8 second timeout
+//         headers: {
+//           'Cache-Control': 'no-cache',
+//         }
+//       });
+      
+//       if (response.data.status && response.data.data) {
+//         const jobsData = Array.isArray(response.data.data) 
+//           ? response.data.data 
+//           : [response.data.data];
+        
+//         const enhancedJobs = jobsData.map((job, index) => ({
+//           ...job,
+//           isFeatured: index % 3 === 0,
+//           isUrgent: index % 5 === 0,
+//           rating: 4.0 + Math.random() * 1.5,
+//         }));
+        
+//         const slicedJobs = enhancedJobs.slice(0, 6);
+        
+//         if (isMounted.current) {
+//           setJobs(slicedJobs);
+//           setError(null);
+          
+//           // Cache the data
+//           await AsyncStorage.setItem(CACHE_KEY, JSON.stringify({
+//             data: slicedJobs,
+//             timestamp: Date.now(),
+//           }));
+//         }
+//       }
+//     } catch (err) {
+//       console.log('Fetch error:', err.message);
+      
+//       // Only show error if we have no cached data
+//       if (isMounted.current) {
+//         const hasCache = await loadCachedData();
+//         if (!hasCache) {
+//           setError('Unable to load opportunities');
+//         }
+//       }
+//     } finally {
+//       if (isMounted.current) {
+//         setLoading(false);
+//         setRefreshing(false);
+//       }
+//     }
+//   }, [loadCachedData]);
+
+//   // Initialize - load cache first, then fetch
+//   useEffect(() => {
+//     isMounted.current = true;
+    
+//     const initialize = async () => {
+//       // 1. Load cached data immediately
+//       const hasCache = await loadCachedData();
+      
+//       // 2. Always fetch fresh data in background
+//       await fetchJobs(false);
+//     };
+    
+//     initialize();
+
+//     return () => {
+//       isMounted.current = false;
+//     };
+//   }, []);
+
+//   const handleRefresh = () => {
+//     fetchJobs(true);
+//   };
+
+//   if (error && jobs.length === 0) {
+//     return (
+//       <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+//         <Icon name="alert-circle" size={32} color={colors.primary} />
+//         <Text style={[styles.errorMessage, { color: colors.textSecondary }]}>{error}</Text>
+//         <TouchableOpacity onPress={() => fetchJobs(false)}>
+//           <Text style={[styles.retryText, { color: colors.primary }]}>Retry</Text>
+//         </TouchableOpacity>
+//       </View>
+//     );
+//   }
+
+//   // Show placeholders while loading (no spinner)
+//   const displayJobs = jobs.length > 0 ? jobs : Array(3).fill(null);
+
+//   return (
+//     <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
+//       <View style={styles.titleSection}>
+//         <View>
+//           <Text style={[styles.mainTitle, { color: colors.text }]}>Jobs You May Like</Text>
+//           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+//             Discover your next career opportunity
+//           </Text>
+//         </View>
+//         {!loading && jobs.length > 0 && (
+//           <TouchableOpacity 
+//             onPress={() => Linking.openURL('https://ejobs.com.ng/jobs')}
+//             style={styles.viewAllButton}
+//           >
+//             <Text style={[styles.viewAllText, { color: colors.primary }]}>See All</Text>
+//             <Icon name="chevron-right" size={16} color={colors.primary} />
+//           </TouchableOpacity>
+//         )}
+//       </View>
+
+//       <ScrollView 
+//         ref={scrollRef}
+//         horizontal
+//         showsHorizontalScrollIndicator={false}
+//         contentContainerStyle={styles.scrollContent}
+//         snapToInterval={width * 0.75 + 12}
+//         decelerationRate="fast"
+//         snapToAlignment="start"
+//         refreshControl={
+//           <RefreshControl
+//             refreshing={refreshing}
+//             onRefresh={handleRefresh}
+//             tintColor={colors.primary}
+//             colors={[colors.primary]}
+//           />
+//         }
+//       >
+//         {displayJobs.map((job, index) => (
+//           job ? (
+//             <PremiumJobCard 
+//               key={`${job._id}_${index}`} 
+//               job={job} 
+//               colors={colors}
+//               isDark={isDark}
+//             />
+//           ) : (
+//             <PlaceholderCard key={`placeholder-${index}`} colors={colors} />
+//           )
+//         ))}
+//       </ScrollView>
+//     </View>
+//   );
+// };
+
+// const styles = StyleSheet.create({
+//   mainContainer: {
+//     paddingHorizontal: 16,
+//     paddingVertical: 16,
+//   },
+  
+//   titleSection: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//     marginBottom: 16,
+//     paddingHorizontal: 4,
+//   },
+//   mainTitle: {
+//     fontSize: 18,
+//     fontWeight: '700',
+//     marginBottom: 2,
+//   },
+//   subtitle: {
+//     fontSize: 13,
+//     opacity: 0.7,
+//   },
+//   viewAllButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     paddingVertical: 6,
+//     paddingHorizontal: 12,
+//     gap: 2,
+//   },
+//   viewAllText: {
+//     fontSize: 13,
+//     fontWeight: '600',
+//   },
+  
+//   cardContainer: {
+//     width: width * 0.75,
+//     borderRadius: 14,
+//     borderWidth: 1,
+//     padding: 16,
+//     marginHorizontal: 6,
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowOpacity: 0.06,
+//     shadowRadius: 8,
+//     elevation: 3,
+//     position: 'relative',
+//     overflow: 'hidden',
+//   },
+//   cardPressed: {
+//     transform: [{ scale: 0.97 }],
+//     shadowOpacity: 0.12,
+//     shadowRadius: 12,
+//     elevation: 6,
+//   },
+  
+//   accentBar: {
+//     position: 'absolute',
+//     top: 0,
+//     left: 0,
+//     right: 0,
+//     height: 3,
+//     borderTopLeftRadius: 14,
+//     borderTopRightRadius: 14,
+//   },
+  
+//   premiumBadge: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     alignSelf: 'flex-start',
+//     paddingHorizontal: 10,
+//     paddingVertical: 3,
+//     borderRadius: 12,
+//     marginBottom: 10,
+//     gap: 4,
+//     borderWidth: 1,
+//     borderColor: 'transparent',
+//   },
+//   premiumBadgeText: {
+//     fontSize: 10,
+//     fontWeight: '600',
+//   },
+  
+//   header: {
+//     marginBottom: 10,
+//   },
+//   headerTop: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//     marginBottom: 6,
+//   },
+//   titleContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     flex: 1,
+//     gap: 8,
+//   },
+//   titleIcon: {
+//     width: 28,
+//     height: 28,
+//     borderRadius: 8,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   jobTitle: {
+//     fontSize: 16,
+//     fontWeight: '700',
+//     flex: 1,
+//   },
+//   urgentTag: {
+//     width: 8,
+//     height: 8,
+//     borderRadius: 4,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginLeft: 4,
+//   },
+//   urgentText: {
+//     color: '#fff',
+//     fontSize: 8,
+//   },
+//   companyContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 6,
+//     paddingLeft: 4,
+//   },
+//   companyIcon: {
+//     width: 20,
+//     height: 20,
+//     borderRadius: 6,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   companyName: {
+//     fontSize: 12,
+//     fontWeight: '500',
+//   },
+  
+//   detailsRow: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     flexWrap: 'wrap',
+//     marginBottom: 10,
+//     backgroundColor: 'transparent',
+//     borderRadius: 8,
+//     paddingVertical: 2,
+//   },
+//   detailItem: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 4,
+//     paddingHorizontal: 4,
+//   },
+//   detailIcon: {
+//     width: 18,
+//     height: 18,
+//     borderRadius: 6,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   detailText: {
+//     fontSize: 11,
+//     fontWeight: '400',
+//   },
+//   detailDivider: {
+//     width: 1,
+//     height: 14,
+//     backgroundColor: '#E5E7EB',
+//     marginHorizontal: 4,
+//   },
+//   salaryText: {
+//     fontSize: 11,
+//     fontWeight: '600',
+//   },
+  
+//   tagsContainer: {
+//     flexDirection: 'row',
+//     flexWrap: 'wrap',
+//     gap: 6,
+//     marginBottom: 12,
+//   },
+//   tagWrapper: {
+//     paddingHorizontal: 10,
+//     paddingVertical: 4,
+//     borderRadius: 6,
+//     borderWidth: 1,
+//   },
+//   tagText: {
+//     fontSize: 10,
+//     fontWeight: '500',
+//   },
+  
+//   footer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//     paddingTop: 12,
+//     borderTopWidth: 0.5,
+//   },
+//   footerLeft: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 8,
+//   },
+//   ratingContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 3,
+//   },
+//   ratingText: {
+//     fontSize: 12,
+//     fontWeight: '600',
+//   },
+//   separator: {
+//     width: 1,
+//     height: 14,
+//   },
+//   timeContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 3,
+//   },
+//   timeAgo: {
+//     fontSize: 11,
+//     opacity: 0.7,
+//   },
+//   viewButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 4,
+//     paddingHorizontal: 16,
+//     paddingVertical: 6,
+//     borderRadius: 8,
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowOpacity: 0.2,
+//     shadowRadius: 4,
+//     elevation: 3,
+//   },
+//   viewButtonText: {
+//     color: '#fff',
+//     fontSize: 12,
+//     fontWeight: '600',
+//   },
+  
+//   // Error
+//   errorContainer: {
+//     paddingHorizontal: 16,
+//     paddingVertical: 20,
+//     alignItems: 'center',
+//     borderRadius: 12,
+//     marginHorizontal: 16,
+//   },
+//   errorMessage: {
+//     fontSize: 13,
+//     textAlign: 'center',
+//     marginTop: 8,
+//   },
+//   retryText: {
+//     fontSize: 13,
+//     fontWeight: '600',
+//     marginTop: 8,
+//   },
+  
+//   scrollContent: {
+//     paddingBottom: 4,
+//     paddingRight: 10,
+//   },
+// });
+
+// export default PremiumJobScroll;

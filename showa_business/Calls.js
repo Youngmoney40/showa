@@ -589,10 +589,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
  header: {
-   paddingBottom: Platform.OS === 'android' ? 16 : 0,
+   paddingBottom: Platform.OS === 'android' ? 0 : 0,
    paddingTop: Platform.OS === 'android' ? 14 : 0,
-   borderBottomLeftRadius: Platform.OS === 'android' ? 20 : 0,
-   borderBottomRightRadius: Platform.OS === 'android' ? 20 : 0,
+   borderBottomLeftRadius: Platform.OS === 'android' ? 0 : 0,
+   borderBottomRightRadius: Platform.OS === 'android' ? 0 : 0,
    backgroundColor: '#0d64dd',
    elevation: 6,
    zIndex: 1000,

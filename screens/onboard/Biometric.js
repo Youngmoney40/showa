@@ -34,7 +34,7 @@ const BiometricUnlock = ({ navigation }) => {
         if (profile?.name?.trim()) {
           navigation.navigate('BusinessHome');
         } else {
-          navigation.navigate('ProceedOptions');
+          navigation.navigate('BroadcastHome');
         }
       } catch (error) {
         navigation.navigate('Signin');

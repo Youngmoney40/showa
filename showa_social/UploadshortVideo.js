@@ -1,5 +1,6 @@
 
 
+
 // import React, { useState, useRef } from 'react';
 // import {
 //   View,
@@ -14,6 +15,7 @@
 //   KeyboardAvoidingView,
 //   Alert,
 //   Platform,
+//   FlatList,
 // } from 'react-native';
 // import { SafeAreaView } from 'react-native-safe-area-context';
 // import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
@@ -26,16 +28,47 @@
 
 // const { width, height } = Dimensions.get('window');
 
-
-// const hashTag = [
-//   "Music",
-// ]
+// const POPULAR_HASHTAGS = [
+//   "#Music",
+//   "#Dance",
+//   "#Comedy",
+//   "#Fashion",
+//   "#Beauty",
+//   "#Fitness",
+//   "#Food",
+//   "#Travel",
+//   "#Sports",
+//   "#Gaming",
+//   "#DIY",
+//   "#Education",
+//   "#Technology",
+//   "#Business",
+//   "#Art",
+//   "#Photography",
+//   "#Nature",
+//   "#Pets",
+//   "#Family",
+//   "#Lifestyle",
+//   "#Motivation",
+//   "#Tutorial",
+//   "#Review",
+//   "#Unboxing",
+//   "#Challenge",
+//   "#Trending",
+//   "#Viral",
+//   "#Shorts",
+//   "#Funny",
+//   "#Cooking"
+// ];
 
 // const UploadShortScreen = ({ navigation }) => {
 //   const [video, setVideo] = useState(null);
 //   const [caption, setCaption] = useState('');
+//   const [selectedHashtags, setSelectedHashtags] = useState([]);
+//   const [customHashtag, setCustomHashtag] = useState('');
 //   const [isUploading, setIsUploading] = useState(false);
 //   const [isPaused, setIsPaused] = useState(false);
+//   const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
 //   const videoRef = useRef(null);
 //   const scrollViewRef = useRef(null);
 
@@ -100,6 +133,75 @@
 //     setIsPaused(!isPaused);
 //   };
 
+//   // Handle hashtag selection
+//   const toggleHashtag = (hashtag) => {
+//     if (selectedHashtags.includes(hashtag)) {
+//       setSelectedHashtags(selectedHashtags.filter(tag => tag !== hashtag));
+//     } else {
+//       if (selectedHashtags.length < 5) {
+//         setSelectedHashtags([...selectedHashtags, hashtag]);
+//       } else {
+//         Snackbar.show({
+//           text: 'Maximum 5 hashtags allowed',
+//           backgroundColor: '#FF6B6B',
+//         });
+//       }
+//     }
+//   };
+
+//   // Add custom hashtag
+//   const addCustomHashtag = () => {
+//     const trimmed = customHashtag.trim();
+//     if (!trimmed) return;
+
+//     // Format hashtag - add # if not present
+//     let formattedTag = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+    
+//     // Remove spaces and special characters (keep only letters, numbers, and underscores)
+//     formattedTag = '#' + formattedTag.slice(1).replace(/[^a-zA-Z0-9_]/g, '');
+    
+//     if (formattedTag.length < 2 || formattedTag === '#') {
+//       Snackbar.show({
+//         text: 'Hashtag must be at least 2 characters',
+//         backgroundColor: '#FF6B6B',
+//       });
+//       return;
+//     }
+
+//     if (selectedHashtags.length >= 5) {
+//       Snackbar.show({
+//         text: 'Maximum 5 hashtags allowed',
+//         backgroundColor: '#FF6B6B',
+//       });
+//       return;
+//     }
+
+//     if (!selectedHashtags.includes(formattedTag)) {
+//       setSelectedHashtags([...selectedHashtags, formattedTag]);
+//       setCustomHashtag('');
+//       setShowHashtagSuggestions(false);
+//     } else {
+//       Snackbar.show({
+//         text: 'Hashtag already added',
+//         backgroundColor: '#FF6B6B',
+//       });
+//     }
+//   };
+
+//   // Remove hashtag
+//   const removeHashtag = (hashtag) => {
+//     setSelectedHashtags(selectedHashtags.filter(tag => tag !== hashtag));
+//   };
+
+//   // Filter hashtag suggestions based on input
+//   const getHashtagSuggestions = () => {
+//     if (!customHashtag.trim()) return [];
+//     const searchTerm = customHashtag.toLowerCase().replace('#', '');
+//     return POPULAR_HASHTAGS.filter(tag => 
+//       tag.toLowerCase().includes(searchTerm) && !selectedHashtags.includes(tag)
+//     ).slice(0, 5);
+//   };
+
 //   const handleUpload = async () => {
 //     if (!video) {
 //       Snackbar.show({
@@ -117,8 +219,19 @@
 //       return;
 //     }
 
+//     if (selectedHashtags.length === 0) {
+//       Snackbar.show({
+//         text: 'Please add at least one hashtag',
+//         backgroundColor: '#FF6B6B',
+//       });
+//       return;
+//     }
+
+//     // Combine caption with hashtags
+//     const captionWithHashtags = `${caption}\n\n${selectedHashtags.join(' ')}`;
+
 //     const formData = new FormData();
-//     formData.append('caption', caption);
+//     formData.append('caption', captionWithHashtags);
 //     formData.append('video', {
 //       uri: video.uri,
 //       name: video.fileName || `short_${Date.now()}.mp4`,
@@ -140,10 +253,10 @@
 //         text: 'Short uploaded successfully!',
 //         backgroundColor: '#51A851',
 //       });
-      
 
 //       setCaption('');
 //       setVideo(null);
+//       setSelectedHashtags([]);
 //       navigation.navigate('SocialHome', { newShort: true });
 //     } catch (error) {
 //       console.error('Upload error:', error);
@@ -166,6 +279,8 @@
 //     }
 //   };
 
+//   const suggestions = getHashtagSuggestions();
+
 //   return (
 //     <SafeAreaView style={{flex:1, backgroundColor:'black'}}>
 //       <KeyboardAvoidingView
@@ -187,10 +302,10 @@
             
 //             <TouchableOpacity 
 //               onPress={handleUpload} 
-//               disabled={isUploading || !video || !caption.trim()}
+//               disabled={isUploading || !video || !caption.trim() || selectedHashtags.length === 0}
 //               style={[
 //                 styles.postButton,
-//                 (!video || !caption.trim()) && styles.postButtonDisabled
+//                 (!video || !caption.trim() || selectedHashtags.length === 0) && styles.postButtonDisabled
 //               ]}
 //             >
 //               {isUploading ? (
@@ -255,7 +370,8 @@
 //                 </View>
 //               )}
 //             </View>
-           
+
+//             {/* Action Buttons */}
 //             <View style={styles.actionButtons}>
 //               <TouchableOpacity 
 //                 onPress={selectVideoFromGallery} 
@@ -278,7 +394,7 @@
 //               </TouchableOpacity>
 //             </View>
 
-            
+//             {/* Caption Section */}
 //             <View style={styles.captionSection}>
 //               <Text style={styles.sectionLabel}>Caption</Text>
 //               <TextInput
@@ -299,10 +415,107 @@
 //               </View>
 //             </View>
 
+//             {/* Hashtags/Categories Section */}
+//             <View style={styles.hashtagSection}>
+//               <View style={styles.sectionHeader}>
+//                 <Text style={styles.sectionLabel}>Categories (Hashtags)</Text>
+//                 <Text style={styles.hashtagCount}>
+//                   {selectedHashtags.length}/5
+//                 </Text>
+//               </View>
+
+//               {/* Selected Hashtags */}
+//               {selectedHashtags.length > 0 && (
+//                 <View style={styles.selectedHashtagsContainer}>
+//                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+//                     {selectedHashtags.map((tag, index) => (
+//                       <View key={index} style={styles.selectedHashtag}>
+//                         <Text style={styles.selectedHashtagText}>{tag}</Text>
+//                         <TouchableOpacity
+//                           onPress={() => removeHashtag(tag)}
+//                           style={styles.removeHashtag}
+//                         >
+//                           <Icon name="close" size={14} color="#FFF" />
+//                         </TouchableOpacity>
+//                       </View>
+//                     ))}
+//                   </ScrollView>
+//                 </View>
+//               )}
+
+//               {/* Add Custom Hashtag */}
+//               <View style={styles.addHashtagContainer}>
+//                 <TextInput
+//                   style={styles.hashtagInput}
+//                   placeholder="Add custom hashtag (e.g., #MyTag)"
+//                   placeholderTextColor="#94A3B8"
+//                   value={customHashtag}
+//                   onChangeText={(text) => {
+//                     setCustomHashtag(text);
+//                     setShowHashtagSuggestions(true);
+//                   }}
+//                   onFocus={() => setShowHashtagSuggestions(true)}
+//                 />
+//                 <TouchableOpacity
+//                   style={styles.addHashtagButton}
+//                   onPress={addCustomHashtag}
+//                 >
+//                   <Icon name="add" size={24} color="#FFF" />
+//                 </TouchableOpacity>
+//               </View>
+
+//               {/* Hashtag Suggestions */}
+//               {showHashtagSuggestions && suggestions.length > 0 && (
+//                 <View style={styles.suggestionsContainer}>
+//                   <FlatList
+//                     horizontal
+//                     data={suggestions}
+//                     keyExtractor={(item, index) => index.toString()}
+//                     renderItem={({ item }) => (
+//                       <TouchableOpacity
+//                         style={styles.suggestionTag}
+//                         onPress={() => {
+//                           toggleHashtag(item);
+//                           setCustomHashtag('');
+//                           setShowHashtagSuggestions(false);
+//                         }}
+//                       >
+//                         <Text style={styles.suggestionText}>{item}</Text>
+//                       </TouchableOpacity>
+//                     )}
+//                     showsHorizontalScrollIndicator={false}
+//                   />
+//                 </View>
+//               )}
+
+//               {/* Popular Hashtags Grid */}
+//               <Text style={styles.popularHashtagsTitle}>Popular Hashtags</Text>
+//               <View style={styles.popularHashtagsGrid}>
+//                 {POPULAR_HASHTAGS.slice(0, 12).map((tag, index) => (
+//                   <TouchableOpacity
+//                     key={index}
+//                     style={[
+//                       styles.popularHashtag,
+//                       selectedHashtags.includes(tag) && styles.popularHashtagSelected
+//                     ]}
+//                     onPress={() => toggleHashtag(tag)}
+//                   >
+//                     <Text style={[
+//                       styles.popularHashtagText,
+//                       selectedHashtags.includes(tag) && styles.popularHashtagTextSelected
+//                     ]}>
+//                       {tag}
+//                     </Text>
+//                   </TouchableOpacity>
+//                 ))}
+//               </View>
+//             </View>
+
+//             {/* Info Section */}
 //             <View style={styles.infoSection}>
 //               <Icon name="info" size={18} color="#94A3B8" />
 //               <Text style={styles.infoText}>
-//                 Your short will be visible to everyone and may appear in recommendations
+//                 Add hashtags to help people discover your short. Maximum 5 hashtags allowed.
 //               </Text>
 //             </View>
 //           </ScrollView>
@@ -475,6 +688,109 @@
 //     color: '#94A3B8',
 //     fontSize: 14,
 //   },
+//   // Hashtag Styles
+//   hashtagSection: {
+//     marginBottom: 24,
+//     backgroundColor: '#1A1A1A',
+//     borderRadius: 12,
+//     padding: 16,
+//     borderWidth: 1,
+//     borderColor: '#2A2A2A',
+//   },
+//   sectionHeader: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//     marginBottom: 12,
+//   },
+//   hashtagCount: {
+//     color: '#94A3B8',
+//     fontSize: 14,
+//   },
+//   selectedHashtagsContainer: {
+//     marginBottom: 16,
+//   },
+//   selectedHashtag: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: '#6366F1',
+//     paddingHorizontal: 12,
+//     paddingVertical: 6,
+//     borderRadius: 20,
+//     marginRight: 8,
+//   },
+//   selectedHashtagText: {
+//     color: '#FFF',
+//     fontSize: 14,
+//     fontWeight: '500',
+//     marginRight: 4,
+//   },
+//   removeHashtag: {
+//     padding: 2,
+//   },
+//   addHashtagContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     marginBottom: 16,
+//   },
+//   hashtagInput: {
+//     flex: 1,
+//     backgroundColor: '#0F0F0F',
+//     borderRadius: 8,
+//     padding: 12,
+//     color: '#E5E7EB',
+//     fontSize: 16,
+//     borderWidth: 1,
+//     borderColor: '#2A2A2A',
+//     marginRight: 8,
+//   },
+//   addHashtagButton: {
+//     backgroundColor: '#6366F1',
+//     padding: 12,
+//     borderRadius: 8,
+//   },
+//   suggestionsContainer: {
+//     marginBottom: 16,
+//   },
+//   suggestionTag: {
+//     backgroundColor: '#2A2A2A',
+//     paddingHorizontal: 12,
+//     paddingVertical: 6,
+//     borderRadius: 20,
+//     marginRight: 8,
+//   },
+//   suggestionText: {
+//     color: '#E5E7EB',
+//     fontSize: 14,
+//   },
+//   popularHashtagsTitle: {
+//     color: '#E5E7EB',
+//     fontSize: 14,
+//     fontWeight: '600',
+//     marginBottom: 12,
+//   },
+//   popularHashtagsGrid: {
+//     flexDirection: 'row',
+//     flexWrap: 'wrap',
+//     gap: 8,
+//   },
+//   popularHashtag: {
+//     backgroundColor: '#2A2A2A',
+//     paddingHorizontal: 12,
+//     paddingVertical: 6,
+//     borderRadius: 20,
+//     marginBottom: 4,
+//   },
+//   popularHashtagSelected: {
+//     backgroundColor: '#6366F1',
+//   },
+//   popularHashtagText: {
+//     color: '#E5E7EB',
+//     fontSize: 14,
+//   },
+//   popularHashtagTextSelected: {
+//     color: '#FFF',
+//   },
 //   infoSection: {
 //     flexDirection: 'row',
 //     alignItems: 'flex-start',
@@ -509,6 +825,9 @@ import {
   Alert,
   Platform,
   FlatList,
+  Modal,
+  ProgressBarAndroid,
+  ProgressViewIOS,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
@@ -522,36 +841,12 @@ import { API_ROUTE } from '../api_routing/api';
 const { width, height } = Dimensions.get('window');
 
 const POPULAR_HASHTAGS = [
-  "#Music",
-  "#Dance",
-  "#Comedy",
-  "#Fashion",
-  "#Beauty",
-  "#Fitness",
-  "#Food",
-  "#Travel",
-  "#Sports",
-  "#Gaming",
-  "#DIY",
-  "#Education",
-  "#Technology",
-  "#Business",
-  "#Art",
-  "#Photography",
-  "#Nature",
-  "#Pets",
-  "#Family",
-  "#Lifestyle",
-  "#Motivation",
-  "#Tutorial",
-  "#Review",
-  "#Unboxing",
-  "#Challenge",
-  "#Trending",
-  "#Viral",
-  "#Shorts",
-  "#Funny",
-  "#Cooking"
+  "#Music", "#Dance", "#Comedy", "#Fashion", "#Beauty", "#Fitness",
+  "#Food", "#Travel", "#Sports", "#Gaming", "#DIY", "#Education",
+  "#Technology", "#Business", "#Art", "#Photography", "#Nature", "#Pets",
+  "#Family", "#Lifestyle", "#Motivation", "#Tutorial", "#Review",
+  "#Unboxing", "#Challenge", "#Trending", "#Viral", "#Shorts",
+  "#Funny", "#Cooking"
 ];
 
 const UploadShortScreen = ({ navigation }) => {
@@ -562,6 +857,10 @@ const UploadShortScreen = ({ navigation }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [videoDuration, setVideoDuration] = useState(0);
+  
   const videoRef = useRef(null);
   const scrollViewRef = useRef(null);
 
@@ -570,6 +869,7 @@ const UploadShortScreen = ({ navigation }) => {
       mediaType: 'video',
       videoQuality: 'high',
       durationLimit: 60,
+      includeBase64: false,
     };
     
     launchImageLibrary(options, (response) => {
@@ -577,7 +877,7 @@ const UploadShortScreen = ({ navigation }) => {
       
       if (response.error) {
         Snackbar.show({
-          text: 'Error selecting video',
+          text: 'Error selecting video: ' + response.error.message,
           backgroundColor: '#FF6B6B',
         });
         return;
@@ -585,7 +885,8 @@ const UploadShortScreen = ({ navigation }) => {
       
       if (response.assets && response.assets.length > 0) {
         const selectedVideo = response.assets[0];
-        if (selectedVideo.duration > 60000) {
+        // Check duration in seconds
+        if (selectedVideo.duration && selectedVideo.duration > 60) {
           Snackbar.show({
             text: 'Video must be 60 seconds or shorter',
             backgroundColor: '#FF6B6B',
@@ -593,6 +894,7 @@ const UploadShortScreen = ({ navigation }) => {
           return;
         }
         setVideo(selectedVideo);
+        setVideoDuration(selectedVideo.duration || 0);
       }
     });
   };
@@ -601,23 +903,60 @@ const UploadShortScreen = ({ navigation }) => {
     const options = {
       mediaType: 'video',
       videoQuality: 'high',
-      durationLimit: 15,
-      saveToPhotos: false,
+      durationLimit: 60,
+      saveToPhotos: true,
+      includeBase64: false,
     };
     
     launchCamera(options, (response) => {
-      if (response.didCancel) return;
+      if (response.didCancel) {
+        console.log('User cancelled camera');
+        return;
+      }
       
       if (response.error) {
+        console.error('Camera Error:', response.error);
         Snackbar.show({
-          text: 'Camera error',
+          text: 'Camera error: ' + response.error.message,
           backgroundColor: '#FF6B6B',
         });
         return;
       }
       
       if (response.assets && response.assets.length > 0) {
-        setVideo(response.assets[0]);
+        const recordedVideo = response.assets[0];
+        console.log('Recorded video:', recordedVideo);
+        
+        // Check if video was actually recorded
+        if (!recordedVideo.uri) {
+          Snackbar.show({
+            text: 'Failed to record video. Please try again.',
+            backgroundColor: '#FF6B6B',
+          });
+          return;
+        }
+        
+        // Check duration
+        if (recordedVideo.duration && recordedVideo.duration > 60) {
+          Snackbar.show({
+            text: 'Video must be 60 seconds or shorter',
+            backgroundColor: '#FF6B6B',
+          });
+          return;
+        }
+        
+        setVideo(recordedVideo);
+        setVideoDuration(recordedVideo.duration || 0);
+        
+        Snackbar.show({
+          text: 'Video recorded successfully!',
+          backgroundColor: '#51A851',
+        });
+      } else {
+        Snackbar.show({
+          text: 'No video captured. Please try again.',
+          backgroundColor: '#FF6B6B',
+        });
       }
     });
   };
@@ -626,7 +965,6 @@ const UploadShortScreen = ({ navigation }) => {
     setIsPaused(!isPaused);
   };
 
-  // Handle hashtag selection
   const toggleHashtag = (hashtag) => {
     if (selectedHashtags.includes(hashtag)) {
       setSelectedHashtags(selectedHashtags.filter(tag => tag !== hashtag));
@@ -642,15 +980,11 @@ const UploadShortScreen = ({ navigation }) => {
     }
   };
 
-  // Add custom hashtag
   const addCustomHashtag = () => {
     const trimmed = customHashtag.trim();
     if (!trimmed) return;
 
-    // Format hashtag - add # if not present
     let formattedTag = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
-    
-    // Remove spaces and special characters (keep only letters, numbers, and underscores)
     formattedTag = '#' + formattedTag.slice(1).replace(/[^a-zA-Z0-9_]/g, '');
     
     if (formattedTag.length < 2 || formattedTag === '#') {
@@ -681,12 +1015,10 @@ const UploadShortScreen = ({ navigation }) => {
     }
   };
 
-  // Remove hashtag
   const removeHashtag = (hashtag) => {
     setSelectedHashtags(selectedHashtags.filter(tag => tag !== hashtag));
   };
 
-  // Filter hashtag suggestions based on input
   const getHashtagSuggestions = () => {
     if (!customHashtag.trim()) return [];
     const searchTerm = customHashtag.toLowerCase().replace('#', '');
@@ -720,7 +1052,10 @@ const UploadShortScreen = ({ navigation }) => {
       return;
     }
 
-    // Combine caption with hashtags
+    // Show progress modal
+    setShowProgressModal(true);
+    setUploadProgress(0);
+
     const captionWithHashtags = `${caption}\n\n${selectedHashtags.join(' ')}`;
 
     const formData = new FormData();
@@ -735,26 +1070,39 @@ const UploadShortScreen = ({ navigation }) => {
       setIsUploading(true);
       const token = await AsyncStorage.getItem('userToken');
 
-      await axios.post(`${API_ROUTE}/shorts/`, formData, { 
+      const response = await axios.post(`${API_ROUTE}/shorts/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,
         },
+        onUploadProgress: (progressEvent) => {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(progress);
+        },
       });
 
-      Snackbar.show({
-        text: 'Short uploaded successfully!',
-        backgroundColor: '#51A851',
-      });
+      // Upload complete
+      setUploadProgress(100);
+      
+      setTimeout(() => {
+        setShowProgressModal(false);
+        Snackbar.show({
+          text: 'Short uploaded successfully!',
+          backgroundColor: '#51A851',
+        });
 
-      setCaption('');
-      setVideo(null);
-      setSelectedHashtags([]);
-      navigation.navigate('SocialHome', { newShort: true });
+        setCaption('');
+        setVideo(null);
+        setSelectedHashtags([]);
+        setVideoDuration(0);
+        navigation.navigate('SocialHome', { newShort: true });
+      }, 500);
+
     } catch (error) {
       console.error('Upload error:', error);
+      setShowProgressModal(false);
       Snackbar.show({
-        text: 'Upload failed. Please try again.',
+        text: error.response?.data?.message || 'Upload failed. Please try again.',
         backgroundColor: '#FF6B6B',
       });
     } finally {
@@ -764,6 +1112,7 @@ const UploadShortScreen = ({ navigation }) => {
 
   const clearVideo = () => {
     setVideo(null);
+    setVideoDuration(0);
   };
 
   const scrollToInput = (yOffset) => {
@@ -774,6 +1123,9 @@ const UploadShortScreen = ({ navigation }) => {
 
   const suggestions = getHashtagSuggestions();
 
+  // Platform-specific progress component
+  const ProgressBar = Platform.OS === 'android' ? ProgressBarAndroid : ProgressViewIOS;
+
   return (
     <SafeAreaView style={{flex:1, backgroundColor:'black'}}>
       <KeyboardAvoidingView
@@ -782,7 +1134,9 @@ const UploadShortScreen = ({ navigation }) => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <View style={styles.container}>
-          <StatusBar barStyle={Platform.OS === 'android'? 'light-content' : 'light-content'} backgroundColor="#000" />
+          <StatusBar barStyle="light-content" backgroundColor="#000" />
+          
+          {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity 
               onPress={() => navigation.goBack()} 
@@ -809,6 +1163,44 @@ const UploadShortScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
+          {/* Upload Progress Modal */}
+          <Modal
+            visible={showProgressModal}
+            transparent={true}
+            animationType="fade"
+          >
+            <View style={styles.progressModalOverlay}>
+              <View style={styles.progressModalContent}>
+                <Text style={styles.progressModalTitle}>Uploading Video</Text>
+                <Text style={styles.progressModalSubtitle}>
+                  Please wait while your video is being uploaded
+                </Text>
+                
+                <View style={styles.progressBarContainer}>
+                  {Platform.OS === 'android' ? (
+                    <ProgressBarAndroid
+                      styleAttr="Horizontal"
+                      indeterminate={false}
+                      progress={uploadProgress / 100}
+                      color="#6366F1"
+                      style={styles.progressBar}
+                    />
+                  ) : (
+                    <ProgressViewIOS
+                      progress={uploadProgress / 100}
+                      progressTintColor="#6366F1"
+                      trackTintColor="#2A2A2A"
+                      style={styles.progressBar}
+                    />
+                  )}
+                  <Text style={styles.progressPercentage}>{uploadProgress}%</Text>
+                </View>
+                
+                <ActivityIndicator size="large" color="#6366F1" style={styles.progressSpinner} />
+              </View>
+            </View>
+          </Modal>
+
           <ScrollView 
             ref={scrollViewRef}
             style={styles.content}
@@ -829,6 +1221,9 @@ const UploadShortScreen = ({ navigation }) => {
                     paused={isPaused}
                     repeat={true}
                     muted={true}
+                    onLoad={(data) => {
+                      setVideoDuration(data.duration);
+                    }}
                   />
                   
                   <View style={styles.videoOverlay}>
@@ -849,6 +1244,16 @@ const UploadShortScreen = ({ navigation }) => {
                     >
                       <Icon name="close" size={20} color="#FFF" />
                     </TouchableOpacity>
+
+                    {/* Video duration badge */}
+                    {videoDuration > 0 && (
+                      <View style={styles.durationBadge}>
+                        <Icon name="timer" size={14} color="#FFF" />
+                        <Text style={styles.durationText}>
+                          {Math.round(videoDuration)}s
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 </View>
               ) : (
@@ -908,7 +1313,7 @@ const UploadShortScreen = ({ navigation }) => {
               </View>
             </View>
 
-            {/* Hashtags/Categories Section */}
+            {/* Hashtags Section */}
             <View style={styles.hashtagSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionLabel}>Categories (Hashtags)</Text>
@@ -981,7 +1386,7 @@ const UploadShortScreen = ({ navigation }) => {
                 </View>
               )}
 
-              {/* Popular Hashtags Grid */}
+              {/* Popular Hashtags */}
               <Text style={styles.popularHashtagsTitle}>Popular Hashtags</Text>
               <View style={styles.popularHashtagsGrid}>
                 {POPULAR_HASHTAGS.slice(0, 12).map((tag, index) => (
@@ -1103,6 +1508,23 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: 'rgba(0,0,0,0.6)',
   },
+  durationBadge: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  durationText: {
+    color: '#FFF',
+    fontSize: 12,
+    marginLeft: 4,
+    fontWeight: '500',
+  },
   placeholderContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -1181,7 +1603,6 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     fontSize: 14,
   },
-  // Hashtag Styles
   hashtagSection: {
     marginBottom: 24,
     backgroundColor: '#1A1A1A',
@@ -1298,6 +1719,52 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     flex: 1,
     lineHeight: 20,
+  },
+  // Progress Modal Styles
+  progressModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressModalContent: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 20,
+    padding: 30,
+    width: '85%',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  progressModalTitle: {
+    color: '#FFF',
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  progressModalSubtitle: {
+    color: '#94A3B8',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  progressBarContainer: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  progressBar: {
+    width: '100%',
+    height: 8,
+    borderRadius: 4,
+  },
+  progressPercentage: {
+    color: '#94A3B8',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  progressSpinner: {
+    marginTop: 8,
   },
 });
 

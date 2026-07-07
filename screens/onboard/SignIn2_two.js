@@ -1,7 +1,9 @@
 
-// import React, { useState, useRef, useEffect } from 'react';
+
+// import React, { useState, useRef, useEffect, useCallback } from 'react';
 // import {
 //   View,
+//   Image,
 //   Text,
 //   TextInput,
 //   StyleSheet,
@@ -14,12 +16,13 @@
 //   KeyboardAvoidingView,
 //   StatusBar,
 //   Dimensions,
+//   Keyboard,
 // } from 'react-native';
 // import { SafeAreaView } from 'react-native-safe-area-context';
 // import LinearGradient from 'react-native-linear-gradient';
 // import Icon from 'react-native-vector-icons/Ionicons';
-// import { useNavigation } from '@react-navigation/native';
 // import axios from 'axios';
+// import NetInfo from '@react-native-community/netinfo';
 // import { API_ROUTE } from '../../api_routing/api';
 
 // const COLORS = {
@@ -33,519 +36,805 @@
 //   border: '#e1e5eb',
 //   grayLight: '#f8f9fa',
 //   grayMedium: '#e9ecef',
-//   success: '#0d64dd',
+//   success: '#28a745',
 //   error: '#dc3545',
 //   warning: '#ffc107',
-//   info: '#17a2b8',
 // };
 
 // const SPACING = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 40 };
-// const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+// const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// export default function EmailScreen({ navigation, route }) {
-//   const phoneNumber = route.params?.phoneNumberID;
-//   const navigate = useNavigation();
+// // ─── Country Codes ──────────────────────────────────────────────────────────
+// const COUNTRY_CODES = [
+//   { code: '+234', country: 'Nigeria', flag: '🇳🇬' },
+//   { code: '+1', country: 'USA/Canada', flag: '🇺🇸' },
+//   { code: '+44', country: 'UK', flag: '🇬🇧' },
+//   { code: '+91', country: 'India', flag: '🇮🇳' },
+//   { code: '+233', country: 'Ghana', flag: '🇬🇭' },
+//   { code: '+254', country: 'Kenya', flag: '🇰🇪' },
+//   { code: '+27', country: 'South Africa', flag: '🇿🇦' },
+//   { code: '+234', country: 'Nigeria', flag: '🇳🇬' },
+// ];
+
+// // ─── Network Status Modal ──────────────────────────────────────────────────
+// const NetworkStatusModal = ({ visible, message, onRetry, onCancel, loading }) => (
+//   <Modal
+//     transparent={true}
+//     visible={visible}
+//     animationType="fade"
+//     statusBarTranslucent={true}
+//   >
+//     <View style={styles.modalOverlay}>
+//       <View style={styles.modalContainer}>
+//         <View style={styles.modalIconContainer}>
+//           <Icon name="wifi-outline" size={50} color={COLORS.warning} />
+//         </View>
+//         <Text style={styles.modalTitle}>Connection Issue</Text>
+//         <Text style={styles.modalMessage}>{message}</Text>
+//         <View style={styles.modalButtonContainer}>
+//           <TouchableOpacity 
+//             style={[styles.modalButton, styles.modalCancelButton]} 
+//             onPress={onCancel}
+//             disabled={loading}
+//           >
+//             <Text style={styles.modalCancelText}>Cancel</Text>
+//           </TouchableOpacity>
+//           <TouchableOpacity 
+//             style={[styles.modalButton, styles.modalRetryButton, loading && styles.modalButtonDisabled]} 
+//             onPress={onRetry}
+//             disabled={loading}
+//           >
+//             {loading ? (
+//               <ActivityIndicator size="small" color={COLORS.white} />
+//             ) : (
+//               <Text style={styles.modalRetryText}>Retry</Text>
+//             )}
+//           </TouchableOpacity>
+//         </View>
+//       </View>
+//     </View>
+//   </Modal>
+// );
+
+// // ─── Main Component ─────────────────────────────────────────────────────────
+// export default function SignupMethodScreen({ navigation }) {
+//   // ── State ──────────────────────────────────────────────────────────────────
+//   const [selectedMethod, setSelectedMethod] = useState(null); // 'phone' or 'email'
+//   const [phoneNumber, setPhoneNumber] = useState('');
 //   const [email, setEmail] = useState('');
+//   const [countryCode, setCountryCode] = useState('+234');
+//   const [showCountryPicker, setShowCountryPicker] = useState(false);
 //   const [loading, setLoading] = useState(false);
-//   const [emailError, setEmailError] = useState('');
-//   const [modalVisible, setModalVisible] = useState(false);
-//   const [loginLoading, setLoginLoading] = useState(false);
+//   const [errors, setErrors] = useState({});
+//   const [networkModalVisible, setNetworkModalVisible] = useState(false);
+//   const [networkMessage, setNetworkMessage] = useState('');
+//   const [networkLoading, setNetworkLoading] = useState(false);
+  
+//   // ── Refs ──────────────────────────────────────────────────────────────────
+//   const phoneInputRef = useRef(null);
 //   const emailInputRef = useRef(null);
+//   const isMounted = useRef(true);
 
-
+//   // ─── Network Listener ──────────────────────────────────────────────────────
 //   useEffect(() => {
-//     const focusTimer = setTimeout(() => {
-//       emailInputRef.current?.focus();
-//     }, 400);
+//     isMounted.current = true;
+//     const unsubscribe = NetInfo.addEventListener(state => {
+//       console.log('📶 Network state:', state.isConnected);
+//       if (state.isConnected && networkModalVisible) {
+//         setNetworkModalVisible(false);
+//       }
+//     });
 
-//     return () => clearTimeout(focusTimer);
+//     return () => {
+//       isMounted.current = false;
+//       unsubscribe();
+//     };
+//   }, [networkModalVisible]);
+
+//   // ─── Network Error Helpers ────────────────────────────────────────────────
+//   const showNetworkError = useCallback((message, retryFn) => {
+//     setNetworkMessage(message);
+//     setNetworkModalVisible(true);
 //   }, []);
 
-//   const redirectBack = () => {
-//     navigation.navigate('Signin');
-//   };
+//   const hideNetworkModal = useCallback(() => {
+//     setNetworkModalVisible(false);
+//     setNetworkLoading(false);
+//   }, []);
 
-//   const validateEmail = (email) => {
-//     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-//     if (!email) {
-//       return 'Please enter your email address';
+//   const retryAction = useCallback(() => {
+//     setNetworkLoading(true);
+//     handleContinue();
+//   }, []);
+
+//   // ─── Validation ───────────────────────────────────────────────────────────
+//   const validatePhone = useCallback((number) => {
+//     const cleanNumber = number.replace(/\s/g, '');
+//     if (!cleanNumber) return 'Phone number is required';
+//     if (!/^[0-9]{7,15}$/.test(cleanNumber)) {
+//       return 'Please enter a valid phone number';
 //     }
-//     if (!emailRegex.test(email)) {
+//     return null;
+//   }, []);
+
+//   const validateEmail = useCallback((emailAddr) => {
+//     if (!emailAddr) return 'Email is required';
+//     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//     if (!emailRegex.test(emailAddr)) {
 //       return 'Please enter a valid email address';
 //     }
-//     return '';
-//   };
+//     return null;
+//   }, []);
 
-//   const checkEmailExists = async () => {
-//     try {
-//       const response = await axios.post(`${API_ROUTE}/check-email/`, { email });
-//       return response.data.exists;
-//     } catch (error) {
-//       console.error('Error checking email:', error);
-//       return false;
+//   // ─── Method Selection ─────────────────────────────────────────────────────
+//   const selectMethod = useCallback((method) => {
+//     setSelectedMethod(method);
+//     setErrors({});
+//     // Focus the appropriate input
+//     setTimeout(() => {
+//       if (method === 'phone' && phoneInputRef.current) {
+//         phoneInputRef.current.focus();
+//       } else if (method === 'email' && emailInputRef.current) {
+//         emailInputRef.current.focus();
+//       }
+//     }, 300);
+//   }, []);
+
+//   // ─── Continue Handler ─────────────────────────────────────────────────────
+//   const handleContinue = useCallback(async () => {
+//     Keyboard.dismiss();
+
+//     // ── 1. Check Network ──────────────────────────────────────────────────
+//     const netState = await NetInfo.fetch();
+//     if (!netState.isConnected) {
+//       showNetworkError(
+//         'No internet connection. Please check your network and try again.',
+//         handleContinue
+//       );
+//       return;
 //     }
-//   };
 
-//   const handleEmailSentOTP = async () => {
-//     const validationError = validateEmail(email);
-//     if (validationError) {
-//       setEmailError(validationError);
+//     // ── 2. Validate Input ──────────────────────────────────────────────
+//     const newErrors = {};
+    
+//     if (selectedMethod === 'phone') {
+//       const phoneError = validatePhone(phoneNumber);
+//       if (phoneError) newErrors.phone = phoneError;
+//     } else if (selectedMethod === 'email') {
+//       const emailError = validateEmail(email);
+//       if (emailError) newErrors.email = emailError;
+//     } else {
+//       Alert.alert('Select Method', 'Please choose a signup method first.');
+//       return;
+//     }
+
+//     if (Object.keys(newErrors).length > 0) {
+//       setErrors(newErrors);
 //       return;
 //     }
 
 //     setLoading(true);
-//     setEmailError('');
+//     setErrors({});
 
 //     try {
-//       const emailExists = await checkEmailExists();
-      
-//       if (emailExists) {
-//         setModalVisible(true);
+//       // ── 3. Check if contact exists ──────────────────────────────────
+//       const contactValue = selectedMethod === 'phone' 
+//         ? `${countryCode}${phoneNumber.replace(/\s/g, '')}`
+//         : email;
+
+//       const checkPayload = selectedMethod === 'phone'
+//         ? { phone: contactValue }
+//         : { email: contactValue };
+
+//       console.log('🔍 Checking contact:', contactValue);
+
+//       const checkResponse = await axios.post(
+//         `${API_ROUTE}/check-contact/`,
+//         checkPayload,
+//         { timeout: 10000 }
+//       );
+
+//       if (checkResponse.data.exists) {
+//         // ── Account exists - navigate to login ──────────────────────
+//         Alert.alert(
+//           'Account Found',
+//           `An account already exists with this ${selectedMethod === 'phone' ? 'phone number' : 'email'}. Would you like to login instead?`,
+//           [
+//             { 
+//               text: 'Go Back', 
+//               style: 'cancel',
+//               onPress: () => {
+//                 setSelectedMethod(null);
+//                 if (selectedMethod === 'phone') setPhoneNumber('');
+//                 else setEmail('');
+//               }
+//             },
+//             { 
+//               text: 'Login',
+//               onPress: () => {
+//                 navigation.navigate('EmailLogin', {
+//                   contact: contactValue,
+//                   contactType: selectedMethod,
+//                 });
+//               }
+//             }
+//           ]
+//         );
 //         setLoading(false);
 //         return;
 //       }
 
-//       await sendOTP('registration');
-//     } catch (error) {
-//       console.error('Error:', error.response || error);
-//       if (error.response?.data?.email) {
-//         setEmailError(error.response.data.email[0]);
-//       } else {
-//         Alert.alert(
-//           'Network Error',
-//           'Unable to connect. Please check your internet connection and try again.',
-//           [{ text: 'OK', style: 'default' }]
-//         );
-//       }
-//       setLoading(false);
-//     }
-//   };
+//       // ── 4. Account doesn't exist - send OTP ──────────────────────
+//       const otpPayload = selectedMethod === 'phone'
+//         ? { phone: contactValue, purpose: 'registration' }
+//         : { email: contactValue, purpose: 'registration' };
 
-//   const sendOTP = async (purpose) => {
-//     try {
-//       const response = await axios.post(`${API_ROUTE}/send-otp/`, { 
-//         email, 
-//         purpose,
-//         phoneNumber 
-//       });
-      
-//       if (response.status === 200 || response.status === 201) {
+//       console.log('📤 Sending OTP to:', contactValue);
+
+//       const otpResponse = await axios.post(
+//         `${API_ROUTE}/send-otp/`,
+//         otpPayload,
+//         { timeout: 15000 }
+//       );
+
+//       if (otpResponse.status === 200 || otpResponse.status === 201) {
+//         const method = otpResponse.data.method || (selectedMethod === 'phone' ? 'sms' : 'email');
+//         const message = otpResponse.data.message || `Verification code sent to your ${selectedMethod}`;
+
 //         Alert.alert(
-//           'Verification Sent ✓',
-//           `A 6-digit OTP has been sent to:\n${email}\n\nPlease check your inbox and enter the code to ${purpose === 'login' ? 'login' : 'complete your registration'}.`,
+//           'Verification Sent',
+//           `${message}\n\nPlease check ${method === 'sms' ? 'your phone' : 'your email'} for the 6-digit code.`,
 //           [
-//             { 
-//               text: 'OK', 
-//               style: 'default',
+//             {
+//               text: 'OK',
 //               onPress: () => {
-//                 if (purpose === 'login') {
-//                   navigation.navigate('VerificationCode', {
-//                     emailID: email,
-//                     purpose: 'login'
-//                   });
-//                 } else {
-//                   navigation.navigate('LinkingScreen', {
-//                     phoneNumberID: phoneNumber,
-//                     emailID: email,
-//                   });
-//                 }
+//                 navigation.navigate('VerificationCode', {
+//                   contactID: contactValue,
+//                   contactType: selectedMethod,
+//                   purpose: 'registration',
+//                   phoneNumberID: selectedMethod === 'phone' ? contactValue : '',
+//                   emailID: selectedMethod === 'email' ? contactValue : '',
+//                 });
 //               }
 //             }
 //           ]
 //         );
 //       } else {
-//         Alert.alert('Error', 'Failed to send OTP. Please try again.');
+//         throw new Error('Failed to send verification code');
 //       }
+
 //     } catch (error) {
-//       console.error('Error sending OTP:', error);
-//       Alert.alert(
-//         'Sending Failed',
-//         'Unable to send verification code. Please check your network and try again.'
-//       );
-//     } finally {
-//       setLoading(false);
-//       setLoginLoading(false);
-//       setModalVisible(false);
-//     }
-//   };
+//       console.error('❌ Error:', error);
 
-//   const handleLoginInstead = async () => {
-//     setLoginLoading(true);
-//     await sendOTP('login');
-//   };
+//       // ── 5. Handle Network Errors ──────────────────────────────────
+//       if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+//         showNetworkError(
+//           'Connection timeout. Please check your network and try again.',
+//           handleContinue
+//         );
+//         return;
+//       }
 
-//   const handleUseDifferentEmail = () => {
-//     setModalVisible(false);
-//     setEmail('');
-//     // Re-focus on the input after clearing
-//     setTimeout(() => {
-//       emailInputRef.current?.focus();
-//     }, 100);
-//   };
+//       if (!error.response) {
+//         showNetworkError(
+//           'Cannot connect to server. Please check your internet connection.',
+//           handleContinue
+//         );
+//         return;
+//       }
 
-//   const handleKeyPress = ({ nativeEvent }) => {
-//     if (nativeEvent.key === 'Enter' || nativeEvent.key === 'done') {
-//       handleEmailSentOTP();
-//     }
-//   };
+//       // ── 6. Handle Server Errors ──────────────────────────────────
+//       if (error.response.status >= 500 && error.response.status < 600) {
+//         showNetworkError(
+//           'Server is currently experiencing issues. Please try again later.',
+//           handleContinue
+//         );
+//         return;
+//       }
 
-//   return (
-//     <SafeAreaView style={styles.container}>
-//       <StatusBar
-//         barStyle="dark-content"
-//         backgroundColor={COLORS.white}
-//         translucent={false}
-//       />
+//       // ── 7. Handle Client Errors ──────────────────────────────────
+//       let errorMessage = 'Unable to continue. Please try again.';
+//       const backendError = error.response?.data;
       
-//       {/* Header */}
-//       <LinearGradient 
-//         colors={[COLORS.primary, COLORS.primary]} 
-//         start={{ x: 0, y: 0 }}
-//         end={{ x: 1, y: 0 }}
-//         style={styles.header}
+//       if (backendError?.message) {
+//         errorMessage = backendError.message;
+//       } else if (backendError?.phone) {
+//         errorMessage = `Phone: ${backendError.phone[0]}`;
+//       } else if (backendError?.email) {
+//         errorMessage = `Email: ${backendError.email[0]}`;
+//       }
+
+//       Alert.alert('Error', errorMessage);
+
+//     } finally {
+//       if (isMounted.current) {
+//         setLoading(false);
+//         setNetworkLoading(false);
+//       }
+//     }
+//   }, [
+//     selectedMethod,
+//     phoneNumber,
+//     email,
+//     countryCode,
+//     validatePhone,
+//     validateEmail,
+//     navigation,
+//     showNetworkError
+//   ]);
+
+//   // ─── Render Method Selection ─────────────────────────────────────────────
+//   const renderMethodSelection = () => (
+//     <View style={styles.methodContainer}>
+//       <Text style={styles.methodTitle}>How would you like to continue?</Text>
+//       <Text style={styles.methodSubtitle}>Select your preferred signup method</Text>
+
+//       <TouchableOpacity
+//         style={[
+//           styles.methodCard,
+//           selectedMethod === 'phone' && styles.methodCardSelected,
+//         ]}
+//         onPress={() => selectMethod('phone')}
+//         activeOpacity={0.7}
 //       >
-//         <View style={styles.headerContent}>
-//           <TouchableOpacity 
-//             onPress={redirectBack}
-//             style={styles.headerButton}
-//             activeOpacity={0.7}
+//         <LinearGradient
+//           colors={selectedMethod === 'phone' ? [COLORS.primary, COLORS.primaryDark] : ['#f8f9fa', '#f1f3f5']}
+//           style={styles.methodCardGradient}
+//           start={{ x: 0, y: 0 }}
+//           end={{ x: 1, y: 1 }}
+//         >
+//           <View style={styles.methodIconContainer}>
+//             <Icon 
+//               name="call-outline" 
+//               size={28} 
+//               color={selectedMethod === 'phone' ? COLORS.white : COLORS.primary} 
+//             />
+//           </View>
+//           <View style={styles.methodTextContainer}>
+//             <Text style={[
+//               styles.methodCardTitle,
+//               selectedMethod === 'phone' && styles.methodCardTitleSelected
+//             ]}>
+//               Phone Number
+//             </Text>
+//             <Text style={[
+//               styles.methodCardSubtitle,
+//               selectedMethod === 'phone' && styles.methodCardSubtitleSelected
+//             ]}>
+//               Use your mobile number
+//             </Text>
+//           </View>
+//           {selectedMethod === 'phone' && (
+//             <View style={styles.methodCheckmark}>
+//               <Icon name="checkmark-circle" size={24} color={COLORS.white} />
+//             </View>
+//           )}
+//         </LinearGradient>
+//       </TouchableOpacity>
+
+//       <TouchableOpacity
+//         style={[
+//           styles.methodCard,
+//           selectedMethod === 'email' && styles.methodCardSelected,
+//         ]}
+//         onPress={() => selectMethod('email')}
+//         activeOpacity={0.7}
+//       >
+//         <LinearGradient
+//           colors={selectedMethod === 'email' ? [COLORS.primary, COLORS.primaryDark] : ['#f8f9fa', '#f1f3f5']}
+//           style={styles.methodCardGradient}
+//           start={{ x: 0, y: 0 }}
+//           end={{ x: 1, y: 1 }}
+//         >
+//           <View style={styles.methodIconContainer}>
+//             <Icon 
+//               name="mail-outline" 
+//               size={28} 
+//               color={selectedMethod === 'email' ? COLORS.white : COLORS.primary} 
+//             />
+//           </View>
+//           <View style={styles.methodTextContainer}>
+//             <Text style={[
+//               styles.methodCardTitle,
+//               selectedMethod === 'email' && styles.methodCardTitleSelected
+//             ]}>
+//               Email Address
+//             </Text>
+//             <Text style={[
+//               styles.methodCardSubtitle,
+//               selectedMethod === 'email' && styles.methodCardSubtitleSelected
+//             ]}>
+//               Use your email address
+//             </Text>
+//           </View>
+//           {selectedMethod === 'email' && (
+//             <View style={styles.methodCheckmark}>
+//               <Icon name="checkmark-circle" size={24} color={COLORS.white} />
+//             </View>
+//           )}
+//         </LinearGradient>
+//       </TouchableOpacity>
+//     </View>
+//   );
+
+//   // ─── Render Phone Input ──────────────────────────────────────────────────
+//   const renderPhoneInput = () => (
+//     <View style={styles.inputSection}>
+//       <Text style={styles.inputLabel}>Phone Number</Text>
+//       <View style={styles.phoneInputWrapper}>
+//         {/* Country Code Picker */}
+//         <TouchableOpacity
+//           style={styles.countryCodeButton}
+//           onPress={() => setShowCountryPicker(true)}
+//           activeOpacity={0.7}
+//         >
+//           <Text style={styles.countryCodeText}>
+//             {COUNTRY_CODES.find(c => c.code === countryCode)?.flag || '🇳🇬'}
+//           </Text>
+//           <Text style={styles.countryCodeText}>
+//             {countryCode}
+//           </Text>
+//           <Icon name="chevron-down" size={16} color={COLORS.textSecondary} />
+//         </TouchableOpacity>
+
+//         <View style={styles.divider} />
+
+//         <TextInput
+//           ref={phoneInputRef}
+//           placeholder="8123456789"
+//           style={styles.phoneInput}
+//           keyboardType="phone-pad"
+//           value={phoneNumber}
+//           onChangeText={(text) => {
+//             const cleaned = text.replace(/[^0-9]/g, '');
+//             setPhoneNumber(cleaned);
+//             if (errors.phone) {
+//               setErrors(prev => ({ ...prev, phone: null }));
+//             }
+//           }}
+//           returnKeyType="done"
+//           onSubmitEditing={handleContinue}
+//           editable={!loading}
+//           maxLength={15}
+//         />
+//       </View>
+//       {errors.phone && (
+//         <View style={styles.errorContainer}>
+//           <Icon name="alert-circle-outline" size={16} color={COLORS.error} />
+//           <Text style={styles.errorText}>{errors.phone}</Text>
+//         </View>
+//       )}
+//       <Text style={styles.helperText}>
+//         We'll send a 6-digit verification code via SMS
+//       </Text>
+//     </View>
+//   );
+
+//   // ─── Render Email Input ──────────────────────────────────────────────────
+//   const renderEmailInput = () => (
+//     <View style={styles.inputSection}>
+//       <Text style={styles.inputLabel}>Email Address</Text>
+//       <View style={styles.inputWrapper}>
+//         <Icon name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+//         <TextInput
+//           ref={emailInputRef}
+//           placeholder="example@gmail.com"
+//           style={styles.input}
+//           keyboardType="email-address"
+//           autoCapitalize="none"
+//           autoCorrect={false}
+//           value={email}
+//           onChangeText={(text) => {
+//             setEmail(text);
+//             if (errors.email) {
+//               setErrors(prev => ({ ...prev, email: null }));
+//             }
+//           }}
+//           returnKeyType="done"
+//           onSubmitEditing={handleContinue}
+//           editable={!loading}
+//         />
+//         {email.length > 0 && (
+//           <TouchableOpacity
+//             onPress={() => setEmail('')}
+//             style={styles.clearButton}
 //           >
-//             <Icon name="arrow-back" size={24} color={COLORS.white} />
+//             <Icon name="close-circle" size={20} color={COLORS.placeholder} />
 //           </TouchableOpacity>
-          
-//           <View style={styles.headerTitleContainer}>
-//             <Text style={styles.headerTitle}>Email Verification</Text>
-//             <Text style={styles.headerSubtitle}>Step 2 of 3</Text>
+//         )}
+//       </View>
+//       {errors.email && (
+//         <View style={styles.errorContainer}>
+//           <Icon name="alert-circle-outline" size={16} color={COLORS.error} />
+//           <Text style={styles.errorText}>{errors.email}</Text>
+//         </View>
+//       )}
+//       <Text style={styles.helperText}>
+//         We'll send a 6-digit verification code to this email
+//       </Text>
+//     </View>
+//   );
+
+//   // ─── Render Country Picker Modal ────────────────────────────────────────
+//   const renderCountryPicker = () => (
+//     <Modal
+//       visible={showCountryPicker}
+//       transparent={true}
+//       animationType="slide"
+//       onRequestClose={() => setShowCountryPicker(false)}
+//     >
+//       <View style={styles.pickerOverlay}>
+//         <View style={styles.pickerContainer}>
+//           <View style={styles.pickerHeader}>
+//             <Text style={styles.pickerTitle}>Select Country</Text>
+//             <TouchableOpacity
+//               onPress={() => setShowCountryPicker(false)}
+//               style={styles.pickerClose}
+//             >
+//               <Icon name="close" size={24} color={COLORS.textPrimary} />
+//             </TouchableOpacity>
 //           </View>
           
-//           <TouchableOpacity 
-//             onPress={redirectBack}
-//             style={styles.headerButton}
-//             activeOpacity={0.7}
-//           >
-//             <Icon name="close" size={24} color={COLORS.white} />
-//           </TouchableOpacity>
+//           <ScrollView showsVerticalScrollIndicator={false}>
+//             {COUNTRY_CODES.map((country, index) => (
+//               <TouchableOpacity
+//                 key={index}
+//                 style={[
+//                   styles.pickerItem,
+//                   country.code === countryCode && styles.pickerItemSelected,
+//                 ]}
+//                 onPress={() => {
+//                   setCountryCode(country.code);
+//                   setShowCountryPicker(false);
+//                 }}
+//               >
+//                 <Text style={styles.pickerFlag}>{country.flag}</Text>
+//                 <Text style={styles.pickerCountry}>{country.country}</Text>
+//                 <Text style={styles.pickerCode}>{country.code}</Text>
+//                 {country.code === countryCode && (
+//                   <Icon name="checkmark" size={20} color={COLORS.primary} />
+//                 )}
+//               </TouchableOpacity>
+//             ))}
+//           </ScrollView>
 //         </View>
-//       </LinearGradient>
+//       </View>
+//     </Modal>
+//   );
 
-//       {/* Main Content */}
-//       <KeyboardAvoidingView 
+//   // ─── Main Render ──────────────────────────────────────────────────────────
+//   return (
+//     <SafeAreaView style={styles.container}>
+//       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} translucent={false} />
+
+//       <KeyboardAvoidingView
 //         style={styles.keyboardView}
 //         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 //         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
 //       >
-//         <ScrollView 
+//         <ScrollView
 //           contentContainerStyle={styles.scrollContent}
 //           showsVerticalScrollIndicator={false}
 //           keyboardShouldPersistTaps="handled"
 //         >
-//           {/* Hero Section */}
-//           <View style={styles.heroContainer}>
-//             <LinearGradient
-//               colors={['rgba(13,100,221,0.1)', 'rgba(74,144,226,0.05)']}
-//               style={styles.heroIconContainer}
-//             >
-//               <Icon name="mail-outline" size={42} color={COLORS.primary} />
-//             </LinearGradient>
-            
-//             <Text style={styles.heroTitle}>Add Your Email</Text>
-//             <Text style={styles.heroSubtitle}>
-//               Enter your email address to receive a verification code and secure your account
-//             </Text>
+//           {/* Back Button */}
+//           <TouchableOpacity
+//             onPress={() => navigation.goBack()}
+//             style={styles.backButton}
+//           >
+//             <Icon name="arrow-back" size={24} color={COLORS.textPrimary} />
+//           </TouchableOpacity>
+
+//           {/* Header */}
+//           <View style={styles.header}>
+//             <View style={styles.logoWrapper}>
+//                           <LinearGradient
+//                             colors={['#0066FF', '#0052CC']}
+//                             style={styles.logoGradient}
+//                           >
+//                             <Image
+//                               source={require('../../assets/images/showaAppLogo.png')} 
+//                               style={styles.logoImage}
+//                               resizeMode="contain"
+//                             />
+//                           </LinearGradient>
+//                         </View>
+//             <Text style={styles.headerTitle}>Create Account</Text>
+//             <Text style={styles.headerSubtitle}>Connect with friends, communities, and opportunities.</Text>
 //           </View>
 
-//           {/* Form Section */}
-//           <View style={styles.formContainer}>
-//             {/* Email Input */}
-//             <View style={styles.inputSection}>
-//               <Text style={styles.inputLabel}>Email Address</Text>
-//               <View style={[
-//                 styles.inputWrapper,
-//                 emailError && styles.inputWrapperError,
-//                 email && !emailError && styles.inputWrapperSuccess,
-//               ]}>
-//                 <Icon 
-//                   name="mail-outline" 
-//                   size={20} 
-//                   color={emailError ? COLORS.error : email ? COLORS.success : COLORS.textSecondary} 
-//                   style={styles.inputIcon} 
-//                 />
-//                 <TextInput
-//                   ref={emailInputRef}
-//                   placeholder="Enter your email"
-//                   style={styles.input}
-//                   keyboardType="email-address"
-//                   autoComplete="email"
-//                   autoCapitalize="none"
-//                   placeholderTextColor='#000000'
-//                   autoCorrect={false}
-//                   textContentType="emailAddress"
-//                   value={email}
-//                   onChangeText={(text) => {
-//                     setEmail(text.trim());
-//                     if (emailError) setEmailError('');
-//                   }}
-                 
-//                   returnKeyType="send"
-//                   onSubmitEditing={handleEmailSentOTP}
-//                   blurOnSubmit={false}
-//                   editable={!loading}
-//                   onKeyPress={handleKeyPress}
-//                   autoFocus={true}
-//                 />
-                
-//                 {email.length > 0 && (
-//                   <TouchableOpacity
-//                     onPress={() => {
-//                       setEmail('');
-//                       emailInputRef.current?.focus();
-//                     }}
-//                     style={styles.clearButton}
-//                     activeOpacity={0.6}
-//                   >
-//                     <Icon name="close-circle" size={20} color={COLORS.placeholder} />
-//                   </TouchableOpacity>
-//                 )}
-//               </View>
-              
-//               {emailError ? (
-//                 <View style={styles.errorContainer}>
-//                   <Icon name="alert-circle-outline" size={16} color={COLORS.error} />
-//                   <Text style={styles.errorText}>{emailError}</Text>
-//                 </View>
-//               ) : (
-//                 <Text style={styles.helperText}>
-//                   We'll send a 6-digit verification code to this email
-//                 </Text>
-//               )}
-//             </View>
+//           {/* Method Selection */}
+//           {renderMethodSelection()}
 
-//             {/* Continue Button */}
+//           {/* Input Section */}
+//           {selectedMethod === 'phone' && renderPhoneInput()}
+//           {selectedMethod === 'email' && renderEmailInput()}
+
+//           {/* Continue Button */}
+//           {selectedMethod && (
 //             <TouchableOpacity
-//               onPress={handleEmailSentOTP}
+//               onPress={handleContinue}
 //               style={[
 //                 styles.continueButton,
-//                 (!email || loading) && styles.buttonDisabled,
+//                 loading && styles.buttonDisabled,
 //               ]}
 //               activeOpacity={0.8}
-//               disabled={!email || loading}
+//               disabled={loading}
 //             >
-//               <LinearGradient 
-//                 colors={[COLORS.primary, COLORS.primary]} 
-//                 start={{ x: 0, y: 0 }}
-//                 end={{ x: 1, y: 0 }}
+//               <LinearGradient
+//                 colors={[COLORS.primary, COLORS.primaryDark]}
 //                 style={styles.buttonGradient}
 //               >
 //                 {loading ? (
-//                   <ActivityIndicator style={{padding:20}} size="small" color={COLORS.white} />
+//                   <ActivityIndicator size="small" color={COLORS.white} />
 //                 ) : (
 //                   <>
 //                     <Text style={styles.buttonText}>Continue</Text>
+//                     <Icon name="arrow-forward" size={20} color={COLORS.white} style={styles.buttonIcon} />
 //                   </>
 //                 )}
 //               </LinearGradient>
 //             </TouchableOpacity>
+//           )}
 
+//           {/* Login Link */}
+//           <View style={styles.loginContainer}>
+//             <Text style={styles.loginText}>Already have an account? </Text>
+//             <TouchableOpacity onPress={() => navigation.navigate('EmailLogin')}>
+//               <Text style={styles.loginLink}>Log In</Text>
+//             </TouchableOpacity>
 //           </View>
 //         </ScrollView>
 //       </KeyboardAvoidingView>
 
-//       {/* Professional Email Already Registered Modal */}
-//       <Modal
-//         visible={modalVisible}
-//         transparent={true}
-//         animationType="fade"
-//         onRequestClose={() => setModalVisible(false)}
-//         statusBarTranslucent={true}
-//       >
-//         <View style={styles.modalOverlay}>
-//           <View style={styles.modalContainer}>
-        
-//             {/* Modal Body */}
-//             <View style={styles.modalBody}>
-//               <View style={styles.modalIconContainer}>
-//                 <View style={styles.modalIconCircle}>
-//                   <Icon name="checkmark-circle" size={48} color={COLORS.primary} />
-//                 </View>
-//               </View>
-              
-              
-//               <Text style={styles.modalMainText}>
-//                <Text style={[styles.modalTitle,{color:'black',fontSize:24,fontWeight:'800'}]}>Account Found</Text>
-//               </Text>
-              
-//               <Text style={styles.modalSubtext}>
-//                 We found an existing account associated with:
-//               </Text>
+//       {/* Country Picker Modal */}
+//       {renderCountryPicker()}
 
-//               <View style={styles.emailContainer}>
-//                 <Icon name="mail" size={18} color={COLORS.primary} style={styles.emailIcon} />
-//                 <Text style={styles.emailText}>{email}</Text>
-//               </View>
-
-//               <Text style={styles.modalDescription}>
-//                 Would you like to login to your existing account or use a different email address?
-//               </Text>
-
-//               {/* Modal Buttons */}
-//               <View style={styles.modalButtons}>
-//                 <TouchableOpacity 
-//                   style={[styles.modalButton, styles.primaryModalButton]}
-//                   onPress={handleLoginInstead}
-//                   activeOpacity={0.8}
-//                   disabled={loginLoading}
-//                 >
-//                   {loginLoading ? (
-//                     <ActivityIndicator size="small" color={COLORS.white} />
-//                   ) : (
-//                     <>
-//                       <Icon name="log-in-outline" size={18} color={COLORS.white} style={styles.modalButtonIcon} />
-//                       <Text style={styles.primaryModalButtonText}>Login with OTP</Text>
-//                     </>
-//                   )}
-//                 </TouchableOpacity>
-
-//                 <TouchableOpacity 
-//                   style={[styles.modalButton, styles.secondaryModalButton]}
-//                   onPress={handleUseDifferentEmail}
-//                   activeOpacity={0.7}
-//                   disabled={loginLoading}
-//                 >
-//                   <Icon name="create-outline" size={18} color={COLORS.textPrimary} style={styles.modalButtonIcon} />
-//                   <Text style={styles.secondaryModalButtonText}>Use Different Email</Text>
-//                 </TouchableOpacity>
-//               </View>
-
-//               {/* Loading Overlay */}
-//               {loginLoading && (
-//                 <View style={styles.modalLoadingOverlay}>
-//                   <View style={styles.loadingContent}>
-//                     <ActivityIndicator size="large" color={COLORS.primary} />
-//                     <Text style={styles.loadingText}>Sending OTP...</Text>
-//                     <Text style={styles.loadingSubtext}>Please wait while we send your login code</Text>
-//                   </View>
-//                 </View>
-//               )}
-//             </View>
-//           </View>
-//         </View>
-//       </Modal>
+//       {/* Network Error Modal */}
+//       <NetworkStatusModal
+//         visible={networkModalVisible}
+//         message={networkMessage}
+//         onRetry={retryAction}
+//         onCancel={hideNetworkModal}
+//         loading={networkLoading}
+//       />
 //     </SafeAreaView>
 //   );
 // }
 
+// // ─── Styles ──────────────────────────────────────────────────────────────────
 // const styles = StyleSheet.create({
 //   container: {
 //     flex: 1,
-//     backgroundColor: COLORS.white,
+//     backgroundColor: '#e9ebf1',
 //   },
-  
 //   keyboardView: {
 //     flex: 1,
 //   },
+//   scrollContent: {
+//     flexGrow: 1,
+//     paddingHorizontal: SPACING.lg,
+//     paddingBottom: SPACING.xl,
+//   },
+  
+//   // ── Back Button ─────────────────────────────────────────────────────────
+//   backButton: {
+//     width: 44,
+//     height: 44,
+//     justifyContent: 'center',
+//     marginTop: SPACING.sm,
+//     marginBottom: SPACING.sm,
+//   },
 
-//   /* Header Styles */
+//   // ── Header ──────────────────────────────────────────────────────────────
 //   header: {
-//     paddingTop: SPACING.sm,
-//     paddingBottom: SPACING.md,
-//     backgroundColor: COLORS.primary,
+//     marginBottom: SPACING.xl,
+//     justifyContent:'center',
+//     alignSelf:'center'
+//   },
+//   headerTitle: {
+//     fontSize: 30,
+//     fontWeight: '700',
+//     color: COLORS.textPrimary,
+//     marginBottom: SPACING.xs,
+//     justifyContent:'center',
+//     alignSelf:'center'
+//   },
+//   headerSubtitle: {
+//     fontSize: 15,
+//     color: COLORS.textSecondary,
+//   },
+
+//   // ── Method Selection ────────────────────────────────────────────────────
+//   methodContainer: {
+//     marginBottom: SPACING.xl,
+//   },
+//   methodTitle: {
+//     fontSize: 18,
+//     fontWeight: '600',
+//     color: COLORS.textPrimary,
+//     marginBottom: SPACING.xs,
+//   },
+//   methodSubtitle: {
+//     fontSize: 14,
+//     color: COLORS.textSecondary,
+//     marginBottom: SPACING.lg,
+//   },
+//   methodCard: {
+ 
+//     borderRadius: 50,
+//     marginBottom: SPACING.md,
+//     overflow: 'hidden',
+//     borderWidth: 2,
+//     borderColor: 'transparent',
 //     ...Platform.select({
 //       ios: {
 //         shadowColor: '#000',
 //         shadowOffset: { width: 0, height: 2 },
-//         shadowOpacity: 0.1,
+//         shadowOpacity: 0.05,
 //         shadowRadius: 8,
 //       },
 //       android: {
-//         elevation: 6,
+//         elevation: 2,
+        
 //       },
 //     }),
 //   },
-//   headerContent: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     paddingHorizontal: SPACING.lg,
-//     height: 60,
-//   },
-//   headerButton: {
-//     width: 44,
-//     height: 44,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     borderRadius: 22,
-//     backgroundColor: 'rgba(255, 255, 255, 0.15)',
-//   },
-//   headerTitleContainer: {
-//     alignItems: 'center',
-//   },
-//   headerTitle: {
-//     color: COLORS.white,
-//     fontSize: 25,
-//     fontWeight: '700',
-//     letterSpacing: 0.5,
-//   },
-//   headerSubtitle: {
-//     color: 'rgba(255, 255, 255, 0.85)',
-//     fontSize: 13,
-//     marginTop: SPACING.xs,
-//   },
-
-//   /* Scroll Content */
-//   scrollContent: {
-//     flexGrow: 1,
-//     paddingBottom: SPACING.xxl,
-//   },
-
-//   /* Hero Section */
-//   heroContainer: {
-//     alignItems: 'center',
-//     marginTop: SPACING.xl,
-//     marginBottom: SPACING.xxl,
-//     paddingHorizontal: SPACING.lg,
-//   },
-//   heroIconContainer: {
-//     width: 100,
-//     height: 100,
-//     borderRadius: 50,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     marginBottom: SPACING.lg,
+//   methodCardSelected: {
+//     borderColor: COLORS.primary,
 //     ...Platform.select({
 //       ios: {
-//         shadowColor: '#000',
+//         shadowColor: COLORS.primary,
 //         shadowOffset: { width: 0, height: 4 },
-//         shadowOpacity: 0.1,
-//         shadowRadius: 8,
+//         shadowOpacity: 0.2,
+//         shadowRadius: 12,
 //       },
 //       android: {
-//         elevation: 0,
+//         elevation: 8,
 //       },
 //     }),
 //   },
-//   heroTitle: {
-//     fontSize: 28,
-//     fontWeight: '700',
-//     color: COLORS.textPrimary,
-//     textAlign: 'center',
-//     marginBottom: SPACING.sm,
-//     letterSpacing: 0.3,
+//   methodCardGradient: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     padding: SPACING.md,
+//     minHeight: 72,
 //   },
-//   heroSubtitle: {
+//   methodIconContainer: {
+//     width: 48,
+//     height: 48,
+//     borderRadius: 24,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     backgroundColor: 'rgba(255,255,255,0.2)',
+//     marginRight: SPACING.md,
+//   },
+//   methodTextContainer: {
+//     flex: 1,
+//   },
+//   methodCardTitle: {
 //     fontSize: 16,
+//     fontWeight: '600',
+//     color: COLORS.textPrimary,
+//   },
+//   methodCardTitleSelected: {
+//     color: COLORS.white,
+//   },
+//   methodCardSubtitle: {
+//     fontSize: 13,
 //     color: COLORS.textSecondary,
-//     textAlign: 'center',
-//     lineHeight: 22,
-//     paddingHorizontal: SPACING.md,
+//     marginTop: 2,
+//   },
+//   methodCardSubtitleSelected: {
+//     color: 'rgba(255,255,255,0.8)',
+//   },
+//   methodCheckmark: {
+//     marginLeft: SPACING.sm,
 //   },
 
-//   /* Form Section */
-//   formContainer: {
-//     paddingHorizontal: SPACING.lg,
-//     marginBottom: SPACING.xl,
-//   },
+//   // ── Input Section ──────────────────────────────────────────────────────
 //   inputSection: {
-//     marginBottom: SPACING.xl,
+//     marginBottom: SPACING.lg,
 //   },
 //   inputLabel: {
 //     fontSize: 15,
@@ -553,6 +842,54 @@
 //     color: COLORS.textPrimary,
 //     marginBottom: SPACING.sm,
 //   },
+
+//   // ── Phone Input ────────────────────────────────────────────────────────
+//   phoneInputWrapper: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     borderWidth: 1.5,
+//     borderColor: COLORS.border,
+//     borderRadius: 12,
+//     backgroundColor: COLORS.white,
+//     height: 56,
+//     ...Platform.select({
+//       ios: {
+//         shadowColor: '#000',
+//         shadowOffset: { width: 0, height: 2 },
+//         shadowOpacity: 0.05,
+//         shadowRadius: 4,
+//       },
+//       android: {
+//         elevation: 2,
+//       },
+//     }),
+//   },
+//   countryCodeButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     paddingHorizontal: SPACING.md,
+//     height: '100%',
+//   },
+//   countryCodeText: {
+//     fontSize: 16,
+//     fontWeight: '500',
+//     color: COLORS.textPrimary,
+//     marginRight: SPACING.xs,
+//   },
+//   divider: {
+//     width: 1,
+//     height: 30,
+//     backgroundColor: COLORS.border,
+//   },
+//   phoneInput: {
+//     flex: 1,
+//     fontSize: 16,
+//     color: COLORS.textPrimary,
+//     paddingHorizontal: SPACING.md,
+//     paddingVertical: 0,
+//   },
+
+//   // ── Email Input ────────────────────────────────────────────────────────
 //   inputWrapper: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
@@ -574,29 +911,42 @@
 //       },
 //     }),
 //   },
-//   inputWrapperError: {
-//     borderColor: COLORS.error,
-//     backgroundColor: 'rgba(220, 53, 69, 0.02)',
+//   logoWrapper: {
+//     justifyContent:'center',
+//     alignSelf:'center',
+//     marginBottom: 16,
+//     shadowColor: '#0066FF',
+//     shadowOffset: { width: 0, height: 4 },
+//     shadowOpacity: 0.15,
+//     shadowRadius: 10,
+//     elevation: 6,
 //   },
-//   inputWrapperSuccess: {
-//     borderColor: COLORS.success,
+//   logoGradient: {
+//     width: 80,
+//     height: 80,
+//     borderRadius: 40,
+//     justifyContent: 'center',
+//     alignItems: 'center',
 //   },
-//   inputIcon: {
-//     marginRight: SPACING.sm,
+//   logoImage: {
+//     width: 45,
+//     height: 45,
+//     tintColor: '#fff',
 //   },
 //   input: {
 //     flex: 1,
 //     fontSize: 16,
 //     color: COLORS.textPrimary,
 //     paddingVertical: 0,
-//     fontWeight: '500',
+//   },
+//   inputIcon: {
+//     marginRight: SPACING.sm,
 //   },
 //   clearButton: {
-//     width: 40,
-//     height: 40,
-//     justifyContent: 'center',
-//     alignItems: 'center',
+//     padding: SPACING.sm,
 //   },
+
+//   // ── Error / Helper ─────────────────────────────────────────────────────
 //   errorContainer: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
@@ -616,10 +966,11 @@
 //     paddingHorizontal: SPACING.xs,
 //   },
 
-//   /* Continue Button */
+//   // ── Continue Button ────────────────────────────────────────────────────
 //   continueButton: {
 //     borderRadius: 12,
 //     overflow: 'hidden',
+//     marginTop: SPACING.md,
 //     marginBottom: SPACING.lg,
 //     ...Platform.select({
 //       ios: {
@@ -637,19 +988,93 @@
 //     opacity: 0.5,
 //   },
 //   buttonGradient: {
+//     flexDirection: 'row',
 //     alignItems: 'center',
 //     justifyContent: 'center',
-//     flexDirection: 'row',
+//     paddingVertical: 16,
 //   },
 //   buttonText: {
-//     padding: 20,
 //     color: COLORS.white,
 //     fontSize: 17,
 //     fontWeight: '700',
 //     letterSpacing: 0.5,
 //   },
+//   buttonIcon: {
+//     marginLeft: SPACING.sm,
+//   },
 
-//   /* Professional Modal Styles */
+//   // ── Login Link ─────────────────────────────────────────────────────────
+//   loginContainer: {
+//     flexDirection: 'row',
+//     justifyContent: 'center',
+//     paddingVertical: SPACING.md,
+//   },
+//   loginText: {
+//     fontSize: 14,
+//     color: COLORS.textSecondary,
+//   },
+//   loginLink: {
+//     fontSize: 14,
+//     fontWeight: '600',
+//     color: COLORS.primary,
+//   },
+
+//   // ── Country Picker Modal ──────────────────────────────────────────────
+//   pickerOverlay: {
+//     flex: 1,
+//     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+//     justifyContent: 'flex-end',
+//   },
+//   pickerContainer: {
+//     backgroundColor: COLORS.white,
+//     borderTopLeftRadius: 20,
+//     borderTopRightRadius: 20,
+//     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+//     maxHeight: '60%',
+//   },
+//   pickerHeader: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//     padding: SPACING.lg,
+//     borderBottomWidth: 1,
+//     borderBottomColor: COLORS.border,
+//   },
+//   pickerTitle: {
+//     fontSize: 18,
+//     fontWeight: '600',
+//     color: COLORS.textPrimary,
+//   },
+//   pickerClose: {
+//     padding: SPACING.xs,
+//   },
+//   pickerItem: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     paddingHorizontal: SPACING.lg,
+//     paddingVertical: SPACING.md,
+//     borderBottomWidth: 1,
+//     borderBottomColor: COLORS.grayLight,
+//   },
+//   pickerItemSelected: {
+//     backgroundColor: 'rgba(13, 100, 221, 0.05)',
+//   },
+//   pickerFlag: {
+//     fontSize: 24,
+//     marginRight: SPACING.md,
+//   },
+//   pickerCountry: {
+//     flex: 1,
+//     fontSize: 16,
+//     color: COLORS.textPrimary,
+//   },
+//   pickerCode: {
+//     fontSize: 16,
+//     color: COLORS.textSecondary,
+//     marginRight: SPACING.md,
+//   },
+
+//   // ── Network Modal ──────────────────────────────────────────────────────
 //   modalOverlay: {
 //     flex: 1,
 //     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -660,175 +1085,70 @@
 //   modalContainer: {
 //     backgroundColor: COLORS.white,
 //     borderRadius: 20,
-//     width: '100%',
-//     maxWidth: 400,
-//     overflow: 'hidden',
-//     ...Platform.select({
-//       ios: {
-//         shadowColor: '#000',
-//         shadowOffset: { width: 0, height: 10 },
-//         shadowOpacity: 0.15,
-//         shadowRadius: 20,
-//       },
-//       android: {
-//         elevation: 10,
-//       },
-//     }),
-//   },
-//   modalHeader: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     paddingHorizontal: SPACING.lg,
-//     paddingVertical: SPACING.md,
-//   },
-//   modalCloseButton: {
-//     width: 36,
-//     height: 36,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     borderRadius: 18,
-//     backgroundColor: 'rgba(255, 255, 255, 0.15)',
-//   },
-//   modalTitle: {
-//     color: COLORS.white,
-//     fontSize: 18,
-//     fontWeight: '700',
-//     textAlign: 'center',
-//     flex: 1,
-//   },
-//   modalPlaceholder: {
-//     width: 36,
-//   },
-//   modalBody: {
-//     padding: SPACING.xl,
+//     padding: 24,
+//     width: '85%',
+//     maxWidth: 340,
 //     alignItems: 'center',
 //   },
 //   modalIconContainer: {
-//     marginBottom: SPACING.lg,
-//   },
-//   modalIconCircle: {
 //     width: 80,
 //     height: 80,
 //     borderRadius: 40,
-//     backgroundColor: 'rgba(13, 100, 221, 0.1)',
+//     backgroundColor: '#FEF3C7',
 //     justifyContent: 'center',
 //     alignItems: 'center',
+//     marginBottom: 16,
 //   },
-//   modalMainText: {
-//     fontSize: 22,
+//   modalTitle: {
+//     fontSize: 20,
 //     fontWeight: '700',
 //     color: COLORS.textPrimary,
-//     textAlign: 'center',
-//     marginBottom: SPACING.md,
+//     marginBottom: 8,
 //   },
-//   modalSubtext: {
-//     fontSize: 15,
+//   modalMessage: {
+//     fontSize: 16,
 //     color: COLORS.textSecondary,
 //     textAlign: 'center',
-//     marginBottom: SPACING.sm,
+//     marginBottom: 24,
 //     lineHeight: 22,
 //   },
-//   emailContainer: {
+//   modalButtonContainer: {
 //     flexDirection: 'row',
-//     alignItems: 'center',
-//     backgroundColor: 'rgba(13, 100, 221, 0.08)',
-//     paddingHorizontal: SPACING.md,
-//     paddingVertical: SPACING.sm,
-//     borderRadius: 10,
-//     marginBottom: SPACING.lg,
-//     borderWidth: 1,
-//     borderColor: 'rgba(13, 100, 221, 0.2)',
-//   },
-//   emailIcon: {
-//     marginRight: SPACING.sm,
-//   },
-//   emailText: {
-//     fontSize: 16,
-//     fontWeight: '600',
-//     color: COLORS.primary,
-//   },
-//   modalDescription: {
-//     fontSize: 14,
-//     color: COLORS.textSecondary,
-//     textAlign: 'center',
-//     marginBottom: SPACING.xl,
-//     lineHeight: 20,
-//   },
-//   modalButtons: {
+//     gap: 12,
 //     width: '100%',
-//     gap: SPACING.md,
 //   },
 //   modalButton: {
+//     flex: 1,
+//     paddingVertical: 12,
 //     borderRadius: 12,
-//     paddingVertical: SPACING.md,
 //     alignItems: 'center',
 //     justifyContent: 'center',
-//     flexDirection: 'row',
-//     minHeight: 52,
 //   },
-//   primaryModalButton: {
+//   modalCancelButton: {
+//     backgroundColor: '#F1F3F5',
+//   },
+//   modalRetryButton: {
 //     backgroundColor: COLORS.primary,
-//     ...Platform.select({
-//       ios: {
-//         shadowColor: COLORS.primary,
-//         shadowOffset: { width: 0, height: 4 },
-//         shadowOpacity: 0.3,
-//         shadowRadius: 8,
-//       },
-//       android: {
-//         elevation: 4,
-//       },
-//     }),
 //   },
-//   primaryModalButtonText: {
-//     color: COLORS.white,
-//     fontWeight: '600',
-//     fontSize: 16,
+//   modalButtonDisabled: {
+//     opacity: 0.6,
 //   },
-//   modalButtonIcon: {
-//     marginRight: SPACING.sm,
-//   },
-//   secondaryModalButton: {
-//     borderWidth: 1.5,
-//     borderColor: COLORS.border,
-//     backgroundColor: COLORS.white,
-//   },
-//   secondaryModalButtonText: {
-//     color: COLORS.textPrimary,
-//     fontWeight: '600',
-//     fontSize: 16,
-//   },
-//   modalLoadingOverlay: {
-//     ...StyleSheet.absoluteFillObject,
-//     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     borderRadius: 20,
-//   },
-//   loadingContent: {
-//     alignItems: 'center',
-//     padding: SPACING.xl,
-//   },
-//   loadingText: {
-//     fontSize: 18,
-//     fontWeight: '600',
-//     color: COLORS.textPrimary,
-//     marginTop: SPACING.lg,
-//     marginBottom: SPACING.sm,
-//   },
-//   loadingSubtext: {
-//     fontSize: 14,
+//   modalCancelText: {
 //     color: COLORS.textSecondary,
-//     textAlign: 'center',
-//     maxWidth: 250,
-//     lineHeight: 20,
+//     fontSize: 16,
+//     fontWeight: '600',
+//   },
+//   modalRetryText: {
+//     color: COLORS.white,
+//     fontSize: 16,
+//     fontWeight: '600',
 //   },
 // });
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
+  Image,
   Text,
   TextInput,
   StyleSheet,
@@ -841,12 +1161,13 @@ import {
   KeyboardAvoidingView,
   StatusBar,
   Dimensions,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
+import NetInfo from '@react-native-community/netinfo';
 import { API_ROUTE } from '../../api_routing/api';
 
 const COLORS = {
@@ -860,569 +1181,822 @@ const COLORS = {
   border: '#e1e5eb',
   grayLight: '#f8f9fa',
   grayMedium: '#e9ecef',
-  success: '#0d64dd',
+  success: '#28a745',
   error: '#dc3545',
   warning: '#ffc107',
-  info: '#17a2b8',
 };
 
 const SPACING = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 40 };
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-export default function EmailScreen({ navigation, route }) {
-  const phoneNumber = route.params?.phoneNumberID;
-  const navigate = useNavigation();
-  const [contact, setContact] = useState(''); // Can be email OR phone
-  const [contactType, setContactType] = useState('email'); // 'email' or 'phone'
+// ─── Country Codes ──────────────────────────────────────────────────────────
+const COUNTRY_CODES = [
+  { code: '+234', country: 'Nigeria', flag: '🇳🇬' },
+  { code: '+1', country: 'USA/Canada', flag: '🇺🇸' },
+  { code: '+44', country: 'UK', flag: '🇬🇧' },
+  { code: '+91', country: 'India', flag: '🇮🇳' },
+  { code: '+233', country: 'Ghana', flag: '🇬🇭' },
+  { code: '+254', country: 'Kenya', flag: '🇰🇪' },
+  { code: '+27', country: 'South Africa', flag: '🇿🇦' },
+  { code: '+234', country: 'Nigeria', flag: '🇳🇬' },
+];
+
+// ─── Network Status Modal ──────────────────────────────────────────────────
+const NetworkStatusModal = ({ visible, message, onRetry, onCancel, loading }) => (
+  <Modal
+    transparent={true}
+    visible={visible}
+    animationType="fade"
+    statusBarTranslucent={true}
+  >
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalContainer}>
+        <View style={styles.modalIconContainer}>
+          <Icon name="wifi-outline" size={50} color={COLORS.warning} />
+        </View>
+        <Text style={styles.modalTitle}>Connection Issue</Text>
+        <Text style={styles.modalMessage}>{message}</Text>
+        <View style={styles.modalButtonContainer}>
+          <TouchableOpacity 
+            style={[styles.modalButton, styles.modalCancelButton]} 
+            onPress={onCancel}
+            disabled={loading}
+          >
+            <Text style={styles.modalCancelText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.modalButton, styles.modalRetryButton, loading && styles.modalButtonDisabled]} 
+            onPress={onRetry}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <Text style={styles.modalRetryText}>Retry</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
+);
+
+// ─── Main Component ─────────────────────────────────────────────────────────
+export default function SignupMethodScreen({ navigation }) {
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [selectedMethod, setSelectedMethod] = useState(null); // 'phone' or 'email'
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [countryCode, setCountryCode] = useState('+234');
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [contactError, setContactError] = useState('');
-  const [modalVisible, setModalVisible] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [usingEmailFallback, setUsingEmailFallback] = useState(false);
-  const inputRef = useRef(null);
+  const [errors, setErrors] = useState({});
+  const [networkModalVisible, setNetworkModalVisible] = useState(false);
+  const [networkMessage, setNetworkMessage] = useState('');
+  const [networkLoading, setNetworkLoading] = useState(false);
+  
+  // ── Refs ──────────────────────────────────────────────────────────────────
+  const phoneInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+  const isMounted = useRef(true);
 
+  // ─── Network Listener ──────────────────────────────────────────────────────
   useEffect(() => {
-    const focusTimer = setTimeout(() => {
-      inputRef.current?.focus();
-    }, 400);
-    return () => clearTimeout(focusTimer);
+    isMounted.current = true;
+    const unsubscribe = NetInfo.addEventListener(state => {
+      console.log('📶 Network state:', state.isConnected);
+      if (state.isConnected && networkModalVisible) {
+        setNetworkModalVisible(false);
+      }
+    });
+
+    return () => {
+      isMounted.current = false;
+      unsubscribe();
+    };
+  }, [networkModalVisible]);
+
+  // ─── Network Error Helpers ────────────────────────────────────────────────
+  const showNetworkError = useCallback((message, retryFn) => {
+    setNetworkMessage(message);
+    setNetworkModalVisible(true);
   }, []);
 
-  const redirectBack = () => {
-    navigation.goBack();
-  };
+  const hideNetworkModal = useCallback(() => {
+    setNetworkModalVisible(false);
+    setNetworkLoading(false);
+  }, []);
 
-  const validateContact = (value) => {
-    if (!value) {
-      return 'Please enter your email or phone number';
+  const retryAction = useCallback(() => {
+    setNetworkLoading(true);
+    handleContinue();
+  }, []);
+
+  // ─── Validation ───────────────────────────────────────────────────────────
+  const validatePhone = useCallback((number) => {
+    const cleanNumber = number.replace(/\s/g, '');
+    if (!cleanNumber) return 'Phone number is required';
+    if (!/^[0-9]{7,15}$/.test(cleanNumber)) {
+      return 'Please enter a valid phone number';
     }
-    
-    // Check if it's an email
+    return null;
+  }, []);
+
+  const validateEmail = useCallback((emailAddr) => {
+    if (!emailAddr) return 'Email is required';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (emailRegex.test(value)) {
-      setContactType('email');
-      return '';
+    if (!emailRegex.test(emailAddr)) {
+      return 'Please enter a valid email address';
     }
-    
-    // Check if it's a phone number (basic validation)
-    const phoneRegex = /^[0-9+\-\s()]{8,15}$/;
-    if (phoneRegex.test(value)) {
-      setContactType('phone');
-      return '';
-    }
-    
-    return 'Please enter a valid email or phone number';
-  };
+    return null;
+  }, []);
 
-  const checkContactExists = async () => {
-    try {
-      const payload = contactType === 'email' 
-        ? { email: contact }
-        : { phone: contact };
-      
-      const response = await axios.post(`${API_ROUTE}/check-contact/`, payload);
-      return response.data.exists;
-    } catch (error) {
-      console.error('Error checking contact:', error);
-      return false;
-    }
-  };
-
-  const sendOTP = async (useEmailFallback = false) => {
-    try {
-      let payload;
-      
-      if (useEmailFallback) {
-        // Force send to email even if it's a phone number
-        payload = { email: contact, purpose: 'login' };
-      } else if (contactType === 'email') {
-        payload = { email: contact, purpose: 'registration' };
-      } else {
-        // Phone number - try SMS first
-        payload = { phone: contact, purpose: 'registration' };
+  // ─── Method Selection ─────────────────────────────────────────────────────
+  const selectMethod = useCallback((method) => {
+    setSelectedMethod(method);
+    setErrors({});
+    // Focus the appropriate input
+    setTimeout(() => {
+      if (method === 'phone' && phoneInputRef.current) {
+        phoneInputRef.current.focus();
+      } else if (method === 'email' && emailInputRef.current) {
+        emailInputRef.current.focus();
       }
-      
-      const response = await axios.post(`${API_ROUTE}/send-otp/`, payload);
-      
-      if (response.status === 200 || response.status === 201) {
-        const method = response.data.method;
-        const message = response.data.message;
-        
+    }, 300);
+  }, []);
+
+  // ─── Continue Handler ─────────────────────────────────────────────────────
+  const handleContinue = useCallback(async () => {
+    Keyboard.dismiss();
+
+    // ── 1. Check Network ──────────────────────────────────────────────────
+    const netState = await NetInfo.fetch();
+    if (!netState.isConnected) {
+      showNetworkError(
+        'No internet connection. Please check your network and try again.',
+        handleContinue
+      );
+      return;
+    }
+
+    // ── 2. Validate Input ──────────────────────────────────────────────
+    const newErrors = {};
+    
+    if (selectedMethod === 'phone') {
+      const phoneError = validatePhone(phoneNumber);
+      if (phoneError) newErrors.phone = phoneError;
+    } else if (selectedMethod === 'email') {
+      const emailError = validateEmail(email);
+      if (emailError) newErrors.email = emailError;
+    } else {
+      Alert.alert('Select Method', 'Please choose a signup method first.');
+      return;
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setLoading(true);
+    setErrors({});
+
+    try {
+      // ── 3. Check if contact exists ──────────────────────────────────
+      const contactValue = selectedMethod === 'phone' 
+        ? `${countryCode}${phoneNumber.replace(/\s/g, '')}`
+        : email;
+
+      const checkPayload = selectedMethod === 'phone'
+        ? { phone: contactValue }
+        : { email: contactValue };
+
+      console.log('🔍 Checking contact:', contactValue);
+
+      const checkResponse = await axios.post(
+        `${API_ROUTE}/check-contact/`,
+        checkPayload,
+        { timeout: 10000 }
+      );
+
+      if (checkResponse.data.exists) {
+        // ── Account exists - navigate to login ──────────────────────
         Alert.alert(
-          'Verification Sent ✓',
-          `${message}\n\nPlease check ${method === 'sms' ? 'your phone' : 'your email'} for the 6-digit code.`,
+          'Account Found',
+          `An account already exists with this ${selectedMethod === 'phone' ? 'phone number' : 'email'}. Would you like to login instead?`,
           [
             { 
-              text: 'OK', 
-              style: 'default',
+              text: 'Go Back', 
+              style: 'cancel',
               onPress: () => {
-                // navigation.navigate('VerificationCode', {
-                //   contactID: contact,
-                //   contactType: useEmailFallback ? 'email' : contactType,
-                //   purpose: 'login',
-                //   phoneNumberID: phoneNeeeumbffer
-                // });
+                setSelectedMethod(null);
+                if (selectedMethod === 'phone') setPhoneNumber('');
+                else setEmail('');
+              }
+            },
+            { 
+              text: 'Login',
+              onPress: () => {
+                navigation.navigate('EmailLogin', {
+                  contact: contactValue,
+                  contactType: selectedMethod,
+                });
+              }
+            }
+          ]
+        );
+        setLoading(false);
+        return;
+      }
+
+      // ── 4. Account doesn't exist - send OTP ──────────────────────
+      const otpPayload = selectedMethod === 'phone'
+        ? { phone: contactValue, purpose: 'registration' }
+        : { email: contactValue, purpose: 'registration' };
+
+      console.log('📤 Sending OTP to:', contactValue);
+
+      const otpResponse = await axios.post(
+        `${API_ROUTE}/send-otp/`,
+        otpPayload,
+        { timeout: 15000 }
+      );
+
+      if (otpResponse.status === 200 || otpResponse.status === 201) {
+        const method = otpResponse.data.method || (selectedMethod === 'phone' ? 'sms' : 'email');
+        const message = otpResponse.data.message || `Verification code sent to your ${selectedMethod}`;
+
+        Alert.alert(
+          'Verification Sent',
+          `${message}\n\nPlease check ${method === 'sms' ? 'your phone' : 'your email'} for the 6-digit code.`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
                 navigation.navigate('VerificationCode', {
-                  contactID: contact,  
-                  contactType: contactType,  
-                  purpose: 'login',
-                  phoneNumberID: phoneNumber
+                  contactID: contactValue,
+                  contactType: selectedMethod,
+                  purpose: 'registration',
+                  phoneNumberID: selectedMethod === 'phone' ? contactValue : '',
+                  emailID: selectedMethod === 'email' ? contactValue : '',
                 });
               }
             }
           ]
         );
       } else {
-        Alert.alert('Error', 'Failed to send verification code. Please try again.');
+        throw new Error('Failed to send verification code');
       }
+
     } catch (error) {
-      console.error('Error sending OTP:', error);
-      
-      // If phone SMS fails and we haven't tried email yet, offer email fallback
-      if (contactType === 'phone' && !usingEmailFallback && error.response?.status === 500) {
-        Alert.alert(
-          'SMS Delivery Failed',
-          "We couldn't send an SMS to this number. Would you like to receive the code via email instead?",
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Use Email', 
-              onPress: () => {
-                setUsingEmailFallback(true);
-                sendOTP(true); // Retry with email
-              }
-            }
-          ]
+      console.error('❌ Error:', error);
+
+      // ── 5. Handle Network Errors ──────────────────────────────────
+      if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+        showNetworkError(
+          'Connection timeout. Please check your network and try again.',
+          handleContinue
         );
-      } else {
-        Alert.alert(
-          'Sending Failed',
-          'Unable to send verification code. Please check your contact info and try again.'
-        );
-      }
-    } finally {
-      setLoading(false);
-      setLoginLoading(false);
-      setModalVisible(false);
-      setUsingEmailFallback(false);
-    }
-  };
-
-  const handleSendOTP = async () => {
-    const validationError = validateContact(contact);
-    if (validationError) {
-      setContactError(validationError);
-      return;
-    }
-
-    setLoading(true);
-    setContactError('');
-
-    try {
-      const contactExists = await checkContactExists();
-      
-      if (contactExists) {
-        setModalVisible(true);
-        setLoading(false);
         return;
       }
 
-      await sendOTP(false);
-    } catch (error) {
-      console.error('Error:', error.response || error);
-      setContactError('Unable to verify. Please try again.');
-      setLoading(false);
-    }
-  };
+      if (!error.response) {
+        showNetworkError(
+          'Cannot connect to server. Please check your internet connection.',
+          handleContinue
+        );
+        return;
+      }
 
-  const handleLoginInstead = async () => {
-    setLoginLoading(true);
-    await sendOTP(false);
-  };
+      // ── 6. Handle Server Errors ──────────────────────────────────
+      if (error.response.status >= 500 && error.response.status < 600) {
+        showNetworkError(
+          'Server is currently experiencing issues. Please try again later.',
+          handleContinue
+        );
+        return;
+      }
 
-  const handleUseDifferentContact = () => {
-    setModalVisible(false);
-    setContact('');
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
-  };
-
-  const handleKeyPress = ({ nativeEvent }) => {
-    if (nativeEvent.key === 'Enter' || nativeEvent.key === 'done') {
-      handleSendOTP();
-    }
-  };
-
-  const getIconName = () => {
-    if (contactType === 'email') return 'mail-outline';
-    if (contactType === 'phone') return 'call-outline';
-    return 'person-outline';
-  };
-
-  const getPlaceholder = () => {
-    return 'Enter email or phone number';
-  };
-
-  const getHelperText = () => {
-    if (contactType === 'email') {
-      return "We'll send a 6-digit verification code to this email";
-    }
-    return "We'll send a 6-digit verification code via SMS to this number";
-  };
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={COLORS.white}
-        translucent={false}
-      />
+      // ── 7. Handle Client Errors ──────────────────────────────────
+      let errorMessage = 'Unable to continue. Please try again.';
+      const backendError = error.response?.data;
       
-      {/* Header */}
-      <LinearGradient 
-        colors={[COLORS.primary, COLORS.primary]} 
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.header}
+      if (backendError?.message) {
+        errorMessage = backendError.message;
+      } else if (backendError?.phone) {
+        errorMessage = `Phone: ${backendError.phone[0]}`;
+      } else if (backendError?.email) {
+        errorMessage = `Email: ${backendError.email[0]}`;
+      }
+
+      Alert.alert('Error', errorMessage);
+
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+        setNetworkLoading(false);
+      }
+    }
+  }, [
+    selectedMethod,
+    phoneNumber,
+    email,
+    countryCode,
+    validatePhone,
+    validateEmail,
+    navigation,
+    showNetworkError
+  ]);
+
+  // ─── Render Method Selection ─────────────────────────────────────────────
+  const renderMethodSelection = () => (
+    <View style={styles.methodContainer}>
+      <Text style={styles.methodTitle}>How would you like to continue?</Text>
+      <Text style={styles.methodSubtitle}>Select your preferred signup method</Text>
+
+      <TouchableOpacity
+        style={[
+          styles.methodCard,
+          selectedMethod === 'phone' && styles.methodCardSelected,
+        ]}
+        onPress={() => selectMethod('phone')}
+        activeOpacity={0.7}
       >
-        <View style={styles.headerContent}>
-          <TouchableOpacity 
-            onPress={redirectBack}
-            style={styles.headerButton}
-            activeOpacity={0.7}
+        <LinearGradient
+          colors={selectedMethod === 'phone' ? [COLORS.primary, COLORS.primaryDark] : ['#f8f9fa', '#f1f3f5']}
+          style={styles.methodCardGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.methodIconContainer}>
+            <Icon 
+              name="call-outline" 
+              size={28} 
+              color={selectedMethod === 'phone' ? COLORS.white : COLORS.primary} 
+            />
+          </View>
+          <View style={styles.methodTextContainer}>
+            <Text style={[
+              styles.methodCardTitle,
+              selectedMethod === 'phone' && styles.methodCardTitleSelected
+            ]}>
+              Phone Number
+            </Text>
+            <Text style={[
+              styles.methodCardSubtitle,
+              selectedMethod === 'phone' && styles.methodCardSubtitleSelected
+            ]}>
+              Use your mobile number
+            </Text>
+          </View>
+          {selectedMethod === 'phone' && (
+            <View style={styles.methodCheckmark}>
+              <Icon name="checkmark-circle" size={24} color={COLORS.white} />
+            </View>
+          )}
+        </LinearGradient>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.methodCard,
+          selectedMethod === 'email' && styles.methodCardSelected,
+        ]}
+        onPress={() => selectMethod('email')}
+        activeOpacity={0.7}
+      >
+        <LinearGradient
+          colors={selectedMethod === 'email' ? [COLORS.primary, COLORS.primaryDark] : ['#f8f9fa', '#f1f3f5']}
+          style={styles.methodCardGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.methodIconContainer}>
+            <Icon 
+              name="mail-outline" 
+              size={28} 
+              color={selectedMethod === 'email' ? COLORS.white : COLORS.primary} 
+            />
+          </View>
+          <View style={styles.methodTextContainer}>
+            <Text style={[
+              styles.methodCardTitle,
+              selectedMethod === 'email' && styles.methodCardTitleSelected
+            ]}>
+              Email Address
+            </Text>
+            <Text style={[
+              styles.methodCardSubtitle,
+              selectedMethod === 'email' && styles.methodCardSubtitleSelected
+            ]}>
+              Use your email address
+            </Text>
+          </View>
+          {selectedMethod === 'email' && (
+            <View style={styles.methodCheckmark}>
+              <Icon name="checkmark-circle" size={24} color={COLORS.white} />
+            </View>
+          )}
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // ─── Render Phone Input ──────────────────────────────────────────────────
+  const renderPhoneInput = () => (
+    <View style={styles.inputSection}>
+      <Text style={styles.inputLabel}>Phone Number</Text>
+      <View style={styles.phoneInputWrapper}>
+        {/* Country Code Picker */}
+        <TouchableOpacity
+          style={styles.countryCodeButton}
+          onPress={() => setShowCountryPicker(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.countryCodeText}>
+            {COUNTRY_CODES.find(c => c.code === countryCode)?.flag || '🇳🇬'}
+          </Text>
+          <Text style={styles.countryCodeText}>
+            {countryCode}
+          </Text>
+          <Icon name="chevron-down" size={16} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+
+        <View style={styles.divider} />
+
+        <TextInput
+          ref={phoneInputRef}
+          placeholder="8123456789"
+          style={styles.phoneInput}
+          keyboardType="phone-pad"
+          value={phoneNumber}
+          onChangeText={(text) => {
+            const cleaned = text.replace(/[^0-9]/g, '');
+            setPhoneNumber(cleaned);
+            if (errors.phone) {
+              setErrors(prev => ({ ...prev, phone: null }));
+            }
+          }}
+          returnKeyType="done"
+          onSubmitEditing={handleContinue}
+          editable={!loading}
+          maxLength={15}
+        />
+      </View>
+      {errors.phone && (
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle-outline" size={16} color={COLORS.error} />
+          <Text style={styles.errorText}>{errors.phone}</Text>
+        </View>
+      )}
+      <Text style={styles.helperText}>
+        We'll send a 6-digit verification code via SMS
+      </Text>
+    </View>
+  );
+
+  // ─── Render Email Input ──────────────────────────────────────────────────
+  const renderEmailInput = () => (
+    <View style={styles.inputSection}>
+      <Text style={styles.inputLabel}>Email Address</Text>
+      <View style={styles.inputWrapper}>
+        <Icon name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+        <TextInput
+          ref={emailInputRef}
+          placeholder="example@gmail.com"
+          style={styles.input}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            if (errors.email) {
+              setErrors(prev => ({ ...prev, email: null }));
+            }
+          }}
+          returnKeyType="done"
+          onSubmitEditing={handleContinue}
+          editable={!loading}
+        />
+        {email.length > 0 && (
+          <TouchableOpacity
+            onPress={() => setEmail('')}
+            style={styles.clearButton}
           >
-            <Icon name="arrow-back" size={24} color={COLORS.white} />
+            <Icon name="close-circle" size={20} color={COLORS.placeholder} />
           </TouchableOpacity>
-          
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>Account Setup</Text>
-            <Text style={styles.headerSubtitle}>Step 2 of 4</Text>
+        )}
+      </View>
+      {errors.email && (
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle-outline" size={16} color={COLORS.error} />
+          <Text style={styles.errorText}>{errors.email}</Text>
+        </View>
+      )}
+      <Text style={styles.helperText}>
+        We'll send a 6-digit verification code to this email
+      </Text>
+    </View>
+  );
+
+  // ─── Render Country Picker Modal ────────────────────────────────────────
+  const renderCountryPicker = () => (
+    <Modal
+      visible={showCountryPicker}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowCountryPicker(false)}
+    >
+      <View style={styles.pickerOverlay}>
+        <View style={styles.pickerContainer}>
+          <View style={styles.pickerHeader}>
+            <Text style={styles.pickerTitle}>Select Country</Text>
+            <TouchableOpacity
+              onPress={() => setShowCountryPicker(false)}
+              style={styles.pickerClose}
+            >
+              <Icon name="close" size={24} color={COLORS.textPrimary} />
+            </TouchableOpacity>
           </View>
           
-          <TouchableOpacity 
-            onPress={redirectBack}
-            style={styles.headerButton}
-            activeOpacity={0.7}
-          >
-            {/* <Icon name="close" size={24} color={COLORS.white} /> */}
-          </TouchableOpacity>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {COUNTRY_CODES.map((country, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.pickerItem,
+                  country.code === countryCode && styles.pickerItemSelected,
+                ]}
+                onPress={() => {
+                  setCountryCode(country.code);
+                  setShowCountryPicker(false);
+                }}
+              >
+                <Text style={styles.pickerFlag}>{country.flag}</Text>
+                <Text style={styles.pickerCountry}>{country.country}</Text>
+                <Text style={styles.pickerCode}>{country.code}</Text>
+                {country.code === countryCode && (
+                  <Icon name="checkmark" size={20} color={COLORS.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
-      </LinearGradient>
+      </View>
+    </Modal>
+  );
 
-      {/* Main Content */}
-      <KeyboardAvoidingView 
+  // ─── Main Render ──────────────────────────────────────────────────────────
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} translucent={false} />
+
+      <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Hero Section */}
-          <View style={styles.heroContainer}>
-            <LinearGradient
-              colors={['rgba(13,100,221,0.1)', 'rgba(74,144,226,0.05)']}
-              style={styles.heroIconContainer}
-            >
-              <Icon name={getIconName()} size={42} color={COLORS.primary} />
-            </LinearGradient>
-            
-            <Text style={styles.heroTitle}>Verify Your Contact</Text>
-            <Text style={styles.heroSubtitle}>
-              Enter your email address or phone number to receive a verification code
-            </Text>
+          {/* Back Button */}
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Icon name="arrow-back" size={24} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.logoWrapper}>
+              <LinearGradient
+                colors={['#0066FF', '#0052CC']}
+                style={styles.logoGradient}
+              >
+                <Image
+                  source={require('../../assets/images/showaAppLogo.png')} 
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
+              </LinearGradient>
+            </View>
+            <Text style={styles.headerTitle}>Create Account</Text>
+            <Text style={styles.headerSubtitle}>Connect with friends, communities, and opportunities.</Text>
           </View>
 
-          {/* Form Section */}
-          <View style={styles.formContainer}>
-            {/* Contact Input */}
-            <View style={styles.inputSection}>
-              <Text style={styles.inputLabel}>Email or Phone Number</Text>
-              <View style={[
-                styles.inputWrapper,
-                contactError && styles.inputWrapperError,
-                contact && !contactError && styles.inputWrapperSuccess,
-              ]}>
-                <Icon 
-                  name={getIconName()} 
-                  size={20} 
-                  color={contactError ? COLORS.error : contact ? COLORS.success : COLORS.textSecondary} 
-                  style={styles.inputIcon} 
-                />
-                <TextInput
-                  ref={inputRef}
-                  placeholder={getPlaceholder()}
-                  style={styles.input}
-                  keyboardType="default"
-                  autoComplete="off"
-                  autoCapitalize="none"
-                  placeholderTextColor='#000000'
-                  autoCorrect={false}
-                  value={contact}
-                  onChangeText={(text) => {
-                    setContact(text);
-                    if (contactError) setContactError('');
-                  }}
-                  returnKeyType="send"
-                  onSubmitEditing={handleSendOTP}
-                  blurOnSubmit={false}
-                  editable={!loading}
-                  onKeyPress={handleKeyPress}
-                  autoFocus={true}
-                />
-                
-                {contact.length > 0 && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setContact('');
-                      inputRef.current?.focus();
-                    }}
-                    style={styles.clearButton}
-                    activeOpacity={0.6}
-                  >
-                    <Icon name="close-circle" size={20} color={COLORS.placeholder} />
-                  </TouchableOpacity>
-                )}
-              </View>
-              
-              {contactError ? (
-                <View style={styles.errorContainer}>
-                  <Icon name="alert-circle-outline" size={16} color={COLORS.error} />
-                  <Text style={styles.errorText}>{contactError}</Text>
-                </View>
-              ) : (
-                <Text style={styles.helperText}>
-                  {getHelperText()}
-                </Text>
-              )}
-            </View>
+          {/* Method Selection */}
+          {renderMethodSelection()}
 
-            {/* Continue Button */}
+          {/* Input Section */}
+          {selectedMethod === 'phone' && renderPhoneInput()}
+          {selectedMethod === 'email' && renderEmailInput()}
+
+          {/* Continue Button */}
+          {selectedMethod && (
             <TouchableOpacity
-              onPress={handleSendOTP}
+              onPress={handleContinue}
               style={[
                 styles.continueButton,
-                (!contact || loading) && styles.buttonDisabled,
+                loading && styles.buttonDisabled,
               ]}
               activeOpacity={0.8}
-              disabled={!contact || loading}
+              disabled={loading}
             >
-              <LinearGradient 
-                colors={[COLORS.primary, COLORS.primary]} 
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.primaryDark]}
                 style={styles.buttonGradient}
               >
                 {loading ? (
-                  <ActivityIndicator style={{padding:20}} size="small" color={COLORS.white} />
+                  <ActivityIndicator size="small" color={COLORS.white} />
                 ) : (
                   <>
                     <Text style={styles.buttonText}>Continue</Text>
+                    <Icon name="arrow-forward" size={20} color={COLORS.white} style={styles.buttonIcon} />
                   </>
                 )}
               </LinearGradient>
             </TouchableOpacity>
+          )}
 
+          {/* Login Link - Professional Container */}
+          <View style={styles.loginContainerWrapper}>
+            <LinearGradient
+              colors={['rgba(13, 100, 221, 0.05)', 'rgba(13, 100, 221, 0.02)']}
+              style={styles.loginContainerGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <View style={styles.loginContainer}>
+                <Text style={styles.loginText}>Already have an account? </Text>
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('EmailLogin')}
+                  activeOpacity={0.7}
+                >
+                  <LinearGradient
+                    colors={[COLORS.primary, COLORS.primaryDark]}
+                    style={styles.loginButtonGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                  >
+                    <Text style={styles.loginLink}>Log In</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Account Found Modal */}
-      <Modal
-        visible={modalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-        statusBarTranslucent={true}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalBody}>
-              <View style={styles.modalIconContainer}>
-                <View style={styles.modalIconCircle}>
-                  <Icon name="checkmark-circle" size={48} color={COLORS.primary} />
-                </View>
-              </View>
-              
-              <Text style={styles.modalMainText}>
-               <Text style={[styles.modalTitle,{color:'black',fontSize:24,fontWeight:'800'}]}>Account Found</Text>
-              </Text>
-              
-              <Text style={styles.modalSubtext}>
-                We found an existing account associated with:
-              </Text>
+      {/* Country Picker Modal */}
+      {renderCountryPicker()}
 
-              <View style={styles.emailContainer}>
-                <Icon name={contactType === 'email' ? "mail" : "call"} size={18} color={COLORS.primary} style={styles.emailIcon} />
-                <Text style={styles.emailText}>{contact}</Text>
-              </View>
-
-              <Text style={styles.modalDescription}>
-                Would you like to login to your existing account or use a different contact?
-              </Text>
-
-              {/* Modal Buttons */}
-              <View style={styles.modalButtons}>
-                <TouchableOpacity 
-                  style={[styles.modalButton, styles.primaryModalButton]}
-                  onPress={handleLoginInstead}
-                  activeOpacity={0.8}
-                  disabled={loginLoading}
-                >
-                  {loginLoading ? (
-                    <ActivityIndicator size="small" color={COLORS.white} />
-                  ) : (
-                    <>
-                      <Icon name="log-in-outline" size={18} color={COLORS.white} style={styles.modalButtonIcon} />
-                      <Text style={styles.primaryModalButtonText}>Verify</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-
-                {/* <TouchableOpacity 
-                  style={[styles.modalButton, styles.secondaryModalButton]}
-                  onPress={handleUseDifferentContact}
-                  activeOpacity={0.7}
-                  disabled={loginLoading}
-                >
-                  <Icon name="create-outline" size={18} color={COLORS.textPrimary} style={styles.modalButtonIcon} />
-                  <Text style={styles.secondaryModalButtonText}>Use Different Contact</Text>
-                </TouchableOpacity> */}
-              </View>
-
-              {/* Loading Overlay */}
-              {loginLoading && (
-                <View style={styles.modalLoadingOverlay}>
-                  <View style={styles.loadingContent}>
-                    <ActivityIndicator size="large" color={COLORS.primary} />
-                    <Text style={styles.loadingText}>Sending OTP...</Text>
-                    <Text style={styles.loadingSubtext}>Please wait while we send your verification code</Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* Network Error Modal */}
+      <NetworkStatusModal
+        visible={networkModalVisible}
+        message={networkMessage}
+        onRetry={retryAction}
+        onCancel={hideNetworkModal}
+        loading={networkLoading}
+      />
     </SafeAreaView>
   );
 }
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#e9ebf1',
   },
-  
   keyboardView: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.xl,
+  },
+  
+  // ── Back Button ─────────────────────────────────────────────────────────
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
 
-  /* Header Styles */
+  // ── Header ──────────────────────────────────────────────────────────────
   header: {
-    paddingTop: SPACING.sm,
-    paddingBottom: SPACING.md,
-    backgroundColor: COLORS.primary,
+    marginBottom: SPACING.xl,
+    justifyContent:'center',
+    alignSelf:'center'
+  },
+  headerTitle: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
+    justifyContent:'center',
+    alignSelf:'center'
+  },
+  headerSubtitle: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+  },
+
+  // ── Method Selection ────────────────────────────────────────────────────
+  methodContainer: {
+    marginBottom: SPACING.xl,
+  },
+  methodTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
+  },
+  methodSubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.lg,
+  },
+  methodCard: {
+    borderRadius: 50,
+    marginBottom: SPACING.md,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.05,
         shadowRadius: 8,
       },
       android: {
-        elevation: 6,
+        elevation: 2,
       },
     }),
   },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    height: 60,
-  },
-  headerButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 22,
-    ///backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  headerTitleContainer: {
-    alignItems: 'center',
-  },
-  headerTitle: {
-    color: COLORS.white,
-    fontSize: 25,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  headerSubtitle: {
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 13,
-    marginTop: SPACING.xs,
-  },
-
-  /* Scroll Content */
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: SPACING.xxl,
-  },
-
-  /* Hero Section */
-  heroContainer: {
-    alignItems: 'center',
-    marginTop: SPACING.xl,
-    marginBottom: SPACING.xxl,
-    paddingHorizontal: SPACING.lg,
-  },
-  heroIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
+  methodCardSelected: {
+    borderColor: COLORS.primary,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: COLORS.primary,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 0,
+        elevation: 8,
       },
     }),
   },
-  heroTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    textAlign: 'center',
-    marginBottom: SPACING.sm,
-    letterSpacing: 0.3,
+  methodCardGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    minHeight: 72,
   },
-  heroSubtitle: {
+  methodIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginRight: SPACING.md,
+  },
+  methodTextContainer: {
+    flex: 1,
+  },
+  methodCardTitle: {
     fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  methodCardTitleSelected: {
+    color: COLORS.white,
+  },
+  methodCardSubtitle: {
+    fontSize: 13,
     color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: SPACING.md,
+    marginTop: 2,
+  },
+  methodCardSubtitleSelected: {
+    color: 'rgba(255,255,255,0.8)',
+  },
+  methodCheckmark: {
+    marginLeft: SPACING.sm,
   },
 
-  /* Form Section */
-  formContainer: {
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.xl,
-  },
+  // ── Input Section ──────────────────────────────────────────────────────
   inputSection: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   inputLabel: {
     fontSize: 15,
@@ -1430,15 +2004,16 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
   },
-  inputWrapper: {
+
+  // ── Phone Input ────────────────────────────────────────────────────────
+  phoneInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: COLORS.border,
     borderRadius: 12,
     backgroundColor: COLORS.white,
-    paddingHorizontal: SPACING.md,
-    height: 56,
+    height: 48, // Reduced from 56 to make it normal size
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -1451,29 +2026,89 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  inputWrapperError: {
-    borderColor: COLORS.error,
-    backgroundColor: 'rgba(220, 53, 69, 0.02)',
+  countryCodeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    height: '100%',
   },
-  inputWrapperSuccess: {
-    borderColor: COLORS.success,
+  countryCodeText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.textPrimary,
+    marginRight: SPACING.xs,
+  },
+  divider: {
+    width: 1,
+    height: 24, // Reduced from 30
+    backgroundColor: COLORS.border,
+  },
+  phoneInput: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.textPrimary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 0,
+  },
+
+  // ── Email Input ────────────────────────────────────────────────────────
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: SPACING.md,
+    height: 48, // Reduced from 56 to make it normal size
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  logoWrapper: {
+    justifyContent:'center',
+    alignSelf:'center',
+    marginBottom: 16,
+    shadowColor: '#0066FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  logoGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: 45,
+    height: 45,
+    tintColor: '#fff',
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.textPrimary,
+    paddingVertical: 0,
   },
   inputIcon: {
     marginRight: SPACING.sm,
   },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: COLORS.textPrimary,
-    paddingVertical: 0,
-    fontWeight: '500',
-  },
   clearButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: SPACING.sm,
   },
+
+  // ── Error / Helper ─────────────────────────────────────────────────────
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1493,10 +2128,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xs,
   },
 
-  /* Continue Button */
+  // ── Continue Button ────────────────────────────────────────────────────
   continueButton: {
     borderRadius: 12,
     overflow: 'hidden',
+    marginTop: SPACING.md,
     marginBottom: SPACING.lg,
     ...Platform.select({
       ios: {
@@ -1514,19 +2150,123 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonGradient: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
+    paddingVertical: 16,
   },
   buttonText: {
-    padding: 20,
     color: COLORS.white,
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
+  buttonIcon: {
+    marginLeft: SPACING.sm,
+  },
 
-  /* Modal Styles */
+  // ── Login Link Container ─────────────────────────────────────────────────────────
+  loginContainerWrapper: {
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(13, 100, 221, 0.1)',
+  },
+  loginContainerGradient: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+  },
+  loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loginText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '400',
+  },
+  loginButtonGradient: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  loginLink: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.white,
+    letterSpacing: 0.3,
+  },
+
+  // ── Country Picker Modal ──────────────────────────────────────────────
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  pickerContainer: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    maxHeight: '60%',
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: SPACING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
+  },
+  pickerClose: {
+    padding: SPACING.xs,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.grayLight,
+  },
+  pickerItemSelected: {
+    backgroundColor: 'rgba(13, 100, 221, 0.05)',
+  },
+  pickerFlag: {
+    fontSize: 24,
+    marginRight: SPACING.md,
+  },
+  pickerCountry: {
+    flex: 1,
+    fontSize: 16,
+    color: COLORS.textPrimary,
+  },
+  pickerCode: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    marginRight: SPACING.md,
+  },
+
+  // ── Network Modal ──────────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -1537,143 +2277,62 @@ const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: COLORS.white,
     borderRadius: 20,
-    width: '100%',
-    maxWidth: 400,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.15,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
-  },
-  modalBody: {
-    padding: SPACING.xl,
+    padding: 24,
+    width: '85%',
+    maxWidth: 340,
     alignItems: 'center',
   },
   modalIconContainer: {
-    marginBottom: SPACING.lg,
-  },
-  modalIconCircle: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(13, 100, 221, 0.1)',
+    backgroundColor: '#FEF3C7',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  modalMainText: {
-    fontSize: 22,
+  modalTitle: {
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.textPrimary,
-    textAlign: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: 8,
   },
-  modalSubtext: {
-    fontSize: 15,
+  modalMessage: {
+    fontSize: 16,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: 24,
     lineHeight: 22,
   },
-  emailContainer: {
+  modalButtonContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(13, 100, 221, 0.08)',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 10,
-    marginBottom: SPACING.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(13, 100, 221, 0.2)',
-  },
-  emailIcon: {
-    marginRight: SPACING.sm,
-  },
-  emailText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  modalDescription: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: SPACING.xl,
-    lineHeight: 20,
-  },
-  modalButtons: {
+    gap: 12,
     width: '100%',
-    gap: SPACING.md,
   },
   modalButton: {
+    flex: 1,
+    paddingVertical: 12,
     borderRadius: 12,
-    paddingVertical: SPACING.md,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    minHeight: 52,
   },
-  primaryModalButton: {
+  modalCancelButton: {
+    backgroundColor: '#F1F3F5',
+  },
+  modalRetryButton: {
     backgroundColor: COLORS.primary,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
   },
-  primaryModalButtonText: {
-    color: COLORS.white,
-    fontWeight: '600',
-    fontSize: 16,
+  modalButtonDisabled: {
+    opacity: 0.6,
   },
-  modalButtonIcon: {
-    marginRight: SPACING.sm,
-  },
-  secondaryModalButton: {
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
-  },
-  secondaryModalButtonText: {
-    color: COLORS.textPrimary,
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  modalLoadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 20,
-  },
-  loadingContent: {
-    alignItems: 'center',
-    padding: SPACING.xl,
-  },
-  loadingText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.sm,
-  },
-  loadingSubtext: {
-    fontSize: 14,
+  modalCancelText: {
     color: COLORS.textSecondary,
-    textAlign: 'center',
-    maxWidth: 250,
-    lineHeight: 20,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalRetryText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

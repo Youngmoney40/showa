@@ -210,7 +210,7 @@ const Music = () => {
       <View style={styles.exploreOverlay}>
         <Text style={styles.exploreText}>Explore More</Text>
         <TouchableOpacity style={styles.exploreButton}>
-          <Text style={styles.exploreButtonText}>More Coming Soon</Text>
+          <Text style={styles.exploreButtonText}>On e-Music APP</Text>
           <Icon name="arrow-forward" size={20} color="#fff" />
         </TouchableOpacity>
       </View>

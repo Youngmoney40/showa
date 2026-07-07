@@ -9,9 +9,10 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
     
-   
-    <!-- ========== CALL PERMISSION  ========== -->
+    <!-- ========== CALL PERMISSIONS ========== -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.BIND_TELECOM_CONNECTION_SERVICE"/>
@@ -20,8 +21,6 @@
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
    
-
-    
     <!-- ========== CAMERA & MICROPHONE ========== -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
@@ -41,13 +40,14 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     
-    <!-- ========== STORAGE - ANDROID 15 COMPATIBLE ========== -->
+    <!-- ========== STORAGE - COMPATIBLE WITH ALL VERSIONS ========== -->
+    <!-- Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
-    <!-- For older Android versions -->
+    <!-- Android 12 and below -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
@@ -57,6 +57,7 @@
     <!-- ========== DOWNLOADS ========== -->
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
 
+    <!-- ========== QUERIES ========== -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -84,8 +85,16 @@
         android:roundIcon="@mipmap/showa_icon"
         android:allowBackup="false"
         android:theme="@style/AppTheme"
-        android:largeHeap="true">
+        android:largeHeap="true"
+        android:enableOnBackInvokedCallback="true"
+        tools:targetApi="35">
+        
+        <!-- Android 15+ Edge-to-Edge -->
+        <meta-data
+            android:name="android.edge_to_edge_enable"
+            android:value="true" />
 
+        <!-- MAIN ACTIVITY -->
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
@@ -96,15 +105,17 @@
             android:screenOrientation="portrait"
             android:showWhenLocked="true"
             android:showOnLockScreen="true"
-            android:turnScreenOn="true">
+            android:turnScreenOn="true"
+            android:resizeableActivity="false"
+            android:hardwareAccelerated="true">
             
-            <!-- LAUNCHER Intent Filter -->
+            <!-- LAUNCHER -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             
-            <!-- DEEP LINK Intent Filter - Custom Scheme -->
+            <!-- DEEP LINKS - Custom Scheme -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -112,7 +123,7 @@
                 <data android:scheme="showa" />
             </intent-filter>
             
-            <!-- DEEP LINK Intent Filter - Post deep link with custom scheme -->
+            <!-- DEEP LINKS - Post -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -134,7 +145,7 @@
                 <data android:pathPrefix="/post" />
             </intent-filter>
             
-            <!-- Additional deep link for user profiles -->
+            <!-- DEEP LINKS - User Profile -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -146,6 +157,7 @@
             
         </activity>
         
+        <!-- FILE PROVIDER -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -156,7 +168,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Firebase Messaging Service -->
+        <!-- FIREBASE MESSAGING -->
         <service
             android:name="io.invertase.firebase.messaging.ReactNativeFirebaseMessagingService"
             android:exported="false"
@@ -166,8 +178,7 @@
             </intent-filter>
         </service>
 
-        
-        <!-- Transparent activity shown over lock screen for incoming calls -->
+        <!-- INCOMING CALL ACTIVITY -->
         <activity
             android:name=".IncomingCallActivity"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
@@ -176,7 +187,7 @@
             android:launchMode="singleTop"
             android:exported="true" />
 
-        <!-- CallKeep connection service -->
+        <!-- CALLKEEP CONNECTION SERVICE -->
         <service
             android:name="io.wazo.callkeep.VoiceConnectionService"
             android:label="@string/app_name"
@@ -188,12 +199,11 @@
             </intent-filter>
         </service>
 
-        <!-- Our foreground call service -->
+        <!-- CALL FOREGROUND SERVICE -->
         <service
             android:name=".CallForegroundService"
             android:foregroundServiceType="phoneCall"
             android:exported="false" />
-        
         
     </application>
 

@@ -188,7 +188,7 @@ const ExploreScreen = ({ navigation }) => {
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>Explore Features</Text>
             <Text style={styles.headerSubtitle}>
-              Discover powerful tools to grow your business with our app
+               powerful tools to grow your business.
             </Text>
           </View>
         </LinearGradient>
