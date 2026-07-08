@@ -23,7 +23,7 @@ android {
         applicationId "com.showa"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 33
+        versionCode 34
         versionName "1.0.3"
 
         // For Android 15 compatibility
