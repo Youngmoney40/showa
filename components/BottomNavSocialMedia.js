@@ -1037,7 +1037,7 @@ const BottomNav = ({ navigation, setShowAccountModal, activeRoute }) => {
         navigation.navigate('UserPersonalAccountProfile');
       } else {
         if (hasBusinessProfile && userProfile && userProfile.id) {
-          navigation.navigate('BusinessProfile');
+          navigation.navigate('UserPersonalAccountProfile');
         } else {
           navigation.navigate('BusinessSetup');
         }
@@ -1097,17 +1097,17 @@ const BottomNav = ({ navigation, setShowAccountModal, activeRoute }) => {
             >
               <View style={styles.iconContainer}>
                 <Icon 
-                  name={activeRoute === 'Home' ? 'home' : 'home-outline'} 
+                  name={activeRoute === 'Home' ? 'home-outline' : 'home-outline'} 
                   size={24} 
-                  color={activeRoute === 'Home' ? colors.primary : colors.icon} 
+                  color={activeRoute === 'Home' ? colors.icon : colors.icon} 
                 />
                 {activeRoute === 'Home' && (
-                  <View style={[styles.activeIndicator, { backgroundColor: colors.primary }]} />
+                  <View style={[styles.activeIndicator, { backgroundColor: colors.icon }]} />
                 )}
               </View>
               <Text style={[
                 styles.navLabel,
-                { color: activeRoute === 'Home' ? colors.primary : colors.icon },
+                { color: activeRoute === 'Home' ? colors.icon : colors.icon },
                 activeRoute === 'Home' && styles.activeNavLabel
               ]}>
                 Home

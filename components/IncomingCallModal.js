@@ -54,6 +54,23 @@ const IncomingCallModal = ({
   const buttonScaleReject = useRef(new Animated.Value(1)).current;
 
 
+  const getProfileImageUrl = (imagePath) => {
+  if (!imagePath) return 'https://via.placeholder.com/150';
+  
+  // If it's already a full URL, return it as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // Otherwise, prepend API_ROUTE_IMAGE
+  return `${API_ROUTE_IMAGE}${imagePath}`;
+};
+
+// Use it everywhere you need the image URL
+// const imageUrl = getProfileImageUrl(profile_image);
+// console.log('Profile image path:', profile_image);
+// console.log('Full URL:', imageUrl);
+
   useEffect(() => {
   if (visible && !hasStartedRef.current) {
     console.log('[IncomingCallModal] OPENING');
@@ -266,39 +283,7 @@ useEffect(() => {
     ).start();
   };
 
-  // =========================
-  // ACCEPT
-  // =========================
-
-  // const handleAccept = async () => {
-
-  //   if (hasHandledActionRef.current) return;
-
-  //   hasHandledActionRef.current = true;
-
-  //   setLoadingAction('accept');
-
-  //   stopEverything();
-
-  //   Animated.parallel([
-  //     Animated.timing(fadeAnim, {
-  //       toValue: 0,
-  //       duration: 150,
-  //       useNativeDriver: true,
-  //     }),
-
-  //     Animated.timing(scaleAnim, {
-  //       toValue: 0.92,
-  //       duration: 150,
-  //       useNativeDriver: true,
-  //     }),
-  //   ]).start();
-
-  //   setTimeout(() => {
-  //     onAccept?.();
-  //   }, 150);
-  // };
-
+  
   const handleAccept = async () => {
   if (hasHandledActionRef.current) return;
   hasHandledActionRef.current = true;
@@ -392,39 +377,6 @@ const stopEverything = () => {
   }
 };
 
-  // =========================
-  // REJECT
-  // =========================
-
-  // const handleReject = async () => {
-
-  //   if (hasHandledActionRef.current) return;
-
-  //   hasHandledActionRef.current = true;
-
-  //   setLoadingAction('reject');
-
-  //   stopEverything();
-
-  //   Animated.parallel([
-  //     Animated.timing(fadeAnim, {
-  //       toValue: 0,
-  //       duration: 150,
-  //       useNativeDriver: true,
-  //     }),
-
-  //     Animated.timing(scaleAnim, {
-  //       toValue: 0.92,
-  //       duration: 150,
-  //       useNativeDriver: true,
-  //     }),
-  //   ]).start();
-
-  //   setTimeout(() => {
-  //     onReject?.();
-  //   }, 150);
-  // };
-
   return (
     <Modal
       visible={visible}
@@ -480,7 +432,7 @@ const stopEverything = () => {
               <Image
                 source={{
                   uri: profileImage
-                    ? `${API_ROUTE_IMAGE}${profileImage}`
+                    ? `${profileImage}`
                     : 'https://via.placeholder.com/150',
                 }}
                 style={styles.avatar}

@@ -20,7 +20,7 @@
     <!-- For your API domains - REPLACE WITH YOUR ACTUAL DOMAINS -->
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">api.showapp.ng</domain>
-        <domain includeSubdomains="true">showapp.com</domain>
+        <domain includeSubdomains="true">showapp.ng</domain>
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>

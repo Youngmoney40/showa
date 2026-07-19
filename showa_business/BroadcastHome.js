@@ -1,4 +1,6 @@
 
+
+
 // import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 // import {
 //   StyleSheet,
@@ -39,12 +41,18 @@
 // import Icont from 'react-native-vector-icons/MaterialIcons';
 // import Video from 'react-native-video';
 // import axios from 'axios';
+// import BottomNav from '../components/BottomNavSocialMedia';
 // import FriendSuggestion from '../components/FriendSuggestion';
 // import backgroundFetchService from '../src/services/BackgroundFetchService';
 // import { useTheme } from '../src/context/ThemeContext'; 
 // import Jobs from '../screens/Jobs';
 // import VideoFeeds from '../screens/ShortFeedVideo';
+// import HangoutPlacesExplore from '../screens/HangoutPlacesExplore';
 // import Ads from '../screens/AdsFeed';
+// import EdateDiscoverScreen from '../screens/EdateDiscoverScreen';
+// import AccountSwitchBottomSheet from '../components/AccountSwitchBottomSheet';
+// import MusicListComponent from '../components/Emusic';
+// import EarningsSlideInManager from '../components/EarningsSlideInManager';
 
 // dayjs.extend(relativeTime);
 
@@ -57,7 +65,7 @@
 // const ALL_POSTS_CACHE_KEY = 'all_posts_cache_v2';
 // const VIEWS_CACHE_KEY = 'post_views_cache';
 // const SHARES_CACHE_KEY = 'post_shares_cache';
-// const CACHE_EXPIRATION_TIME = 5 * 60 * 1000; // 5 minutes
+// const CACHE_EXPIRATION_TIME = 5 * 60 * 1000; 
 
 // const trackPostView = async (postId) => {
 //   try {
@@ -128,6 +136,36 @@
 //     return 0;
 //   }
 // };
+
+// const getViewsAndSharesMap = async () => {
+//   try {
+//     const [viewsData, sharesData] = await Promise.all([
+//       AsyncStorage.getItem(VIEWS_CACHE_KEY),
+//       AsyncStorage.getItem(SHARES_CACHE_KEY),
+//     ]);
+//     return {
+//       views: viewsData ? JSON.parse(viewsData) : {},
+//       shares: sharesData ? JSON.parse(sharesData) : {},
+//     };
+//   } catch (error) {
+//     console.error('Error loading views/shares map:', error);
+//     return { views: {}, shares: {} };
+//   }
+// };
+
+// // NEW: synchronous enhancer used with the batched map above.
+// // Keeps the same output shape (`views`, `shares`, `is_verified`)
+// // the rest of the app already expects on each post object.
+// const enhancePostsWithMap = (postsData, map, verifiedThreshold = 0.7) => {
+//   const { views, shares } = map;
+//   return postsData.map((post) => ({
+//     ...post,
+//     views: views[post.id]?.count || 0,
+//     shares: shares[post.id]?.count || 0,
+//     is_verified: Math.random() > verifiedThreshold,
+//   }));
+// };
+
 // const ImageModal = memo(({ visible, post, onClose, onView, colors, isDark }) => {
 //   const [viewsCount, setViewsCount] = useState(post?.views || 0);
 //   const [imageLoading, setImageLoading] = useState(true);
@@ -364,41 +402,6 @@
 //   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 //   const postIdStr = post.id?.toString();
 
-
-//   // Prefetch images when component mounts
-//   // useEffect(() => {
-//   //   console.log('alll post',post)
-
-//   //   if (post.all_images?.length > 0) {
-//   //     // High priority for first image, low for others
-//   //     post.all_images.forEach((img, index) => {
-//   //       const priority = index === 0 ? 'high' : 'low';
-//   //       if (priority === 'high') {
-//   //         Image.prefetch(img.url);
-//   //       } else {
-//   //         // Delay low priority images
-//   //         setTimeout(() => Image.prefetch(img.url), index * 500);
-//   //       }
-//   //     });
-//   //   }
-//   // }, [post.id]);
-
-//   const [imagesLoaded, setImagesLoaded] = useState(false);
-
-// useEffect(() => {
-//   // Don't prefetch - let the Image component handle it
-//   // Only prefetch when post is about to become visible
-//   const timer = setTimeout(() => {
-//     if (!imagesLoaded && post.all_images?.[0]) {
-//       // Prefetch only first image of visible posts
-//       Image.prefetch(post.all_images[0].url).catch(() => {});
-//       setImagesLoaded(true);
-//     }
-//   }, 500); // Delay prefetching
-  
-//   return () => clearTimeout(timer);
-// }, [post.id, imagesLoaded]);
-
 //   const displayImages = post.all_images || 
 //     (post.image_url ? [{ url: post.image_url, is_main: true }] : []);
 
@@ -430,23 +433,8 @@
 //     }
 //     return url;
 //   };
-  
-//   // If no all_images array but there's a single image, create array
-//   // const displayImages = allImages.length > 0 
-//   // ? allImages.map(img => ({
-//   //     ...img,
-//   //     url: fixImageUrl(img.url)
-//   //   }))
-//   // : (post.image_url ? [{ url: fixImageUrl(post.image_url), is_main: true }] : []);
-
 
 //   const navigation = useNavigation();
-
-
-  
-//   // const handleImageLoad = (index) => {
-//   //   setImageLoading(prev => ({ ...prev, [index]: false }));
-//   // };
 
 //   const handleImageError = (index) => {
 //     setImageLoading(prev => ({ ...prev, [index]: false }));
@@ -454,11 +442,6 @@
 //    const handleImageLoad = (index) => {
 //     setImageLoading(prev => ({ ...prev, [index]: false }));
 //   };
-
-//   // const handleFollowPress = () => {
-//   //   setIsFollowing(true);
-//   //   onFollow(post.user_id);
-//   // };
 
 // const handleFollowPress = () => {
 //   const newFollowingState = !isFollowing;
@@ -504,7 +487,7 @@
 //       );
 //     }
 
-//     // Two images
+   
 //     if (imageCount === 2) {
 //       return (
 //         <View style={styles.doubleImageContainer}>
@@ -618,21 +601,6 @@
 
 //   return (
 //     <View style={[styles.tweetContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-//       {/* <TouchableOpacity 
-//         onPress={() => navigation.navigate('OtherUserProfile', { userId: post.user_id })}
-//       >
-//         <View style={styles.avatarContainer}>
-//           <Image
-//             source={
-//               post.user_profile_picture
-//                 ? { uri: post.user_profile_picture }
-//                 : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-//             }
-//             style={[styles.avatar, { borderColor: colors.border }]}
-//           />
-//         </View>
-//       </TouchableOpacity> */}
-      
 //       <View style={styles.tweetContent}>
 //         <View style={styles.tweetHeader}>
 //           <TouchableOpacity 
@@ -650,9 +618,9 @@
 //               </View>
 //             </TouchableOpacity>
 //           <TouchableOpacity onPress={() => navigation.navigate('OtherUserProfile', { userId: post.user_id })}>
-//             <Text style={[styles.name, { color: colors.text, marginLeft:10 }]}>{post.username}
+//             <Text style={[styles.name, { color: colors.text, marginLeft:10, marginRight:20 }]}>{post.username} 
 //               {post.is_verified && (
-//                   <View style={styles.verifiedBadge}>
+//                   <View style={[styles.verifiedBadge]}>
 //                     <Icontt name="check-bold" size={11} color="#fff" />
 //                   </View>
 //                 )}
@@ -661,10 +629,6 @@
 //             {dayjs(post.created_at).fromNow()}
 //           </Text>
 //           </TouchableOpacity>
-         
-          
-//           {/* <Text style={[styles.dot, { color: colors.textSecondary }]}>·</Text> */}
-          
           
 //           {type === 'allposts' ? (
 //             <TouchableOpacity
@@ -704,7 +668,7 @@
 //         {/* Image Grid */}
 //         {renderImageGrid()}
         
-//         <View style={styles.tweetActions}>
+//         {/* <View style={styles.tweetActions}>
 //           <TouchableOpacity
 //             style={styles.actionButton}
 //             onPress={() => onReaction(post.id, 'like')}
@@ -715,7 +679,7 @@
 //               color={userReaction === 'like' ? colors.primary : colors.textSecondary}
 //             />
 //             <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
-//               {likeCount > 0 ? likeCount : ''}
+//               {likeCount > 0 ? likeCount : ''} Like
 //             </Text>
 //           </TouchableOpacity>
 
@@ -725,7 +689,7 @@
 //           >
 //             <Ionicons name="chatbubble-outline" size={18} color={colors.textSecondary} />
 //             <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
-//               {commentCount > 0 ? commentCount : ''}
+//               {commentCount > 0 ? commentCount : ''} Comment
 //             </Text>
 //           </TouchableOpacity>
 
@@ -735,7 +699,7 @@
 //           >
 //             <Ionicons name="share-social-outline" size={18} color={colors.textSecondary} />
 //             <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
-//               {shareCount > 0 ? shareCount : ''}
+//               {shareCount > 0 ? shareCount : ''} Share
 //             </Text>
 //           </TouchableOpacity>
 
@@ -745,10 +709,62 @@
 //           >
 //             <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
 //             <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
-//               {post.views || ''}
+//               {post.views || ''} 
 //             </Text>
 //           </TouchableOpacity>
-//         </View>
+//         </View> */}
+//         <View style={styles.tweetActions}>
+//   <TouchableOpacity
+//     style={styles.actionButton}
+//     onPress={() => onReaction(post.id, 'like')}
+//   >
+//     <MaterialIcons
+//       name={userReaction === 'like' ? 'thumb-up' : 'thumb-up-off-alt'}
+//       size={20}
+//       color={userReaction === 'like' ? colors.primary : colors.textSecondary}
+//     />
+//     <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
+//       {likeCount > 0 ? likeCount : ''} Like
+//     </Text>
+//   </TouchableOpacity>
+
+//   {/* UPDATED: Comment button now navigates to PostDetailScreen */}
+//   <TouchableOpacity
+//     style={styles.actionButton}
+//     onPress={() => {
+//       // Navigate to PostDetailScreen with the post data
+//       navigation.navigate('ExplorePostDetails', {
+//         postId: post.id,
+//         postData: post // Pass the full post data for instant display
+//       });
+//     }}
+//   >
+//     <Ionicons name="chatbubble-outline" size={18} color={colors.textSecondary} />
+//     <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
+//       {commentCount > 0 ? commentCount : ''} Comment
+//     </Text>
+//   </TouchableOpacity>
+
+//   <TouchableOpacity 
+//     style={styles.actionButton}
+//     onPress={handleSharePress}
+//   >
+//     <Ionicons name="share-social-outline" size={18} color={colors.textSecondary} />
+//     <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
+//       {shareCount > 0 ? shareCount : ''} Share
+//     </Text>
+//   </TouchableOpacity>
+
+//   <TouchableOpacity 
+//     style={styles.actionButton}
+//     onPress={() => displayImages.length > 0 && handleImagePress(0)}
+//   >
+//     <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
+//     <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
+//       {post.views || ''} 
+//     </Text>
+//   </TouchableOpacity>
+// </View>
 //       </View>
 //     </View>
 //   );
@@ -801,9 +817,20 @@
 //           )}
           
 //           <View style={[styles.statusNameContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-//             <Text style={styles.statusNameText}>
-//               {isMyStatus ? 'My Story' : userStatus.user?.name || userStatus.user}
-//             </Text>
+//             {/* <Text style={styles.statusNameText}>
+//               {isMyStatus
+//                 ? 'My Story'
+//                 : (userStatus.user?.name || userStatus.user)?.length > 5
+//                   ? `${(userStatus.user?.name || userStatus.user).substring(0, 5)}...`
+//                   : (userStatus.user?.name || userStatus.user)}
+//             </Text> */}
+//             <Text
+//                 style={styles.statusNameText}
+//                 numberOfLines={1}
+//                 ellipsizeMode="tail"
+//               >
+//                 {isMyStatus ? 'My Story' : userStatus.user?.name || userStatus.user}
+//               </Text>
 //             {isMyStatus && userStatus.viewers_count > 0 && (
 //               <TouchableOpacity onPress={() => onViewers(userStatus.viewers)}>
 //                 <Text style={styles.viewCountText}>
@@ -814,15 +841,6 @@
 //           </View>
 //         </ImageBackground>
 //       </TouchableOpacity>
-      
-//       {/* {isMyStatus && (
-//         <TouchableOpacity 
-//           style={styles.deleteStatusButton}
-//           onPress={() => onDelete(userStatus.statuses[0]?.id)}
-//         >
-//           <Icon name="close" size={16} color="#fff" />
-//         </TouchableOpacity>
-//       )} */}
 //     </View>
 //   );
 // });
@@ -847,7 +865,7 @@
 //             style={styles.suggestedFriendImage}
 //           />
 //           {item.is_verified && (
-//             <View style={styles.suggestedFriendVerified}>
+//             <View style={[styles.suggestedFriendVerified,{marginleft:10}]}>
 //               <Icont name="verified" size={12} color="#fff" />
 //             </View>
 //           )}
@@ -874,7 +892,8 @@
 // });
 
 // export default function HomePage({ navigation }) {
-//   const { colors, isDark } = useTheme(); 
+   
+//   const { colors, isDark,theme, toggleTheme, } = useTheme(); 
 //   const [reactionCounts, setReactionCounts] = useState({});
 //   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
 //   const [isReplyBottomSheetVisible, setIsReplyBottomSheetVisible] = useState(false);
@@ -882,7 +901,7 @@
 //   const [selectedPostId, setSelectedPostId] = useState(null);
 //   const [selectedCommentId, setSelectedCommentId] = useState(null);
 //   const [newComment, setNewComment] = useState('');
-//   const [postById, setPostById] = useState([]);
+//   const [postById, setPostById] = useState(null);
 //   const [replyToCommentId, setReplyToCommentId] = useState(null);
 //   const [replyText, setReplyText] = useState('');
 //   const [posts, setPosts] = useState([]);
@@ -922,7 +941,34 @@
 //   const abortControllerRef = useRef(null);
 //   const scrollViewRef = useRef(null);
 //   const [userName, setUserName] = useState('');
+//   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+//   const [showAccountModal, setShowAccountModal] = useState(false);
+//   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
 
+  
+// const [snackbarMessage, setSnackbarMessage] = useState('');
+// const [snackbarType, setSnackbarType] = useState('success');
+
+// const [snackbarFadeAnim] = useState(new Animated.Value(0));
+
+// // Animate when showing snackbar
+// useEffect(() => {
+//   if (snackbarVisible) {
+//     Animated.timing(snackbarFadeAnim, {
+//       toValue: 1,
+//       duration: 300,
+//       useNativeDriver: true,
+//     }).start();
+//   } else {
+//     Animated.timing(snackbarFadeAnim, {
+//       toValue: 0,
+//       duration: 300,
+//       useNativeDriver: true,
+//     }).start();
+//   }
+// }, [snackbarVisible]);
+  
+  
 //   // ===== NEW PAGINATION STATES =====
 //   const [loading, setLoading] = useState(false);
 //   const [postsPage, setPostsPage] = useState(1);
@@ -930,10 +976,126 @@
 //   const [postsHasMore, setPostsHasMore] = useState(true);
 //   const [allPostsHasMore, setAllPostsHasMore] = useState(true);
 //   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+//   const [channels, setChannels] = useState([]);
+//   const [loadingChannels, setLoadingChannels] = useState(false);
 
+//   // ============================================================
+//   // NEW: tracks whether the comment modal is waiting on its
+//   // network fetch. The modal itself opens BEFORE this is even
+//   // set — see handleCommentOptimized — this flag only controls
+//   // whether we show a spinner or the comment list inside it.
+//   // ============================================================
+//   const [commentsLoading, setCommentsLoading] = useState(false);
 
+  
 // const [statusViewerModalVisible, setStatusViewerModalVisible] = useState(false);
 // const [statusPaused, setStatusPaused] = useState(false);
+
+
+//  const [fadeAnim] = useState(new Animated.Value(0));
+
+
+//  const showSnackbar = useCallback((message, type = 'success') => {
+   
+//   setSnackbarMessage(message);
+//   setSnackbarType(type);
+//   setSnackbarVisible(true);
+// }, []);
+
+//   const promoData = [
+//   {
+//     id: 1,
+//     image: require('../assets/images/gdgdg.jpg'),
+//     badge: '💎 NEW',
+//     title: 'Earn Up to ₦5 Million',
+//     subtitle: 'Join the Showa reward system and start earning today!',
+//     buttonText: 'Get Started Now →',
+//     screen: 'EarningDashboard'
+//   },
+//   {
+//     id: 2,
+//     image:  require('../assets/images/show.jpg'),
+//     badge: '🔥 HOT',
+//     title: 'Refer & Earn Bonus',
+//     subtitle: 'Invite friends and earn up to ₦500,000 per referral!',
+//     buttonText: 'Start Referring →',
+//     screen: 'ReferralScreen'
+//   },
+//   {
+//     id: 3,
+//     image:  require('../assets/images/dad.jpg'),
+//     badge: '🎯 LIMITED',
+//     title: 'Daily Challenges',
+//     subtitle: 'Complete daily tasks and earn rewards every day!',
+//     buttonText: 'View Challenges →',
+//     screen: 'EarningDashbord'
+//   }
+// ];
+
+// useEffect(() => {
+//   const interval = setInterval(() => {
+//     setCurrentPromoIndex((prev) => (prev + 1) % promoData.length);
+//   }, 5000); 
+
+//   return () => clearInterval(interval);
+// }, []);
+
+// const fetchHomeChannels = useCallback(async () => {
+//   try {
+//     setLoadingChannels(true);
+//     const token = await AsyncStorage.getItem('userToken');
+    
+//     const [channelsRes, followingRes] = await Promise.all([
+//       axios.get(`${API_ROUTE}/channels/`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//         timeout: 5000,
+//       }),
+//       axios.get(`${API_ROUTE}/channels/following/`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//         timeout: 3000,
+//       })
+//     ]);
+
+//     const followingIds = followingRes.data.map(ch => ch.id);
+//     const processedChannels = channelsRes.data.map(channel => ({
+//       ...channel,
+//       isFollowing: followingIds.includes(channel.id),
+//     }));
+
+//     // Get top channels (limit to 5 for home)
+//     const topChannels = processedChannels.slice(0, 5);
+//     setChannels(topChannels);
+//   } catch (error) {
+//     showSnackbar('Error fetching channels for home:', 'error')
+//     //console.error('Error fetching channels for home:', error);
+//   } finally {
+//     setLoadingChannels(false);
+//   }
+// }, []);
+
+// // Call in useEffect or useFocusEffect
+// useFocusEffect(
+//   useCallback(() => {
+//     fetchHomeChannels();
+//   }, [fetchHomeChannels])
+// );
+
+//   const fetchUnreadNotificationCount = async () => {
+//   try {
+//     const token = await AsyncStorage.getItem('userToken');
+//     const response = await axios.get(`${API_ROUTE}/notifications/unread-count/`, {
+//       headers: {
+//         'Authorization': `Bearer ${token}`,
+//       },
+//     });
+    
+//     if (response.data.success) {
+//       setUnreadNotificationCount(response.data.unread_count);
+//     }
+//   } catch (error) {
+//     console.error('Error fetching unread count:', error);
+//   }
+// };
 
 
 // const getStatusImageUrl = (url) => {
@@ -1054,7 +1216,7 @@
 //               }
 //             } catch (error) {
 //               console.error('Error deleting comment:', error);
-//               Alert.alert('Error', error.response?.data?.error || 'Failed to delete comment');
+//               showSnackbar('Error', error.response?.data?.error || 'Failed to delete comment');
 //             }
 //           }
 //         }
@@ -1107,8 +1269,9 @@
 //                 setSnackbarVisible(true);
 //               }
 //             } catch (error) {
-//               console.error('Error deleting reply:', error);
-//               Alert.alert('Error', 'Failed to delete reply');
+//               //console.error('Error deleting reply:', error);
+//               showSnackbar('Failed to delete reply', 'error');
+//               //showSnackbar('Error', 'Failed to delete reply');
 //             }
 //           }
 //         }
@@ -1242,11 +1405,9 @@
 
 //       // Show reward if any
 //       if (response.data.reward) {
-//         Alert.alert(
-//           '💬 Reply Reward!',
-//           `You earned ${response.data.reward.coins} coins for your reply!`,
-//           [{ text: 'OK' }]
-//         );
+        
+//         showSnackbar(`You earned ${response.data.reward.coins} coins for your reply!`,'success');
+
 //       }
 
 //       setReplyText('');
@@ -1293,35 +1454,69 @@
 
 
 // // ==================== UPDATE COMMENT HANDLER ====================
+// //
+// // THIS IS THE MAIN BUG FIX.
+// //
+// // BEFORE: this function was `async`, and the modal only became
+// // visible on the line `setIsBottomSheetVisible(true)`, which sat
+// // AFTER two awaited axios calls inside a try block. If the token
+// // was missing, the function returned silently with no modal and
+// // no feedback. If either request was slow, failed, or threw, the
+// // modal would never open (or would open very late), and the catch
+// // block only logged to console — nothing visible to the user.
+// // That's exactly the "tap comment icon, nothing happens" bug.
+// //
+// // AFTER: we open the modal and set the selected post id on the
+// // very first lines — synchronously, no `await` involved — so the
+// // tap always produces immediate visible feedback. The network
+// // fetch then runs in the background and fills in `postById` and
+// // `commentsss` whenever it resolves. `commentsLoading` drives a
+// // spinner inside the modal so the person knows data is on the way
+// // instead of seeing an empty "No comments yet" flash before the
+// // real comments arrive.
+// // ============================================================
+// const handleCommentOptimized = useCallback((postId) => {
+//   // Open instantly — no network dependency on this line.
+//   setSelectedPostId(postId);
+//   setIsBottomSheetVisible(true);
+//   setCommentsLoading(true);
+//   setPostById(null); // clear any previous post's preview while this one loads
 
-// // const handleCommentOptimized = useCallback(async (postId) => {
-// //   const token = await AsyncStorage.getItem('userToken');
-// //   if (!token) return;
+//   (async () => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       if (!token) {
+//         setCommentsLoading(false);
+//         return;
+//       }
 
-// //   try {
-// //     const [postResponse, commentsResponse] = await Promise.all([
-// //       axios.get(`${API_ROUTE}/posts/${postId}/`, {
-// //         headers: { Authorization: `Bearer ${token}` },
-// //       }),
-// //       axios.get(`${API_ROUTE}/post/${postId}/comments/`, {
-// //         headers: { Authorization: `Bearer ${token}` },
-// //       })
-// //     ]);
+//       const [postResponse, commentsResponse] = await Promise.all([
+//         axios.get(`${API_ROUTE}/posts/${postId}/`, {
+//           headers: { Authorization: `Bearer ${token}` },
+//         }),
+//         axios.get(`${API_ROUTE}/post/${postId}/comments/`, {
+//           headers: { Authorization: `Bearer ${token}` },
+//         })
+//       ]);
 
-// //     if (postResponse.status === 200) {
-// //       setPostById(postResponse.data);
-// //       setSelectedPostId(postId);
-      
-// //       if (commentsResponse.status === 200) {
-// //         setPostsComment(commentsResponse.data.comments);
-// //       }
-      
-// //       setIsBottomSheetVisible(true);
-// //     }
-// //   } catch (error) {
-// //     console.error('Error fetching post details:', error);
-// //   }
-// // }, []);
+//       if (postResponse.status === 200) {
+//         setPostById(postResponse.data);
+//       }
+
+//       if (commentsResponse.status === 200) {
+//         const comments = commentsResponse.data.comments || commentsResponse.data;
+//         setPostsComment(comments);
+//       }
+//     } catch (error) {
+//       console.error('Error fetching post details:', error);
+//       // Modal stays open; the spinner just stops and the
+//       // "No comments yet" empty state will show. The person
+//       // can close and retry rather than seeing nothing happen.
+//     } finally {
+//       setCommentsLoading(false);
+//     }
+//   })();
+// }, []);
 
 // const loadPostsFromCache = useCallback(async () => {
 //   try {
@@ -1345,14 +1540,9 @@
       
 //       const isCacheValid = Date.now() - timestamp < CACHE_EXPIRATION_TIME;
 //       if (isCacheValid) {
-//         const enhancedPosts = await Promise.all(
-//           data.map(async (post) => ({
-//             ...post,
-//             views: await getPostViews(post.id).catch(() => 0),
-//             shares: await getPostShares(post.id).catch(() => 0),
-//             is_verified: Math.random() > 0.7
-//           }))
-//         );
+//         // NEW: one batched read instead of 2*N AsyncStorage calls
+//         const map = await getViewsAndSharesMap();
+//         const enhancedPosts = enhancePostsWithMap(data, map, 0.7);
 //         setPosts([...enhancedPosts].reverse());
 //         return true;
 //       }
@@ -1396,14 +1586,9 @@
 //         );
         
 //         const filteredPosts = await filterUnfollowedUsers(sortedPosts);
-//         const enhancedPosts = await Promise.all(
-//           filteredPosts.map(async (post) => ({
-//             ...post,
-//             views: await getPostViews(post.id).catch(() => 0),
-//             shares: await getPostShares(post.id).catch(() => 0),
-//             is_verified: Math.random() > 0.6
-//           }))
-//         );
+//         // NEW: one batched read instead of 2*N AsyncStorage calls
+//         const map = await getViewsAndSharesMap();
+//         const enhancedPosts = enhancePostsWithMap(filteredPosts, map, 0.6);
 //         setAllPosts(enhancedPosts);
 //         return true;
 //       }
@@ -1560,20 +1745,26 @@
 //       const postsData = Array.isArray(response.data) ? response.data : 
 //                        (response.data.results || []);
       
-//       //console.log('fetchPosts response:', postsData);
-      
-//       const enhancedPosts = await Promise.all(
-//         postsData.map(async (post) => ({
-//           ...post,
-//           views: await getPostViews(post.id).catch(() => 0),
-//           shares: await getPostShares(post.id).catch(() => 0),
-//           is_verified: Math.random() > 0.7
-//         }))
-//       );
+//       // NEW: one batched read instead of 2*N AsyncStorage calls
+//       const map = await getViewsAndSharesMap();
+//       const enhancedPosts = enhancePostsWithMap(postsData, map, 0.7);
 
 //       const reversedData = [...enhancedPosts].reverse();
 //       setPosts(reversedData);
+//       console.log('fetch post successful',response.data)
 //       await savePostsToCache(postsData); // Save original data
+
+//       // NEW: prefetch the first image of the first few posts that
+//       // are about to be visible, right when we have the URLs —
+//       // instead of waiting for each row to mount and then waiting
+//       // another 500ms inside that row (the old behavior, which ran
+//       // too late to help and was removed from MemoizedTweetItem).
+//       reversedData.slice(0, 5).forEach((post) => {
+//         const firstImg = post.all_images?.[0]?.url || post.image_url;
+//         if (firstImg) {
+//           Image.prefetch(firstImg).catch(() => {});
+//         }
+//       });
 //     }
 //   } catch (error) {
 //     console.error('Error fetching posts:', error);
@@ -1598,27 +1789,29 @@
 //       const postsData = Array.isArray(postsResponse.data) ? postsResponse.data : 
 //                        (postsResponse.data.results || []);
       
-//       //console.log('fetch-AllPosts response:', postsData);
-      
 //       // Create a copy safely
 //       const dataCopy = postsData.slice();
+//       console.log('fetch all post succes',postsResponse.data)
       
 //       const sortedPosts = dataCopy.sort((a, b) => 
 //         new Date(b.created_at) - new Date(a.created_at)
 //       );
       
 //       const filteredPosts = await filterUnfollowedUsers(sortedPosts);
-//       const enhancedPosts = await Promise.all(
-//         filteredPosts.map(async (post) => ({
-//           ...post,
-//           views: await getPostViews(post.id).catch(() => 0),
-//           shares: await getPostShares(post.id).catch(() => 0),
-//           is_verified: Math.random() > 0.6
-//         }))
-//       );
+//       // NEW: one batched read instead of 2*N AsyncStorage calls
+//       const map = await getViewsAndSharesMap();
+//       const enhancedPosts = enhancePostsWithMap(filteredPosts, map, 0.6);
 //       setAllPosts(enhancedPosts);
 //       setFollowedUsers(followedUsers);
 //       await saveAllPostsToCache(postsData); // Save original data
+
+//       // NEW: prefetch first images of the first few all-posts too
+//       enhancedPosts.slice(0, 5).forEach((post) => {
+//         const firstImg = post.all_images?.[0]?.url || post.image_url;
+//         if (firstImg) {
+//           Image.prefetch(firstImg).catch(() => {});
+//         }
+//       });
 //     }
 //   } catch (error) {
 //     console.error('Error fetching all posts:', error);
@@ -1640,6 +1833,43 @@
 
 //     return filteredPosts;
 //   };
+
+//   const handleFollowChannel = useCallback(async (slug) => {
+//   try {
+//     const token = await AsyncStorage.getItem('userToken');
+//     await axios.post(
+//       `${API_ROUTE}/channels/${slug}/follow/`,
+//       {},
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
+    
+   
+//     setChannels(prev => 
+//       prev.map(ch => 
+//         ch.slug === slug 
+//           ? { ...ch, isFollowing: true, followers_count: (ch.followers_count || 0) + 1 }
+//           : ch
+//       )
+//     );
+    
+    
+//     const channel = channels.find(ch => ch.slug === slug);
+//     if (channel) {
+//       navigation.navigate('ChannelDetails', {
+//         receiverId: channel.id,
+//         name: channel.name,
+//         chatType: 'channel',
+//         profile_image: channel.image,
+//         channelSlug: channel.slug,
+//         InviteLink: channel.invite_link,
+//         followers: channel.followers_count
+//       });
+//     }
+//   } catch (error) {
+//     //console.error('Error following channel:', error);
+//     showSnackbar('Failed to follow channel. Please try again.', 'error');
+//   }
+// }, [channels, navigation]);
 
 //   const fetchFollowedUsers = useCallback(async () => {
 //     try {
@@ -1775,7 +2005,7 @@
 //       { headers: { Authorization: `Bearer ${token}` } }
 //     );
 
-//     console.log('Reaction response:', response.data);
+//     //console.log('Reaction response:', response.data);
 
 //     // Update with actual data from server
 //     if (response.data) {
@@ -1816,11 +2046,7 @@
 
 //       // Show reward if any
 //       if (response.data.reward) {
-//         Alert.alert(
-//           '🎉 Reward Earned!',
-//           `You earned ${response.data.reward.coins} coins for this ${type}!`,
-//           [{ text: 'OK' }]
-//         );
+//         showSnackbar(`You earned ${response.data.reward.coins} coins for this ${type}!`,'success');
 //       }
 //     }
 //   } catch (error) {
@@ -1830,39 +2056,6 @@
 //   }
 // }, [posts, allposts, reactionCounts, newComment]);
 
-//   // const handleCommentOptimized = useCallback(async (postId) => {
-//   //   const token = await AsyncStorage.getItem('userToken');
-//   //   if (!token) return;
-
-//   //   try {
-//   //     const [postResponse, commentsResponse] = await Promise.all([
-//   //       axios.get(`${API_ROUTE}/posts/${postId}/`, {
-//   //         headers: { Authorization: `Bearer ${token}` },
-//   //       }),
-//   //       axios.get(`${API_ROUTE}/get-posts-comment/${postId}/comments/all/`, {
-//   //         headers: { Authorization: `Bearer ${token}` },
-//   //       })
-//   //     ]);
-
-//   //     if (postResponse.status === 200) {
-//   //       setPostById(postResponse.data);
-//   //       setSelectedPostId(postId);
-        
-//   //       if (commentsResponse.status === 200) {
-//   //         const parentComments = commentsResponse.data.filter(comment => !comment.parent);
-//   //         setPostsComment(prev => {
-//   //           const otherComments = prev.filter(c => c.post !== postId);
-//   //           return [...otherComments, ...parentComments];
-//   //         });
-//   //       }
-        
-//   //       setIsBottomSheetVisible(true);
-//   //     }
-//   //   } catch (error) {
-//   //     console.error('Error fetching post details:', error);
-//   //   }
-//   // }, []);
-
 // // const handleShareOptimized = useCallback(async (postId) => {
 // //   try {
 // //     const post = posts.find(p => p.id === postId) || allposts.find(p => p.id === postId);
@@ -1871,105 +2064,39 @@
 // //       return;
 // //     }
 
-// //     // Create deep link URL - use consistent format
-// //     const deepLinkUrl = `showa://post/${post.id}`;
     
-// //     // For better compatibility, also include web URL
-// //     const webUrl = `https://showapp.com/post/${post.id}`;
+// //     const shareUrl = `https://showapp.com/post/${post.id}`;
+    
+// //     // Create a clean, clickable share message
+// //     const shareMessage = `${post.username} shared a post on ShowApp\n\n"${post.content.substring(0, 100)}${post.content.length > 100 ? '…' : ''}"\n\n${shareUrl}`;
 
-// //     // Get first image for better share preview
-// //     let imageUrl = post.image_url;
-// //     if (!imageUrl && post.all_images && post.all_images.length > 0) {
-// //       imageUrl = post.all_images[0].url;
-// //     }
-
-// //     // Create rich share message
-// //     const shareMessage = 
-// //       `📱 Check out this post on ShowApp!\n\n` +
-// //       `"${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}"\n\n` +
-// //       `━━━━━━━━━━━━━━━━━━━\n` +
-// //       `👤 Author: ${post.username}\n` +
-// //       `❤️ Likes: ${post.like_count || 0}\n` +
-// //       `💬 Comments: ${post.comment_count || 0}\n` +
-// //       `👁️ Views: ${post.views || 0}\n` +
-// //       `━━━━━━━━━━━━━━━━━━━\n\n` +
-// //       `🔗 Open in app: ${deepLinkUrl}\n` +
-// //       `🌐 Or view online: ${webUrl}`;
-
-// //     const shareOptions = {
+// //     const shareResult = await Share.share({
 // //       message: shareMessage,
 // //       title: `ShowApp - Post by ${post.username}`,
-// //     };
-
-// //     // Add URL for iOS preview support
-// //     if (Platform.OS === 'ios') {
-// //       shareOptions.url = webUrl;
-// //     }
-
-// //     // Show share dialog
-// //     const shareResult = await Share.share(shareOptions);
+// //       url: shareUrl, // For iOS
+// //     });
     
-// //     // Track successful share
 // //     if (shareResult.action === Share.sharedAction) {
-// //       console.log('Post shared successfully:', postId);
+// //       console.log('Post shared successfully:', shareUrl);
       
+// //       // Track share
 // //       const token = await AsyncStorage.getItem('userToken');
-// //       if (!token) {
-// //         console.warn('No token found for tracking share');
-// //         return;
-// //       }
-
-// //       // Track share in backend
-// //       const response = await axios.post(
-// //         `${API_ROUTE}/post-react/`,
-// //         { 
-// //           post_id: postId, 
-// //           reaction_type: 'share',
-// //           share_platform: 'external'
-// //         },
-// //         { headers: { Authorization: `Bearer ${token}` } }
-// //       );
-
-// //       // Update share count in UI
-// //       const newShareCount = response.data.share_count || (post.share_count || 0) + 1;
-      
-// //       // Update both posts states
-// //       const updatePost = (p) => p.id === postId ? { ...p, share_count: newShareCount } : p;
-// //       setPosts(prev => prev.map(updatePost));
-// //       setAllPosts(prev => prev.map(updatePost));
-      
-// //       // Track locally
-// //       await trackPostShare(postId);
-      
-// //       // Close options modal if open
-// //       setIsOptionsBottomSheetVisible(false);
-      
-// //       // Show success message
-// //       setSnackbarVisible(true);
-      
-// //       // Show reward if any
-// //       if (response.data.reward) {
-// //         Alert.alert(
-// //           '🎉 Share Reward!',
-// //           `You earned ${response.data.reward.coins} coins for sharing this post!`,
-// //           [{ text: 'Awesome!' }]
+// //       if (token) {
+// //         await axios.post(
+// //           `${API_ROUTE}/post-react/`,
+// //           { post_id: post.id, reaction_type: 'share' },
+// //           { headers: { Authorization: `Bearer ${token}` } }
 // //         );
 // //       }
       
-// //       return newShareCount;
-// //     } else if (shareResult.action === Share.dismissedAction) {
-// //       console.log('Share dismissed');
+// //       setSnackbarVisible(true);
 // //     }
 // //   } catch (error) {
 // //     console.error('Error sharing post:', error);
-// //     Alert.alert(
-// //       'Share Failed',
-// //       'Unable to share post. Please try again.',
-// //       [{ text: 'OK' }]
-// //     );
-// //     return 0;
+// //     showSnackbar('message', 'error');
 // //   }
-// // }, [posts, allposts, setPosts, setAllPosts, setIsOptionsBottomSheetVisible, setSnackbarVisible]);
+// // }, [posts, allposts]);
+
 
 // const handleShareOptimized = useCallback(async (postId) => {
 //   try {
@@ -1979,11 +2106,11 @@
 //       return;
 //     }
 
-//     // Use HTTPS URL as primary (works everywhere, clickable)
-//     const shareUrl = `https://showapp.com/post/${post.id}`;
+//     // ✅ Use showa:// scheme (proven to work)
+//     const shareUrl = `showa://post/${post.id}`;
     
-//     // Create a clean, clickable share message
-//     const shareMessage = `${post.username} shared a post on ShowApp\n\n“${post.content.substring(0, 100)}${post.content.length > 100 ? '…' : ''}”\n\n${shareUrl}`;
+//     // Clean, user-friendly message
+//     const shareMessage = `📱 ${post.username} shared a post on ShowApp\n\n"${post.content.substring(0, 150)}${post.content.length > 150 ? '…' : ''}"\n\n🔗 Open in ShowApp: ${shareUrl}\n\n(If the link doesn't open, copy and paste it into your browser)`;
 
 //     const shareResult = await Share.share({
 //       message: shareMessage,
@@ -1992,9 +2119,8 @@
 //     });
     
 //     if (shareResult.action === Share.sharedAction) {
-//       console.log('Post shared successfully:', shareUrl);
+//       console.log('Post shared successfully with showa:// link:', shareUrl);
       
-//       // Track share
 //       const token = await AsyncStorage.getItem('userToken');
 //       if (token) {
 //         await axios.post(
@@ -2008,36 +2134,15 @@
 //     }
 //   } catch (error) {
 //     console.error('Error sharing post:', error);
-//     Alert.alert('Share Failed', 'Unable to share post. Please try again.');
+//     showSnackbar('message', 'error');
 //   }
 // }, [posts, allposts]);
-
 
 //   const handleOptionsOptimized = useCallback((postId, userId) => {
 //     setSelectedPostId(postId);
 //     setUsersSelectedPostId(userId);
 //     setIsOptionsBottomSheetVisible(true);
 //   }, []);
-
-//   // const handleFollow = useCallback(async (userId) => {
-//   //   try {
-//   //     const token = await AsyncStorage.getItem('userToken');
-//   //     if (!token) return;
-
-//   //     await axios.post(
-//   //       `${API_ROUTE}/follow-user/${userId}/`,
-//   //       {},
-//   //       { headers: { Authorization: `Bearer ${token}` } }
-//   //     );
-
-//   //     setFollowedUsers((prev) => [...prev, userId]);
-//   //     setAllPosts((prev) => prev.filter((post) => post.user_id !== userId));
-//   //     setSuggestedFriends((prev) => prev.filter((friend) => friend.id !== userId));
-//   //     setSnackbarVisible(true);
-//   //   } catch (error) {
-//   //     console.error('Error following user:', error);
-//   //   }
-//   // }, []);
 
 //   const handleFollow = useCallback(async (userId) => {
 //   try {
@@ -2052,7 +2157,7 @@
 
 //     setFollowedUsers((prev) => [...prev, userId]);
     
-//     // Update the posts to mark this user as followed (don't remove them)
+    
 //     setAllPosts((prev) => prev.map(post => 
 //       post.user_id === userId 
 //         ? { ...post, is_followed_by_current_user: true }
@@ -2105,12 +2210,6 @@
 //       console.error('Error bookmarking post:', error);
 //     }
 //   }, []);
-//   // const openImageModal = useCallback((userStatuses) => {
-//   //   setSelectedUserStatuses(userStatuses.statuses);
-//   //   setCurrentStatusIndex(0);
-//   //   setModalVisible(true);
-//   //   setPaused(false);
-//   // }, []);
 
 //   const openImageModal = useCallback((userStatus) => {
 //   // Set the selected user's statuses
@@ -2154,7 +2253,7 @@
 //       setSnackbarVisible(true);
 //     } catch (error) {
 //       console.error('Error deleting status:', error);
-//       Alert.alert('Error', 'Failed to delete status');
+//       showSnackbar('message', 'error');
 //     }
 //   }, []);
 //   const handleViewImage = useCallback((post) => {
@@ -2350,11 +2449,7 @@
       
 //       // Show reward if any
 //       if (response.data.reward) {
-//         Alert.alert(
-//           '💬 Reward!',
-//           `You earned ${response.data.reward.coins} coins!`,
-//           [{ text: 'OK' }]
-//         );
+//         showSnackbar(`You earned ${response.data.reward.coins} coins!`,'success');
 //       }
 //     }
 //   } catch (error) {
@@ -2379,7 +2474,7 @@
 //           : post
 //       ));
 //     }
-//     Alert.alert('Error', 'Failed to post. Please try again.');
+//     showSnackbar('message', 'error');
 //   }
 // }, [newComment, selectedPostId, replyToCommentId, username, userprofileimage, posts, allposts]);
 
@@ -2557,31 +2652,21 @@
 //     setRefreshing(false);
 //   }, [fetchPosts, fetchAllPosts, fetchStatus, fetchSuggestedFriends, fetchLiveStreams]);
 
-// // useEffect(() => {
-// //   const initializeData = async () => {
-// //     setInitialLoading(true);
-// //     await Promise.all([
-// //       loadPostsFromCache(),
-// //       loadAllPostsFromCache(),
-// //       fetchCurrentUser(),
-// //       fetchStatus(),
-// //     ]);
-    
-// //     // Fetch fresh data in background
-// //     Promise.all([
-// //       fetchPosts(1),
-// //       fetchAllPosts(1),
-// //       fetchReactions(),
-// //       fetchSuggestedFriends(),
-// //       fetchLiveStreams(),
-// //     ]).finally(() => {
-// //       setInitialLoading(false);
-// //     });
-// //   };
-
-// //   initializeData();
-// // }, []);
-
+// // ============================================================
+// // INITIAL LOAD — reordered so cache-driven render happens as
+// // early as possible and is never blocked by other network
+// // calls. Sequence:
+// //   1. Load both caches in parallel.
+// //   2. The instant either cache has data, clear initialLoading
+// //      so the feed paints immediately (same behavior as before,
+// //      just clarified).
+// //   3. Fire EVERY background fetch (current user, statuses,
+// //      posts, all-posts, reactions, friends, live streams) in
+// //      one Promise.all so none of them queue behind each other.
+// //      Previously fetchCurrentUser/fetchStatus were awaited
+// //      first, which delayed the start of fetchPosts/fetchAllPosts
+// //      by however long those two calls took.
+// // ============================================================
 // useEffect(() => {
 //   let isMounted = true;
   
@@ -2591,38 +2676,29 @@
 //     // Show loading skeleton immediately
 //     setInitialLoading(true);
     
-//     // CRITICAL: Load cache first (synchronous-like)
+//     // CRITICAL: Load cache first (parallel, fast)
 //     const [cachedPosts, cachedAllPosts] = await Promise.all([
 //       loadPostsFromCache(),
 //       loadAllPostsFromCache(),
 //     ]);
     
 //     // If we have cache, show content immediately
+
 //     if ((cachedPosts || cachedAllPosts) && isMounted) {
 //       setInitialLoading(false);
 //     }
     
-//     // Fetch data in background without blocking UI
 //     const fetchBackgroundData = async () => {
 //       try {
 //         await Promise.all([
 //           fetchCurrentUser(),
 //           fetchStatus(),
-//         ]);
-        
-//         // Fetch posts but don't block rendering
-//         const postsPromise = fetchPosts();
-//         const allPostsPromise = fetchAllPosts();
-//         const reactionsPromise = fetchReactions();
-//         const friendsPromise = fetchSuggestedFriends();
-//         const streamsPromise = fetchLiveStreams();
-        
-//         await Promise.all([
-//           postsPromise, 
-//           allPostsPromise, 
-//           reactionsPromise,
-//           friendsPromise,
-//           streamsPromise
+//           fetchPosts(),
+//           fetchAllPosts(),
+//           fetchReactions(),
+//           fetchSuggestedFriends(),
+//           fetchLiveStreams(),
+//           fetchUnreadNotificationCount(),
 //         ]);
 //       } catch (error) {
 //         console.error('Background fetch error:', error);
@@ -2687,9 +2763,9 @@
 
 //     return (
 //       <View style={{ marginTop: 10, marginBottom: 20 }}>
-//         <Text style={[styles.sectionTitle, { color: colors.text }]}>
+//         {/* <Text style={[styles.sectionTitle, { color: colors.text }]}>
 //           {hasLiveStreams ? 'Live & Status' : ''}
-//         </Text>
+//         </Text> */}
         
 //         <ScrollView 
 //           horizontal 
@@ -2714,11 +2790,6 @@
 //             <TouchableOpacity 
 //               key={liveStream.id}
 //               style={styles.liveStreamWrapper}
-//               // onPress={() => {
-                
-//               //   navigation.navigate('LiveStreamViewer', { streamId: liveStream.stream_id });
-//               // }}
-
 //               onPress={() => navigation.navigate('Viewer', {
 //                 roomName: 'match-123',
 //                     streamId: liveStream.stream_id,
@@ -2742,9 +2813,6 @@
 //                   <Text style={styles.liveStreamName} numberOfLines={1}>
 //                     {liveStream.broadcaster_name}
 //                   </Text>
-//                   {/* <Text style={styles.liveStreamStats}>
-//                     {liveStream.likes} likes
-//                   </Text> */}
 //                 </View>
 //               </View>
 //             </TouchableOpacity>
@@ -2864,8 +2932,78 @@
 //     </Modal>
 //   );
 
+//   const renderChannelsSection = () => {
+//   if (channels.length === 0) return null;
+
+//   return (
+//     <View style={styles.channelsSection}>
+//       <View style={styles.channelsHeader}>
+//         <Text style={[styles.channelsTitle, { color: colors.text }]}>
+//           Channels to Follow
+//         </Text>
+//         <TouchableOpacity onPress={() => navigation.navigate('Channelist')}>
+//           <Text style={[styles.seeAllText, { color: colors.primary }]}>
+//             See All
+//           </Text>
+//         </TouchableOpacity>
+//       </View>
+
+//       <FlatList
+//         horizontal
+//         data={channels}
+//         renderItem={({ item }) => {
+//           const imageSource = item.image 
+//             ? { uri: `${API_ROUTE_IMAGE}${item.image}` }
+//             : require('../assets/images/channelfallbackimg.png');
+
+//           return (
+//             <TouchableOpacity
+//               style={[styles.channelCard, { backgroundColor: colors.card }]}
+//               onPress={() => {
+//                 if (item.isFollowing) {
+//                   navigation.navigate('ChannelDetails', {
+//                     receiverId: item.id,
+//                     name: item.name,
+//                     chatType: 'channel',
+//                     profile_image: item.image,
+//                     channelSlug: item.slug,
+//                     InviteLink: item.invite_link,
+//                     followers: item.followers_count
+//                   });
+//                 } else {
+                  
+//                   Alert.alert('Follow Channel', `Follow ${item.name} to access?`, [
+//                     { text: 'Cancel', style: 'cancel' },
+//                     { 
+//                       text: 'Follow', 
+//                       onPress: () => handleFollowChannel(item.slug)
+//                     }
+//                   ]);
+//                 }
+//               }}
+//               activeOpacity={0.7}
+//             >
+//               <Image source={imageSource} style={styles.channelCardImage} />
+//               <Text style={[styles.channelCardName, { color: colors.text }]} numberOfLines={1}>
+//                 {item.name}
+//               </Text>
+//               <Text style={[styles.channelCardMembers, { color: colors.textSecondary }]}>
+//                 {item.followers_count?.toLocaleString() || 0} members
+//               </Text>
+//             </TouchableOpacity>
+//           );
+//         }}
+//         keyExtractor={(item) => `home-channel-${item.id}`}
+//         showsHorizontalScrollIndicator={false}
+//         contentContainerStyle={styles.channelsList}
+//         snapToAlignment="start"
+//         decelerationRate="fast"
+//       />
+//     </View>
+//   );
+// };
+
 //  const renderComment = useCallback(({ item }) => {
-//   // Helper function to extract user data from different comment structures
 //   const extractUserData = (comment) => {
 //     let userId = null;
 //     let username = 'Anonymous';
@@ -3098,6 +3236,57 @@
 //   );
 // }, [replyToCommentId, replyText, handleCommentLike, handleReplyToComment, handleDeleteComment, handleDeleteReply, colors, navigation, currentUserId]); 
 
+// const renderPromoBanner = () => {
+//   const currentPromo = promoData[currentPromoIndex];
+
+//   return (
+//     <View style={styles.promoContainer}>
+//       <Image
+//         source={currentPromo.image}
+//         style={styles.promoBanner}
+//         resizeMode="cover"
+//       />
+      
+//       {/* Gradient overlay - position absolute covering the whole container */}
+//       <LinearGradient
+//         colors={['rgba(0, 0, 0, 0.49)', 'rgba(0,0,0,0.2)']}
+//         style={styles.promoGradient}
+//         start={{ x: 0, y: 0 }}
+//         end={{ x: 0, y: 1 }}
+//       />
+      
+//       {/* Content - position absolute on top of everything */}
+//       <View style={styles.promoContent}>
+//         {/* <View style={styles.promoBadge}>
+//           <Text style={styles.promoBadgeText}>{currentPromo.badge}</Text>
+//         </View> */}
+//         <Text style={styles.promoTitle}>{currentPromo.title}</Text>
+//         <Text style={styles.promoSubtitle}>{currentPromo.subtitle}</Text>
+//         <TouchableOpacity 
+//           onPress={() => navigation.navigate(currentPromo.screen)} 
+//           style={styles.promoButton}
+//           activeOpacity={0.8}
+//         >
+//           <Text style={styles.promoButtonText}>{currentPromo.buttonText}</Text>
+//         </TouchableOpacity>
+//       </View>
+
+//       {/* Dots Indicator */}
+//       <View style={styles.promoDotsContainer}>
+//         {promoData.map((_, index) => (
+//           <View
+//             key={index}
+//             style={[
+//               styles.promoDot,
+//               currentPromoIndex === index && styles.promoDotActive
+//             ]}
+//           />
+//         ))}
+//       </View>
+//     </View>
+//   );
+// };
+
 
 
 // const renderSuggestedFriend = useCallback(({ item }) => (
@@ -3113,6 +3302,7 @@
 //     const friendSuggestionIndex = Math.min(2, firstHalf.length - 1);
 //     const firstPart = firstHalf.slice(0, friendSuggestionIndex);
 //     const secondPart = firstHalf.slice(friendSuggestionIndex);
+    
 
 //     return (
 //       <>
@@ -3128,7 +3318,7 @@
 //         )}
 
 //         {/* Promo Banner */}
-//         <View style={styles.promoContainer}>
+//         {/* <View style={styles.promoContainer}>
 //           <Image
 //             source={require('../assets/images/gdgdg.jpg')} 
 //             style={styles.promoBanner}
@@ -3141,7 +3331,8 @@
 //               <Text style={styles.promoButtonText}>Get Started Now</Text>
 //             </TouchableOpacity>
 //           </View>
-//         </View>
+//         </View> */}
+//         {renderPromoBanner()}
 
 //         {/* First Part of Posts (2-3 posts) */}
 //         {firstPart.length > 0 && (
@@ -3169,6 +3360,12 @@
 //             ListEmptyComponent={null}
 //           />
 //         )}
+
+//          <HangoutPlacesExplore 
+//           navigation={navigation} 
+//           maxItems={10}
+//           title="Popular Hangout Places"
+//         />
 
 //         {/* Second Part of First Half Posts */}
 //         {secondPart.length > 0 && (
@@ -3198,12 +3395,13 @@
 //         )}
 
 //         {/* Friend Suggestion Section */}
-//         <View style={[styles.friendSuggestionWrapper, { 
+//         {/* <View style={[styles.friendSuggestionWrapper, { 
 //           backgroundColor: colors.backgroundSecondary,
 //           borderColor: colors.border 
 //         }]}>
-//           <FriendSuggestion />
-//         </View>
+         
+//         </View> */}
+//          <FriendSuggestion />
 
 //         {/* Suggested Friends Section */}
 //         {showSuggestedFriends && suggestedFriends.length > 0 && (
@@ -3230,6 +3428,15 @@
 //         <Jobs />
 //         <VideoFeeds />
 //         <Ads />
+        
+//         {renderChannelsSection()}
+
+        
+
+      
+      
+    
+        
 
 //         {/* Second Half of Posts */}
 //         {secondHalf.length > 0 && (
@@ -3258,6 +3465,24 @@
 //           />
 //         )}
 
+//         {groupedStatuses.length >0 || liveStreams.length > 0 && (
+
+//           <View style={[styles.friendSuggestionBottom, { 
+//             backgroundColor: colors.background,
+//             borderColor: colors.border 
+//           }]}>
+//             <Text style={[styles.statusTitle, { color: colors.text, fontSize:20, fontWeight:'bold' }]}>Live & Status</Text>
+//             {(groupedStatuses.length > 0 || liveStreams.length > 0) && renderStatusRow()}
+//           </View>
+       
+
+//         )}
+
+        
+          
+
+          
+
 //         {/* Empty state - shown instantly if no posts */}
 //         {combinedPosts.length === 0 && !initialLoading && (
 //           <View style={styles.emptyStateContainer}>
@@ -3275,13 +3500,47 @@
 //         )}
 
 //         {/* Additional Friend Suggestion at the end */}
+        
+//         {combinedPosts.length > 6 && (
+//           // <View style={[styles.friendSuggestionBottom, { 
+//           //   backgroundColor: colors.backgroundSecondary,
+//           //   borderColor: colors.border 
+//           // }]}>
+//           //   <FriendSuggestion />
+//           // </View>
+          
+          
+
+//           <MusicListComponent navigation={navigation} colors={colors} />
+         
+          
+//         )}
+
 //         {combinedPosts.length > 8 && (
-//           <View style={[styles.friendSuggestionBottom, { 
-//             backgroundColor: colors.backgroundSecondary,
-//             borderColor: colors.border 
-//           }]}>
-//             <FriendSuggestion />
-//           </View>
+//           // <View style={[styles.friendSuggestionBottom, { 
+//           //   backgroundColor: colors.backgroundSecondary,
+//           //   borderColor: colors.border 
+//           // }]}>
+//           //   <FriendSuggestion />
+//           // </View>
+          
+          
+
+//           <EdateDiscoverScreen />
+         
+          
+//         )}
+//         {combinedPosts.length > 11 && (
+//           // <View style={[styles.friendSuggestionBottom, { 
+//           //   backgroundColor: colors.backgroundSecondary,
+//           //   borderColor: colors.border 
+//           // }]}>
+//           //   <FriendSuggestion />
+//           // </View>
+          
+          
+//           <FriendSuggestion />
+          
 //         )}
 //       </>
 //     );
@@ -3307,6 +3566,8 @@
 //   ]);
 
 //   return (
+//     <>
+      
 //     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
 //       <StatusBar 
 //         backgroundColor={colors.card} 
@@ -3318,9 +3579,9 @@
 //         backgroundColor: colors.card,
 //         borderBottomColor: colors.border 
 //       }]}>
-//         <Text style={[styles.headerTitle, { color: colors.primary }]}>Broadcast</Text>
+//         <Text style={[styles.headerTitle, { color: colors.primary }]}>Showa</Text>
 //         <View style={styles.headerActions}>
-//           <TouchableOpacity 
+//            {/* <TouchableOpacity 
 //             onPress={() => {
 //               navigation.navigate('Broadcaster', {
 //                 roomName: `user-${userName}`,
@@ -3331,13 +3592,73 @@
 //             }}
 //             style={styles.goLiveButton}
 //           >
-//             <Ionicons name="radio" size={20} color={colors.text} />
+//             <Ionicons name="radio" size={17} color={colors.text} />
 //             <Text style={[styles.goLiveText, { color: colors.text }]}>Go Live</Text>
-//           </TouchableOpacity>
+//           </TouchableOpacity> */}
+//           {/* <TouchableOpacity
+//                         style={styles.exploreIconContainer}
+//                         onPress={toggleTheme}
+//                       >
+//                         <Icon 
+//                           style={{ marginRight: 20 }}
+//                           name={isDark ? 'moon' : 'sunny'}
+//                           size={25} 
+//                           color={colors.text}
+//                         />
+//                       </TouchableOpacity> */}
+//                       {/* <TouchableOpacity
+//                         onPress={() => navigation.navigate('EssentialPlatforms')}
+//                         style={styles.exploreIconContainer}
+//                       >
+//                         <Icon name="compass-outline" size={27} color="#fff" style={{ marginRight: 25 }} />
+//                         <View style={styles.exploreBadge}>
+//                           <Text style={[styles.exploreBadgeText,{fontWeight:'800'}]}>Explore</Text>
+//                         </View>
+//                       </TouchableOpacity> */}
+          
+                      
+//                       <TouchableOpacity onPress={() => navigation.navigate('SocialHome')}>
+//                         <Icontt name="video-outline" size={28} color={colors.text} style={{ marginRight: 20,  }} />
+//                       </TouchableOpacity>
+
+//                       {/* <TouchableOpacity 
+//                           onPress={() => navigation.navigate('NotificationsScreen')}
+//                           style={styles.notificationIconContainer}
+//                         >
+//                           <Icon name="notifications-outline" size={25} color={colors.text} style={{ marginRight: 22 }} />
+//                           {unreadNotificationCount > 0 && (
+//                             <View style={styles.notificationBadge}>
+//                               <Text style={styles.notificationBadgeText}>
+//                                 {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+//                               </Text>
+//                             </View>
+//                           )}
+//                         </TouchableOpacity> */}
+//                         <TouchableOpacity 
+//   onPress={() => navigation.navigate('NotificationsScreen')}
+//   style={styles.notificationIconContainer}
+// >
+//   <Icon name="notifications-outline" size={25} color={colors.text} style={{ marginRight: 22 }} />
+//   {unreadNotificationCount > 0 && (
+//     <View style={styles.notificationBadge}>
+//       <Text style={styles.notificationBadgeText}>
+//         {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+//       </Text>
+//     </View>
+//   )}
+// </TouchableOpacity>
+                      
+         
           
 //           <TouchableOpacity onPress={() => navigation.navigate('CreateBroadcastPost')}>
-//             <Ionicons name="add-circle-outline" size={34} color={colors.text} />
+//             <Ionicons name="add-circle-outline" size={30} color={colors.text} />
 //           </TouchableOpacity>
+//           <TouchableOpacity onPress={()=>navigation.navigate('ExploreFeaturePersonalAcount')}>
+//                         <Icon name="ellipsis-vertical" style={{ marginLeft: 10 }} size={25} color={colors.text} />
+//                       </TouchableOpacity>
+//           {/* <TouchableOpacity onPress={() => navigation.navigate('CreateBroadcastPost')}>
+//             <Ionicons name="notification" size={34} color={colors.text} />
+//           </TouchableOpacity> */}
 //         </View>
 //       </View>
 
@@ -3358,15 +3679,17 @@
 //         style={{ backgroundColor: colors.background }}
 //       >
 //         {renderContent()}
+//         <View style={{marginBottom:100}}></View>
+     
 //       </ScrollView>
 
-      
+// {/*       
 //       <TouchableOpacity 
 //         style={[styles.fab, { backgroundColor: colors.primary }]}
 //         onPress={() => navigation.navigate('CreateBroadcastPost')}
 //       >
 //         <Icon name="add" size={24} color="#fff" />
-//       </TouchableOpacity>
+//       </TouchableOpacity> */}
 
       
 //       <ImageModal
@@ -3434,32 +3757,39 @@
 //                       </View>
 //                     </View>
 //                     <Text style={[styles.postContent, { color: colors.text }]}>{postById.content}</Text>
-//                     {/* {postById.image && (
-//                       <Image
-//                         source={{ uri: `${API_ROUTE_IMAGE}${postById.image}` }}
-//                         style={styles.postImagePreview}
-//                         resizeMode="cover"
-//                       />
-//                     )} */}
 //                   </View>
 //                 )}
 
 //                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-//                 {/* Comments List */}
-//                 <FlatList
-//                   data={commentsss.filter((c) => c.post === selectedPostId && !c.parent)}
-//                   keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-//                   scrollEnabled={false}
-//                   renderItem={renderComment}
-//                   ListEmptyComponent={
-//                     <View style={styles.emptyComments}>
-//                       <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-//                         No comments yet. Be the first to comment!
-//                       </Text>
-//                     </View>
-//                   }
-//                 />
+//                 {/* 
+//                   NEW: while the comments fetch is in flight we show a
+//                   spinner instead of letting the FlatList's
+//                   ListEmptyComponent ("No comments yet...") flash
+//                   before real data arrives. commentsLoading is set
+//                   the moment the modal opens and cleared once the
+//                   fetch settles (success OR failure), so this never
+//                   spins forever.
+//                 */}
+//                 {commentsLoading ? (
+//                   <View style={styles.emptyComments}>
+//                     <ActivityIndicator size="small" color={colors.primary} />
+//                   </View>
+//                 ) : (
+//                   <FlatList
+//                     data={commentsss.filter((c) => c.post === selectedPostId && !c.parent)}
+//                     keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+//                     scrollEnabled={false}
+//                     renderItem={renderComment}
+//                     ListEmptyComponent={
+//                       <View style={styles.emptyComments}>
+//                         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+//                           No comments yet. Be the first to comment!
+//                         </Text>
+//                       </View>
+//                     }
+//                   />
+//                 )}
 
               
 //                 {Platform.OS === 'ios' && <View style={{ height: 20 }} />}
@@ -3467,22 +3797,6 @@
 
             
 //               <View style={[styles.commentInputContainer, { borderTopColor: colors.border }]}>
-//                 {/* {replyToCommentId && (
-//                   <View style={[styles.replyingBar, { backgroundColor: colors.backgroundSecondary }]}>
-//                     <Text style={[styles.replyingText, { color: colors.textSecondary }]}>
-//                       Replying to comment
-//                     </Text>
-//                     <TouchableOpacity 
-//                       onPress={() => {
-//                         setReplyToCommentId(null);
-//                         setNewComment('');
-//                       }}
-//                     >
-//                       <Ionicons name="close" size={18} color={colors.textSecondary} />
-//                     </TouchableOpacity>
-//                   </View>
-//                 )} */}
-                
 //                 <View style={styles.inputRow}>
 //                   <TextInput
 //                     placeholder={replyToCommentId ? "Write a reply..." : "Write a comment..."}
@@ -3813,17 +4127,79 @@
 //   </View>
 // </Modal>
 
-//       <Snackbar
+// <EarningsSlideInManager />
+ 
+
+// <Animated.View style={{ 
+//   opacity: snackbarFadeAnim,
+//   position: 'absolute',
+//   top: 0,
+//   left: 0,
+//   right: 0,
+//   zIndex: 99999, 
+// }}>
+//   <Snackbar
+//     visible={snackbarVisible}
+//     onDismiss={() => setSnackbarVisible(false)}
+//     duration={3000}
+//     style={{
+//       backgroundColor: snackbarType === 'error' ? '#FF3B30' : 
+//                       snackbarType === 'info' ? '#007AFF' : '#2baf4cff',
+//       margin: 10,
+//       borderRadius: 10,
+      
+//     }}
+//     wrapperStyle={{
+//       position: 'absolute',
+//       top: Platform.OS === 'ios' ? 40 : 20,
+//       left: 0,
+//       right: 0,
+//       zIndex: 99999,
+//     }}
+//   >
+//     <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 0 }}>
+//       <Ionicons 
+//         name={snackbarType === 'error' ? 'alert-circle' : 
+//               snackbarType === 'info' ? 'information-circle' : 'checkmark-circle'} 
+//         size={22} 
+//         color="#fff" 
+//         style={{ marginRight: 12 }}
+//       />
+//       <Text style={{ color: '#fff', fontSize: 14, flex: 1 }}>
+//         {snackbarMessage}
+//       </Text>
+//     </View>
+//   </Snackbar>
+// </Animated.View>
+//       {/* <Snackbar
 //         visible={snackbarVisible}
 //         onDismiss={() => setSnackbarVisible(false)}
 //         duration={3000}
-//         style={{ backgroundColor: colors.primary }}
+//         style={{ backgroundCodslor: colors.primary }}
 //       >
 //         <Text style={{ color: '#fff' }}>Action completed successfully!</Text>
-//       </Snackbar>
+//       </Snackbar> */}
+//    <BottomNav 
+//       navigation={navigation} 
+//       setShowAccountModal={setShowAccountModal}
+//       activeRoute="Home" 
+//         style={{ zIndex: 9999 }}
+//     />
+// <AccountSwitchBottomSheet
+//   visible={showAccountModal}
+//   onClose={() => setShowAccountModal(false)}
+//   navigation={navigation}
+//   colors={colors}
+//   isDark={isDark}
+// />
 //     </SafeAreaView>
+   
+
+         
+// </>
 //   );
 // }
+
 
 // const styles = StyleSheet.create({
 //   container: { 
@@ -3834,7 +4210,8 @@
 //     justifyContent: "space-between",
 //     alignItems: "center",
 //     padding: 15,
-//     borderBottomWidth: 0.5,
+//     borderBottomWidth: 1,
+//     backgroundColor:'#fff',
 //     elevation: 20,
 //     shadowColor: '#000',
 //     shadowOffset: { width: 0, height: 2 },
@@ -3883,6 +4260,10 @@
 // },
 // statusRightTapArea: {
 //   right: 0,
+// },
+// sectionContainer: {
+//   marginTop: 12,
+//   marginBottom: 8,
 // },
 // statusViewerHeader: {
 //   position: 'absolute',
@@ -3991,10 +4372,10 @@
 //   },
 //   goLiveButton: {
 //     alignItems: 'center',
-//     marginRight: 20,
+//     marginRight: 24,
 //   },
 //   goLiveText: {
-//     fontSize: 12,
+//     fontSize: 11,
 //     marginTop: 2,
 //   },
   
@@ -4010,16 +4391,15 @@
 //     marginBottom: 8,
 //     textAlign: 'center',
 //   },
-//   // Add these styles to your existing StyleSheet
 // imageModalImageSection: {
-//   height: '60%', // Takes 60% of screen height
+//   height: '60%',
 //   width: '100%',
 //   justifyContent: 'center',
 //   alignItems: 'center',
 // },
 
 // imageModalInfoContainer: {
-//   height: '40%', // Takes 40% of screen height
+//   height: '40%',
 //   width: '100%',
 //   borderTopLeftRadius: 20,
 //   borderTopRightRadius: 20,
@@ -4032,7 +4412,6 @@
 //   paddingBottom: 16,
 // },
 
-// // Update existing styles or add if missing
 // imageModalUserInfo: {
 //   flexDirection: 'row',
 //   alignItems: 'center',
@@ -4143,9 +4522,7 @@
 //   },
 
 //   tweetContainer: {
-//     // flexDirection: "row",
 //     paddingVertical: 20,
-    
 //     borderBottomWidth: 1.5,
 //   },
 //   avatarContainer: {
@@ -4157,19 +4534,7 @@
 //     borderRadius: 20,
 //     borderWidth: 1,
 //   },
-//   verifiedBadge: {
-//     position: 'absolute',
-//     bottom: -2,
-//     right: -2,
-//     backgroundColor: '#1DA1F2',
-//     width: 16,
-//     height: 16,
-//     borderRadius: 8,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     borderWidth: 2,
-//     borderColor: '#fff',
-//   },
+ 
 //   verifiedBadgeSmall: {
 //     marginLeft: 4,
 //     backgroundColor: '#1DA1F2',
@@ -4181,7 +4546,6 @@
 //   },
 //   tweetContent: { 
 //     flex: 1, 
- 
 //   },
 //   tweetHeader: { 
 //     flexDirection: "row", 
@@ -4220,18 +4584,6 @@
 //     maxHeight: 700,      
 //     minHeight: 300,      
 //   },
-//   imageLoadingOverlay: {
-//     position: 'absolute',
-//     top: 0,
-//     left: 0,
-//     right: 0,
-//     bottom: 0,
-//     backgroundColor: 'rgba(0,0,0,0.3)',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     zIndex: 1,
-//     borderRadius: 12,
-//   },
 //   cameraIconContainer: {
 //     alignItems: 'center',
 //     justifyContent: 'center',
@@ -4242,11 +4594,6 @@
 //   loadingIndicator: {
 //     marginBottom: 4,
 //   },
-//   loadingText: {
-//     color: '#fff',
-//     fontSize: 12,
-//     fontWeight: '500',
-//   },
   
 //   tweetActions: {
 //     flexDirection: "row",
@@ -4255,7 +4602,8 @@
 //     paddingHorizontal: 10,
 //   },
 //   actionButton: {
-//     flexDirection: 'column',
+//     marginTop:10,
+//     flexDirection: 'row',
 //     alignItems: 'center',
 //     borderRadius: 10,
 //     padding: 0,
@@ -4263,6 +4611,55 @@
 //     minWidth: 60,
 //     justifyContent: 'center',
 //   },
+//   channelsSection: {
+//   paddingVertical: 12,
+//   paddingHorizontal: 16,
+// },
+// channelsHeader: {
+//   flexDirection: 'row',
+//   justifyContent: 'space-between',
+//   alignItems: 'center',
+//   marginBottom: 12,
+// },
+// channelsTitle: {
+//   fontSize: 18,
+//   fontWeight: '700',
+// },
+// seeAllText: {
+//   fontSize: 14,
+//   fontWeight: '600',
+// },
+// channelsList: {
+//   paddingRight: 16,
+// },
+// channelCard: {
+//   width: 120,
+//   padding: 10,
+//   borderRadius: 12,
+//   marginRight: 12,
+//   alignItems: 'center',
+//   shadowColor: '#000',
+//   shadowOffset: { width: 0, height: 2 },
+//   shadowOpacity: 0.05,
+//   shadowRadius: 4,
+//   elevation: 2,
+//   marginBottom:10
+// },
+// channelCardImage: {
+//   width: 90,
+//   height: 90,
+//   borderRadius: 50,
+//   marginBottom: 8,
+// },
+// channelCardName: {
+//   fontSize: 14,
+//   fontWeight: '600',
+//   textAlign: 'center',
+// },
+// channelCardMembers: {
+//   fontSize: 12,
+//   marginTop: 2,
+// },
 //   actionCount: {
 //     marginLeft: 6,
 //     fontSize: 14,
@@ -4292,144 +4689,6 @@
 //     marginLeft: 'auto',
 //     padding: 4,
 //   },
-//   commentUserInfo: {
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   flex: 1,
-//   flexWrap: 'wrap',
-// },
-
-// commentUserInfo: {
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   flex: 1,
-//   flexWrap: 'wrap',
-//   gap: 6,
-// },
-
-// commentTimestamp: {
-//   fontSize: 11,
-//   color: colors.textSecondary,
-// },
-
-// commentActions: {
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   marginTop: 8,
-//   gap: 16,
-// },
-
-// commentActionButton: {
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   gap: 4,
-//   paddingVertical: 2,
-//   paddingHorizontal: 4,
-// },
-
-// commentActionText: {
-//   fontSize: 12,
-//   color: colors.textSecondary,
-// },
-
-// repliesWrapper: {
-//   marginTop: 12,
-//   paddingLeft: 12,
-//   borderLeftWidth: 2,
-//   borderLeftColor: colors.border,
-// },
-
-// replyContainer: {
-//   flexDirection: 'row',
-//   marginBottom: 12,
-// },
-
-// replyAvatar: {
-//   width: 24,
-//   height: 24,
-//   borderRadius: 12,
-//   marginRight: 8,
-// },
-
-// replyContent: {
-//   flex: 1,
-//   padding: 10,
-//   borderRadius: 12,
-// },
-
-// replyHeader: {
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   justifyContent: 'space-between',
-//   marginBottom: 4,
-// },
-
-// replyUserInfo: {
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   flex: 1,
-//   flexWrap: 'wrap',
-//   gap: 4,
-// },
-
-// replyUsername: {
-//   fontWeight: '600',
-//   fontSize: 12,
-// },
-
-// replyTimestamp: {
-//   fontSize: 10,
-// },
-
-// replyText: {
-//   fontSize: 12,
-//   lineHeight: 16,
-// },
-
-// replyDeleteButton: {
-//   padding: 4,
-//   marginLeft: 4,
-// },
-
-// viewMoreReplies: {
-//   marginTop: 8,
-//   paddingVertical: 4,
-// },
-
-// viewMoreRepliesText: {
-//   fontSize: 12,
-//   fontWeight: '500',
-// },
-
-// commentDeleteButton: {
-//   padding: 4,
-//   marginLeft: 8,
-// },
-
-// commentHeader: {
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   justifyContent: 'space-between',
-//   marginBottom: 4,
-//   width: '100%',
-// },
-
-// commentDeleteButton: {
-//   padding: 4,
-//   marginLeft: 8,
-// },
-
-// commentActions: {
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   marginTop: 8,
-//   gap: 16,
-//   flexWrap: 'wrap',
-// },
-// commentContent: {
-//   flex: 1,
-//   marginLeft: 12,
-// },
 //   fab: {
 //     position: "absolute",
 //     bottom: 30,
@@ -4526,7 +4785,6 @@
 //     lineHeight: 20,
 //     marginBottom: 12,
 //   },
-//   // Image grid styles
 // singleImageContainer: {
 //   width: '100%',
 //   aspectRatio: 1,
@@ -4628,7 +4886,6 @@
 //   alignItems: 'center',
 // },
 
-// // Modal image styles
 // modalImagePage: {
 //   width: width,
 //   height: '70%',
@@ -4650,7 +4907,6 @@
 //   fontWeight: '600',
 // },
 
-// // Verified badge
 // verifiedBadge: {
 //   backgroundColor: "#1877F2",
 //   borderRadius: 50,
@@ -4658,7 +4914,7 @@
 //   height: 16,
 //   alignItems: "center",
 //   justifyContent: "center",
-//   marginLeft: 4,
+//   marginLeft: 17,
 // },
 //   postImagePreview: {
 //     width: '100%',
@@ -4670,27 +4926,6 @@
 //     alignItems: 'center',
 //     padding: 16,
 //     borderTopWidth: 1,
-//   },
-//   commentInput: {
-//     flex: 1,
-//     fontSize: 16,
-//     paddingVertical: 12,
-//     paddingHorizontal: 16,
-//     borderRadius: 24,
-//     marginRight: 12,
-//   },
-//   sendButton: {
-//     paddingHorizontal: 20,
-//     paddingVertical: 12,
-//     borderRadius: 24,
-//   },
-//   sendButtonText: {
-//     color: '#fff',
-//     fontWeight: '600',
-//     fontSize: 16,
-//   },
-//   sendButtonDisabled: {
-//     opacity: 0.5,
 //   },
 //   sectionTitle: {
 //     fontSize: 20,
@@ -4707,6 +4942,26 @@
 //     marginRight: 12,
 //     position: 'relative',
 //   },
+//   notificationIconContainer: {
+//   position: 'relative',
+// },
+// notificationBadge: {
+//   position: 'absolute',
+//   top: -5,
+//   right: 15,
+//   backgroundColor: '#FF3B30',
+//   borderRadius: 10,
+//   minWidth: 18,
+//   height: 18,
+//   justifyContent: 'center',
+//   alignItems: 'center',
+//   paddingHorizontal: 4,
+// },
+// notificationBadgeText: {
+//   color: '#fff',
+//   fontSize: 10,
+//   fontWeight: 'bold',
+// },
 //   statusImage: {
 //     width: 80,
 //     height: 120,
@@ -4903,16 +5158,6 @@
 //     alignItems: 'center',
 //     marginBottom: 15,
 //   },
-//   commentDeleteButton: {
-//   padding: 4,
-//   marginLeft: 'auto',
-// },
-// commentHeader: {
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   marginBottom: 2,
-//   flex: 1,
-// },
 //   liveModalTitle: {
 //     fontSize: 20,
 //     fontWeight: 'bold',
@@ -5002,51 +5247,148 @@
 //   emptyViewersText: {
 //     fontSize: 16,
 //   },
+//   // promoContainer: {
+//   //   height: 160,
+//   //   borderRadius: 12,
+//   //   overflow: 'hidden',
+//   //   margin: 16,
+//   //   marginTop: 8,
+//   //   position: 'relative',
+//   // },
+//   // promoBanner: {
+//   //   width: '100%',
+//   //   height: '100%',
+//   // },
+//   // promoContent: {
+//   //   position: 'absolute',
+//   //   top: 0,
+//   //   left: 0,
+//   //   right: 0,
+//   //   bottom: 0,
+//   //   padding: 20,
+//   //   justifyContent: 'center',
+//   //   backgroundColor: 'rgba(0,0,0,0.3)',
+//   // },
+//   // promoTitle: {
+//   //   fontSize: 24,
+//   //   fontWeight: '700',
+//   //   color: '#fff',
+//   //   marginBottom: 4,
+//   // },
+//   // promoSubtitle: {
+//   //   fontSize: 16,
+//   //   color: '#fff',
+//   //   marginBottom: 12,
+//   // },
+//   // promoButton: {
+//   //   backgroundColor: '#fff',
+//   //   borderRadius: 20,
+//   //   paddingVertical: 8,
+//   //   paddingHorizontal: 20,
+//   //   alignSelf: 'flex-start',
+//   // },
+//   // promoButtonText: {
+//   //   color: '#0d64dd',
+//   //   fontWeight: '600',
+//   //   fontSize: 14,
+//   // },
 //   promoContainer: {
-//     height: 160,
-//     borderRadius: 12,
-//     overflow: 'hidden',
-//     margin: 16,
-//     marginTop: 8,
-//     position: 'relative',
-//   },
-//   promoBanner: {
-//     width: '100%',
-//     height: '100%',
-//   },
-//   promoContent: {
-//     position: 'absolute',
-//     top: 0,
-//     left: 0,
-//     right: 0,
-//     bottom: 0,
-//     padding: 20,
-//     justifyContent: 'center',
-//     backgroundColor: 'rgba(0,0,0,0.3)',
-//   },
-//   promoTitle: {
-//     fontSize: 24,
-//     fontWeight: '700',
-//     color: '#fff',
-//     marginBottom: 4,
-//   },
-//   promoSubtitle: {
-//     fontSize: 16,
-//     color: '#fff',
-//     marginBottom: 12,
-//   },
-//   promoButton: {
-//     backgroundColor: '#fff',
-//     borderRadius: 20,
-//     paddingVertical: 8,
-//     paddingHorizontal: 20,
-//     alignSelf: 'flex-start',
-//   },
-//   promoButtonText: {
-//     color: '#0d64dd',
-//     fontWeight: '600',
-//     fontSize: 14,
-//   },
+//   height: 180,
+//   borderRadius: 12,
+//   overflow: 'hidden',
+//   margin: 16,
+//   marginTop: 8,
+//   position: 'relative',
+//   backgroundColor: '#000',
+// },
+// promoBanner: {
+//   width: '100%',
+//   height: '100%',
+//   position: 'absolute',
+//   top: 0,
+//   left: 0,
+// },
+// promoGradient: {
+//   position: 'absolute',
+//   top: 0,
+//   left: 0,
+//   right: 0,
+//   bottom: 0,
+//   zIndex: 1,
+// },
+// promoContent: {
+//   position: 'absolute',
+//   top: 0,
+//   left: 0,
+//   right: 0,
+//   bottom: 0,
+//   padding: 20,
+//   justifyContent: 'center',
+//   zIndex: 2,
+// },
+// promoBadge: {
+//   backgroundColor: '#FF6B35',
+//   paddingHorizontal: 12,
+//   paddingVertical: 4,
+//   borderRadius: 20,
+//   alignSelf: 'flex-start',
+//   marginBottom: 8,
+//   zIndex: 3,
+// },
+// promoBadgeText: {
+//   color: '#fff',
+//   fontSize: 12,
+//   fontWeight: '700',
+// },
+// promoTitle: {
+//   fontSize: 24,
+//   fontWeight: '700',
+//   color: '#FFFFFF',
+//   marginBottom: 4,
+//   textShadowColor: 'rgba(0,0,0,0.5)',
+//   textShadowOffset: { width: 0, height: 1 },
+//   textShadowRadius: 4,
+// },
+// promoSubtitle: {
+//   fontSize: 14,
+//   color: '#FFFFFF',
+//   marginBottom: 12,
+//   textShadowColor: 'rgba(0,0,0,0.5)',
+//   textShadowOffset: { width: 0, height: 1 },
+//   textShadowRadius: 3,
+//   opacity: 0.9,
+// },
+// promoButton: {
+//   backgroundColor: '#FFFFFF',
+//   borderRadius: 20,
+//   paddingVertical: 10,
+//   paddingHorizontal: 24,
+//   alignSelf: 'flex-start',
+//   zIndex: 3,
+// },
+// promoButtonText: {
+//   color: '#0d64dd',
+//   fontWeight: '700',
+//   fontSize: 14,
+// },
+// promoDotsContainer: {
+//   position: 'absolute',
+//   bottom: 10,
+//   alignSelf: 'center',
+//   flexDirection: 'row',
+//   zIndex: 3,
+//   gap: 6,
+// },
+// promoDot: {
+//   width: 8,
+//   height: 8,
+//   borderRadius: 4,
+//   backgroundColor: 'rgba(255,255,255,0.5)',
+// },
+// promoDotActive: {
+//   backgroundColor: '#FFFFFF',
+//   width: 20,
+// },
 //   suggestedFriendsContainer: {
 //     paddingVertical: 12,
 //     paddingHorizontal: 16,
@@ -5084,23 +5426,43 @@
 // commentHeader: {
 //   flexDirection: 'row',
 //   alignItems: 'center',
-//   marginBottom: 2,
+//   justifyContent: 'space-between',
+//   marginBottom: 4,
+//   width: '100%',
 // },
 // replyHeader: {
 //   flexDirection: 'row',
 //   alignItems: 'center',
-//   marginBottom: 2,
+//   justifyContent: 'space-between',
+//   marginBottom: 4,
+// },
+// commentUserInfo: {
+//   flexDirection: 'row',
+//   alignItems: 'center',
+//   flex: 1,
+//   flexWrap: 'wrap',
+//   gap: 6,
+// },
+// replyUserInfo: {
+//   flexDirection: 'row',
+//   alignItems: 'center',
+//   flex: 1,
+//   flexWrap: 'wrap',
+//   gap: 4,
 // },
 // commentActions: {
 //   flexDirection: 'row',
 //   alignItems: 'center',
-//   marginTop: 6,
-//   gap: 20,
+//   marginTop: 8,
+//   gap: 16,
+//   flexWrap: 'wrap',
 // },
 // commentActionButton: {
 //   flexDirection: 'row',
 //   alignItems: 'center',
 //   gap: 4,
+//   paddingVertical: 2,
+//   paddingHorizontal: 4,
 // },
 // commentActionText: {
 //   fontSize: 11,
@@ -5130,16 +5492,6 @@
 //   paddingVertical: 6,
 // },
 // replyCancelText: {
-//   fontSize: 12,
-// },
-// replySendButton: {
-//   paddingHorizontal: 16,
-//   paddingVertical: 6,
-//   borderRadius: 16,
-// },
-// replySendButtonText: {
-//   color: '#fff',
-//   fontWeight: '600',
 //   fontSize: 12,
 // },
 // replySendButtonDisabled: {
@@ -5215,7 +5567,6 @@
 //     color: '#333',
 //   },
   
-//   // Image Modal Styles
 //   imageModalOverlay: {
 //     flex: 1,
 //     justifyContent: 'center',
@@ -5263,55 +5614,11 @@
 //     fontWeight: '500',
 //   },
   
-//   fullSizeImage: {
-//     width: '100%',
-//     height: '70%',
-//   },
 //   imageModalInfo: {
 //     padding: 20,
 //     borderTopLeftRadius: 20,
 //     borderTopRightRadius: 20,
 //     marginTop: -20,
-//   },
-//   imageModalUserInfo: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginBottom: 12,
-//   },
-//   imageModalAvatar: {
-//     width: 40,
-//     height: 40,
-//     borderRadius: 20,
-//     marginRight: 12,
-//   },
-//   imageModalUserText: {
-//     flex: 1,
-//   },
-//   imageModalUsername: {
-//     fontSize: 16,
-//     fontWeight: '600',
-//   },
-//   imageModalTime: {
-//     fontSize: 12,
-//     marginTop: 2,
-//   },
-//   imageModalCaption: {
-//     fontSize: 15,
-//     lineHeight: 20,
-//     marginBottom: 12,
-//   },
-//   imageModalStats: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   imageModalStat: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginRight: 20,
-//   },
-//   imageModalStatText: {
-//     fontSize: 14,
-//     marginLeft: 6,
 //   },
 
 //   commentContainer: {
@@ -5330,6 +5637,7 @@
 //   },
 //   commentContent: {
 //     flex: 1,
+//     marginLeft: 12,
 //   },
 //   commentUsername: {
 //     fontWeight: '600',
@@ -5340,11 +5648,6 @@
 //     marginTop: 4,
 //     lineHeight: 18,
 //   },
-//   // commentActions: {
-//   //   flexDirection: 'row',
-//   //   alignItems: 'center',
-//   //   marginTop: 8,
-//   // },
 //   commentTimestamp: {
 //     fontSize: 12,
 //     marginRight: 16,
@@ -5354,7 +5657,6 @@
 //     marginRight: 16,
 //   },
 //   repliesWrapper: {
-//     marginLeft: 0,
 //     marginTop: 12,
 //     paddingLeft: 12,
 //     borderLeftWidth: 2,
@@ -5372,7 +5674,6 @@
 //   },
 //   replyContent: {
 //     flex: 1,
-//     backgroundColor: colors.background,
 //     padding: 8,
 //     borderRadius: 12,
 //   },
@@ -5388,10 +5689,22 @@
 //     fontSize: 10,
 //     marginTop: 4,
 //   },
+//   replyDeleteButton: {
+//     padding: 4,
+//     marginLeft: 4,
+//   },
 //   viewMoreReplies: {
 //     fontSize: 12,
 //     fontWeight: '500',
 //     marginTop: 8,
+//   },
+//   viewMoreRepliesText: {
+//     fontSize: 12,
+//     fontWeight: '500',
+//   },
+//   commentDeleteButton: {
+//     padding: 4,
+//     marginLeft: 8,
 //   },
 //   replyInputContainer: {
 //     flexDirection: 'row',
@@ -5416,16 +5729,26 @@
 //     fontWeight: '600',
 //     fontSize: 12,
 //   },
+//   notificationBadge: {
+//   position: 'absolute',
+//   top: -5,
+//   right: 15,
+//   backgroundColor: '#FF3B30',
+//   borderRadius: 10,
+//   minWidth: 18,
+//   height: 18,
+//   justifyContent: 'center',
+//   alignItems: 'center',
+//   paddingHorizontal: 4,
+// },
+// notificationBadgeText: {
+//   color: '#fff',
+//   fontSize: 10,
+//   fontWeight: 'bold',
+// },
 //   divider: {
 //     height: 1,
 //     marginVertical: 16,
-//   },
-//   emptyComments: {
-//     padding: 20,
-//     alignItems: 'center',
-//   },
-//   emptyText: {
-//     fontSize: 514,
 //   },
 // });
 
@@ -5459,7 +5782,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Icontt from 'react-native-vector-icons/MaterialCommunityIcons';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createMMKV } from 'react-native-mmkv';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Snackbar } from 'react-native-paper';
 import dayjs from 'dayjs';
@@ -5472,7 +5795,6 @@ import Video from 'react-native-video';
 import axios from 'axios';
 import BottomNav from '../components/BottomNavSocialMedia';
 import FriendSuggestion from '../components/FriendSuggestion';
-import backgroundFetchService from '../src/services/BackgroundFetchService';
 import { useTheme } from '../src/context/ThemeContext'; 
 import Jobs from '../screens/Jobs';
 import VideoFeeds from '../screens/ShortFeedVideo';
@@ -5481,23 +5803,31 @@ import Ads from '../screens/AdsFeed';
 import EdateDiscoverScreen from '../screens/EdateDiscoverScreen';
 import AccountSwitchBottomSheet from '../components/AccountSwitchBottomSheet';
 import MusicListComponent from '../components/Emusic';
+import EarningsSlideInManager from '../components/EarningsSlideInManager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import StatusSection from '../components/StatusSection';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
 dayjs.extend(relativeTime);
 
 const { width, height } = Dimensions.get('window');
 
-
+// Initialize MMKV storage
+const storage = createMMKV({
+  id: 'home-storage',
+});
 
 // Cache configuration
 const POSTS_CACHE_KEY = 'posts_cache_v2'; 
 const ALL_POSTS_CACHE_KEY = 'all_posts_cache_v2';
 const VIEWS_CACHE_KEY = 'post_views_cache';
 const SHARES_CACHE_KEY = 'post_shares_cache';
-const CACHE_EXPIRATION_TIME = 5 * 60 * 1000; // 5 minutes
+const CACHE_EXPIRATION_TIME = 5 * 60 * 1000; 
 
+// MMKV helper functions for views and shares
 const trackPostView = async (postId) => {
   try {
-    const viewsData = await AsyncStorage.getItem(VIEWS_CACHE_KEY);
+    const viewsData = storage.getString(VIEWS_CACHE_KEY);
     const views = viewsData ? JSON.parse(viewsData) : {};
     
     if (!views[postId]) {
@@ -5514,7 +5844,7 @@ const trackPostView = async (postId) => {
       }
     }
     
-    await AsyncStorage.setItem(VIEWS_CACHE_KEY, JSON.stringify(views));
+    storage.set(VIEWS_CACHE_KEY, JSON.stringify(views));
     return views[postId].count;
   } catch (error) {
     console.error('Error tracking view:', error);
@@ -5524,7 +5854,7 @@ const trackPostView = async (postId) => {
 
 const getPostViews = async (postId) => {
   try {
-    const viewsData = await AsyncStorage.getItem(VIEWS_CACHE_KEY);
+    const viewsData = storage.getString(VIEWS_CACHE_KEY);
     const views = viewsData ? JSON.parse(viewsData) : {};
     return views[postId]?.count || 0;
   } catch (error) {
@@ -5532,9 +5862,10 @@ const getPostViews = async (postId) => {
     return 0;
   }
 };
+
 const trackPostShare = async (postId) => {
   try {
-    const sharesData = await AsyncStorage.getItem(SHARES_CACHE_KEY);
+    const sharesData = storage.getString(SHARES_CACHE_KEY);
     const shares = sharesData ? JSON.parse(sharesData) : {};
     
     if (!shares[postId]) {
@@ -5547,7 +5878,7 @@ const trackPostShare = async (postId) => {
       shares[postId].timestamp = Date.now();
     }
     
-    await AsyncStorage.setItem(SHARES_CACHE_KEY, JSON.stringify(shares));
+    storage.set(SHARES_CACHE_KEY, JSON.stringify(shares));
     return shares[postId].count;
   } catch (error) {
     console.error('Error tracking share:', error);
@@ -5557,7 +5888,7 @@ const trackPostShare = async (postId) => {
 
 const getPostShares = async (postId) => {
   try {
-    const sharesData = await AsyncStorage.getItem(SHARES_CACHE_KEY);
+    const sharesData = storage.getString(SHARES_CACHE_KEY);
     const shares = sharesData ? JSON.parse(sharesData) : {};
     return shares[postId]?.count || 0;
   } catch (error) {
@@ -5565,24 +5896,28 @@ const getPostShares = async (postId) => {
   }
 };
 
-// ============================================================
-// NEW: Batched views+shares reader.
-// Why: the original code called AsyncStorage.getItem() TWICE
-// PER POST (once for views, once for shares) inside a
-// Promise.all(posts.map(...)) loop. For 50 posts that's 100
-// separate AsyncStorage round trips before the screen could
-// render. AsyncStorage reads aren't free — they cross the
-// JS-to-native bridge — so this was a major source of the
-// "slow to render even from cache" feeling.
-// Now we read the two JSON blobs ONCE, and every post just
-// does a synchronous object lookup against the result.
-// ============================================================
+ const getUserProfileImage = (profilePicture) => {
+  if (!profilePicture) {
+    return require('../assets/images/avatar/blank-profile-picture-973460_1280.png');
+  }
+  
+  // Check if it's a valid URL
+  if (profilePicture.startsWith('http://') || profilePicture.startsWith('https://')) {
+    // Check if it's not a null string
+    if (profilePicture.includes('null') || profilePicture.endsWith('null')) {
+      return require('../assets/images/avatar/blank-profile-picture-973460_1280.png');
+    }
+    return { uri: profilePicture };
+  }
+  
+  // If it's a relative path, prepend API_ROUTE_IMAGE
+  return { uri: `${API_ROUTE_IMAGE}${profilePicture}` };
+};
+
 const getViewsAndSharesMap = async () => {
   try {
-    const [viewsData, sharesData] = await Promise.all([
-      AsyncStorage.getItem(VIEWS_CACHE_KEY),
-      AsyncStorage.getItem(SHARES_CACHE_KEY),
-    ]);
+    const viewsData = storage.getString(VIEWS_CACHE_KEY);
+    const sharesData = storage.getString(SHARES_CACHE_KEY);
     return {
       views: viewsData ? JSON.parse(viewsData) : {},
       shares: sharesData ? JSON.parse(sharesData) : {},
@@ -5593,9 +5928,7 @@ const getViewsAndSharesMap = async () => {
   }
 };
 
-// NEW: synchronous enhancer used with the batched map above.
-// Keeps the same output shape (`views`, `shares`, `is_verified`)
-// the rest of the app already expects on each post object.
+// Synchronous enhancer with batched map
 const enhancePostsWithMap = (postsData, map, verifiedThreshold = 0.7) => {
   const { views, shares } = map;
   return postsData.map((post) => ({
@@ -5673,7 +6006,6 @@ const ImageModal = memo(({ visible, post, onClose, onView, colors, isDark }) => 
         fadeDuration={500}
       />
       
-      {/* Image counter */}
       {images.length > 1 && (
         <View style={styles.imageCounterModal}>
           <Text style={styles.imageCounterModalText}>
@@ -5696,7 +6028,6 @@ const ImageModal = memo(({ visible, post, onClose, onView, colors, isDark }) => 
           <Icon name="close" size={30} color="#fff" />
         </TouchableOpacity>
         
-        {/* Image Section - Takes 60% of screen */}
         <View style={styles.imageModalImageSection}>
           {images.length > 1 ? (
             <FlatList
@@ -5743,23 +6074,31 @@ const ImageModal = memo(({ visible, post, onClose, onView, colors, isDark }) => 
           )}
         </View>
         
-        {/* Bottom Info Section - Scrollable and takes remaining space */}
         <View style={[styles.imageModalInfoContainer, { backgroundColor: colors.card }]}>
           <ScrollView 
             showsVerticalScrollIndicator={true}
             contentContainerStyle={styles.imageModalInfoScrollContent}
             bounces={false}
           >
-            {/* User Info */}
             <View style={styles.imageModalUserInfo}>
-              <Image
+              {/* <Image
                 source={
                   post.user_profile_picture
                     ? { uri: post.user_profile_picture }
                     : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
                 }
                 style={styles.imageModalAvatar}
-              />
+              /> */}
+
+              <Image
+  source={
+    post.user_profile_picture
+      ? getUserProfileImage(post.user_profile_picture)
+      : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+  }
+  style={styles.imageModalAvatar}
+/>
+              
               <View style={styles.imageModalUserText}>
                 <Text style={[styles.imageModalUsername, { color: colors.text }]}>
                   {post.username}
@@ -5770,14 +6109,12 @@ const ImageModal = memo(({ visible, post, onClose, onView, colors, isDark }) => 
               </View>
             </View>
             
-            {/* Caption */}
             {post.content ? (
               <Text style={[styles.imageModalCaption, { color: colors.text }]}>
                 {post.content}
               </Text>
             ) : null}
             
-            {/* Stats */}
             <View style={styles.imageModalStats}>
               <View style={styles.imageModalStat}>
                 <Ionicons name="eye-outline" size={16} color={colors.textSecondary} />
@@ -5795,7 +6132,6 @@ const ImageModal = memo(({ visible, post, onClose, onView, colors, isDark }) => 
               )}
             </View>
 
-           
             <View style={styles.imageModalStats}>
               {post.like_count > 0 && (
                 <View style={styles.imageModalStat}>
@@ -5815,7 +6151,6 @@ const ImageModal = memo(({ visible, post, onClose, onView, colors, isDark }) => 
               )}
             </View>
 
-           
             <View style={{ height: 20 }} />
           </ScrollView>
         </View>
@@ -5834,6 +6169,7 @@ const MemoizedTweetItem = memo(({
   onOptions, 
   onViewImage,
   colors,
+  currentUserId,
   isDark 
 }) => {
   const [isReadMore, setIsReadMore] = useState(true);
@@ -5842,42 +6178,22 @@ const MemoizedTweetItem = memo(({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const postIdStr = post.id?.toString();
 
-  // ============================================================
-  // REMOVED: the old setTimeout(() => Image.prefetch(...), 500)
-  // effect that lived here. It fired 500ms AFTER this row had
-  // already mounted and its own <Image> had already started
-  // fetching — so it was prefetching something already in
-  // flight, providing no benefit while still doing work.
-  // Prefetching now happens once, in the parent, immediately
-  // after posts are fetched (see fetchPosts/fetchAllPosts below),
-  // for the first few posts that will be visible right away.
-  // ============================================================
-
   const displayImages = post.all_images || 
     (post.image_url ? [{ url: post.image_url, is_main: true }] : []);
 
-  
-  // Get reactions from props or use empty object
   const reactions = post.reactions || {};
   const userReaction = reactions.user_reaction;
 
-  // Use the persisted counts from the post object
   const likeCount = post.like_count || 0;
   const commentCount = post.comment_count || 0;
   const shareCount = post.share_count || 0;
 
-  // Get all images - handle both old and new format
   const allImages = post.all_images || [];
-
 
   const fixImageUrl = (url) => {
     if (!url) return null;
-    
-    // Check if URL is malformed (no extension)
     const hasExtension = /\.(jpg|jpeg|png|gif|webp|avif|bmp)(\?.*)?$/i.test(url);
-    
     if (!hasExtension) {
-      // If it's a Cloudinary URL without extension, add .jpg
       if (url.includes('cloudinary') && url.includes('/upload/')) {
         return url + '.jpg';
       }
@@ -5890,15 +6206,15 @@ const MemoizedTweetItem = memo(({
   const handleImageError = (index) => {
     setImageLoading(prev => ({ ...prev, [index]: false }));
   };
-   const handleImageLoad = (index) => {
+  const handleImageLoad = (index) => {
     setImageLoading(prev => ({ ...prev, [index]: false }));
   };
 
-const handleFollowPress = () => {
-  const newFollowingState = !isFollowing;
-  setIsFollowing(newFollowingState);
-  onFollow(post.user_id);
-};
+  const handleFollowPress = () => {
+    const newFollowingState = !isFollowing;
+    setIsFollowing(newFollowingState);
+    onFollow(post.user_id);
+  };
 
   const handleSharePress = async () => {
     await onShare(post.id);
@@ -5909,13 +6225,13 @@ const handleFollowPress = () => {
     onViewImage({ ...post, images: displayImages, selectedIndex: index });
   };
 
-  // Render image grid based on number of images
+  const isOwnPost = post.user_id === currentUserId;
+
   const renderImageGrid = () => {
     if (displayImages.length === 0) return null;
 
     const imageCount = displayImages.length;
 
-    // Single image
     if (imageCount === 1) {
       return (
         <TouchableOpacity 
@@ -5938,7 +6254,6 @@ const handleFollowPress = () => {
       );
     }
 
-    // Two images
     if (imageCount === 2) {
       return (
         <View style={styles.doubleImageContainer}>
@@ -5966,11 +6281,9 @@ const handleFollowPress = () => {
       );
     }
 
-    // Three images
     if (imageCount === 3) {
       return (
         <View style={styles.tripleImageContainer}>
-          {/* First image - larger */}
           <TouchableOpacity 
             onPress={() => handleImagePress(0)}
             style={styles.tripleMainImageWrapper}
@@ -5989,7 +6302,6 @@ const handleFollowPress = () => {
             )}
           </TouchableOpacity>
           
-          {/* Second and third images - stacked */}
           <View style={styles.tripleSideContainer}>
             {[1, 2].map((idx) => (
               <TouchableOpacity 
@@ -6016,7 +6328,6 @@ const handleFollowPress = () => {
       );
     }
 
-    // Four or more images
     return (
       <View style={styles.quadImageContainer}>
         {displayImages.slice(0, 4).map((img, index) => (
@@ -6038,7 +6349,6 @@ const handleFollowPress = () => {
               </View>
             )}
             
-            {/* Show +X overlay on last image if there are more than 4 */}
             {index === 3 && displayImages.length > 4 && (
               <View style={styles.moreImagesOverlay}>
                 <Text style={styles.moreImagesText}>+{displayImages.length - 4}</Text>
@@ -6053,35 +6363,58 @@ const handleFollowPress = () => {
   return (
     <View style={[styles.tweetContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
       <View style={styles.tweetContent}>
-        <View style={styles.tweetHeader}>
-          <TouchableOpacity 
-              onPress={() => navigation.navigate('OtherUserProfile', { userId: post.user_id })}
-            >
-              <View style={[styles.avatarContainer,{}]}>
-                <Image
-                  source={
-                    post.user_profile_picture
-                      ? { uri: post.user_profile_picture }
-                      : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-                  }
-                  style={[styles.avatar, { borderColor: colors.border }]}
-                />
-              </View>
-            </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('OtherUserProfile', { userId: post.user_id })}>
-            <Text style={[styles.name, { color: colors.text, marginLeft:10 }]}>{post.username}
-              {post.is_verified && (
-                  <View style={[styles.verifiedBadge,{marginLeft:10}]}>
-                    <Icontt name="check-bold" size={11} color="#fff" />
-                  </View>
-                )}
-            </Text>
-          <Text style={[styles.time, { color: colors.textSecondary,marginLeft:10 }]}>
-            {dayjs(post.created_at).fromNow()}
-          </Text>
-          </TouchableOpacity>
-          
-          {type === 'allposts' ? (
+        
+<View style={styles.tweetHeader}>
+  <TouchableOpacity 
+    onPress={() => navigation.navigate('OtherUserProfile', { userId: post.user_id })}
+  >
+    <View style={[styles.avatarContainer,{}]}>
+      <Image
+        source={
+          post.user_profile_picture
+            ? { uri: post.user_profile_picture }
+            : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+        }
+        style={[styles.avatar, { borderColor: colors.border }]}
+      />
+    </View>
+  </TouchableOpacity>
+  
+  <View style={styles.userInfoContainer}>
+    <TouchableOpacity 
+      onPress={() => navigation.navigate('OtherUserProfile', { userId: post.user_id })}
+      style={styles.userNameContainer}
+    >
+      <Text style={[styles.name, { color: colors.text }]}>{post.username}</Text>
+      {post.is_verified && (
+        <View style={styles.verifiedBadge}>
+          <Icontt name="check-bold" size={11} color="#fff" />
+        </View>
+      )}
+    </TouchableOpacity>
+    <Text style={[styles.time, { color: colors.textSecondary }]}>
+      {dayjs(post.created_at).fromNow()}
+    </Text>
+  </View>
+  
+  {/* {type === 'allposts' ? (
+    <TouchableOpacity
+      style={[styles.followButton, isFollowing && styles.followingButton]}
+      onPress={handleFollowPress}
+    >
+      <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
+        {isFollowing ? 'Following' : 'Follow'}
+      </Text>
+    </TouchableOpacity>
+  ) : (
+    <TouchableOpacity
+      style={styles.optionsButton}
+      onPress={() => onOptions(post.id, post.user_id)}
+    >
+      <Icon name="ellipsis-horizontal" size={18} color={colors.textSecondary} />
+    </TouchableOpacity>
+  )} */}
+  {type === 'allposts' && !isOwnPost ? (
             <TouchableOpacity
               style={[styles.followButton, isFollowing && styles.followingButton]}
               onPress={handleFollowPress}
@@ -6098,7 +6431,7 @@ const handleFollowPress = () => {
               <Icon name="ellipsis-horizontal" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
-        </View>
+</View>
         
         <Text style={[styles.tweetText, { color: colors.text }]}>
           {post.content.length > 150 ? (
@@ -6116,10 +6449,9 @@ const handleFollowPress = () => {
           )}
         </Text>
         
-        {/* Image Grid */}
         {renderImageGrid()}
         
-        {/* <View style={styles.tweetActions}>
+        <View style={styles.tweetActions}>
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => onReaction(post.id, 'like')}
@@ -6136,7 +6468,12 @@ const handleFollowPress = () => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => onComment(post.id)}
+            onPress={() => {
+              navigation.navigate('ExplorePostDetails', {
+                postId: post.id,
+                postData: post
+              });
+            }}
           >
             <Ionicons name="chatbubble-outline" size={18} color={colors.textSecondary} />
             <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
@@ -6163,59 +6500,7 @@ const handleFollowPress = () => {
               {post.views || ''} 
             </Text>
           </TouchableOpacity>
-        </View> */}
-        <View style={styles.tweetActions}>
-  <TouchableOpacity
-    style={styles.actionButton}
-    onPress={() => onReaction(post.id, 'like')}
-  >
-    <MaterialIcons
-      name={userReaction === 'like' ? 'thumb-up' : 'thumb-up-off-alt'}
-      size={20}
-      color={userReaction === 'like' ? colors.primary : colors.textSecondary}
-    />
-    <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
-      {likeCount > 0 ? likeCount : ''} Like
-    </Text>
-  </TouchableOpacity>
-
-  {/* UPDATED: Comment button now navigates to PostDetailScreen */}
-  <TouchableOpacity
-    style={styles.actionButton}
-    onPress={() => {
-      // Navigate to PostDetailScreen with the post data
-      navigation.navigate('ExplorePostDetails', {
-        postId: post.id,
-        postData: post // Pass the full post data for instant display
-      });
-    }}
-  >
-    <Ionicons name="chatbubble-outline" size={18} color={colors.textSecondary} />
-    <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
-      {commentCount > 0 ? commentCount : ''} Comment
-    </Text>
-  </TouchableOpacity>
-
-  <TouchableOpacity 
-    style={styles.actionButton}
-    onPress={handleSharePress}
-  >
-    <Ionicons name="share-social-outline" size={18} color={colors.textSecondary} />
-    <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
-      {shareCount > 0 ? shareCount : ''} Share
-    </Text>
-  </TouchableOpacity>
-
-  <TouchableOpacity 
-    style={styles.actionButton}
-    onPress={() => displayImages.length > 0 && handleImagePress(0)}
-  >
-    <Ionicons name="eye-outline" size={18} color={colors.textSecondary} />
-    <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
-      {post.views || ''} 
-    </Text>
-  </TouchableOpacity>
-</View>
+        </View>
       </View>
     </View>
   );
@@ -6268,20 +6553,13 @@ const MemoizedStatusPreview = memo(({ userStatus, currentUserPhone, onPress, onV
           )}
           
           <View style={[styles.statusNameContainer, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-            {/* <Text style={styles.statusNameText}>
-              {isMyStatus
-                ? 'My Story'
-                : (userStatus.user?.name || userStatus.user)?.length > 5
-                  ? `${(userStatus.user?.name || userStatus.user).substring(0, 5)}...`
-                  : (userStatus.user?.name || userStatus.user)}
-            </Text> */}
             <Text
-                style={styles.statusNameText}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {isMyStatus ? 'My Story' : userStatus.user?.name || userStatus.user}
-              </Text>
+              style={styles.statusNameText}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {isMyStatus ? 'My Story' : userStatus.user?.name || userStatus.user}
+            </Text>
             {isMyStatus && userStatus.viewers_count > 0 && (
               <TouchableOpacity onPress={() => onViewers(userStatus.viewers)}>
                 <Text style={styles.viewCountText}>
@@ -6295,6 +6573,7 @@ const MemoizedStatusPreview = memo(({ userStatus, currentUserPhone, onPress, onV
     </View>
   );
 });
+
 const SuggestedFriendItem = memo(({ item, onFollow, colors }) => {
   const [isFollowing, setIsFollowing] = useState(false);
 
@@ -6307,14 +6586,22 @@ const SuggestedFriendItem = memo(({ item, onFollow, colors }) => {
     <View style={[styles.suggestedFriendItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <TouchableOpacity onPress={() => {}}>
         <View style={[styles.suggestedFriendImageContainer, { borderColor: colors.border }]}>
-          <Image
+          {/* <Image
             source={
               item.profile_picture
                 ? { uri: `${API_ROUTE_IMAGE}${item.profile_picture}` }
                 : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
             }
             style={styles.suggestedFriendImage}
-          />
+          /> */}
+          <Image
+  source={
+    item.profile_picture
+      ? getUserProfileImage(item.profile_picture)
+      : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+  }
+  style={styles.suggestedFriendImage}
+/>
           {item.is_verified && (
             <View style={[styles.suggestedFriendVerified,{marginleft:10}]}>
               <Icont name="verified" size={12} color="#fff" />
@@ -6343,7 +6630,6 @@ const SuggestedFriendItem = memo(({ item, onFollow, colors }) => {
 });
 
 export default function HomePage({ navigation }) {
-   
   const { colors, isDark,theme, toggleTheme, } = useTheme(); 
   const [reactionCounts, setReactionCounts] = useState({});
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
@@ -6395,10 +6681,9 @@ export default function HomePage({ navigation }) {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
-
-  
-  
-  // ===== NEW PAGINATION STATES =====
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarType, setSnackbarType] = useState('success');
+  const [snackbarFadeAnim] = useState(new Animated.Value(0));
   const [loading, setLoading] = useState(false);
   const [postsPage, setPostsPage] = useState(1);
   const [allPostsPage, setAllPostsPage] = useState(1);
@@ -6407,687 +6692,297 @@ export default function HomePage({ navigation }) {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [channels, setChannels] = useState([]);
   const [loadingChannels, setLoadingChannels] = useState(false);
-
-  // ============================================================
-  // NEW: tracks whether the comment modal is waiting on its
-  // network fetch. The modal itself opens BEFORE this is even
-  // set — see handleCommentOptimized — this flag only controls
-  // whether we show a spinner or the comment list inside it.
-  // ============================================================
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [statusViewerModalVisible, setStatusViewerModalVisible] = useState(false);
+  const [statusPaused, setStatusPaused] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(0));
+
 
   
-const [statusViewerModalVisible, setStatusViewerModalVisible] = useState(false);
-const [statusPaused, setStatusPaused] = useState(false);
+const [fabAnim] = useState(new Animated.Value(0));
 
- const [fadeAnim] = useState(new Animated.Value(0));
-
-  const promoData = [
-  {
-    id: 1,
-    image: require('../assets/images/gdgdg.jpg'),
-    badge: '💎 NEW',
-    title: 'Earn Up to ₦5 Million',
-    subtitle: 'Join the Showa reward system and start earning today!',
-    buttonText: 'Get Started Now →',
-    screen: 'EarningDashboard'
-  },
-  {
-    id: 2,
-    image:  require('../assets/images/show.jpg'),
-    badge: '🔥 HOT',
-    title: 'Refer & Earn Bonus',
-    subtitle: 'Invite friends and earn up to ₦500,000 per referral!',
-    buttonText: 'Start Referring →',
-    screen: 'ReferralScreen'
-  },
-  {
-    id: 3,
-    image:  require('../assets/images/dad.jpg'),
-    badge: '🎯 LIMITED',
-    title: 'Daily Challenges',
-    subtitle: 'Complete daily tasks and earn rewards every day!',
-    buttonText: 'View Challenges →',
-    screen: 'EarningDashbord'
-  }
-];
 
 useEffect(() => {
-  const interval = setInterval(() => {
-    setCurrentPromoIndex((prev) => (prev + 1) % promoData.length);
-  }, 5000); 
-
-  return () => clearInterval(interval);
+  Animated.timing(fabAnim, {
+    toValue: 1,
+    duration: 800,
+    useNativeDriver: true,
+  }).start();
 }, []);
 
-const fetchHomeChannels = useCallback(async () => {
-  try {
-    setLoadingChannels(true);
-    const token = await AsyncStorage.getItem('userToken');
-    
-    const [channelsRes, followingRes] = await Promise.all([
-      axios.get(`${API_ROUTE}/channels/`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 5000,
+
+const handleAIPress = () => {
+  navigation.navigate('ChatAi');
+};
+
+useEffect(() => {
+  // Pulse animation for the FAB ring
+  const pulseRing1 = Animated.loop(
+    Animated.sequence([
+      Animated.timing(fabAnim, {
+        toValue: 1.5,
+        duration: 1500,
+        useNativeDriver: true,
       }),
-      axios.get(`${API_ROUTE}/channels/following/`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 3000,
-      })
-    ]);
+      Animated.timing(fabAnim, {
+        toValue: 1,
+        duration: 1500,
+        useNativeDriver: true,
+      }),
+    ])
+  );
+  pulseRing1.start();
 
-    const followingIds = followingRes.data.map(ch => ch.id);
-    const processedChannels = channelsRes.data.map(channel => ({
-      ...channel,
-      isFollowing: followingIds.includes(channel.id),
-    }));
-
-    // Get top channels (limit to 5 for home)
-    const topChannels = processedChannels.slice(0, 5);
-    setChannels(topChannels);
-  } catch (error) {
-    console.error('Error fetching channels for home:', error);
-  } finally {
-    setLoadingChannels(false);
-  }
+  return () => {
+    pulseRing1.stop();
+  };
 }, []);
 
-// Call in useEffect or useFocusEffect
-useFocusEffect(
-  useCallback(() => {
-    fetchHomeChannels();
-  }, [fetchHomeChannels])
-);
+const renderAIFloatingButton = () => {
+  return (
+    <Animated.View
+      style={[
+        styles.aiFabContainer,
+        {
+          opacity: fabAnim,
+          transform: [
+            {
+              scale: fabAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.5, 1],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={handleAIPress}
+        style={styles.aiFabButton}
+      >
+        <LinearGradient
+          colors={['#0d45dd', '#0d45dd', '#0d45dd']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.aiFabGradient}
+        >
+         
+        <Text style={styles.aiFabLabel}>Ai</Text>
+     
+          
+          <View style={styles.aiFabPulse}>
+            <View style={styles.aiFabPulseRing} />
+            <View style={[styles.aiFabPulseRing, styles.aiFabPulseRingDelay1]} />
+            <View style={[styles.aiFabPulseRing, styles.aiFabPulseRingDelay2]} />
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+      
+    </Animated.View>
+  );
+};
 
-  const fetchUnreadNotificationCount = async () => {
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    const response = await axios.get(`${API_ROUTE}/notifications/unread-count/`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    
-    if (response.data.success) {
-      setUnreadNotificationCount(response.data.unread_count);
+
+  // Animate when showing snackbar
+  useEffect(() => {
+    if (snackbarVisible) {
+      Animated.timing(snackbarFadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(snackbarFadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     }
-  } catch (error) {
-    console.error('Error fetching unread count:', error);
-  }
-};
+  }, [snackbarVisible]);
 
 
-const getStatusImageUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith('http://')) {
-    return url.replace('http://', 'https://');
-  }
-  if (url.startsWith('https://')) {
-    return url;
-  }
-  return `${API_ROUTE_IMAGE}${url}`;
-};
+ 
 
-const trackStatusView = useCallback(async (statusId) => {
-  if (!statusId) return;
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    await axios.post(
-      `${API_ROUTE}/status/${statusId}/track-view/`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-  } catch (error) {
-    console.error('Error tracking status view:', error);
+// Also add a helper for comment user images
+const getCommentUserImage = (profilePicture) => {
+  if (!profilePicture) {
+    return require('../assets/images/avatar/blank-profile-picture-973460_1280.png');
   }
-}, []);
-
-const formatStatusTime = (date) => {
-  if (!date) return '';
-  const now = new Date();
-  const diffInHours = (now - new Date(date)) / (1000 * 60 * 60);
-  if (diffInHours < 24) {
-    return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } else if (diffInHours < 48) {
-    return 'Yesterday';
-  } else {
-    return new Date(date).toLocaleDateString([], { month: 'short', day: 'numeric' });
-  }
-};
   
-  useEffect(()=>{
-        const fetUserdata = async()=>{
-          try {
-            const userDataString = await AsyncStorage.getItem('userData');
-            const userData = userDataString ? JSON.parse(userDataString) : null;
-            const userId = userData?.id || 'unknown';
-            const username = userData?.name || 'unknown';
-            setUserName(username)
-            //console.log('login_user_data', username)
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-          }
-        }
-        fetUserdata()
-  },[])
-
-  // ==================== COMMENT DELETE ====================
-
-const handleDeleteComment = useCallback(async (commentId) => {
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    
-    Alert.alert(
-      'Delete Comment',
-      'Are you sure you want to delete this comment?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await axios.delete(
-                `${API_ROUTE}/comment/${commentId}/delete/`,
-                {
-                  headers: { Authorization: `Bearer ${token}` }
-                }
-              );
-              
-              if (response.data.success) {
-                // Update comments state - handle both top-level comments and replies
-                setPostsComment(prev => {
-                  // First, check if this is a top-level comment
-                  const isTopLevelComment = prev.some(c => c.id === commentId && !c.parent_comment);
-                  
-                  if (isTopLevelComment) {
-                    // If it's a top-level comment, remove it completely
-                    return prev.filter(c => c.id !== commentId);
-                  } else {
-                    // If it's a reply, find its parent and remove only that reply
-                    return prev.map(comment => {
-                      if (comment.replies && comment.replies.some(r => r.id === commentId)) {
-                        return {
-                          ...comment,
-                          replies: comment.replies.filter(r => r.id !== commentId),
-                          reply_count: (comment.reply_count || 0) - 1
-                        };
-                      }
-                      return comment;
-                    });
-                  }
-                });
-                
-                // Update comment count in posts
-                setPosts(prev => prev.map(post => 
-                  post.id === response.data.post_id 
-                    ? { ...post, comment_count: response.data.comment_count }
-                    : post
-                ));
-                
-                setAllPosts(prev => prev.map(post => 
-                  post.id === response.data.post_id 
-                    ? { ...post, comment_count: response.data.comment_count }
-                    : post
-                ));
-                
-                setSnackbarVisible(true);
-              }
-            } catch (error) {
-              console.error('Error deleting comment:', error);
-              Alert.alert('Error', error.response?.data?.error || 'Failed to delete comment');
-            }
-          }
-        }
-      ]
-    );
-  } catch (error) {
-    console.error('Error in delete confirmation:', error);
-  }
-}, []);
-
-const handleDeleteReply = useCallback(async (replyId, parentCommentId) => {
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    
-    Alert.alert(
-      'Delete Reply',
-      'Delete this reply?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await axios.delete(
-                `${API_ROUTE}/comment-reply/${replyId}/delete/`,
-                {
-                  headers: { Authorization: `Bearer ${token}` }
-                }
-              );
-              
-              if (response.data.success) {
-                // Update the comment's replies in state
-                setPostsComment(prev => prev.map(comment => {
-                  if (comment.id === parentCommentId) {
-                    // Filter out the deleted reply
-                    const updatedReplies = comment.replies 
-                      ? comment.replies.filter(r => r.id !== replyId)
-                      : [];
-                    
-                    return {
-                      ...comment,
-                      replies: updatedReplies,
-                      reply_count: (comment.reply_count || 0) - 1
-                    };
-                  }
-                  return comment;
-                }));
-                
-                setSnackbarVisible(true);
-              }
-            } catch (error) {
-              console.error('Error deleting reply:', error);
-              Alert.alert('Error', 'Failed to delete reply');
-            }
-          }
-        }
-      ]
-    );
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}, []);
-
-
-  // ==================== COMMENT LIKES ====================
-
-const handleCommentLike = useCallback(async (commentId) => {
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    if (!token) return;
-
-    // Optimistic update
-    setCommentLikesCount(prev => ({
-      ...prev,
-      [commentId]: (prev[commentId] || 0) + 1
-    }));
-
-    setPostsComment(prev => 
-      prev.map(comment => 
-        comment.id === commentId 
-          ? { 
-              ...comment, 
-              is_liked: true,
-              like_count: (comment.like_count || 0) + 1 
-            } 
-          : comment
-      )
-    );
-
-    const response = await axios.post(
-      `${API_ROUTE}/comment/${commentId}/like/`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    //console.log('Comment like response:', response.data);
-
-    if (response.status === 200 || response.status === 201) {
-      // Update with actual data from server
-      setPostsComment(prev => 
-        prev.map(comment => 
-          comment.id === commentId 
-            ? { 
-                ...comment, 
-                is_liked: response.data.liked,
-                like_count: response.data.like_count 
-              } 
-            : comment
-        )
-      );
+  if (profilePicture.startsWith('http://') || profilePicture.startsWith('https://')) {
+    if (profilePicture.includes('null') || profilePicture.endsWith('null')) {
+      return require('../assets/images/avatar/blank-profile-picture-973460_1280.png');
     }
-  } catch (error) {
-    console.error('Error liking comment:', error);
-    // Revert optimistic update on error
-    setCommentLikesCount(prev => ({
-      ...prev,
-      [commentId]: Math.max(0, (prev[commentId] || 1) - 1)
-    }));
+    return { uri: profilePicture };
   }
-}, []);
+  
+  // If it starts with '/media/' or similar, use API_ROUTE_IMAGE
+  if (profilePicture.startsWith('/')) {
+    return { uri: `${API_ROUTE_IMAGE}${profilePicture}` };
+  }
+  
+  return { uri: `${API_ROUTE_IMAGE}${profilePicture}` };
+};
 
+  const showSnackbar = useCallback((message, type = 'success') => {
+    setSnackbarMessage(message);
+    setSnackbarType(type);
+    setSnackbarVisible(true);
+  }, []);
 
-// ==================== COMMENT REPLIES ====================
-
-const handleReplyToComment = useCallback(async (commentId, replyText) => {
-  if (!replyText.trim()) return;
-
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    if (!token) return;
-
-    const userData = await AsyncStorage.getItem('userData');
-    const parsedUser = userData ? JSON.parse(userData) : null;
-
-    // Optimistic update
-    const tempReplyId = `temp_reply_${Date.now()}`;
-    const newReply = {
-      id: tempReplyId,
-      text: replyText.trim(),
-      user: {
-        id: parsedUser?.id,
-        username: username,
-        profile_picture: userprofileimage
-      },
-      created_at: new Date().toISOString(),
-      like_count: 0,
-      is_liked: false
-    };
-
-    setPostsComment(prev => 
-      prev.map(comment => 
-        comment.id === commentId 
-          ? { 
-              ...comment, 
-              replies: [...(comment.replies || []), newReply],
-              reply_count: (comment.reply_count || 0) + 1
-            } 
-          : comment
-      )
-    );
-
-    const response = await axios.post(
-      `${API_ROUTE}/comment/${commentId}/reply/`,
-      { text: replyText.trim() },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    console.log('Reply response:', response.data);
-
-    if (response.status === 201) {
-      // Replace temp reply with actual reply
-      setPostsComment(prev => 
-        prev.map(comment => 
-          comment.id === commentId 
-            ? { 
-                ...comment, 
-                replies: comment.replies.map(reply => 
-                  reply.id === tempReplyId ? response.data : reply
-                )
-              } 
-            : comment
-        )
-      );
-
-      // Show reward if any
-      if (response.data.reward) {
-        Alert.alert(
-          '💬 Reply Reward!',
-          `You earned ${response.data.reward.coins} coins for your reply!`,
-          [{ text: 'OK' }]
-        );
-      }
-
-      setReplyText('');
-      setReplyToCommentId(null);
+  const promoData = [
+    {
+      id: 1,
+      image: require('../assets/images/gdgdg.jpg'),
+      badge: '💎 NEW',
+      title: 'Earn Up to ₦5 Million',
+      subtitle: 'Join the Showa reward system and start earning today!',
+      buttonText: 'Get Started Now →',
+      screen: 'EarningDashboard'
+    },
+    {
+      id: 2,
+      image: require('../assets/images/show.jpg'),
+      badge: '🔥 HOT',
+      title: 'Refer & Earn Bonus',
+      subtitle: 'Invite friends and earn up to ₦500,000 per referral!',
+      buttonText: 'Start Referring →',
+      screen: 'ReferralScreen'
+    },
+    {
+      id: 3,
+      image: require('../assets/images/dad.jpg'),
+      badge: '🎯 LIMITED',
+      title: 'Daily Challenges',
+      subtitle: 'Complete daily tasks and earn rewards every day!',
+      buttonText: 'View Challenges →',
+      screen: 'EarningDashbord'
     }
-  } catch (error) {
-    console.error('Error replying to comment:', error);
-   
-    setPostsComment(prev => 
-      prev.map(comment => 
-        comment.id === commentId 
-          ? { 
-              ...comment, 
-              replies: comment.replies.filter(r => !r.id.toString().startsWith('temp_'))
-            } 
-          : comment
-      )
-    );
-  }
-}, [username, userprofileimage]);
+  ];
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPromoIndex((prev) => (prev + 1) % promoData.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
-// ==================== FETCH COMMENTS WITH REPLIES ====================
-
-const fetchCommentsWithReplies = useCallback(async (postId) => {
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    const response = await axios.get(
-      `${API_ROUTE}/post/${postId}/comments/`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    console.log('Comments with replies:', response.data);
-
-    if (response.status === 200) {
-      // Make sure we're storing the comments array correctly
-      const comments = response.data.comments || response.data;
-      setPostsComment(comments);
-    }
-  } catch (error) {
-    console.error('Error fetching comments:', error);
-  }
-}, []);
-
-
-// ==================== UPDATE COMMENT HANDLER ====================
-//
-// THIS IS THE MAIN BUG FIX.
-//
-// BEFORE: this function was `async`, and the modal only became
-// visible on the line `setIsBottomSheetVisible(true)`, which sat
-// AFTER two awaited axios calls inside a try block. If the token
-// was missing, the function returned silently with no modal and
-// no feedback. If either request was slow, failed, or threw, the
-// modal would never open (or would open very late), and the catch
-// block only logged to console — nothing visible to the user.
-// That's exactly the "tap comment icon, nothing happens" bug.
-//
-// AFTER: we open the modal and set the selected post id on the
-// very first lines — synchronously, no `await` involved — so the
-// tap always produces immediate visible feedback. The network
-// fetch then runs in the background and fills in `postById` and
-// `commentsss` whenever it resolves. `commentsLoading` drives a
-// spinner inside the modal so the person knows data is on the way
-// instead of seeing an empty "No comments yet" flash before the
-// real comments arrive.
-// ============================================================
-const handleCommentOptimized = useCallback((postId) => {
-  // Open instantly — no network dependency on this line.
-  setSelectedPostId(postId);
-  setIsBottomSheetVisible(true);
-  setCommentsLoading(true);
-  setPostById(null); // clear any previous post's preview while this one loads
-
-  (async () => {
+  // ============================================================
+  // LOAD FROM CACHE - MMKV
+  // ============================================================
+  const loadPostsFromCache = useCallback(async () => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) {
-        setCommentsLoading(false);
-        return;
-      }
-
-      const [postResponse, commentsResponse] = await Promise.all([
-        axios.get(`${API_ROUTE}/posts/${postId}/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`${API_ROUTE}/post/${postId}/comments/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-      ]);
-
-      if (postResponse.status === 200) {
-        setPostById(postResponse.data);
-      }
-
-      if (commentsResponse.status === 200) {
-        const comments = commentsResponse.data.comments || commentsResponse.data;
-        setPostsComment(comments);
+      const cachedData = storage.getString(POSTS_CACHE_KEY);
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        if (!parsed || typeof parsed !== 'object') {
+          console.warn('Invalid cache format');
+          return false;
+        }
+        const { data, timestamp } = parsed;
+        if (!Array.isArray(data)) {
+          console.warn('Cached data is not an array');
+          return false;
+        }
+        const isCacheValid = Date.now() - timestamp < CACHE_EXPIRATION_TIME;
+        if (isCacheValid) {
+          const map = await getViewsAndSharesMap();
+          const enhancedPosts = enhancePostsWithMap(data, map, 0.7);
+          setPosts([...enhancedPosts].reverse());
+          return true;
+        }
       }
     } catch (error) {
-      console.error('Error fetching post details:', error);
-      // Modal stays open; the spinner just stops and the
-      // "No comments yet" empty state will show. The person
-      // can close and retry rather than seeing nothing happen.
-    } finally {
-      setCommentsLoading(false);
+      console.error('Error loading posts from cache:', error);
+      storage.delete(POSTS_CACHE_KEY);
     }
-  })();
-}, []);
+    return false;
+  }, []);
 
-const loadPostsFromCache = useCallback(async () => {
-  try {
-    const cachedData = await AsyncStorage.getItem(POSTS_CACHE_KEY);
-    if (cachedData) {
-      const parsed = JSON.parse(cachedData);
-      
-      // Check if parsed has the expected structure
-      if (!parsed || typeof parsed !== 'object') {
-        console.warn('Invalid cache format');
-        return false;
-      }
-      
-      const { data, timestamp } = parsed;
-      
-      // Validate that data is an array
-      if (!Array.isArray(data)) {
-        console.warn('Cached data is not an array');
-        return false;
-      }
-      
-      const isCacheValid = Date.now() - timestamp < CACHE_EXPIRATION_TIME;
-      if (isCacheValid) {
-        // NEW: one batched read instead of 2*N AsyncStorage calls
-        const map = await getViewsAndSharesMap();
-        const enhancedPosts = enhancePostsWithMap(data, map, 0.7);
-        setPosts([...enhancedPosts].reverse());
-        return true;
-      }
-    }
-  } catch (error) {
-    console.error('Error loading posts from cache:', error);
-    // Clear invalid cache
-    await AsyncStorage.removeItem(POSTS_CACHE_KEY);
-  }
-  return false;
-}, []);
-
+  // ============================================================
+  // LOAD ALL POSTS FROM CACHE - MMKV
+  // ============================================================
   const loadAllPostsFromCache = useCallback(async () => {
-  try {
-    const cachedData = await AsyncStorage.getItem(ALL_POSTS_CACHE_KEY);
-    if (cachedData) {
-      const parsed = JSON.parse(cachedData);
-      
-      // Check if parsed has the expected structure
-      if (!parsed || typeof parsed !== 'object') {
-        console.warn('Invalid all posts cache format');
-        return false;
-      }
-      
-      const { data, timestamp } = parsed;
-      
-      // Validate that data is an array
-      if (!Array.isArray(data)) {
-        console.warn('Cached all posts data is not an array');
-        return false;
-      }
-      
-      const isCacheValid = Date.now() - timestamp < CACHE_EXPIRATION_TIME;
-      
-      if (isCacheValid) {
-        // Create a copy safely
-        const dataCopy = data.slice(); // Use slice() instead of spread
-        
-        const sortedPosts = dataCopy.sort((a, b) => 
-          new Date(b.created_at) - new Date(a.created_at)
-        );
-        
-        const filteredPosts = await filterUnfollowedUsers(sortedPosts);
-        // NEW: one batched read instead of 2*N AsyncStorage calls
-        const map = await getViewsAndSharesMap();
-        const enhancedPosts = enhancePostsWithMap(filteredPosts, map, 0.6);
-        setAllPosts(enhancedPosts);
-        return true;
-      }
-    }
-  } catch (error) {
-    console.error('Error loading all posts from cache:', error);
-    // Clear invalid cache
-    await AsyncStorage.removeItem(ALL_POSTS_CACHE_KEY);
-  }
-  return false;
-}, []);
-
-  const savePostsToCache = useCallback(async (postsData) => {
-  try {
-    // Ensure postsData is an array
-    const dataToCache = Array.isArray(postsData) ? postsData : [];
-    
-    await AsyncStorage.setItem(
-      POSTS_CACHE_KEY,
-      JSON.stringify({ 
-        data: dataToCache, 
-        timestamp: Date.now() 
-      })
-    );
-  } catch (error) {
-    console.error('Error saving posts to cache:', error);
-  }
-}, []);
-
-const saveAllPostsToCache = useCallback(async (postsData) => {
-  try {
-    // Ensure postsData is an array
-    const dataToCache = Array.isArray(postsData) ? postsData : [];
-    
-    await AsyncStorage.setItem(
-      ALL_POSTS_CACHE_KEY,
-      JSON.stringify({ 
-        data: dataToCache, 
-        timestamp: Date.now() 
-      })
-    );
-  } catch (error) {
-    console.error('Error saving all posts to cache:', error);
-  }
-}, []);
-
-  // Optimized data fetching
-  const fetchLiveStreams = useCallback(async () => {
     try {
-      const token = await AsyncStorage.getItem("userToken"); 
-      setLoadingLiveStreams(true);
-      
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+      const cachedData = storage.getString(ALL_POSTS_CACHE_KEY);
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        if (!parsed || typeof parsed !== 'object') {
+          console.warn('Invalid all posts cache format');
+          return false;
+        }
+        const { data, timestamp } = parsed;
+        if (!Array.isArray(data)) {
+          console.warn('Cached all posts data is not an array');
+          return false;
+        }
+        const isCacheValid = Date.now() - timestamp < CACHE_EXPIRATION_TIME;
+        if (isCacheValid) {
+          const dataCopy = data.slice();
+          const sortedPosts = dataCopy.sort((a, b) => 
+            new Date(b.created_at) - new Date(a.created_at)
+          );
+          const filteredPosts = await filterUnfollowedUsers(sortedPosts);
+          const map = await getViewsAndSharesMap();
+          const enhancedPosts = enhancePostsWithMap(filteredPosts, map, 0.6);
+          setAllPosts(enhancedPosts);
+          return true;
+        }
       }
-      abortControllerRef.current = new AbortController();
+    } catch (error) {
+      console.error('Error loading all posts from cache:', error);
+      storage.delete(ALL_POSTS_CACHE_KEY);
+    }
+    return false;
+  }, []);
 
-      const res = await fetch(`${API_ROUTE}/live-streams/`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`, 
-        },
-        signal: abortControllerRef.current.signal
-      });
-
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
-      const data = await res.json();
-      setLiveStreams(data);
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.warn("Error fetching live streams:", err);
-      }
-    } finally {
-      setLoadingLiveStreams(false);
+  // ============================================================
+  // SAVE TO CACHE - MMKV
+  // ============================================================
+  const savePostsToCache = useCallback(async (postsData) => {
+    try {
+      const dataToCache = Array.isArray(postsData) ? postsData : [];
+      console.log('Saving posts to MMKV cache...', {
+      postCount: dataToCache.length,
+      timestamp: new Date().toISOString()
+    });
+      storage.set(
+        POSTS_CACHE_KEY,
+        JSON.stringify({ 
+          data: dataToCache, 
+          timestamp: Date.now() 
+        })
+      );
+       console.log('Posts saved to MMKV cache successfully');
+    } catch (error) {
+      console.error('Error saving posts to cache:', error);
     }
   }, []);
 
+  const saveAllPostsToCache = useCallback(async (postsData) => {
+    try {
+      const dataToCache = Array.isArray(postsData) ? postsData : [];
+       console.log('Saving ALL posts to MMKV cache...', {
+      postCount: dataToCache.length,
+      timestamp: new Date().toISOString()
+    });
+      storage.set(
+        ALL_POSTS_CACHE_KEY,
+        JSON.stringify({ 
+          data: dataToCache, 
+          timestamp: Date.now() 
+        })
+      );
+      console.log('✅ ALL posts saved to MMKV cache successfully');
+    } catch (error) {
+      console.error('Error saving all posts to cache:', error);
+    }
+  }, []);
+
+  // ============================================================
+  // FETCH FUNCTIONS
+  // ============================================================
   const fetchCurrentUser = useCallback(async () => {
     try {
       const userData = await AsyncStorage.getItem('userData');
@@ -7101,30 +6996,10 @@ const saveAllPostsToCache = useCallback(async (postsData) => {
     }
   }, []);
 
-  const fetchStatus = useCallback(async () => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) return;
-
-      const res = await axios.get(`${API_ROUTE}/status/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.status === 200 || res.status === 201) {
-        const grouped = groupStatusesByUser(res.data);
-        setGroupedStatuses(grouped);
-      }
-    } catch (error) {
-      console.error('Error fetching status:', error);
-    }
-  }, []);
-
   const groupStatusesByUser = useCallback((statuses) => {
     const grouped = {};
-    
     statuses.forEach(status => {
       const userKey = status.user?.id || status.user;
-      
       if (!grouped[userKey]) {
         grouped[userKey] = {
           user: status.user,
@@ -7135,10 +7010,8 @@ const saveAllPostsToCache = useCallback(async (postsData) => {
           status_type: status.status_type
         };
       }
-      
       grouped[userKey].statuses.push(status);
       const currentTime = new Date(status.created_at);
-      
       if (currentTime > grouped[userKey].latestTime) {
         grouped[userKey].latestTime = currentTime;
         grouped[userKey].viewers_count = status.viewers_count;
@@ -7146,101 +7019,29 @@ const saveAllPostsToCache = useCallback(async (postsData) => {
         grouped[userKey].status_type = status.status_type;
       }
     });
-    
     return Object.values(grouped).sort((a, b) => b.latestTime - a.latestTime);
   }, []);
 
-// Fetch followed posts with pagination
-const fetchPosts = useCallback(async () => {
-  const token = await AsyncStorage.getItem('userToken');
-  if (!token) return;
-
-  try {
-    const response = await axios.get(`${API_ROUTE}/posts/`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 200) {
-      // Ensure response.data is an array
-      const postsData = Array.isArray(response.data) ? response.data : 
-                       (response.data.results || []);
-      
-      // NEW: one batched read instead of 2*N AsyncStorage calls
-      const map = await getViewsAndSharesMap();
-      const enhancedPosts = enhancePostsWithMap(postsData, map, 0.7);
-
-      const reversedData = [...enhancedPosts].reverse();
-      setPosts(reversedData);
-      await savePostsToCache(postsData); // Save original data
-
-      // NEW: prefetch the first image of the first few posts that
-      // are about to be visible, right when we have the URLs —
-      // instead of waiting for each row to mount and then waiting
-      // another 500ms inside that row (the old behavior, which ran
-      // too late to help and was removed from MemoizedTweetItem).
-      reversedData.slice(0, 5).forEach((post) => {
-        const firstImg = post.all_images?.[0]?.url || post.image_url;
-        if (firstImg) {
-          Image.prefetch(firstImg).catch(() => {});
-        }
-      });
-    }
-  } catch (error) {
-    console.error('Error fetching posts:', error);
-  }
-}, [savePostsToCache]);
-
- // Fetch all posts with pagination - COMPLETE VERSION
-const fetchAllPosts = useCallback(async () => {
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    if (!token) return;
-
-    const [postsResponse, followedUsers] = await Promise.all([
-      axios.get(`${API_ROUTE}/get-all-post/`, {
+  const fetchStatus = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+      const res = await axios.get(`${API_ROUTE}/status/`, {
         headers: { Authorization: `Bearer ${token}` },
-      }),
-      fetchFollowedUsers(),
-    ]);
-
-    if (postsResponse.status === 200) {
-      // Ensure response.data is an array
-      const postsData = Array.isArray(postsResponse.data) ? postsResponse.data : 
-                       (postsResponse.data.results || []);
-      
-      // Create a copy safely
-      const dataCopy = postsData.slice();
-      
-      const sortedPosts = dataCopy.sort((a, b) => 
-        new Date(b.created_at) - new Date(a.created_at)
-      );
-      
-      const filteredPosts = await filterUnfollowedUsers(sortedPosts);
-      // NEW: one batched read instead of 2*N AsyncStorage calls
-      const map = await getViewsAndSharesMap();
-      const enhancedPosts = enhancePostsWithMap(filteredPosts, map, 0.6);
-      setAllPosts(enhancedPosts);
-      setFollowedUsers(followedUsers);
-      await saveAllPostsToCache(postsData); // Save original data
-
-      // NEW: prefetch first images of the first few all-posts too
-      enhancedPosts.slice(0, 5).forEach((post) => {
-        const firstImg = post.all_images?.[0]?.url || post.image_url;
-        if (firstImg) {
-          Image.prefetch(firstImg).catch(() => {});
-        }
       });
+      if (res.status === 200 || res.status === 201) {
+        const grouped = groupStatusesByUser(res.data);
+        setGroupedStatuses(grouped);
+      }
+    } catch (error) {
+      console.error('Error fetching status:', error);
     }
-  } catch (error) {
-    console.error('Error fetching all posts:', error);
-  }
-}, [saveAllPostsToCache]);
+  }, [groupStatusesByUser]);
 
   const filterUnfollowedUsers = async (posts) => {
     const followedUsers = await fetchFollowedUsers();
     const seenUsers = new Set();
     const filteredPosts = [];
-
     for (const post of posts) {
       if (!seenUsers.has(post.user_id) && !followedUsers.includes(post.user_id)) {
         seenUsers.add(post.user_id);
@@ -7248,56 +7049,16 @@ const fetchAllPosts = useCallback(async () => {
       }
       if (filteredPosts.length === 20) break;
     }
-
     return filteredPosts;
   };
-
-  const handleFollowChannel = useCallback(async (slug) => {
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    await axios.post(
-      `${API_ROUTE}/channels/${slug}/follow/`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    
-   
-    setChannels(prev => 
-      prev.map(ch => 
-        ch.slug === slug 
-          ? { ...ch, isFollowing: true, followers_count: (ch.followers_count || 0) + 1 }
-          : ch
-      )
-    );
-    
-    
-    const channel = channels.find(ch => ch.slug === slug);
-    if (channel) {
-      navigation.navigate('ChannelDetails', {
-        receiverId: channel.id,
-        name: channel.name,
-        chatType: 'channel',
-        profile_image: channel.image,
-        channelSlug: channel.slug,
-        InviteLink: channel.invite_link,
-        followers: channel.followers_count
-      });
-    }
-  } catch (error) {
-    console.error('Error following channel:', error);
-    Alert.alert('Error', 'Failed to follow channel');
-  }
-}, [channels, navigation]);
 
   const fetchFollowedUsers = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) return [];
-
       const response = await axios.get(`${API_ROUTE}/followed-users/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (response.status === 200) {
         return response.data.map(user => user.id);
       }
@@ -7308,10 +7069,74 @@ const fetchAllPosts = useCallback(async () => {
     }
   }, []);
 
+  const fetchPosts = useCallback(async () => {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) return;
+    try {
+      const response = await axios.get(`${API_ROUTE}/posts/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 200) {
+        console.log('fetch post_1', response.data)
+        const postsData = Array.isArray(response.data) ? response.data : 
+                         (response.data.results || []);
+        const map = await getViewsAndSharesMap();
+        const enhancedPosts = enhancePostsWithMap(postsData, map, 0.7);
+        const reversedData = [...enhancedPosts].reverse();
+        setPosts(reversedData);
+        await savePostsToCache(postsData);
+        reversedData.slice(0, 5).forEach((post) => {
+          const firstImg = post.all_images?.[0]?.url || post.image_url;
+          if (firstImg) {
+            Image.prefetch(firstImg).catch(() => {});
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    }
+  }, [savePostsToCache]);
+
+  const fetchAllPosts = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+      const [postsResponse, followedUsers] = await Promise.all([
+        axios.get(`${API_ROUTE}/get-all-post/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetchFollowedUsers(),
+      ]);
+      if (postsResponse.status === 200) {
+        
+        const postsData = Array.isArray(postsResponse.data) ? postsResponse.data : 
+                         (postsResponse.data.results || []);
+                         console.log('fetch all post', postsData)
+        const dataCopy = postsData.slice();
+        const sortedPosts = dataCopy.sort((a, b) => 
+          new Date(b.created_at) - new Date(a.created_at)
+        );
+        const filteredPosts = await filterUnfollowedUsers(sortedPosts);
+        const map = await getViewsAndSharesMap();
+        const enhancedPosts = enhancePostsWithMap(filteredPosts, map, 0.6);
+        setAllPosts(enhancedPosts);
+        setFollowedUsers(followedUsers);
+        await saveAllPostsToCache(postsData);
+        enhancedPosts.slice(0, 5).forEach((post) => {
+          const firstImg = post.all_images?.[0]?.url || post.image_url;
+          if (firstImg) {
+            Image.prefetch(firstImg).catch(() => {});
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching all posts:', error);
+    }
+  }, [saveAllPostsToCache, fetchFollowedUsers]);
+
   const fetchReactions = useCallback(async () => {
     const token = await AsyncStorage.getItem('userToken');
     if (!token) return;
-
     try {
       const response = await axios.get(`${API_ROUTE}/all-post-reaction/`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -7326,11 +7151,9 @@ const fetchAllPosts = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) return;
-      
       const response = await axios.get(`${API_ROUTE}/suggested-friends/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
       if (response.status === 200) {
         const enhancedFriends = response.data.map(friend => ({
           ...friend,
@@ -7344,181 +7167,289 @@ const fetchAllPosts = useCallback(async () => {
     }
   }, []);
 
-const handleReactionOptimized = useCallback(async (postId, type) => {
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    if (!token) return;
-
-    // Store previous state for potential rollback
-    const previousPosts = [...posts];
-    const previousAllPosts = [...allposts];
-    const previousReactionCounts = { ...reactionCounts };
-
-    // Optimistic update - update UI immediately
-    setReactionCounts((prev) => {
-      const postIdStr = postId.toString();
-      const currentReactions = prev[postIdStr] || { like: 0, love: 0, support: 0 };
-      const newReactions = { ...currentReactions };
-
-      if (newReactions.user_reaction === type) {
-        newReactions[type] = (newReactions[type] || 0) - 1;
-        newReactions.user_reaction = null;
-      } else {
-        if (newReactions.user_reaction) {
-          newReactions[newReactions.user_reaction] = (newReactions[newReactions.user_reaction] || 0) - 1;
-        }
-        newReactions[type] = (newReactions[type] || 0) + 1;
-        newReactions.user_reaction = type;
+  const fetchLiveStreams = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem("userToken"); 
+      setLoadingLiveStreams(true);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-
-      return { ...prev, [postIdStr]: newReactions };
-    });
-
-    // Optimistic update for like counts on posts
-    if (type === 'like') {
-      setPosts(prevPosts => 
-        prevPosts.map(post => {
-          if (post.id === postId) {
-            const isLiked = post.reactions?.user_reaction === 'like';
-            return {
-              ...post,
-              like_count: isLiked ? Math.max(0, (post.like_count || 0) - 1) : (post.like_count || 0) + 1,
-              reactions: {
-                ...post.reactions,
-                user_reaction: isLiked ? null : 'like'
-              }
-            };
-          }
-          return post;
-        })
-      );
-      
-      setAllPosts(prevPosts => 
-        prevPosts.map(post => {
-          if (post.id === postId) {
-            const isLiked = post.reactions?.user_reaction === 'like';
-            return {
-              ...post,
-              like_count: isLiked ? Math.max(0, (post.like_count || 0) - 1) : (post.like_count || 0) + 1,
-              reactions: {
-                ...post.reactions,
-                user_reaction: isLiked ? null : 'like'
-              }
-            };
-          }
-          return post;
-        })
-      );
+      abortControllerRef.current = new AbortController();
+      const res = await fetch(`${API_ROUTE}/live-streams/`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`, 
+        },
+        signal: abortControllerRef.current.signal
+      });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data = await res.json();
+      setLiveStreams(data);
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.warn("Error fetching live streams:", err);
+      }
+    } finally {
+      setLoadingLiveStreams(false);
     }
+  }, []);
 
-    // Make API call
-    const response = await axios.post(
-      `${API_ROUTE}/post-react/`,
-      { 
-        post_id: postId, 
-        reaction_type: type,
-        content: type === 'comment' ? newComment : '',
-        share_platform: type === 'share' ? 'external' : null
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+  const fetchUnreadNotificationCount = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await axios.get(`${API_ROUTE}/notifications/unread-count/`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.data.success) {
+        setUnreadNotificationCount(response.data.unread_count);
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
-    //console.log('Reaction response:', response.data);
+  const fetchHomeChannels = useCallback(async () => {
+    try {
+      setLoadingChannels(true);
+      const token = await AsyncStorage.getItem('userToken');
+      const [channelsRes, followingRes] = await Promise.all([
+        axios.get(`${API_ROUTE}/channels/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 5000,
+        }),
+        axios.get(`${API_ROUTE}/channels/following/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 3000,
+        })
+      ]);
+      const followingIds = followingRes.data.map(ch => ch.id);
+      const processedChannels = channelsRes.data.map(channel => ({
+        ...channel,
+        isFollowing: followingIds.includes(channel.id),
+      }));
+      const topChannels = processedChannels.slice(0, 5);
+      setChannels(topChannels);
+    } catch (error) {
+      showSnackbar('Error fetching channels for home:', 'error')
+    } finally {
+      setLoadingChannels(false);
+    }
+  }, []);
 
-    // Update with actual data from server
-    if (response.data) {
-      // Update posts with the actual counts from response
-      setPosts(prevPosts => 
-        prevPosts.map(post => 
-          post.id === postId 
-            ? { 
-                ...post, 
-                like_count: response.data.like_count !== undefined ? response.data.like_count : post.like_count,
-                comment_count: response.data.comment_count !== undefined ? response.data.comment_count : post.comment_count,
-                share_count: response.data.share_count !== undefined ? response.data.share_count : post.share_count,
+  // ============================================================
+  // HANDLER FUNCTIONS
+  // ============================================================
+  const handleReactionOptimized = useCallback(async (postId, type) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+      const previousPosts = [...posts];
+      const previousAllPosts = [...allposts];
+      const previousReactionCounts = { ...reactionCounts };
+
+      setReactionCounts((prev) => {
+        const postIdStr = postId.toString();
+        const currentReactions = prev[postIdStr] || { like: 0, love: 0, support: 0 };
+        const newReactions = { ...currentReactions };
+        if (newReactions.user_reaction === type) {
+          newReactions[type] = (newReactions[type] || 0) - 1;
+          newReactions.user_reaction = null;
+        } else {
+          if (newReactions.user_reaction) {
+            newReactions[newReactions.user_reaction] = (newReactions[newReactions.user_reaction] || 0) - 1;
+          }
+          newReactions[type] = (newReactions[type] || 0) + 1;
+          newReactions.user_reaction = type;
+        }
+        return { ...prev, [postIdStr]: newReactions };
+      });
+
+      if (type === 'like') {
+        setPosts(prevPosts => 
+          prevPosts.map(post => {
+            if (post.id === postId) {
+              const isLiked = post.reactions?.user_reaction === 'like';
+              return {
+                ...post,
+                like_count: isLiked ? Math.max(0, (post.like_count || 0) - 1) : (post.like_count || 0) + 1,
                 reactions: {
                   ...post.reactions,
-                  user_reaction: response.data.reaction?.reaction_type || null
+                  user_reaction: isLiked ? null : 'like'
                 }
-              } 
-            : post
-        )
-      );
-      
-      setAllPosts(prevPosts => 
-        prevPosts.map(post => 
-          post.id === postId 
-            ? { 
-                ...post, 
-                like_count: response.data.like_count !== undefined ? response.data.like_count : post.like_count,
-                comment_count: response.data.comment_count !== undefined ? response.data.comment_count : post.comment_count,
-                share_count: response.data.share_count !== undefined ? response.data.share_count : post.share_count,
+              };
+            }
+            return post;
+          })
+        );
+        setAllPosts(prevPosts => 
+          prevPosts.map(post => {
+            if (post.id === postId) {
+              const isLiked = post.reactions?.user_reaction === 'like';
+              return {
+                ...post,
+                like_count: isLiked ? Math.max(0, (post.like_count || 0) - 1) : (post.like_count || 0) + 1,
                 reactions: {
                   ...post.reactions,
-                  user_reaction: response.data.reaction?.reaction_type || null
+                  user_reaction: isLiked ? null : 'like'
                 }
-              } 
-            : post
-        )
-      );
-
-      // Show reward if any
-      if (response.data.reward) {
-        Alert.alert(
-          '🎉 Reward Earned!',
-          `You earned ${response.data.reward.coins} coins for this ${type}!`,
-          [{ text: 'OK' }]
+              };
+            }
+            return post;
+          })
         );
       }
+
+      const response = await axios.post(
+        `${API_ROUTE}/post-react/`,
+        { 
+          post_id: postId, 
+          reaction_type: type,
+          content: type === 'comment' ? newComment : '',
+          share_platform: type === 'share' ? 'external' : null
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data) {
+        setPosts(prevPosts => 
+          prevPosts.map(post => 
+            post.id === postId 
+              ? { 
+                  ...post, 
+                  like_count: response.data.like_count !== undefined ? response.data.like_count : post.like_count,
+                  comment_count: response.data.comment_count !== undefined ? response.data.comment_count : post.comment_count,
+                  share_count: response.data.share_count !== undefined ? response.data.share_count : post.share_count,
+                  reactions: {
+                    ...post.reactions,
+                    user_reaction: response.data.reaction?.reaction_type || null
+                  }
+                } 
+              : post
+          )
+        );
+        setAllPosts(prevPosts => 
+          prevPosts.map(post => 
+            post.id === postId 
+              ? { 
+                  ...post, 
+                  like_count: response.data.like_count !== undefined ? response.data.like_count : post.like_count,
+                  comment_count: response.data.comment_count !== undefined ? response.data.comment_count : post.comment_count,
+                  share_count: response.data.share_count !== undefined ? response.data.share_count : post.share_count,
+                  reactions: {
+                    ...post.reactions,
+                    user_reaction: response.data.reaction?.reaction_type || null
+                  }
+                } 
+              : post
+          )
+        );
+        if (response.data.reward) {
+          showSnackbar(`You earned ${response.data.reward.coins} coins for this ${type}!`,'success');
+        }
+      }
+    } catch (error) {
+      console.error('Error handling reaction:', error);
+      onRefresh();
     }
-  } catch (error) {
-    console.error('Error handling reaction:', error);
-    // Revert optimistic update on error
-    onRefresh();
-  }
-}, [posts, allposts, reactionCounts, newComment]);
+  }, [posts, allposts, reactionCounts, newComment]);
 
 const handleShareOptimized = useCallback(async (postId) => {
   try {
-    const post = posts.find(p => p.id === postId) || allposts.find(p => p.id === postId);
+    const post =
+      posts.find(p => p.id === postId) ||
+      allposts.find(p => p.id === postId);
+
     if (!post) {
       console.error('Post not found for sharing:', postId);
       return;
     }
 
-    
-    const shareUrl = `https://showapp.com/post/${post.id}`;
-    
-    // Create a clean, clickable share message
-    const shareMessage = `${post.username} shared a post on ShowApp\n\n"${post.content.substring(0, 100)}${post.content.length > 100 ? '…' : ''}"\n\n${shareUrl}`;
+    const shareUrl = `https://showapp.ng/post/${post.id}`;
 
-    const shareResult = await Share.share({
-      message: shareMessage,
-      title: `ShowApp - Post by ${post.username}`,
-      url: shareUrl, // For iOS
+    // Clean up the post content
+    const postContent = (post.content || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const preview =
+      postContent.length > 120
+        ? `${postContent.substring(0, 120)}…`
+        : postContent;
+
+    const shareMessage = `${post.username} shared a post on Showa App.
+
+${preview ? `"${preview}"\n\n` : ''}Join the conversation and view the full post:
+
+${shareUrl}`;
+
+    const result = await Share.share({
+      title: `Showa • ${post.username}'s Post`,
+      message: shareMessage, // Android
+      url: shareUrl,         // iOS
     });
-    
-    if (shareResult.action === Share.sharedAction) {
-      console.log('Post shared successfully:', shareUrl);
-      
-      // Track share
+
+    if (result.action === Share.sharedAction) {
       const token = await AsyncStorage.getItem('userToken');
+
       if (token) {
         await axios.post(
           `${API_ROUTE}/post-react/`,
-          { post_id: post.id, reaction_type: 'share' },
-          { headers: { Authorization: `Bearer ${token}` } }
+          {
+            post_id: post.id,
+            reaction_type: 'share',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
       }
-      
+
+      console.log('Post shared successfully:', shareUrl);
       setSnackbarVisible(true);
     }
   } catch (error) {
-    console.error('Error sharing post:', error);
-    Alert.alert('Share Failed', 'Unable to share post. Please try again.');
+    console.error('Share error:', error);
+    showSnackbar('message', 'error');
   }
 }, [posts, allposts]);
 
+  const handleCommentOptimized = useCallback((postId) => {
+    setSelectedPostId(postId);
+    setIsBottomSheetVisible(true);
+    setCommentsLoading(true);
+    setPostById(null);
+    (async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) {
+          setCommentsLoading(false);
+          return;
+        }
+        const [postResponse, commentsResponse] = await Promise.all([
+          axios.get(`${API_ROUTE}/posts/${postId}/`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${API_ROUTE}/post/${postId}/comments/`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        ]);
+        if (postResponse.status === 200) {
+          setPostById(postResponse.data);
+        }
+        if (commentsResponse.status === 200) {
+          const comments = commentsResponse.data.comments || commentsResponse.data;
+          setPostsComment(comments);
+        }
+      } catch (error) {
+        console.error('Error fetching post details:', error);
+      } finally {
+        setCommentsLoading(false);
+      }
+    })();
+  }, []);
 
   const handleOptionsOptimized = useCallback((postId, userId) => {
     setSelectedPostId(postId);
@@ -7527,48 +7458,36 @@ const handleShareOptimized = useCallback(async (postId) => {
   }, []);
 
   const handleFollow = useCallback(async (userId) => {
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    if (!token) return;
-
-    await axios.post(
-      `${API_ROUTE}/follow-user/${userId}/`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    setFollowedUsers((prev) => [...prev, userId]);
-    
-    
-    setAllPosts((prev) => prev.map(post => 
-      post.user_id === userId 
-        ? { ...post, is_followed_by_current_user: true }
-        : post
-    ));
-    
-    setSuggestedFriends((prev) => prev.filter((friend) => friend.id !== userId));
-    setSnackbarVisible(true);
-  } catch (error) {
-    console.error('Error following user:', error);
-  }
-}, []);
-
-  const handleViewUser = useCallback((userId) => {
-    navigation.navigate('BroadcastUserProfile', { user_ID: userId });
-  }, [navigation]);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+      await axios.post(
+        `${API_ROUTE}/follow-user/${userId}/`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setFollowedUsers((prev) => [...prev, userId]);
+      setAllPosts((prev) => prev.map(post => 
+        post.user_id === userId 
+          ? { ...post, is_followed_by_current_user: true }
+          : post
+      ));
+      setSuggestedFriends((prev) => prev.filter((friend) => friend.id !== userId));
+      setSnackbarVisible(true);
+    } catch (error) {
+      console.error('Error following user:', error);
+    }
+  }, []);
 
   const handleUnfollow = useCallback(async () => {
     const userId = userPostWithID;
     if (!userId) return;
-
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) return;
-
       await axios.delete(`${API_ROUTE}/unfollow-user/${userId}/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       setFollowedUsers((prev) => prev.filter((follower) => follower !== userId));
       setSnackbarVisible(true);
       setIsOptionsBottomSheetVisible(false);
@@ -7586,68 +7505,21 @@ const handleShareOptimized = useCallback(async (postId) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSnackbarVisible(true);
-      console.log('save')
       setIsOptionsBottomSheetVisible(false);
     } catch (error) {
       console.error('Error bookmarking post:', error);
     }
   }, []);
 
-  const openImageModal = useCallback((userStatus) => {
-  // Set the selected user's statuses
-  setSelectedUserStatuses(userStatus.statuses);
-  // Reset to first status
-  setCurrentStatusIndex(0);
-  // Show the modal
-  setModalVisible(true);
-  // Reset paused state
-  setPaused(false);
-  
-  // Track views for each status (except the current user's own status)
-  const isMyStatus = userStatus.user?.phone === currentUserPhone || 
-                     userStatus.user === currentUserPhone;
-  
-  if (!isMyStatus) {
-    // Track view for the first status
-    trackStatusView(userStatus.statuses[0]?.id);
-  }
-}, [currentUserPhone]);
-
-  const showViewers = useCallback((viewers) => {
-    setCurrentViewers(viewers);
-    setViewersModalVisible(true);
-  }, []);
-
-  const deleteStatus = useCallback(async (statusId) => {
-    if (!statusId) return;
-
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      await axios.delete(`${API_ROUTE}/status/${statusId}/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      setGroupedStatuses(prev => 
-        prev.filter(status => 
-          !status.statuses.some(s => s.id === statusId)
-        )
-      );
-      setSnackbarVisible(true);
-    } catch (error) {
-      console.error('Error deleting status:', error);
-      Alert.alert('Error', 'Failed to delete status');
-    }
-  }, []);
   const handleViewImage = useCallback((post) => {
-  // Make sure we pass all images to the modal
-  const images = post.all_images || (post.image_url ? [{ url: post.image_url }] : []);
-  setSelectedImagePost({
-    ...post,
-    images: images,
-    selectedIndex: post.selectedIndex || 0
-  });
-  setImageModalVisible(true);
-}, []);
+    const images = post.all_images || (post.image_url ? [{ url: post.image_url }] : []);
+    setSelectedImagePost({
+      ...post,
+      images: images,
+      selectedIndex: post.selectedIndex || 0
+    });
+    setImageModalVisible(true);
+  }, []);
 
   const handleImageModalClose = useCallback(() => {
     setImageModalVisible(false);
@@ -7663,371 +7535,119 @@ const handleShareOptimized = useCallback(async (postId) => {
     ));
   }, []);
 
-  const handleScroll = useCallback((event) => {
-    const scrollY = event.nativeEvent.contentOffset.y;
-    const postHeight = 500;
-    
-    if (scrollY > postHeight * 4 && !showSuggestedFriends) {
-      setShowSuggestedFriends(true);
-    }
-
-    if (scrollY > postHeight * 8 && !hasShownLiveModal && liveStreams.length > 0) {
-      setShowLiveModal(true);
-      setHasShownLiveModal(true);
-    }
-  }, [showSuggestedFriends, hasShownLiveModal, liveStreams.length]);
-
-
-const onCommentSubmitPost = useCallback(async () => {
-  if (!newComment.trim() || !selectedPostId) {
-    return;
-  }
-
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    if (!token) return;
-
-    const userData = await AsyncStorage.getItem('userData');
-    const parsedUser = userData ? JSON.parse(userData) : null;
-    const loginUserId = parsedUser?.id;
-    const userName = parsedUser?.name || parsedUser?.username || 'User';
-
-    if (!loginUserId) {
-      console.warn('User ID not found in stored data.');
-      return;
-    }
-
-    // Determine if this is a reply
-    const isReply = replyToCommentId !== null;
-    const parentCommentId = replyToCommentId;
-
-    // Optimistic update with complete user data
-    const tempId = `temp_${Date.now()}`;
-    const optimisticData = {
-      id: tempId,
-      text: newComment.trim(),
-      created_at: new Date().toISOString(),
-      user: {
-        id: loginUserId,
-        username: userName,
-        name: userName,
-        profile_picture: userprofileimage,
-        is_verified: false
-      },
-      user_details: {
-        id: loginUserId,
-        username: userName,
-        profile_picture: userprofileimage,
-        is_verified: false
-      },
-      username: userName,
-      like_count: 0,
-      is_liked: false,
-      replies: []
-    };
-
-    if (isReply) {
-      // Add reply-specific data
-      optimisticData.parent = parentCommentId;
-      optimisticData.parent_comment_id = parentCommentId;
-    }
-
-    // Optimistic update
-    if (isReply) {
-      // For replies, add to parent comment's replies array
-      setPostsComment(prev => prev.map(comment => {
-        if (comment.id === parentCommentId) {
-          return {
-            ...comment,
-            replies: [...(comment.replies || []), optimisticData],
-            reply_count: (comment.reply_count || 0) + 1
-          };
-        }
-        return comment;
-      }));
-    } else {
-      // For top-level comments, add to main list
-      setPostsComment(prev => [optimisticData, ...prev.filter(c => c.post === selectedPostId)]);
-      
-      // Update comment count optimistically
-      setPosts(prev => prev.map(post => 
-        post.id === selectedPostId 
-          ? { ...post, comment_count: (post.comment_count || 0) + 1 } 
-          : post
-      ));
-      
-      setAllPosts(prev => prev.map(post => 
-        post.id === selectedPostId 
-          ? { ...post, comment_count: (post.comment_count || 0) + 1 } 
-          : post
-      ));
-    }
-
-    // Clear input and reply state
-    setNewComment('');
-    if (isReply) {
-      setReplyToCommentId(null);
-    }
-
-    // Make API call
-    const endpoint = isReply 
-      ? `${API_ROUTE}/comment/${parentCommentId}/reply/`
-      : `${API_ROUTE}/posts-comment/${selectedPostId}/comments/`;
-
-    const response = await axios.post(
-      endpoint,
-      isReply 
-        ? { text: newComment.trim() }
-        : {
-            text: newComment.trim(),
-            post: selectedPostId,
-            user: loginUserId,
-            image: userprofileimage,
-          },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+  const handleFollowChannel = useCallback(async (slug) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      await axios.post(
+        `${API_ROUTE}/channels/${slug}/follow/`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setChannels(prev => 
+        prev.map(ch => 
+          ch.slug === slug 
+            ? { ...ch, isFollowing: true, followers_count: (ch.followers_count || 0) + 1 }
+            : ch
+        )
+      );
+      const channel = channels.find(ch => ch.slug === slug);
+      if (channel) {
+        navigation.navigate('ChannelDetails', {
+          receiverId: channel.id,
+          name: channel.name,
+          chatType: 'channel',
+          profile_image: channel.image,
+          channelSlug: channel.slug,
+          InviteLink: channel.invite_link,
+          followers: channel.followers_count
+        });
       }
-    );
+    } catch (error) {
+      showSnackbar('Failed to follow channel. Please try again.', 'error');
+    }
+  }, [channels, navigation]);
 
-    if (response.status === 200 || response.status === 201) {
-      // Replace optimistic data with actual data
-      if (isReply) {
-        setPostsComment(prev => prev.map(comment => {
-          if (comment.id === parentCommentId) {
-            return {
-              ...comment,
-              replies: comment.replies.map(reply => 
-                reply.id === tempId ? response.data : reply
-              )
-            };
-          }
-          return comment;
-        }));
-      } else {
-        setPostsComment(prev => prev.map(comment => 
-          comment.id === tempId ? response.data : comment
-        ));
+  const openImageModal = useCallback((userStatus) => {
+    setSelectedUserStatuses(userStatus.statuses);
+    setCurrentStatusIndex(0);
+    setModalVisible(true);
+    setPaused(false);
+    const isMyStatus = userStatus.user?.phone === currentUserPhone || 
+                       userStatus.user === currentUserPhone;
+    if (!isMyStatus) {
+      trackStatusView(userStatus.statuses[0]?.id);
+    }
+  }, [currentUserPhone]);
 
-        // Update with actual comment count
-        if (response.data.comment_count !== undefined) {
-          setPosts(prev => prev.map(post => 
-            post.id === selectedPostId 
-              ? { ...post, comment_count: response.data.comment_count } 
-              : post
-          ));
-          
-          setAllPosts(prev => prev.map(post => 
-            post.id === selectedPostId 
-              ? { ...post, comment_count: response.data.comment_count } 
-              : post
-          ));
-        }
-      }
+  const showViewers = useCallback((viewers) => {
+    setCurrentViewers(viewers);
+    setViewersModalVisible(true);
+  }, []);
 
+  const deleteStatus = useCallback(async (statusId) => {
+    if (!statusId) return;
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      await axios.delete(`${API_ROUTE}/status/${statusId}/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setGroupedStatuses(prev => 
+        prev.filter(status => 
+          !status.statuses.some(s => s.id === statusId)
+        )
+      );
       setSnackbarVisible(true);
-      
-      // Show reward if any
-      if (response.data.reward) {
-        Alert.alert(
-          '💬 Reward!',
-          `You earned ${response.data.reward.coins} coins!`,
-          [{ text: 'OK' }]
-        );
-      }
+    } catch (error) {
+      console.error('Error deleting status:', error);
+      showSnackbar('message', 'error');
     }
-  } catch (error) {
-    console.error('Failed to post:', error);
-    // Remove optimistic data on error
-    if (replyToCommentId) {
-      setPostsComment(prev => prev.map(comment => {
-        if (comment.id === replyToCommentId) {
-          return {
-            ...comment,
-            replies: comment.replies?.filter(r => r.id.toString().startsWith('temp_'))
-          };
-        }
-        return comment;
-      }));
+  }, []);
+
+  const trackStatusView = useCallback(async (statusId) => {
+    if (!statusId) return;
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      await axios.post(
+        `${API_ROUTE}/status/${statusId}/track-view/`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (error) {
+      console.error('Error tracking status view:', error);
+    }
+  }, []);
+
+  const formatStatusTime = (date) => {
+    if (!date) return '';
+    const now = new Date();
+    const diffInHours = (now - new Date(date)) / (1000 * 60 * 60);
+    if (diffInHours < 24) {
+      return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffInHours < 48) {
+      return 'Yesterday';
     } else {
-      setPostsComment(prev => prev.filter(c => !c.id.toString().startsWith('temp_')));
-      // Revert comment count
-      setPosts(prev => prev.map(post => 
-        post.id === selectedPostId 
-          ? { ...post, comment_count: Math.max(0, (post.comment_count || 0) - 1) } 
-          : post
-      ));
+      return new Date(date).toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
-    Alert.alert('Error', 'Failed to post. Please try again.');
-  }
-}, [newComment, selectedPostId, replyToCommentId, username, userprofileimage, posts, allposts]);
+  };
 
-  const onCommentSubmitReply = useCallback(async () => {
-    if (!replyText.trim() || !selectedCommentId) {
-      return;
+  const getStatusImageUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http://')) {
+      return url.replace('http://', 'https://');
     }
-
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) {
-        return;
-      }
-
-      const userData = await AsyncStorage.getItem('userData');
-      const parsedUser = userData ? JSON.parse(userData) : null;
-      const loginUserId = parsedUser?.id;
-
-      if (!loginUserId) {
-        console.warn('User ID not found in stored data.');
-        return;
-      }
-
-      const tempReplyId = `temp_reply_${Date.now()}`;
-      const newReplyData = {
-        id: tempReplyId,
-        username: username,
-        text: replyText.trim(),
-        userAvatar: userprofileimage,
-        created_at: new Date().toISOString(),
-      };
-
-      setPostsComment((prev) => {
-        const updatedComments = prev.map((comment) =>
-          comment.id === selectedCommentId
-            ? {
-                ...comment,
-                replies: comment.replies
-                  ? [...comment.replies, newReplyData]
-                  : [newReplyData],
-              }
-            : comment
-        );
-        return updatedComments;
-      });
-
-      const response = await axios.post(
-        `${API_ROUTE}/posts-comment/${selectedPostId}/comments/`,
-        {
-          text: replyText.trim(),
-          post: selectedPostId,
-          user: loginUserId,
-          image: userprofileimage,
-          parent: selectedCommentId,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (response.status === 200 || response.status === 201) {
-        setPostsComment((prev) => {
-          const updatedComments = prev.map((comment) =>
-            comment.id === selectedCommentId
-              ? {
-                  ...comment,
-                  replies: comment.replies.map((reply) =>
-                    reply.id === tempReplyId
-                      ? {
-                          ...reply,
-                          id: response.data.id,
-                        }
-                      : reply
-                  ),
-                }
-              : comment
-          );
-          return updatedComments;
-        });
-
-        setReplyText('');
-        setReplyToCommentId(null);
-        setSnackbarVisible(true);
-      } else {
-        setPostsComment((prev) => {
-          const updatedComments = prev.map((comment) =>
-            comment.id === selectedCommentId
-              ? {
-                  ...comment,
-                  replies: comment.replies.filter((reply) => reply.id !== tempReplyId),
-                }
-              : comment
-          );
-          return updatedComments;
-        });
-      }
-    } catch (error) {
-      console.error('Failed to post reply:', error);
-      setPostsComment((prev) => {
-        const updatedComments = prev.map((comment) =>
-          comment.id === selectedCommentId
-            ? {
-                ...comment,
-                replies: comment.replies.filter((reply) => reply.id !== tempReplyId),
-              }
-            : comment
-        );
-        return updatedComments;
-      });
+    if (url.startsWith('https://')) {
+      return url;
     }
-  }, [replyText, selectedCommentId, selectedPostId, username, userprofileimage]);
+    return `${API_ROUTE_IMAGE}${url}`;
+  };
 
-  const handleReply = useCallback((username, commentId) => {
-    setReplyToCommentId(commentId);
-    setReplyText('');
-  }, []);
-
-  const onPostCommentLikes = useCallback(async (commentId) => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) return;
-
-      const userData = await AsyncStorage.getItem('userData');
-      const parsedUser = userData ? JSON.parse(userData) : null;
-      const loginUserId = parsedUser?.id;
-
-      if (!loginUserId) return;
-
-      setCommentLikesCount((prev) => ({
-        ...prev,
-        [commentId]: (prev[commentId] || 0) + 1,
-      }));
-
-      const response = await axios.post(
-        `${API_ROUTE}/post-comments-like/${commentId}/like/`,
-        {
-          user: loginUserId,
-          comment: commentId,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.status === 200 || response.status === 201) {
-        setSnackbarVisible(true);
-      } else {
-        setCommentLikesCount((prev) => ({
-          ...prev,
-          [commentId]: (prev[commentId] || 1) - 1,
-        }));
-      }
-    } catch (error) {
-      console.error('Failed to like comment:', error);
-      setCommentLikesCount((prev) => ({
-        ...prev,
-        [commentId]: (prev[commentId] || 1) - 1,
-      }));
-    }
-  }, []);
+  // ============================================================
+  // ON REFRESH - CLEARS MMKV CACHE
+  // ============================================================
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    storage.delete(POSTS_CACHE_KEY);
+    storage.delete(ALL_POSTS_CACHE_KEY);
     await Promise.all([
       fetchPosts(),
       fetchAllPosts(),
@@ -8038,78 +7658,973 @@ const onCommentSubmitPost = useCallback(async () => {
     setRefreshing(false);
   }, [fetchPosts, fetchAllPosts, fetchStatus, fetchSuggestedFriends, fetchLiveStreams]);
 
-// ============================================================
-// INITIAL LOAD — reordered so cache-driven render happens as
-// early as possible and is never blocked by other network
-// calls. Sequence:
-//   1. Load both caches in parallel.
-//   2. The instant either cache has data, clear initialLoading
-//      so the feed paints immediately (same behavior as before,
-//      just clarified).
-//   3. Fire EVERY background fetch (current user, statuses,
-//      posts, all-posts, reactions, friends, live streams) in
-//      one Promise.all so none of them queue behind each other.
-//      Previously fetchCurrentUser/fetchStatus were awaited
-//      first, which delayed the start of fetchPosts/fetchAllPosts
-//      by however long those two calls took.
-// ============================================================
-useEffect(() => {
-  let isMounted = true;
-  
-  const initializeData = async () => {
-    if (!isMounted) return;
-    
-    // Show loading skeleton immediately
-    setInitialLoading(true);
-    
-    // CRITICAL: Load cache first (parallel, fast)
-    const [cachedPosts, cachedAllPosts] = await Promise.all([
-      loadPostsFromCache(),
-      loadAllPostsFromCache(),
-    ]);
-    
-    // If we have cache, show content immediately
-    if ((cachedPosts || cachedAllPosts) && isMounted) {
-      setInitialLoading(false);
-    }
-    
-    // Fetch everything else in parallel, without blocking UI
-    // and without one fetch waiting on another's result.
-    const fetchBackgroundData = async () => {
-      try {
-        await Promise.all([
-          fetchCurrentUser(),
-          fetchStatus(),
-          fetchPosts(),
-          fetchAllPosts(),
-          fetchReactions(),
-          fetchSuggestedFriends(),
-          fetchLiveStreams(),
-          fetchUnreadNotificationCount(),
-        ]);
-      } catch (error) {
-        console.error('Background fetch error:', error);
-      } finally {
-        if (isMounted) {
-          setInitialLoading(false);
+  // ============================================================
+  // INITIAL LOAD
+  // ============================================================
+  useEffect(() => {
+    let isMounted = true;
+    const initializeData = async () => {
+      if (!isMounted) return;
+      setInitialLoading(true);
+      const [cachedPosts, cachedAllPosts] = await Promise.all([
+        loadPostsFromCache(),
+        loadAllPostsFromCache(),
+      ]);
+      if ((cachedPosts || cachedAllPosts) && isMounted) {
+        setInitialLoading(false);
+      }
+      const fetchBackgroundData = async () => {
+        try {
+          await Promise.all([
+            fetchCurrentUser(),
+            fetchStatus(),
+            fetchPosts(),
+            fetchAllPosts(),
+            fetchReactions(),
+            fetchSuggestedFriends(),
+            fetchLiveStreams(),
+            fetchUnreadNotificationCount(),
+            fetchHomeChannels(),
+          ]);
+        } catch (error) {
+          console.error('Background fetch error:', error);
+        } finally {
+          if (isMounted) {
+            setInitialLoading(false);
+          }
         }
+      };
+      fetchBackgroundData();
+    };
+    initializeData();
+    return () => {
+      isMounted = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
-    
-    fetchBackgroundData();
-  };
-  
-  initializeData();
-  
-  return () => {
-    isMounted = false;
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-  };
-}, []);
+  }, []);
 
-  // Memoized data
+  // ============================================================
+  // FOCUS EFFECT
+  // ============================================================
+  useFocusEffect(
+    useCallback(() => {
+      const checkCacheAndRefresh = async () => {
+        try {
+          const cachedData = storage.getString(POSTS_CACHE_KEY);
+          if (cachedData) {
+            const parsed = JSON.parse(cachedData);
+            const isCacheValid = Date.now() - parsed.timestamp < CACHE_EXPIRATION_TIME;
+            if (!isCacheValid) {
+              console.log('🔄 Cache expired, refreshing in background...');
+              await fetchPosts();
+              await fetchAllPosts();
+            }
+          }
+        } catch (error) {
+          console.error('Error checking cache on focus:', error);
+        }
+      };
+      checkCacheAndRefresh();
+      fetchUnreadNotificationCount();
+      return () => {};
+    }, [fetchPosts, fetchAllPosts])
+  );
+
+  // ============================================================
+  // SCROLL HANDLER
+  // ============================================================
+  const handleScroll = useCallback((event) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    const postHeight = 500;
+    if (scrollY > postHeight * 4 && !showSuggestedFriends) {
+      setShowSuggestedFriends(true);
+    }
+    if (scrollY > postHeight * 8 && !hasShownLiveModal && liveStreams.length > 0) {
+      setShowLiveModal(true);
+      setHasShownLiveModal(true);
+    }
+  }, [showSuggestedFriends, hasShownLiveModal, liveStreams.length]);
+
+  // ============================================================
+  // COMMENT HANDLERS
+  // ============================================================
+  const handleDeleteComment = useCallback(async (commentId) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      Alert.alert(
+        'Delete Comment',
+        'Are you sure you want to delete this comment?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const response = await axios.delete(
+                  `${API_ROUTE}/comment/${commentId}/delete/`,
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+                if (response.data.success) {
+                  setPostsComment(prev => {
+                    const isTopLevelComment = prev.some(c => c.id === commentId && !c.parent_comment);
+                    if (isTopLevelComment) {
+                      return prev.filter(c => c.id !== commentId);
+                    } else {
+                      return prev.map(comment => {
+                        if (comment.replies && comment.replies.some(r => r.id === commentId)) {
+                          return {
+                            ...comment,
+                            replies: comment.replies.filter(r => r.id !== commentId),
+                            reply_count: (comment.reply_count || 0) - 1
+                          };
+                        }
+                        return comment;
+                      });
+                    }
+                  });
+                  setPosts(prev => prev.map(post => 
+                    post.id === response.data.post_id 
+                      ? { ...post, comment_count: response.data.comment_count }
+                      : post
+                  ));
+                  setAllPosts(prev => prev.map(post => 
+                    post.id === response.data.post_id 
+                      ? { ...post, comment_count: response.data.comment_count }
+                      : post
+                  ));
+                  setSnackbarVisible(true);
+                }
+              } catch (error) {
+                console.error('Error deleting comment:', error);
+                showSnackbar('Error', error.response?.data?.error || 'Failed to delete comment');
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error in delete confirmation:', error);
+    }
+  }, []);
+
+  const handleDeleteReply = useCallback(async (replyId, parentCommentId) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      Alert.alert(
+        'Delete Reply',
+        'Delete this reply?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const response = await axios.delete(
+                  `${API_ROUTE}/comment-reply/${replyId}/delete/`,
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+                if (response.data.success) {
+                  setPostsComment(prev => prev.map(comment => {
+                    if (comment.id === parentCommentId) {
+                      const updatedReplies = comment.replies 
+                        ? comment.replies.filter(r => r.id !== replyId)
+                        : [];
+                      return {
+                        ...comment,
+                        replies: updatedReplies,
+                        reply_count: (comment.reply_count || 0) - 1
+                      };
+                    }
+                    return comment;
+                  }));
+                  setSnackbarVisible(true);
+                }
+              } catch (error) {
+                console.error('Error deleting reply:', error);
+                showSnackbar('Failed to delete reply', 'error');
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  }, []);
+
+  const handleCommentLike = useCallback(async (commentId) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+      setCommentLikesCount(prev => ({
+        ...prev,
+        [commentId]: (prev[commentId] || 0) + 1
+      }));
+      setPostsComment(prev => 
+        prev.map(comment => 
+          comment.id === commentId 
+            ? { 
+                ...comment, 
+                is_liked: true,
+                like_count: (comment.like_count || 0) + 1 
+              } 
+            : comment
+        )
+      );
+      const response = await axios.post(
+        `${API_ROUTE}/comment/${commentId}/like/`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.status === 200 || response.status === 201) {
+        setPostsComment(prev => 
+          prev.map(comment => 
+            comment.id === commentId 
+              ? { 
+                  ...comment, 
+                  is_liked: response.data.liked,
+                  like_count: response.data.like_count 
+                } 
+              : comment
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error liking comment:', error);
+      setCommentLikesCount(prev => ({
+        ...prev,
+        [commentId]: Math.max(0, (prev[commentId] || 1) - 1)
+      }));
+    }
+  }, []);
+
+  const handleReplyToComment = useCallback(async (commentId, replyText) => {
+    if (!replyText.trim()) return;
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+      const userData = await AsyncStorage.getItem('userData');
+      const parsedUser = userData ? JSON.parse(userData) : null;
+      const tempReplyId = `temp_reply_${Date.now()}`;
+      const newReply = {
+        id: tempReplyId,
+        text: replyText.trim(),
+        user: {
+          id: parsedUser?.id,
+          username: username,
+          profile_picture: userprofileimage
+        },
+        created_at: new Date().toISOString(),
+        like_count: 0,
+        is_liked: false
+      };
+      setPostsComment(prev => 
+        prev.map(comment => 
+          comment.id === commentId 
+            ? { 
+                ...comment, 
+                replies: [...(comment.replies || []), newReply],
+                reply_count: (comment.reply_count || 0) + 1
+              } 
+            : comment
+        )
+      );
+      const response = await axios.post(
+        `${API_ROUTE}/comment/${commentId}/reply/`,
+        { text: replyText.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.status === 201) {
+        setPostsComment(prev => 
+          prev.map(comment => 
+            comment.id === commentId 
+              ? { 
+                  ...comment, 
+                  replies: comment.replies.map(reply => 
+                    reply.id === tempReplyId ? response.data : reply
+                  )
+                } 
+              : comment
+          )
+        );
+        if (response.data.reward) {
+          showSnackbar(`You earned ${response.data.reward.coins} coins for your reply!`,'success');
+        }
+        setReplyText('');
+        setReplyToCommentId(null);
+      }
+    } catch (error) {
+      console.error('Error replying to comment:', error);
+      setPostsComment(prev => 
+        prev.map(comment => 
+          comment.id === commentId 
+            ? { 
+                ...comment, 
+                replies: comment.replies.filter(r => !r.id.toString().startsWith('temp_'))
+              } 
+            : comment
+        )
+      );
+    }
+  }, [username, userprofileimage]);
+
+  const onCommentSubmitPost = useCallback(async () => {
+    if (!newComment.trim() || !selectedPostId) {
+      return;
+    }
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+      const userData = await AsyncStorage.getItem('userData');
+      const parsedUser = userData ? JSON.parse(userData) : null;
+      const loginUserId = parsedUser?.id;
+      const userName = parsedUser?.name || parsedUser?.username || 'User';
+      if (!loginUserId) {
+        console.warn('User ID not found in stored data.');
+        return;
+      }
+      const isReply = replyToCommentId !== null;
+      const parentCommentId = replyToCommentId;
+      const tempId = `temp_${Date.now()}`;
+      const optimisticData = {
+        id: tempId,
+        text: newComment.trim(),
+        created_at: new Date().toISOString(),
+        user: {
+          id: loginUserId,
+          username: userName,
+          name: userName,
+          profile_picture: userprofileimage,
+          is_verified: false
+        },
+        user_details: {
+          id: loginUserId,
+          username: userName,
+          profile_picture: userprofileimage,
+          is_verified: false
+        },
+        username: userName,
+        like_count: 0,
+        is_liked: false,
+        replies: []
+      };
+      if (isReply) {
+        optimisticData.parent = parentCommentId;
+        optimisticData.parent_comment_id = parentCommentId;
+      }
+      if (isReply) {
+        setPostsComment(prev => prev.map(comment => {
+          if (comment.id === parentCommentId) {
+            return {
+              ...comment,
+              replies: [...(comment.replies || []), optimisticData],
+              reply_count: (comment.reply_count || 0) + 1
+            };
+          }
+          return comment;
+        }));
+      } else {
+        setPostsComment(prev => [optimisticData, ...prev.filter(c => c.post === selectedPostId)]);
+        setPosts(prev => prev.map(post => 
+          post.id === selectedPostId 
+            ? { ...post, comment_count: (post.comment_count || 0) + 1 } 
+            : post
+        ));
+        setAllPosts(prev => prev.map(post => 
+          post.id === selectedPostId 
+            ? { ...post, comment_count: (post.comment_count || 0) + 1 } 
+            : post
+        ));
+      }
+      setNewComment('');
+      if (isReply) {
+        setReplyToCommentId(null);
+      }
+      const endpoint = isReply 
+        ? `${API_ROUTE}/comment/${parentCommentId}/reply/`
+        : `${API_ROUTE}/posts-comment/${selectedPostId}/comments/`;
+      const response = await axios.post(
+        endpoint,
+        isReply 
+          ? { text: newComment.trim() }
+          : {
+              text: newComment.trim(),
+              post: selectedPostId,
+              user: loginUserId,
+              image: userprofileimage,
+            },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      if (response.status === 200 || response.status === 201) {
+        if (isReply) {
+          setPostsComment(prev => prev.map(comment => {
+            if (comment.id === parentCommentId) {
+              return {
+                ...comment,
+                replies: comment.replies.map(reply => 
+                  reply.id === tempId ? response.data : reply
+                )
+              };
+            }
+            return comment;
+          }));
+        } else {
+          setPostsComment(prev => prev.map(comment => 
+            comment.id === tempId ? response.data : comment
+          ));
+          if (response.data.comment_count !== undefined) {
+            setPosts(prev => prev.map(post => 
+              post.id === selectedPostId 
+                ? { ...post, comment_count: response.data.comment_count } 
+                : post
+            ));
+            setAllPosts(prev => prev.map(post => 
+              post.id === selectedPostId 
+                ? { ...post, comment_count: response.data.comment_count } 
+                : post
+            ));
+          }
+        }
+        setSnackbarVisible(true);
+        if (response.data.reward) {
+          showSnackbar(`You earned ${response.data.reward.coins} coins!`,'success');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to post:', error);
+      if (replyToCommentId) {
+        setPostsComment(prev => prev.map(comment => {
+          if (comment.id === replyToCommentId) {
+            return {
+              ...comment,
+              replies: comment.replies?.filter(r => r.id.toString().startsWith('temp_'))
+            };
+          }
+          return comment;
+        }));
+      } else {
+        setPostsComment(prev => prev.filter(c => !c.id.toString().startsWith('temp_')));
+        setPosts(prev => prev.map(post => 
+          post.id === selectedPostId 
+            ? { ...post, comment_count: Math.max(0, (post.comment_count || 0) - 1) } 
+            : post
+        ));
+      }
+      showSnackbar('message', 'error');
+    }
+  }, [newComment, selectedPostId, replyToCommentId, username, userprofileimage, posts, allposts]);
+
+  // ============================================================
+  // RENDER FUNCTIONS
+  // ============================================================
+  const renderComment = useCallback(({ item }) => {
+    const extractUserData = (comment) => {
+      let userId = null;
+      let username = 'Anonymous';
+      let userProfilePic = null;
+      let isVerified = false;
+      if (comment.user && typeof comment.user === 'object') {
+        userId = comment.user.id || null;
+        username = comment.user.username || comment.user.name || 'Anonymous';
+        userProfilePic = comment.user.profile_picture || comment.user.image || null;
+        isVerified = comment.user.is_verified || false;
+      } else if (comment.user_details) {
+        userId = comment.user_details.id || null;
+        username = comment.user_details.username || comment.user_details.name || 'Anonymous';
+        userProfilePic = comment.user_details.profile_picture || null;
+        isVerified = comment.user_details.is_verified || false;
+      } else {
+        userId = comment.user_id || comment.userId || null;
+        username = comment.username || comment.userName || 'Anonymous';
+        userProfilePic = comment.user_profile_picture || comment.userImage || null;
+        isVerified = comment.is_verified || false;
+      }
+      return { userId, username, userProfilePic, isVerified };
+    };
+    const { 
+      userId: commentUserId, 
+      username: commentUsername, 
+      userProfilePic: commentUserProfilePic, 
+      isVerified: commentIsVerified 
+    } = extractUserData(item);
+    const isOwnComment = commentUserId === currentUserId;
+    const isLiked = item.is_liked || false;
+    const likeCount = item.like_count || 0;
+    const replyCount = item.reply_count || item.replies?.length || 0;
+    return (
+      <View style={styles.commentContainer}>
+        <View style={styles.commentRow}>
+          <TouchableOpacity 
+            onPress={() => commentUserId && navigation.navigate('OtherUserProfile', { userId: commentUserId })}
+            disabled={!commentUserId}
+          >
+            {/* <Image
+              source={
+                commentUserProfilePic
+                  ? { uri: commentUserProfilePic.startsWith('http') 
+                      ? commentUserProfilePic 
+                      : `${API_ROUTE_IMAGE}${commentUserProfilePic}`}
+                  : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+              }
+              style={styles.commentAvatar}
+            /> */}
+
+            <Image
+  source={
+    commentUserProfilePic
+      ? getUserProfileImage(commentUserProfilePic)
+      : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+  }
+  style={styles.commentAvatar}
+/>
+          </TouchableOpacity>
+          <View style={styles.commentContent}>
+            <View style={styles.commentHeader}>
+              <View style={styles.commentUserInfo}>
+                <TouchableOpacity 
+                  onPress={() => commentUserId && navigation.navigate('OtherUserProfile', { userId: commentUserId })}
+                  disabled={!commentUserId}
+                >
+                  <Text style={[styles.commentUsername, { color: colors.text }]}>
+                    {commentUsername}
+                  </Text>
+                </TouchableOpacity>
+                {commentIsVerified && (
+                  <View style={styles.commentVerifiedBadge}>
+                    <Icontt name="check-bold" size={10} color="#fff" />
+                  </View>
+                )}
+                <Text style={[styles.commentTimestamp, { color: colors.textSecondary }]}>
+                  {dayjs(item.created_at).fromNow()}
+                </Text>
+              </View>
+              {isOwnComment && (
+                <TouchableOpacity
+                  onPress={() => {
+                    if (item.parent_comment_id || item.parent) {
+                      handleDeleteReply(item.id, item.parent_comment_id || item.parent);
+                    } else {
+                      handleDeleteComment(item.id);
+                    }
+                  }}
+                  style={styles.commentDeleteButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="trash-outline" size={16} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text style={[styles.commentText, { color: colors.text }]}>{item.text}</Text>
+            <View style={styles.commentActions}>
+              <TouchableOpacity 
+                style={styles.commentActionButton}
+                onPress={() => handleCommentLike(item.id)}
+              >
+                <Ionicons 
+                  name={isLiked ? "heart" : "heart-outline"} 
+                  size={14} 
+                  color={isLiked ? colors.primary : colors.textSecondary} 
+                />
+                {likeCount > 0 && (
+                  <Text style={[styles.commentActionText, { color: colors.textSecondary }]}>
+                    {likeCount}
+                  </Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.commentActionButton}
+                onPress={() => {
+                  setReplyToCommentId(item.id);
+                  setReplyText(`@${commentUsername} `);
+                }}
+              >
+                <Ionicons name="chatbubble-outline" size={14} color={colors.textSecondary} />
+                <Text style={[styles.commentActionText, { color: colors.textSecondary }]}>
+                  Reply
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {item.replies && item.replies.length > 0 && (
+              <View style={styles.repliesWrapper}>
+                {item.replies.map((reply, index) => {
+                  const { 
+                    userId: replyUserId, 
+                    username: replyUsername, 
+                    userProfilePic: replyUserProfilePic, 
+                    isVerified: replyIsVerified 
+                  } = extractUserData(reply);
+                  const isOwnReply = replyUserId === currentUserId;
+                  return (
+                    <View key={reply.id || `reply-${index}`} style={styles.replyContainer}>
+                      <TouchableOpacity 
+                        onPress={() => replyUserId && navigation.navigate('OtherUserProfile', { userId: replyUserId })}
+                        disabled={!replyUserId}
+                      >
+                        <Image
+                          source={
+                            replyUserProfilePic
+                              ? { uri: replyUserProfilePic.startsWith('http')
+                                  ? replyUserProfilePic
+                                  : `${API_ROUTE_IMAGE}${replyUserProfilePic}`}
+                              : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+                          }
+                          style={styles.replyAvatar}
+                        />
+                      </TouchableOpacity>
+                      <View style={[styles.replyContent, { backgroundColor: colors.backgroundSecondary }]}>
+                        <View style={styles.replyHeader}>
+                          <View style={styles.replyUserInfo}>
+                            <TouchableOpacity 
+                              onPress={() => replyUserId && navigation.navigate('OtherUserProfile', { userId: replyUserId })}
+                              disabled={!replyUserId}
+                            >
+                              <Text style={[styles.replyUsername, { color: colors.text }]}>
+                                {replyUsername}
+                              </Text>
+                            </TouchableOpacity>
+                            {replyIsVerified && (
+                              <View style={styles.replyVerifiedBadge}>
+                                <Icontt name="check-bold" size={8} color="#fff" />
+                              </View>
+                            )}
+                            <Text style={[styles.replyTimestamp, { color: colors.textSecondary }]}>
+                              {dayjs(reply.created_at).fromNow()}
+                            </Text>
+                          </View>
+                          {isOwnReply && (
+                            <TouchableOpacity
+                              onPress={() => handleDeleteReply(reply.id, item.id)}
+                              style={styles.replyDeleteButton}
+                              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                              <Ionicons name="trash-outline" size={12} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                        <Text style={[styles.replyText, { color: colors.text }]}>{reply.text}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+                {replyCount > 3 && (
+                  <TouchableOpacity 
+                    onPress={() => {
+                      console.log('Load more replies');
+                    }}
+                    style={styles.viewMoreReplies}
+                  >
+                    <Text style={[styles.viewMoreRepliesText, { color: colors.primary }]}>
+                      View all {replyCount} replies
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+    );
+  }, [replyToCommentId, replyText, handleCommentLike, handleReplyToComment, handleDeleteComment, handleDeleteReply, colors, navigation, currentUserId]);
+
+  const renderPromoBanner = () => {
+    const currentPromo = promoData[currentPromoIndex];
+    return (
+      <View style={styles.promoContainer}>
+        <Image
+          source={currentPromo.image}
+          style={styles.promoBanner}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['rgba(0, 0, 0, 0.49)', 'rgba(0,0,0,0.2)']}
+          style={styles.promoGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        />
+        <View style={styles.promoContent}>
+          <Text style={styles.promoTitle}>{currentPromo.title}</Text>
+          <Text style={styles.promoSubtitle}>{currentPromo.subtitle}</Text>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate(currentPromo.screen)} 
+            style={styles.promoButton}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.promoButtonText}>{currentPromo.buttonText}</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.promoDotsContainer}>
+          {promoData.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.promoDot,
+                currentPromoIndex === index && styles.promoDotActive
+              ]}
+            />
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  const renderSuggestedFriend = useCallback(({ item }) => (
+    <SuggestedFriendItem item={item} onFollow={handleFollow} colors={colors} />
+  ), [handleFollow, colors]);
+
+  const renderStatusRow = useCallback(() => {
+    const hasLiveStreams = liveStreams && liveStreams.length > 0;
+    return (
+      <View style={{ marginTop: 0, marginBottom: 0 }}>
+        {/* <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.statusScrollContainer}
+        >
+          {myStatus && (
+            <MemoizedStatusPreview 
+              userStatus={myStatus}
+              currentUserPhone={currentUserPhone}
+              onPress={() => openImageModal(myStatus)}
+              onViewers={() => showViewers(myStatus.viewers)}
+              onDelete={deleteStatus}
+              colors={colors}
+              isDark={isDark}
+            />
+          )}
+          {hasLiveStreams && liveStreams.map((liveStream) => (
+            <TouchableOpacity 
+              key={liveStream.id}
+              style={styles.liveStreamWrapper}
+              onPress={() => navigation.navigate('Viewer', {
+                roomName: 'match-123',
+                streamId: liveStream.stream_id,
+                viewerId: 'viewer-1',
+              })}
+            >
+              <View style={styles.liveStreamContainer}>
+                <Image
+                  source={{ 
+                    uri: liveStream.broadcaster_image 
+                      ? `${API_ROUTE_IMAGE}${liveStream.broadcaster_image.replace(/^https?:\/\/[^/]+/, '')}`
+                      : 'https://via.placeholder.com/40' 
+                  }}
+                  style={styles.liveStreamImage}
+                />
+                <View style={styles.liveStreamOverlay}>
+                  <View style={styles.liveIndicator}>
+                    <View style={styles.liveDot} />
+                    <Text style={styles.liveText}>LIVE</Text>
+                  </View>
+                  <Text style={styles.liveStreamName} numberOfLines={1}>
+                    {liveStream.broadcaster_name}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+          {otherStatuses.map((userStatus) => (
+            <MemoizedStatusPreview 
+              key={userStatus.user?.id}
+              userStatus={userStatus}
+              currentUserPhone={currentUserPhone}
+              onPress={() => openImageModal(userStatus)}
+              onViewers={() => showViewers(userStatus.viewers)}
+              onDelete={deleteStatus}
+              colors={colors}
+              isDark={isDark}
+            />
+          ))}
+        </ScrollView> */}
+        <StatusSection
+          showTitle={true}
+          title="Stories"
+          horizontal={true}
+          showAddButton={true}
+          maxItems={15}
+          onLivePress={(stream) => {
+            navigation.navigate('LiveViewer', {
+              streamId: stream.id,
+              broadcasterName: stream.broadcaster_name,
+            });
+          }}
+          containerStyle={{ marginTop: 0 }}
+        />
+      </View>
+    );
+  }, [myStatus, otherStatuses, liveStreams, currentUserPhone, openImageModal, showViewers, deleteStatus, colors, isDark]);
+
+  const renderLiveModal = () => (
+    <Modal visible={showLiveModal} animationType="slide" transparent>
+      <View style={styles.liveModalOverlay}>
+        <View style={[styles.liveModal, { backgroundColor: colors.card }]}>
+          <View style={styles.liveModalHeader}>
+            <Text style={[styles.liveModalTitle, { color: colors.text }]}>Live Now 🔴</Text>
+            <TouchableOpacity onPress={() => setShowLiveModal(false)}>
+              <Icon name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={liveStreams}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={styles.liveModalItem}
+                onPress={() => {
+                  setShowLiveModal(false);
+                  navigation.navigate('LiveStreaming', { streamId: item.stream_id });
+                }}
+              >
+                <Image
+                  source={{ 
+                    uri: item.broadcaster_image 
+                      ? `${API_ROUTE_IMAGE}${item.broadcaster_image.replace(/^https?:\/\/[^/]+/, '')}`
+                      : 'https://via.placeholder.com/40' 
+                  }}
+                  style={styles.liveModalAvatar}
+                />
+                <View style={styles.liveModalInfo}>
+                  <Text style={[styles.liveModalName, { color: colors.text }]}>{item.broadcaster_name}</Text>
+                  <View style={styles.liveIndicator}>
+                    <View style={styles.liveDot} />
+                    <Text style={styles.liveText}>LIVE NOW</Text>
+                  </View>
+                </View>
+                <Text style={[styles.liveModalStats, { color: colors.textSecondary }]}>{item.likes} likes</Text>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyLive}>
+                <Text style={[styles.emptyLiveText, { color: colors.textSecondary }]}>No one is live right now</Text>
+              </View>
+            }
+          />
+          <TouchableOpacity 
+            style={[styles.closeLiveModalButton, { backgroundColor: colors.primary }]}
+            onPress={() => setShowLiveModal(false)}
+          >
+            <Text style={styles.closeLiveModalText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const renderViewersModal = () => (
+    <Modal visible={viewersModalVisible} animationType="slide" transparent>
+      <View style={styles.viewersModalOverlay}>
+        <View style={[styles.viewersModal, { backgroundColor: colors.card }]}>
+          <View style={styles.viewersModalHeader}>
+            <Text style={[styles.viewersModalTitle, { color: colors.text }]}>Viewers</Text>
+            <TouchableOpacity onPress={() => setViewersModalVisible(false)}>
+              <Icon name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={currentViewers}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.viewerItem}>
+                <Image
+                  source={{ 
+                    uri: item.profile_picture 
+                      ? `${API_ROUTE_IMAGE}${item.profile_picture}`
+                      : 'https://via.placeholder.com/40' 
+                  }}
+                  style={styles.viewerAvatar}
+                />
+                <Text style={[styles.viewerName, { color: colors.text }]}>{item.username || 'Unknown User'}</Text>
+              </View>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyViewers}>
+                <Text style={[styles.emptyViewersText, { color: colors.textSecondary }]}>No viewers yet</Text>
+              </View>
+            }
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const renderChannelsSection = () => {
+    if (channels.length === 0) return null;
+    return (
+      <View style={styles.channelsSection}>
+        <View style={styles.channelsHeader}>
+          <Text style={[styles.channelsTitle, { color: colors.text }]}>
+            Channels to Follow
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Channelist')}>
+            <Text style={[styles.seeAllText, { color: colors.primary }]}>
+              See All
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          horizontal
+          data={channels}
+          renderItem={({ item }) => {
+            const imageSource = item.image 
+              ? { uri: `${API_ROUTE_IMAGE}${item.image}` }
+              : require('../assets/images/channelfallbackimg.png');
+            return (
+              <TouchableOpacity
+                style={[styles.channelCard, { backgroundColor: colors.card }]}
+                onPress={() => {
+                  if (item.isFollowing) {
+                    navigation.navigate('ChannelDetails', {
+                      receiverId: item.id,
+                      name: item.name,
+                      chatType: 'channel',
+                      profile_image: item.image,
+                      channelSlug: item.slug,
+                      InviteLink: item.invite_link,
+                      followers: item.followers_count
+                    });
+                  } else {
+                    Alert.alert('Follow Channel', `Follow ${item.name} to access?`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { 
+                        text: 'Follow', 
+                        onPress: () => handleFollowChannel(item.slug)
+                      }
+                    ]);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Image source={imageSource} style={styles.channelCardImage} />
+                <Text style={[styles.channelCardName, { color: colors.text }]} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={[styles.channelCardMembers, { color: colors.textSecondary }]}>
+                  {item.followers_count?.toLocaleString() || 0} members
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+          keyExtractor={(item) => `home-channel-${item.id}`}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.channelsList}
+          snapToAlignment="start"
+          decelerationRate="fast"
+        />
+      </View>
+    );
+  };
+
+  // ============================================================
+  // MEMOIZED DATA
+  // ============================================================
   const myStatus = React.useMemo(() => 
     groupedStatuses.find(status => 
       status.user?.phone === currentUserPhone || status.user === currentUserPhone
@@ -8144,584 +8659,32 @@ useEffect(() => {
   ].sort((a, b) => new Date(b.post.created_at) - new Date(a.post.created_at)), 
   [posts, allposts, reactionCounts, commentsss]);
 
-  // Optimized render functions
-  const renderStatusRow = useCallback(() => {
-    const hasLiveStreams = liveStreams && liveStreams.length > 0;
-
-    return (
-      <View style={{ marginTop: 10, marginBottom: 20 }}>
-        {/* <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {hasLiveStreams ? 'Live & Status' : ''}
-        </Text> */}
-        
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.statusScrollContainer}
-        >
-          {/* My Status */}
-          {myStatus && (
-            <MemoizedStatusPreview 
-              userStatus={myStatus}
-              currentUserPhone={currentUserPhone}
-              onPress={() => openImageModal(myStatus)}
-              onViewers={() => showViewers(myStatus.viewers)}
-              onDelete={deleteStatus}
-              colors={colors}
-              isDark={isDark}
-            />
-          )}
-
-          {/* Live Streams */}
-          {hasLiveStreams && liveStreams.map((liveStream) => (
-            <TouchableOpacity 
-              key={liveStream.id}
-              style={styles.liveStreamWrapper}
-              onPress={() => navigation.navigate('Viewer', {
-                roomName: 'match-123',
-                    streamId: liveStream.stream_id,
-                      viewerId: 'viewer-1',
-              })}
-            >
-              <View style={styles.liveStreamContainer}>
-                <Image
-                  source={{ 
-                    uri: liveStream.broadcaster_image 
-                      ? `${API_ROUTE_IMAGE}${liveStream.broadcaster_image.replace(/^https?:\/\/[^/]+/, '')}`
-                      : 'https://via.placeholder.com/40' 
-                  }}
-                  style={styles.liveStreamImage}
-                />
-                <View style={styles.liveStreamOverlay}>
-                  <View style={styles.liveIndicator}>
-                    <View style={styles.liveDot} />
-                    <Text style={styles.liveText}>LIVE</Text>
-                  </View>
-                  <Text style={styles.liveStreamName} numberOfLines={1}>
-                    {liveStream.broadcaster_name}
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-          
-          {/* Other Statuses */}
-          {otherStatuses.map((userStatus) => (
-            <MemoizedStatusPreview 
-              key={userStatus.user?.id}
-              userStatus={userStatus}
-              currentUserPhone={currentUserPhone}
-              onPress={() => openImageModal(userStatus)}
-              onViewers={() => showViewers(userStatus.viewers)}
-              onDelete={deleteStatus}
-              colors={colors}
-              isDark={isDark}
-            />
-          ))}
-        </ScrollView>
-      </View>
-    );
-  }, [myStatus, otherStatuses, liveStreams, currentUserPhone, openImageModal, showViewers, deleteStatus, colors, isDark]);
-
-  const renderLiveModal = () => (
-    <Modal visible={showLiveModal} animationType="slide" transparent>
-      <View style={styles.liveModalOverlay}>
-        <View style={[styles.liveModal, { backgroundColor: colors.card }]}>
-          <View style={styles.liveModalHeader}>
-            <Text style={[styles.liveModalTitle, { color: colors.text }]}>Live Now 🔴</Text>
-            <TouchableOpacity onPress={() => setShowLiveModal(false)}>
-              <Icon name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-          
-          <FlatList
-            data={liveStreams}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity 
-                style={styles.liveModalItem}
-                onPress={() => {
-                  setShowLiveModal(false);
-                  navigation.navigate('LiveStreamViewer', { streamId: item.stream_id });
-                }}
-              >
-                <Image
-                  source={{ 
-                    uri: item.broadcaster_image 
-                      ? `${API_ROUTE_IMAGE}${item.broadcaster_image.replace(/^https?:\/\/[^/]+/, '')}`
-                      : 'https://via.placeholder.com/40' 
-                  }}
-                  style={styles.liveModalAvatar}
-                />
-                <View style={styles.liveModalInfo}>
-                  <Text style={[styles.liveModalName, { color: colors.text }]}>{item.broadcaster_name}</Text>
-                  <View style={styles.liveIndicator}>
-                    <View style={styles.liveDot} />
-                    <Text style={styles.liveText}>LIVE NOW</Text>
-                  </View>
-                </View>
-                <Text style={[styles.liveModalStats, { color: colors.textSecondary }]}>{item.likes} likes</Text>
-              </TouchableOpacity>
-            )}
-            ListEmptyComponent={
-              <View style={styles.emptyLive}>
-                <Text style={[styles.emptyLiveText, { color: colors.textSecondary }]}>No one is live right now</Text>
-              </View>
-            }
-          />
-          
-          <TouchableOpacity 
-            style={[styles.closeLiveModalButton, { backgroundColor: colors.primary }]}
-            onPress={() => setShowLiveModal(false)}
-          >
-            <Text style={styles.closeLiveModalText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const renderViewersModal = () => (
-    <Modal visible={viewersModalVisible} animationType="slide" transparent>
-      <View style={styles.viewersModalOverlay}>
-        <View style={[styles.viewersModal, { backgroundColor: colors.card }]}>
-          <View style={styles.viewersModalHeader}>
-            <Text style={[styles.viewersModalTitle, { color: colors.text }]}>Viewers</Text>
-            <TouchableOpacity onPress={() => setViewersModalVisible(false)}>
-              <Icon name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-          
-          <FlatList
-            data={currentViewers}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.viewerItem}>
-                <Image
-                  source={{ 
-                    uri: item.profile_picture 
-                      ? `${API_ROUTE_IMAGE}${item.profile_picture}`
-                      : 'https://via.placeholder.com/40' 
-                  }}
-                  style={styles.viewerAvatar}
-                />
-                <Text style={[styles.viewerName, { color: colors.text }]}>{item.username || 'Unknown User'}</Text>
-              </View>
-            )}
-            ListEmptyComponent={
-              <View style={styles.emptyViewers}>
-                <Text style={[styles.emptyViewersText, { color: colors.textSecondary }]}>No viewers yet</Text>
-              </View>
-            }
-          />
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const renderChannelsSection = () => {
-  if (channels.length === 0) return null;
-
-  return (
-    <View style={styles.channelsSection}>
-      <View style={styles.channelsHeader}>
-        <Text style={[styles.channelsTitle, { color: colors.text }]}>
-          Channels to Follow
-        </Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Channelist')}>
-          <Text style={[styles.seeAllText, { color: colors.primary }]}>
-            See All
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <FlatList
-        horizontal
-        data={channels}
-        renderItem={({ item }) => {
-          const imageSource = item.image 
-            ? { uri: `${API_ROUTE_IMAGE}${item.image}` }
-            : require('../assets/images/channelfallbackimg.png');
-
-          return (
-            <TouchableOpacity
-              style={[styles.channelCard, { backgroundColor: colors.card }]}
-              onPress={() => {
-                if (item.isFollowing) {
-                  navigation.navigate('ChannelDetails', {
-                    receiverId: item.id,
-                    name: item.name,
-                    chatType: 'channel',
-                    profile_image: item.image,
-                    channelSlug: item.slug,
-                    InviteLink: item.invite_link,
-                    followers: item.followers_count
-                  });
-                } else {
-                  
-                  Alert.alert('Follow Channel', `Follow ${item.name} to access?`, [
-                    { text: 'Cancel', style: 'cancel' },
-                    { 
-                      text: 'Follow', 
-                      onPress: () => handleFollowChannel(item.slug)
-                    }
-                  ]);
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <Image source={imageSource} style={styles.channelCardImage} />
-              <Text style={[styles.channelCardName, { color: colors.text }]} numberOfLines={1}>
-                {item.name}
-              </Text>
-              <Text style={[styles.channelCardMembers, { color: colors.textSecondary }]}>
-                {item.followers_count?.toLocaleString() || 0} members
-              </Text>
-            </TouchableOpacity>
-          );
-        }}
-        keyExtractor={(item) => `home-channel-${item.id}`}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.channelsList}
-        snapToAlignment="start"
-        decelerationRate="fast"
-      />
-    </View>
-  );
-};
-
- const renderComment = useCallback(({ item }) => {
-  const extractUserData = (comment) => {
-    let userId = null;
-    let username = 'Anonymous';
-    let userProfilePic = null;
-    let isVerified = false;
-
-    // Try to get user from user object
-    if (comment.user && typeof comment.user === 'object') {
-      userId = comment.user.id || null;
-      username = comment.user.username || comment.user.name || 'Anonymous';
-      userProfilePic = comment.user.profile_picture || comment.user.image || null;
-      isVerified = comment.user.is_verified || false;
-    } 
-    // Try to get from user_details
-    else if (comment.user_details) {
-      userId = comment.user_details.id || null;
-      username = comment.user_details.username || comment.user_details.name || 'Anonymous';
-      userProfilePic = comment.user_details.profile_picture || null;
-      isVerified = comment.user_details.is_verified || false;
-    }
-    // Try to get from root level
-    else {
-      userId = comment.user_id || comment.userId || null;
-      username = comment.username || comment.userName || 'Anonymous';
-      userProfilePic = comment.user_profile_picture || comment.userImage || null;
-      isVerified = comment.is_verified || false;
-    }
-
-    return { userId, username, userProfilePic, isVerified };
-  };
-
-  const { 
-    userId: commentUserId, 
-    username: commentUsername, 
-    userProfilePic: commentUserProfilePic, 
-    isVerified: commentIsVerified 
-  } = extractUserData(item);
-
-  const isOwnComment = commentUserId === currentUserId;
-  const isLiked = item.is_liked || false;
-  const likeCount = item.like_count || 0;
-  const replyCount = item.reply_count || item.replies?.length || 0;
-
-  return (
-    <View style={styles.commentContainer}>
-      <View style={styles.commentRow}>
-        {/* Avatar */}
-        <TouchableOpacity 
-          onPress={() => commentUserId && navigation.navigate('OtherUserProfile', { userId: commentUserId })}
-          disabled={!commentUserId}
-        >
-          <Image
-            source={
-              commentUserProfilePic
-                ? { uri: commentUserProfilePic.startsWith('http') 
-                    ? commentUserProfilePic 
-                    : `${API_ROUTE_IMAGE}${commentUserProfilePic}`}
-                : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-            }
-            style={styles.commentAvatar}
-          />
-        </TouchableOpacity>
-        
-        <View style={styles.commentContent}>
-          {/* Comment Header */}
-          <View style={styles.commentHeader}>
-            <View style={styles.commentUserInfo}>
-              <TouchableOpacity 
-                onPress={() => commentUserId && navigation.navigate('OtherUserProfile', { userId: commentUserId })}
-                disabled={!commentUserId}
-              >
-                <Text style={[styles.commentUsername, { color: colors.text }]}>
-                  {commentUsername}
-                </Text>
-              </TouchableOpacity>
-              {commentIsVerified && (
-                <View style={styles.commentVerifiedBadge}>
-                  <Icontt name="check-bold" size={10} color="#fff" />
-                </View>
-              )}
-              <Text style={[styles.commentTimestamp, { color: colors.textSecondary }]}>
-                {dayjs(item.created_at).fromNow()}
-              </Text>
-            </View>
-            
-            {/* Delete button for own comments/replies */}
-            {isOwnComment && (
-              <TouchableOpacity
-                onPress={() => {
-                  if (item.parent_comment_id || item.parent) {
-                    // This is a reply
-                    handleDeleteReply(item.id, item.parent_comment_id || item.parent);
-                  } else {
-                    // This is a top-level comment
-                    handleDeleteComment(item.id);
-                  }
-                }}
-                style={styles.commentDeleteButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="trash-outline" size={16} color={colors.textSecondary} />
-              </TouchableOpacity>
-            )}
-          </View>
-          
-          {/* Comment text */}
-          <Text style={[styles.commentText, { color: colors.text }]}>{item.text}</Text>
-          
-          {/* Comment Actions */}
-          <View style={styles.commentActions}>
-            <TouchableOpacity 
-              style={styles.commentActionButton}
-              onPress={() => handleCommentLike(item.id)}
-            >
-              <Ionicons 
-                name={isLiked ? "heart" : "heart-outline"} 
-                size={14} 
-                color={isLiked ? colors.primary : colors.textSecondary} 
-              />
-              {likeCount > 0 && (
-                <Text style={[styles.commentActionText, { color: colors.textSecondary }]}>
-                  {likeCount}
-                </Text>
-              )}
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.commentActionButton}
-              onPress={() => {
-                setReplyToCommentId(item.id);
-                setReplyText(`@${commentUsername} `); // Pre-fill with mention
-              }}
-            >
-              <Ionicons name="chatbubble-outline" size={14} color={colors.textSecondary} />
-              <Text style={[styles.commentActionText, { color: colors.textSecondary }]}>
-                Reply
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Replies */}
-          {item.replies && item.replies.length > 0 && (
-            <View style={styles.repliesWrapper}>
-              {item.replies.map((reply, index) => {
-                const { 
-                  userId: replyUserId, 
-                  username: replyUsername, 
-                  userProfilePic: replyUserProfilePic, 
-                  isVerified: replyIsVerified 
-                } = extractUserData(reply);
-                
-                const isOwnReply = replyUserId === currentUserId;
-                
-                return (
-                  <View key={reply.id || `reply-${index}`} style={styles.replyContainer}>
-                    <TouchableOpacity 
-                      onPress={() => replyUserId && navigation.navigate('OtherUserProfile', { userId: replyUserId })}
-                      disabled={!replyUserId}
-                    >
-                      <Image
-                        source={
-                          replyUserProfilePic
-                            ? { uri: replyUserProfilePic.startsWith('http')
-                                ? replyUserProfilePic
-                                : `${API_ROUTE_IMAGE}${replyUserProfilePic}`}
-                            : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-                        }
-                        style={styles.replyAvatar}
-                      />
-                    </TouchableOpacity>
-                    
-                    <View style={[styles.replyContent, { backgroundColor: colors.backgroundSecondary }]}>
-                      <View style={styles.replyHeader}>
-                        <View style={styles.replyUserInfo}>
-                          <TouchableOpacity 
-                            onPress={() => replyUserId && navigation.navigate('OtherUserProfile', { userId: replyUserId })}
-                            disabled={!replyUserId}
-                          >
-                            <Text style={[styles.replyUsername, { color: colors.text }]}>
-                              {replyUsername}
-                            </Text>
-                          </TouchableOpacity>
-                          {replyIsVerified && (
-                            <View style={styles.replyVerifiedBadge}>
-                              <Icontt name="check-bold" size={8} color="#fff" />
-                            </View>
-                          )}
-                          <Text style={[styles.replyTimestamp, { color: colors.textSecondary }]}>
-                            {dayjs(reply.created_at).fromNow()}
-                          </Text>
-                        </View>
-                        
-                        {/* Delete button for reply */}
-                        {isOwnReply && (
-                          <TouchableOpacity
-                            onPress={() => handleDeleteReply(reply.id, item.id)}
-                            style={styles.replyDeleteButton}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                          >
-                            <Ionicons name="trash-outline" size={12} color={colors.textSecondary} />
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                      
-                      <Text style={[styles.replyText, { color: colors.text }]}>{reply.text}</Text>
-                    </View>
-                  </View>
-                );
-              })}
-              
-              {/* Show more replies button if needed */}
-              {replyCount > 3 && (
-                <TouchableOpacity 
-                  onPress={() => {
-                    // You can implement pagination here
-                    console.log('Load more replies');
-                  }}
-                  style={styles.viewMoreReplies}
-                >
-                  <Text style={[styles.viewMoreRepliesText, { color: colors.primary }]}>
-                    View all {replyCount} replies
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-        </View>
-      </View>
-    </View>
-  );
-}, [replyToCommentId, replyText, handleCommentLike, handleReplyToComment, handleDeleteComment, handleDeleteReply, colors, navigation, currentUserId]); 
-
-const renderPromoBanner = () => {
-  const currentPromo = promoData[currentPromoIndex];
-
-  return (
-    <View style={styles.promoContainer}>
-      <Image
-        source={currentPromo.image}
-        style={styles.promoBanner}
-        resizeMode="cover"
-      />
-      
-      {/* Gradient overlay - position absolute covering the whole container */}
-      <LinearGradient
-        colors={['rgba(0, 0, 0, 0.49)', 'rgba(0,0,0,0.2)']}
-        style={styles.promoGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-      />
-      
-      {/* Content - position absolute on top of everything */}
-      <View style={styles.promoContent}>
-        {/* <View style={styles.promoBadge}>
-          <Text style={styles.promoBadgeText}>{currentPromo.badge}</Text>
-        </View> */}
-        <Text style={styles.promoTitle}>{currentPromo.title}</Text>
-        <Text style={styles.promoSubtitle}>{currentPromo.subtitle}</Text>
-        <TouchableOpacity 
-          onPress={() => navigation.navigate(currentPromo.screen)} 
-          style={styles.promoButton}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.promoButtonText}>{currentPromo.buttonText}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Dots Indicator */}
-      <View style={styles.promoDotsContainer}>
-        {promoData.map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.promoDot,
-              currentPromoIndex === index && styles.promoDotActive
-            ]}
-          />
-        ))}
-      </View>
-    </View>
-  );
-};
-
-
-
-const renderSuggestedFriend = useCallback(({ item }) => (
-    <SuggestedFriendItem item={item} onFollow={handleFollow} colors={colors} />
-  ), [handleFollow, colors]);
-
-  // Optimized content render: Always render content instantly, show empty state if no posts
+  // ============================================================
+  // RENDER CONTENT
+  // ============================================================
   const renderContent = useCallback(() => {
     const middleIndex = Math.floor(combinedPosts.length / 2);
     const firstHalf = combinedPosts.slice(0, middleIndex);
     const secondHalf = combinedPosts.slice(middleIndex);
-
     const friendSuggestionIndex = Math.min(2, firstHalf.length - 1);
     const firstPart = firstHalf.slice(0, friendSuggestionIndex);
     const secondPart = firstHalf.slice(friendSuggestionIndex);
-    
 
     return (
       <>
-        {/* Status Section */}
-        {(groupedStatuses.length > 0 || liveStreams.length > 0) && renderStatusRow()}
-
-        {/* Refreshing indicator - non-blocking */}
+        {(groupedStatuses.length > 0 || liveStreams.length > 0) && 
+        
+        renderStatusRow()}
         {refreshing && combinedPosts.length > 0 && (
           <View style={styles.refreshingIndicator}>
             <ActivityIndicator size="small" color={colors.primary} />
             <Text style={[styles.refreshingText, { color: colors.text }]}>Updating feed...</Text>
           </View>
         )}
-
-        {/* Promo Banner */}
-        {/* <View style={styles.promoContainer}>
-          <Image
-            source={require('../assets/images/gdgdg.jpg')} 
-            style={styles.promoBanner}
-            resizeMode="cover"
-          />
-          <View style={styles.promoContent}>
-            <Text style={styles.promoTitle}>Earn Massive Income</Text>
-            <Text style={styles.promoSubtitle}>Up to 5m instantly using Showa reward system</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('EarningDashboard')} style={styles.promoButton}>
-              <Text style={styles.promoButtonText}>Get Started Now</Text>
-            </TouchableOpacity>
-          </View>
-        </View> */}
         {renderPromoBanner()}
 
-        {/* First Part of Posts (2-3 posts) */}
+
+        
         {firstPart.length > 0 && (
           <FlatList
             data={firstPart}
@@ -8738,6 +8701,7 @@ const renderSuggestedFriend = useCallback(({ item }) => (
                 onViewImage={handleViewImage}
                 colors={colors}
                 isDark={isDark}
+                currentUserId={currentUserId}
               />
             )}
             scrollEnabled={false}
@@ -8747,14 +8711,11 @@ const renderSuggestedFriend = useCallback(({ item }) => (
             ListEmptyComponent={null}
           />
         )}
-
-         <HangoutPlacesExplore 
+        <HangoutPlacesExplore 
           navigation={navigation} 
           maxItems={10}
           title="Popular Hangout Places"
         />
-
-        {/* Second Part of First Half Posts */}
         {secondPart.length > 0 && (
           <FlatList
             data={secondPart}
@@ -8771,6 +8732,7 @@ const renderSuggestedFriend = useCallback(({ item }) => (
                 onViewImage={handleViewImage}
                 colors={colors}
                 isDark={isDark}
+                currentUserId={currentUserId}
               />
             )}
             scrollEnabled={false}
@@ -8780,17 +8742,7 @@ const renderSuggestedFriend = useCallback(({ item }) => (
             ListEmptyComponent={null}
           />
         )}
-
-        {/* Friend Suggestion Section */}
-        {/* <View style={[styles.friendSuggestionWrapper, { 
-          backgroundColor: colors.backgroundSecondary,
-          borderColor: colors.border 
-        }]}>
-         
-        </View> */}
-         <FriendSuggestion />
-
-        {/* Suggested Friends Section */}
+        <FriendSuggestion />
         {showSuggestedFriends && suggestedFriends.length > 0 && (
           <View style={[styles.suggestedFriendsContainer, { 
             backgroundColor: colors.backgroundSecondary,
@@ -8815,17 +8767,7 @@ const renderSuggestedFriend = useCallback(({ item }) => (
         <Jobs />
         <VideoFeeds />
         <Ads />
-        
         {renderChannelsSection()}
-
-        
-
-      
-      
-    
-        
-
-        {/* Second Half of Posts */}
         {secondHalf.length > 0 && (
           <FlatList
             data={secondHalf}
@@ -8842,6 +8784,7 @@ const renderSuggestedFriend = useCallback(({ item }) => (
                 onViewImage={handleViewImage}
                 colors={colors}
                 isDark={isDark}
+                currentUserId={currentUserId}
               />
             )}
             scrollEnabled={false}
@@ -8851,20 +8794,15 @@ const renderSuggestedFriend = useCallback(({ item }) => (
             ListEmptyComponent={null}
           />
         )}
-
-        <View style={[styles.friendSuggestionBottom, { 
+        {groupedStatuses.length > 0 || liveStreams.length > 0 && (
+          <View style={[styles.friendSuggestionBottom, { 
             backgroundColor: colors.background,
             borderColor: colors.border 
           }]}>
-            <Text style={[styles.statusTitle, { color: colors.text, fontSize:20, fontWeight:'bold' }]}>Live & Status</Text>
+            <Text style={[styles.statusTitle, { color: colors.text, fontSize: 20, fontWeight: 'bold' }]}>Live & Status</Text>
             {(groupedStatuses.length > 0 || liveStreams.length > 0) && renderStatusRow()}
           </View>
-       
-          
-
-          
-
-        {/* Empty state - shown instantly if no posts */}
+        )}
         {combinedPosts.length === 0 && !initialLoading && (
           <View style={styles.emptyStateContainer}>
             <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No posts yet</Text>
@@ -8879,49 +8817,14 @@ const renderSuggestedFriend = useCallback(({ item }) => (
             </TouchableOpacity>
           </View>
         )}
-
-        {/* Additional Friend Suggestion at the end */}
-        
         {combinedPosts.length > 6 && (
-          // <View style={[styles.friendSuggestionBottom, { 
-          //   backgroundColor: colors.backgroundSecondary,
-          //   borderColor: colors.border 
-          // }]}>
-          //   <FriendSuggestion />
-          // </View>
-          
-          
-
           <MusicListComponent navigation={navigation} colors={colors} />
-         
-          
         )}
-
         {combinedPosts.length > 8 && (
-          // <View style={[styles.friendSuggestionBottom, { 
-          //   backgroundColor: colors.backgroundSecondary,
-          //   borderColor: colors.border 
-          // }]}>
-          //   <FriendSuggestion />
-          // </View>
-          
-          
-
           <EdateDiscoverScreen />
-         
-          
         )}
         {combinedPosts.length > 11 && (
-          // <View style={[styles.friendSuggestionBottom, { 
-          //   backgroundColor: colors.backgroundSecondary,
-          //   borderColor: colors.border 
-          // }]}>
-          //   <FriendSuggestion />
-          // </View>
-          
-          
           <FriendSuggestion />
-          
         )}
       </>
     );
@@ -8943,606 +8846,467 @@ const renderSuggestedFriend = useCallback(({ item }) => (
     handleViewImage,
     navigation,
     colors,
-    isDark
+    isDark,
+     currentUserId
   ]);
 
+  // ============================================================
+  // MAIN RETURN
+  // ============================================================
   return (
     <>
-      
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar 
-        backgroundColor={colors.card} 
-        barStyle={isDark ? "light-content" : "dark-content"} 
-      />
-      
-    
-      <View style={[styles.header, { 
-        backgroundColor: colors.card,
-        borderBottomColor: colors.border 
-      }]}>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>Showa</Text>
-        <View style={styles.headerActions}>
-           {/* <TouchableOpacity 
-            onPress={() => {
-              navigation.navigate('Broadcaster', {
-                roomName: `user-${userName}`,
-                streamId: `stream-${userName}`,
-                userName: `${userName}` || 'User',
-                userId: userId
-              });
-            }}
-            style={styles.goLiveButton}
-          >
-            <Ionicons name="radio" size={17} color={colors.text} />
-            <Text style={[styles.goLiveText, { color: colors.text }]}>Go Live</Text>
-          </TouchableOpacity> */}
-          {/* <TouchableOpacity
-                        style={styles.exploreIconContainer}
-                        onPress={toggleTheme}
-                      >
-                        <Icon 
-                          style={{ marginRight: 20 }}
-                          name={isDark ? 'moon' : 'sunny'}
-                          size={25} 
-                          color={colors.text}
-                        />
-                      </TouchableOpacity> */}
-                      {/* <TouchableOpacity
-                        onPress={() => navigation.navigate('EssentialPlatforms')}
-                        style={styles.exploreIconContainer}
-                      >
-                        <Icon name="compass-outline" size={27} color="#fff" style={{ marginRight: 25 }} />
-                        <View style={styles.exploreBadge}>
-                          <Text style={[styles.exploreBadgeText,{fontWeight:'800'}]}>Explore</Text>
-                        </View>
-                      </TouchableOpacity> */}
-          
-                      
-                      <TouchableOpacity >
-                        <Icontt name="video-outline" size={28} color={colors.text} style={{ marginRight: 20,  }} />
-                      </TouchableOpacity>
-
-                      {/* <TouchableOpacity 
-                          onPress={() => navigation.navigate('NotificationsScreen')}
-                          style={styles.notificationIconContainer}
-                        >
-                          <Icon name="notifications-outline" size={25} color={colors.text} style={{ marginRight: 22 }} />
-                          {unreadNotificationCount > 0 && (
-                            <View style={styles.notificationBadge}>
-                              <Text style={styles.notificationBadgeText}>
-                                {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
-                              </Text>
-                            </View>
-                          )}
-                        </TouchableOpacity> */}
-                        <TouchableOpacity 
-  onPress={() => navigation.navigate('NotificationsScreen')}
-  style={styles.notificationIconContainer}
->
-  <Icon name="notifications-outline" size={25} color={colors.text} style={{ marginRight: 22 }} />
-  {unreadNotificationCount > 0 && (
-    <View style={styles.notificationBadge}>
-      <Text style={styles.notificationBadgeText}>
-        {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
-      </Text>
-    </View>
-  )}
-</TouchableOpacity>
-                      
-         
-          
-          <TouchableOpacity onPress={() => navigation.navigate('CreateBroadcastPost')}>
-            <Ionicons name="add-circle-outline" size={30} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={()=>navigation.navigate('ExploreFeaturePersonalAcount')}>
-                        <Icon name="ellipsis-vertical" style={{ marginLeft: 10 }} size={25} color={colors.text} />
-                      </TouchableOpacity>
-          {/* <TouchableOpacity onPress={() => navigation.navigate('CreateBroadcastPost')}>
-            <Ionicons name="notification" size={34} color={colors.text} />
-          </TouchableOpacity> */}
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar 
+          backgroundColor={colors.card} 
+          barStyle={isDark ? "light-content" : "dark-content"} 
+        />
+        
+        <View style={[styles.header, { 
+          backgroundColor: colors.card,
+          borderBottomColor: colors.border 
+        }]}>
+          <Text style={[styles.headerTitle, { color: colors.primary }]}>Showa</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={() => navigation.navigate('SocialHome')}>
+              <Icontt name="video-outline" size={28} color={colors.text} style={{ marginRight: 20 }} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('NotificationsScreen')}
+              style={styles.notificationIconContainer}
+            >
+              <Icon name="notifications-outline" size={25} color={colors.text} style={{ marginRight: 22 }} />
+              {unreadNotificationCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('CreateBroadcastPost')}>
+              <Ionicons name="add-circle-outline" size={30} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={()=>navigation.navigate('ExploreFeaturePersonalAcount')}>
+              <Icon name="ellipsis-vertical" style={{ marginLeft: 10 }} size={25} color={colors.text} />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      <ScrollView
-        ref={scrollViewRef}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        removeClippedSubviews={true}
-        showsVerticalScrollIndicator={false}
-        style={{ backgroundColor: colors.background }}
-      >
-        {renderContent()}
-        <View style={{marginBottom:100}}></View>
-     
-      </ScrollView>
+        <ScrollView
+          ref={scrollViewRef}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          removeClippedSubviews={true}
+          showsVerticalScrollIndicator={false}
+          style={{ backgroundColor: colors.background }}
+        >
+          {renderContent()}
+          <View style={{marginBottom:100}}></View>
+        </ScrollView>
 
-{/*       
-      <TouchableOpacity 
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => navigation.navigate('CreateBroadcastPost')}
-      >
-        <Icon name="add" size={24} color="#fff" />
-      </TouchableOpacity> */}
+        <ImageModal
+          visible={imageModalVisible}
+          post={selectedImagePost}
+          onClose={handleImageModalClose}
+          onView={handleImageViewed}
+          colors={colors}
+          isDark={isDark}
+        />
 
-      
-      <ImageModal
-        visible={imageModalVisible}
-        post={selectedImagePost}
-        onClose={handleImageModalClose}
-        onView={handleImageViewed}
-        colors={colors}
-        isDark={isDark}
-      />
+        {renderLiveModal()}
+        {renderViewersModal()}
 
-     
-      {renderLiveModal()}
+        {/* Comment Modal */}
+        <Modal visible={isBottomSheetVisible} animationType="slide" transparent>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <KeyboardAvoidingView 
+              style={styles.overlay}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+            >
+              <View style={[styles.commentModal, { backgroundColor: colors.card }]}>
+                <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>Comments</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIsBottomSheetVisible(false);
+                      setReplyToCommentId(null);
+                      setNewComment('');
+                      Keyboard.dismiss();
+                    }}
+                    style={styles.closeButton}
+                  >
+                    <Ionicons name="close" size={26} color={colors.text} />
+                  </TouchableOpacity>
+                </View>
 
-      {/* Viewers Modal ===========================*/}
-      {renderViewersModal()}
+                <ScrollView 
+                  contentContainerStyle={styles.modalContent}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
+                  {postById && (
+                    <View style={styles.postPreview}>
+                      <View style={styles.postHeader}>
+                        <Image
+                          source={
+                            postById.user_profile_picture
+                              ? { uri: postById.user_profile_picture }
+                              : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+                          }
+                          style={styles.postAvatar}
+                        />
+                        <View style={styles.postInfo}>
+                          <Text style={[styles.postUsername, { color: colors.text }]}>
+                            {postById.username || 'Anonymous'}
+                          </Text>
+                          <Text style={[styles.postTimestamp, { color: colors.textSecondary }]}>
+                            {dayjs(postById.created_at).fromNow()}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.postContent, { color: colors.text }]}>{postById.content}</Text>
+                    </View>
+                  )}
 
-      {/* Comment Modal ======================*/}
-      <Modal visible={isBottomSheetVisible} animationType="slide" transparent>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <KeyboardAvoidingView 
-            style={styles.overlay}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-          >
-            <View style={[styles.commentModal, { backgroundColor: colors.card }]}>
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+                  {commentsLoading ? (
+                    <View style={styles.emptyComments}>
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    </View>
+                  ) : (
+                    <FlatList
+                      data={commentsss.filter((c) => c.post === selectedPostId && !c.parent)}
+                      keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+                      scrollEnabled={false}
+                      renderItem={renderComment}
+                      ListEmptyComponent={
+                        <View style={styles.emptyComments}>
+                          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                            No comments yet. Be the first to comment!
+                          </Text>
+                        </View>
+                      }
+                    />
+                  )}
+
+                  {Platform.OS === 'ios' && <View style={{ height: 20 }} />}
+                </ScrollView>
+
+                <View style={[styles.commentInputContainer, { borderTopColor: colors.border }]}>
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      placeholder={replyToCommentId ? "Write a reply..." : "Write a comment..."}
+                      placeholderTextColor={colors.textSecondary}
+                      value={newComment}
+                      onChangeText={setNewComment}
+                      style={[styles.commentInput, { 
+                        backgroundColor: colors.backgroundSecondary,
+                        color: colors.text
+                      }]}
+                      multiline
+                      returnKeyType="default"
+                      blurOnSubmit={false}
+                    />
+                    <TouchableOpacity
+                      onPress={() => {
+                        onCommentSubmitPost();
+                        Keyboard.dismiss();
+                      }}
+                      style={[styles.sendButton, { backgroundColor: colors.primary }]}
+                      disabled={!newComment.trim()}
+                    >
+                      <Text style={[styles.sendButtonText, !newComment.trim() && styles.sendButtonDisabled]}>
+                        Post
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </KeyboardAvoidingView>
+          </TouchableWithoutFeedback>
+        </Modal>
+
+        {/* Options Modal */}
+        <Modal visible={isOptionsBottomSheetVisible} animationType="slide" transparent>
+          <View style={styles.overlay}>
+            <View style={[styles.optionsModal, { backgroundColor: colors.card }]}>
               <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Comments</Text>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Post Options</Text>
                 <TouchableOpacity
-                  onPress={() => {
-                    setIsBottomSheetVisible(false);
-                    setReplyToCommentId(null);
-                    setNewComment('');
-                    Keyboard.dismiss();
-                  }}
+                  onPress={() => setIsOptionsBottomSheetVisible(false)}
                   style={styles.closeButton}
                 >
                   <Ionicons name="close" size={26} color={colors.text} />
                 </TouchableOpacity>
               </View>
-
-              <ScrollView 
-                contentContainerStyle={styles.modalContent}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-              >
-                {postById && (
-                  <View style={styles.postPreview}>
-                    <View style={styles.postHeader}>
-                      <Image
-                        source={
-                          postById.user_profile_picture
-                            ? { uri: postById.user_profile_picture }
-                            : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-                        }
-                        style={styles.postAvatar}
-                      />
-                      <View style={styles.postInfo}>
-                        <Text style={[styles.postUsername, { color: colors.text }]}>
-                          {postById.username || 'Anonymous'}
-                        </Text>
-                        <Text style={[styles.postTimestamp, { color: colors.textSecondary }]}>
-                          {dayjs(postById.created_at).fromNow()}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={[styles.postContent, { color: colors.text }]}>{postById.content}</Text>
-                  </View>
-                )}
-
-                <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-                {/* 
-                  NEW: while the comments fetch is in flight we show a
-                  spinner instead of letting the FlatList's
-                  ListEmptyComponent ("No comments yet...") flash
-                  before real data arrives. commentsLoading is set
-                  the moment the modal opens and cleared once the
-                  fetch settles (success OR failure), so this never
-                  spins forever.
-                */}
-                {commentsLoading ? (
-                  <View style={styles.emptyComments}>
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  </View>
-                ) : (
-                  <FlatList
-                    data={commentsss.filter((c) => c.post === selectedPostId && !c.parent)}
-                    keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-                    scrollEnabled={false}
-                    renderItem={renderComment}
-                    ListEmptyComponent={
-                      <View style={styles.emptyComments}>
-                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                          No comments yet. Be the first to comment!
-                        </Text>
-                      </View>
-                    }
-                  />
-                )}
-
-              
-                {Platform.OS === 'ios' && <View style={{ height: 20 }} />}
-              </ScrollView>
-
-            
-              <View style={[styles.commentInputContainer, { borderTopColor: colors.border }]}>
-                <View style={styles.inputRow}>
-                  <TextInput
-                    placeholder={replyToCommentId ? "Write a reply..." : "Write a comment..."}
-                    placeholderTextColor={colors.textSecondary}
-                    value={newComment}
-                    onChangeText={setNewComment}
-                    style={[styles.commentInput, { 
-                      backgroundColor: colors.backgroundSecondary,
-                      color: colors.text
-                    }]}
-                    multiline
-                    returnKeyType="default"
-                    blurOnSubmit={false}
-                  />
-                  <TouchableOpacity
-                    onPress={() => {
-                      onCommentSubmitPost();
-                      Keyboard.dismiss();
-                    }}
-                    style={[styles.sendButton, { backgroundColor: colors.primary }]}
-                    disabled={!newComment.trim()}
-                  >
-                    <Text style={[styles.sendButtonText, !newComment.trim() && styles.sendButtonDisabled]}>
-                      Post
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+              <View style={styles.optionsContainer}>
+                <TouchableOpacity
+                  style={styles.optionItem}
+                  onPress={() => handleShareOptimized(selectedPostId)}
+                >
+                  <Ionicons name="share-social-outline" size={24} color={colors.text} />
+                  <Text style={[styles.optionText, { color: colors.text }]}>Share</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.optionItem}
+                  onPress={() => handleBookmark(selectedPostId)}
+                >
+                  <Ionicons name="bookmark-outline" size={24} color={colors.text} />
+                  <Text style={[styles.optionText, { color: colors.text }]}>Bookmark</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.optionItem}
+                  onPress={() => {
+                    setIsOptionsBottomSheetVisible(false);
+                    handleUnfollow();
+                  }}
+                >
+                  <Ionicons name="person-remove-outline" size={24} color={colors.text} />
+                  <Text style={[styles.optionText, { color: colors.text }]}>Unfollow</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.optionItem}
+                  onPress={() => {
+                    navigation.navigate('ReportPost', {postId: selectedPostId});
+                    setIsOptionsBottomSheetVisible(false);
+                  }}
+                >
+                  <Ionicons name="flag-outline" size={24} color={colors.text} />
+                  <Text style={[styles.optionText, { color: colors.text }]}>Report Post</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
-      </Modal>
+          </View>
+        </Modal>
 
-      {/* Reply Modal */}
-      <Modal visible={isReplyBottomSheetVisible} animationType="slide" transparent>
-        <View style={styles.overlay}>
-          <View style={[styles.replyModal, { backgroundColor: colors.card }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Replies</Text>
-              <TouchableOpacity
-                onPress={() => setIsReplyBottomSheetVisible(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={26} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.modalContent}>
-              {selectedCommentId && (
-                <View style={styles.commentContainer}>
-                  <View style={styles.commentRow}>
+        {/* Status Viewer Modal */}
+        <Modal 
+          visible={modalVisible} 
+          transparent={true} 
+          onRequestClose={() => setModalVisible(false)}
+          statusBarTranslucent={true}
+        >
+          <View style={styles.statusViewerContainer}>
+            <FlatList
+              ref={useRef(null)}
+              data={selectedUserStatuses}
+              renderItem={({ item, index }) => (
+                <View style={styles.statusViewerPage}>
+                  <TouchableOpacity 
+                    style={[styles.statusTapArea, styles.statusLeftTapArea]}
+                    onPress={() => {
+                      if (currentStatusIndex > 0) {
+                        const newIndex = currentStatusIndex - 1;
+                        setCurrentStatusIndex(newIndex);
+                        const isMyStatus = item.user?.phone === currentUserPhone || 
+                                           item.user === currentUserPhone;
+                        if (!isMyStatus) {
+                          trackStatusView(selectedUserStatuses[newIndex]?.id);
+                        }
+                      }
+                    }}
+                    activeOpacity={1}
+                  />
+                  <TouchableOpacity 
+                    style={[styles.statusTapArea, styles.statusRightTapArea]}
+                    onPress={() => {
+                      if (currentStatusIndex < selectedUserStatuses.length - 1) {
+                        const newIndex = currentStatusIndex + 1;
+                        setCurrentStatusIndex(newIndex);
+                        const isMyStatus = item.user?.phone === currentUserPhone || 
+                                           item.user === currentUserPhone;
+                        if (!isMyStatus) {
+                          trackStatusView(selectedUserStatuses[newIndex]?.id);
+                        }
+                      } else {
+                        setModalVisible(false);
+                      }
+                    }}
+                    activeOpacity={1}
+                  />
+                  {item.status_type === 'video' ? (
+                    <Video
+                      source={{ uri: getStatusImageUrl(item.media) }}
+                      style={styles.statusFullImage}
+                      resizeMode="contain"
+                      paused={statusPaused}
+                      repeat={true}
+                      onError={(e) => console.log('Video error:', e)}
+                    />
+                  ) : (
+                    <Image
+                      source={{ uri: getStatusImageUrl(item.media) }}
+                      style={styles.statusFullImage}
+                      resizeMode="contain"
+                    />
+                  )}
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0.6)', 'transparent']}
+                    style={styles.statusViewerHeader}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                  >
                     <Image
                       source={
-                        commentsss.find(c => c.id === selectedCommentId)?.image
-                          ? { uri: commentsss.find(c => c.id === selectedCommentId)?.image }
+                        item.user?.profile_picture
+                          ? { uri: `${API_ROUTE_IMAGE}${item.user.profile_picture}` }
                           : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
                       }
-                      style={styles.commentAvatar}
+                      style={styles.statusViewerAvatar}
                     />
-                    <View style={styles.commentContent}>
-                      <Text style={[styles.commentUsername, { color: colors.text }]}>
-                        {commentsss.find(c => c.id === selectedCommentId)?.user?.username || 
-                         commentsss.find(c => c.id === selectedCommentId)?.username}
+                    <View style={styles.statusViewerUserInfo}>
+                      <Text style={styles.statusViewerUsername}>
+                        {item.user?.phone === currentUserPhone || item.user === currentUserPhone
+                          ? 'My Status'
+                          : item.user?.name || item.user?.phone || 'User'}
                       </Text>
-                      <Text style={[styles.commentText, { color: colors.text }]}>
-                        {commentsss.find(c => c.id === selectedCommentId)?.text}
-                      </Text>
-                      <Text style={[styles.commentTimestamp, { color: colors.textSecondary }]}>
-                        {dayjs(commentsss.find(c => c.id === selectedCommentId)?.created_at).fromNow()}
+                      <Text style={styles.statusViewerTime}>
+                        {formatStatusTime(item.created_at)}
                       </Text>
                     </View>
+                    <TouchableOpacity 
+                      style={styles.statusViewerCloseButton}
+                      onPress={() => setModalVisible(false)}
+                    >
+                      <Icon name="close" size={24} color="#fff" />
+                    </TouchableOpacity>
+                  </LinearGradient>
+                  {item.text && (
+                    <View style={styles.statusCaptionContainer}>
+                      <Text style={styles.statusViewerCaption}>{item.text}</Text>
+                    </View>
+                  )}
+                  {(item.user?.phone === currentUserPhone || item.user === currentUserPhone) && item.viewers_count > 0 && (
+                    <TouchableOpacity
+                      style={styles.statusViewersButton}
+                      onPress={() => {
+                        if (item.viewers && item.viewers.length > 0) {
+                          setCurrentViewers(item.viewers);
+                          setViewersModalVisible(true);
+                        }
+                      }}
+                    >
+                      <Icon name="eye" size={16} color="#fff" />
+                      <Text style={styles.statusViewersButtonText}>
+                        {item.viewers_count} view{item.viewers_count !== 1 ? 's' : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  <View style={styles.statusProgressContainer}>
+                    {selectedUserStatuses.map((_, idx) => (
+                      <View key={idx} style={styles.statusProgressBar}>
+                        <View 
+                          style={[
+                            styles.statusProgressFill,
+                            { 
+                              width: idx === currentStatusIndex ? '100%' : 
+                                     idx < currentStatusIndex ? '100%' : '0%' 
+                            }
+                          ]} 
+                        />
+                      </View>
+                    ))}
                   </View>
                 </View>
               )}
-              <View style={styles.repliesWrapper}>
-                <FlatList
-                  data={commentsss.find((comment) => comment.id === selectedCommentId)?.replies || []}
-                  keyExtractor={(item, index) => index.toString()}
-                  scrollEnabled={false}
-                  renderItem={({ item }) => (
-                    <View style={styles.replyContainer}>
-                      <Image
-                        source={
-                          item.userAvatar
-                            ? { uri: item.userAvatar }
-                            : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-                        }
-                        style={styles.replyAvatar}
-                      />
-                      <View style={styles.replyContent}>
-                        <Text style={[styles.replyUsername, { color: colors.text }]}>{item.username}</Text>
-                        <Text style={[styles.replyText, { color: colors.text }]}>{item.text}</Text>
-                        <Text style={[styles.replyTimestamp, { color: colors.textSecondary }]}>
-                          {dayjs(item.created_at).fromNow()}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-                  ListEmptyComponent={
-                    <View style={styles.emptyComments}>
-                      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No replies yet.</Text>
-                    </View>
-                  }
-                />
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Options Modal */}
-      <Modal visible={isOptionsBottomSheetVisible} animationType="slide" transparent>
-        <View style={styles.overlay}>
-          <View style={[styles.optionsModal, { backgroundColor: colors.card }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Post Options</Text>
-              <TouchableOpacity
-                onPress={() => setIsOptionsBottomSheetVisible(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={26} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.optionsContainer}>
-              <TouchableOpacity
-                style={styles.optionItem}
-                onPress={() => handleShareOptimized(selectedPostId)}
-              >
-                <Ionicons name="share-social-outline" size={24} color={colors.text} />
-                <Text style={[styles.optionText, { color: colors.text }]}>Share</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.optionItem}
-                onPress={() => handleBookmark(selectedPostId)}
-              >
-                <Ionicons name="bookmark-outline" size={24} color={colors.text} />
-                <Text style={[styles.optionText, { color: colors.text }]}>Bookmark</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.optionItem}
-                onPress={()=>{
-                  setIsOptionsBottomSheetVisible(false);
-                  handleUnfollow();
-                }}
-              >
-                <Ionicons name="person-remove-outline" size={24} color={colors.text} />
-                <Text style={[styles.optionText, { color: colors.text }]}>Unfollow</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.optionItem}
-                onPress={()=>{
-                  navigation.navigate('ReportPost', {postId: selectedPostId})
-                  setIsOptionsBottomSheetVisible(false)
-                }}
-                
-              >
-                <Ionicons name="flag-outline" size={24} color={colors.text} />
-                <Text style={[styles.optionText, { color: colors.text }]}>Report Post</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-      {/* Status Viewer Modal */}
-<Modal 
-  visible={modalVisible} 
-  transparent={true} 
-  onRequestClose={() => setModalVisible(false)}
-  statusBarTranslucent={true}
->
-  <View style={styles.statusViewerContainer}>
-    <FlatList
-      ref={useRef(null)}
-      data={selectedUserStatuses}
-      renderItem={({ item, index }) => (
-        <View style={styles.statusViewerPage}>
-          {/* Left tap area - previous status */}
-          <TouchableOpacity 
-            style={[styles.statusTapArea, styles.statusLeftTapArea]}
-            onPress={() => {
-              if (currentStatusIndex > 0) {
-                const newIndex = currentStatusIndex - 1;
-                setCurrentStatusIndex(newIndex);
-                // Track view for previous status
-                const isMyStatus = item.user?.phone === currentUserPhone || 
-                                   item.user === currentUserPhone;
-                if (!isMyStatus) {
-                  trackStatusView(selectedUserStatuses[newIndex]?.id);
-                }
-              }
-            }}
-            activeOpacity={1}
-          />
-          
-          {/* Right tap area - next status */}
-          <TouchableOpacity 
-            style={[styles.statusTapArea, styles.statusRightTapArea]}
-            onPress={() => {
-              if (currentStatusIndex < selectedUserStatuses.length - 1) {
-                const newIndex = currentStatusIndex + 1;
-                setCurrentStatusIndex(newIndex);
-                // Track view for next status
-                const isMyStatus = item.user?.phone === currentUserPhone || 
-                                   item.user === currentUserPhone;
-                if (!isMyStatus) {
-                  trackStatusView(selectedUserStatuses[newIndex]?.id);
-                }
-              } else {
-                setModalVisible(false);
-              }
-            }}
-            activeOpacity={1}
-          />
-
-          {/* Media content */}
-          {item.status_type === 'video' ? (
-            <Video
-              source={{ uri: getStatusImageUrl(item.media) }}
-              style={styles.statusFullImage}
-              resizeMode="contain"
-              paused={statusPaused}
-              repeat={true}
-              onError={(e) => console.log('Video error:', e)}
-            />
-          ) : (
-            <Image
-              source={{ uri: getStatusImageUrl(item.media) }}
-              style={styles.statusFullImage}
-              resizeMode="contain"
-            />
-          )}
-
-          {/* Header overlay */}
-          <LinearGradient
-            colors={['rgba(0,0,0,0.6)', 'transparent']}
-            style={styles.statusViewerHeader}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-          >
-            <Image
-              source={
-                item.user?.profile_picture
-                  ? { uri: `${API_ROUTE_IMAGE}${item.user.profile_picture}` }
-                  : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-              }
-              style={styles.statusViewerAvatar}
-            />
-            <View style={styles.statusViewerUserInfo}>
-              <Text style={styles.statusViewerUsername}>
-                {item.user?.phone === currentUserPhone || item.user === currentUserPhone
-                  ? 'My Status'
-                  : item.user?.name || item.user?.phone || 'User'}
-              </Text>
-              <Text style={styles.statusViewerTime}>
-                {formatStatusTime(item.created_at)}
-              </Text>
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.statusViewerCloseButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Icon name="close" size={24} color="#fff" />
-            </TouchableOpacity>
-          </LinearGradient>
-
-          {/* Caption overlay */}
-          {item.text && (
-            <View style={styles.statusCaptionContainer}>
-              <Text style={styles.statusViewerCaption}>{item.text}</Text>
-            </View>
-          )}
-
-          {/* Viewer count for my status */}
-          {(item.user?.phone === currentUserPhone || item.user === currentUserPhone) && item.viewers_count > 0 && (
-            <TouchableOpacity
-              style={styles.statusViewersButton}
-              onPress={() => {
-                if (item.viewers && item.viewers.length > 0) {
-                  setCurrentViewers(item.viewers);
-                  setViewersModalVisible(true);
+              keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              initialScrollIndex={currentStatusIndex}
+              getItemLayout={(data, index) => ({
+                length: width,
+                offset: width * index,
+                index,
+              })}
+              onMomentumScrollEnd={(event) => {
+                const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+                if (newIndex !== currentStatusIndex) {
+                  setCurrentStatusIndex(newIndex);
                 }
               }}
-            >
-              <Icon name="eye" size={16} color="#fff" />
-              <Text style={styles.statusViewersButtonText}>
-                {item.viewers_count} view{item.viewers_count !== 1 ? 's' : ''}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Progress indicators */}
-          <View style={styles.statusProgressContainer}>
-            {selectedUserStatuses.map((_, idx) => (
-              <View key={idx} style={styles.statusProgressBar}>
-                <View 
-                  style={[
-                    styles.statusProgressFill,
-                    { 
-                      width: idx === currentStatusIndex ? '100%' : 
-                             idx < currentStatusIndex ? '100%' : '0%' 
-                    }
-                  ]} 
-                />
-              </View>
-            ))}
+              style={styles.statusFlatList}
+            />
           </View>
-        </View>
-      )}
-      keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-      horizontal
-      pagingEnabled
-      showsHorizontalScrollIndicator={false}
-      initialScrollIndex={currentStatusIndex}
-      getItemLayout={(data, index) => ({
-        length: width,
-        offset: width * index,
-        index,
-      })}
-      onMomentumScrollEnd={(event) => {
-        const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-        if (newIndex !== currentStatusIndex) {
-          setCurrentStatusIndex(newIndex);
-        }
-      }}
-      style={styles.statusFlatList}
-    />
-  </View>
-</Modal>
- {/* switch modal =======================================*/}
+        </Modal>
 
-       
+        <EarningsSlideInManager />
 
-      {/* <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={3000}
-        style={{ backgroundCodslor: colors.primary }}
-      >
-        <Text style={{ color: '#fff' }}>Action completed successfully!</Text>
-      </Snackbar> */}
-   <BottomNav 
-      navigation={navigation} 
-      setShowAccountModal={setShowAccountModal}
-      activeRoute="Home" 
-        style={{ zIndex: 9999 }}
-    />
-<AccountSwitchBottomSheet
-  visible={showAccountModal}
-  onClose={() => setShowAccountModal(false)}
-  navigation={navigation}
-  colors={colors}
-  isDark={isDark}
-/>
-    </SafeAreaView>
-   
+        <Animated.View style={{ 
+          opacity: snackbarFadeAnim,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 99999, 
+        }}>
+          <Snackbar
+            visible={snackbarVisible}
+            onDismiss={() => setSnackbarVisible(false)}
+            duration={3000}
+            style={{
+              backgroundColor: snackbarType === 'error' ? '#FF3B30' : 
+                              snackbarType === 'info' ? '#007AFF' : '#2baf4cff',
+              margin: 10,
+              borderRadius: 10,
+            }}
+            wrapperStyle={{
+              position: 'absolute',
+              top: Platform.OS === 'ios' ? 40 : 20,
+              left: 0,
+              right: 0,
+              zIndex: 99999,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 0 }}>
+              <Ionicons 
+                name={snackbarType === 'error' ? 'alert-circle' : 
+                      snackbarType === 'info' ? 'information-circle' : 'checkmark-circle'} 
+                size={22} 
+                color="#fff" 
+                style={{ marginRight: 12 }}
+              />
+              <Text style={{ color: '#fff', fontSize: 14, flex: 1 }}>
+                {snackbarMessage}
+              </Text>
+            </View>
+          </Snackbar>
+        </Animated.View>
+        {renderAIFloatingButton()}
 
-         
-</>
+        <BottomNav 
+          navigation={navigation} 
+          setShowAccountModal={setShowAccountModal}
+          activeRoute="Home" 
+          style={{ zIndex: 9999 }}
+        />
+        <AccountSwitchBottomSheet
+          visible={showAccountModal}
+          onClose={() => setShowAccountModal(false)}
+          navigation={navigation}
+          colors={colors}
+          isDark={isDark}
+        />
+      </SafeAreaView>
+    </>
   );
 }
 
-
+// ============================================================
+// STYLES 
+// ============================================================
 const styles = StyleSheet.create({
-  container: { 
+    container: { 
     flex: 1, 
   },
   header: {
@@ -9604,6 +9368,68 @@ statusRightTapArea: {
 sectionContainer: {
   marginTop: 12,
   marginBottom: 8,
+},
+aiFabContainer: {
+  position: 'absolute',
+  bottom: Platform.OS === 'ios' ? 100 : 150,
+  right: 20,
+  alignItems: 'center',
+  zIndex: 9999,
+},
+aiFabButton: {
+  width: 40,
+  height: 40,
+  borderRadius: 32.5,
+  shadowColor: '#0D64DD',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.4,
+  shadowRadius: 8,
+  elevation: 8,
+},
+aiFabGradient: {
+  width: 40,
+  height: 40,
+  borderRadius: 32.5,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+aiFabPulse: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+},
+aiFabPulseRing: {
+  position: 'absolute',
+  top: -8,
+  left: -8,
+  right: -8,
+  bottom: -8,
+  borderRadius: 40,
+  borderWidth: 3,
+  borderColor: '#0D64DD',
+  opacity: 0,
+},
+aiFabPulseRingDelay1: {
+  borderColor: '#1a7be5',
+  animationDelay: '1s',
+},
+aiFabPulseRingDelay2: {
+  borderColor: '#4a9ff5',
+  animationDelay: '2s',
+},
+aiFabLabelContainer: {
+  marginTop: 4,
+  backgroundColor: 'rgba(0,0,0,0.7)',
+  paddingHorizontal: 8,
+  paddingVertical: 3,
+  borderRadius: 8,
+},
+aiFabLabel: {
+  color: '#fff',
+  fontSize: 15,
+  fontWeight: '800',
 },
 statusViewerHeader: {
   position: 'absolute',
@@ -9874,19 +9700,7 @@ modalImagePage: {
     borderRadius: 20,
     borderWidth: 1,
   },
-  verifiedBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    backgroundColor: '#1DA1F2',
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
+ 
   verifiedBadgeSmall: {
     marginLeft: 4,
     backgroundColor: '#1DA1F2',
@@ -9949,7 +9763,7 @@ modalImagePage: {
   
   tweetActions: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 10,
   },
@@ -9959,8 +9773,8 @@ modalImagePage: {
     alignItems: 'center',
     borderRadius: 10,
     padding: 0,
-    paddingHorizontal: 12,
-    minWidth: 60,
+    paddingHorizontal: 9,
+    minWidth: 50,
     justifyContent: 'center',
   },
   channelsSection: {
@@ -10013,8 +9827,8 @@ channelCardMembers: {
   marginTop: 2,
 },
   actionCount: {
-    marginLeft: 6,
-    fontSize: 14,
+    marginLeft: 0,
+    fontSize: 15,
   },
   readMore: {
     fontWeight: '600',
@@ -10266,7 +10080,7 @@ verifiedBadge: {
   height: 16,
   alignItems: "center",
   justifyContent: "center",
-  marginLeft: 4,
+  marginLeft: 17,
 },
   postImagePreview: {
     width: '100%',
@@ -10375,6 +10189,76 @@ notificationBadgeText: {
     padding: 12,
     gap: 8,
   },
+
+  // Replace the existing styles with these improved ones:
+
+tweetHeader: {
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 20,
+  marginBottom: 8,
+  gap: 12,
+},
+avatarContainer: {
+  position: 'relative',
+},
+avatar: {
+  width: 44,
+  height: 44,
+  borderRadius: 22,
+  borderWidth: 1,
+},
+userInfoContainer: {
+  flex: 1,
+  justifyContent: 'center',
+},
+userNameContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+  gap: 4,
+},
+name: {
+  fontWeight: "bold",
+  fontSize: 16,
+  color: '#000',
+},
+verifiedBadge: {
+  backgroundColor: "#1877F2",
+  borderRadius: 50,
+  width: 18,
+  height: 18,
+  alignItems: "center",
+  justifyContent: "center",
+  marginLeft: 2,
+},
+time: {
+  fontSize: 13,
+  color: '#666',
+  marginTop: 1,
+},
+followButton: {
+  backgroundColor: '#0d64dd',
+  paddingHorizontal: 16,
+  paddingVertical: 6,
+  borderRadius: 20,
+  marginLeft: 'auto',
+},
+followButtonText: {
+  color: '#fff',
+  fontSize: 12,
+  fontWeight: 'bold',
+},
+followingButton: {
+  backgroundColor: '#f0f0f0',
+},
+followingButtonText: {
+  color: '#333',
+},
+optionsButton: {
+  marginLeft: 'auto',
+  padding: 4,
+},
   
   commentInput: {
     flex: 1,

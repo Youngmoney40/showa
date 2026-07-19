@@ -30,6 +30,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
+//import BottomNav from '../components/BottomNavSocila_2';
 import BottomNav from '../components/BottomNavSocialMedia';
 import { Divider } from 'react-native-paper';
 import { launchCamera } from 'react-native-image-picker';
@@ -189,9 +190,16 @@ const renderDropdownContent = () => (
           .replace(/[^a-zA-Z0-9-_]/g, "")
           .toLowerCase();
 
+        // navigation.navigate('Broadcaster', {
+        //   roomName: `user-${safeUserName}`,
+        //   streamId: `stream-${safeUserName}`,
+        //   userName: userData?.name || 'User',
+        //   userId: userId
+        // });
+
         navigation.navigate('Broadcaster', {
-          roomName: `user-${safeUserName}`,
-          streamId: `stream-${safeUserName}`,
+          roomName: 'match-123',  // ← Changed from user-{username}
+          streamId: 'stream-1',   // ← Fixed stream ID
           userName: userData?.name || 'User',
           userId: userId
         });
@@ -516,126 +524,6 @@ const fetchChatList = async () => {
   }
 };
 
-  // Fetch chat list and cache it
-  // const fetchChatList = async () => {
-  //   setIsLoading(true);
-  //   setError(null);
-  //   setIsInitialLoading(true);
-  //   const token = await AsyncStorage.getItem('userToken');
-  //   try {
-  //     const response = await axios.get(`${API_ROUTE}/api/chat/list/?account_mode=personal`, {
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Authorization': `Bearer ${token}`,
-  //       },
-  //     });
-
-  //     const filteredChats = response.data.chats.filter(chat => chat.type !== 'channel');
-  //     const uniqueChats = [];
-  //     const seenIds = new Set();
-
-  //     filteredChats.forEach((chat) => {
-  //       const chatIdentifier = chat.type === 'single'
-  //         ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
-  //         : chat.group_slug || chat.id;
-
-  //       if (!seenIds.has(chatIdentifier)) {
-  //         seenIds.add(chatIdentifier);
-  //         uniqueChats.push({
-  //           ...chat,
-  //           id: chatIdentifier,
-  //           unread_count: readChats.has(`${chatIdentifier}-${chat.type}`) ? 0 : (chat.unread_count || 0),
-  //           name: chat.name || 'Unknown',
-  //           content: chat.content || '[media]',
-  //           time: new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  //           avatar: chat.avatar ? `${API_ROUTE_IMAGE}${chat.avatar}` : null,
-  //           type: chat.type,
-  //           receiverId: chat.type === 'single' ? chatIdentifier : null,
-  //           group_slug: chat.group_slug || null,
-  //           members_count: chat.members_count,
-  //           creator_id: chat.creator_id,
-  //           key: `${chat.id}-${chat.type}`,
-  //         });
-  //       }
-  //     });
-
-  //     setChatList(uniqueChats);
-  //     setFilteredChatList(uniqueChats);
-  //     await saveChatsToStorage(uniqueChats); // Cache the chats
-  //   } catch (err) {
-  //     console.error('Failed to load chat list:', err.response?.data || err.message);
-  //     setError('Failed to load chats. Please try again.');
-  //   } finally {
-  //     setIsLoading(false);
-  //     setIsInitialLoading(false);
-  //   }
-  // };
-
-  // Silent fetch for background updates
-  // const fetchChatListSilently = async () => {
-  //   try {
-  //     const token = await AsyncStorage.getItem('userToken');
-  //     if (!token) return;
-
-  //     const response = await axios.get(
-  //       `${API_ROUTE}/api/chat/list/?account_mode=${accountMode}`,
-  //       {
-  //         headers: {
-  //           'Authorization': `Bearer ${token}`,
-  //         },
-  //       }
-  //     );
-
-  //     const filteredChats = response.data.chats.filter(chat => chat.type !== 'channel');
-  //     const uniqueChats = [];
-  //     const seenIds = new Set();
-
-  //     filteredChats.forEach((chat) => {
-  //       const chatIdentifier = chat.type === 'single'
-  //         ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
-  //         : chat.group_slug || chat.id;
-
-  //       if (!seenIds.has(chatIdentifier)) {
-  //         seenIds.add(chatIdentifier);
-  //         uniqueChats.push({
-  //           ...chat,
-  //           id: chatIdentifier,
-  //           unread_count: readChats.has(`${chatIdentifier}-${chat.type}`) ? 0 : (chat.unread_count || 0),
-  //           name: chat.name || 'Unknown',
-  //           content: chat.content || '[media]',
-  //           time: new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  //           avatar: chat.avatar ? `${API_ROUTE_IMAGE}${chat.avatar}` : null,
-  //           type: chat.type,
-  //           members_count: chat.members_count,
-  //           receiverId: chat.type === 'single' ? chatIdentifier : null,
-  //           group_slug: chat.group_slug || null,
-  //           key: `${chat.id}-${chat.type}`,
-  //         });
-  //       }
-  //     });
-
-  //     checkForNewMessages(uniqueChats);
-
-  //     setChatList(prevChats => {
-  //       if (JSON.stringify(prevChats) !== JSON.stringify(uniqueChats)) {
-  //         saveChatsToStorage(uniqueChats); // Update cache
-  //         return uniqueChats;
-  //       }
-  //       return prevChats;
-  //     });
-
-  //     setFilteredChatList(prevFiltered => {
-  //       if (searchQuery.trim() === '') {
-  //         return uniqueChats;
-  //       }
-  //       return prevFiltered;
-  //     });
-  //   } catch (err) {
-  //     console.error('Silent refresh error:', err);
-  //   }
-  // };
-
-  // Silent fetch for background updates - personal only
 const fetchChatListSilently = async () => {
   try {
     const token = await AsyncStorage.getItem('userToken');
@@ -762,117 +650,9 @@ const fetchChatListSilently = async () => {
   return () => clearInterval(interval);
 }, [searchQuery, readChats]);
 
-  // Periodic silent refresh
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     fetchChatListSilently();
-  //   }, 30000);
-
-  //   return () => clearInterval(interval);
-  // }, [accountMode, searchQuery, readChats]);
 
  // ─── Global call notification handler (from FCM foreground) ──────────────────
 useEffect(() => {
-//   global.__callNotificationHandler = (callData) => {
-//     console.log('📞 Call notification received in HomeScreen:', callData);
-
-//     if (global.__onCallScreen) {
-//       console.log('Already on call screen, ignoring');
-//       return;
-//     }
-
-//     InCallManager.stopRingtone();
-//     Vibration.cancel();
-
-//     // Store caller info for when the WebSocket offer arrives
-//     // Do NOT navigate yet — wait for the offer with SDP via WebSocket
-//     // setCallerInfo({
-//     //   profileImage: callData.profileImage || '',
-//     //   name: callData.callerName || 'Unknown Caller',
-//     //   offer: null, // will be filled when WS offer arrives
-//     // });
-
-//     // setCallerInfo(prev => ({
-//     //   profileImage:
-//     //     callData.profileImage ||
-//     //     prev?.profileImage ||
-//     //     '',
-//     //   name:
-//     //     callData.callerName ||
-//     //     prev?.name ||
-//     //     'Unknown Caller',
-
-//     //   // preserve existing SDP offer
-//     //   offer: prev?.offer || null,
-//     // }));
-//     setCallerInfo(prev => {
-//   if (prev?.offer?.sdp) {
-//     console.log(
-//       '[HomeScreen] Keeping existing SDP offer'
-//     );
-//     return prev;
-//   }
-
-//   return {
-//     profileImage: callData.profileImage || '',
-//     name: callData.callerName || 'Unknown Caller',
-//     offer: null,
-//   };
-// });
-
-//     setIsVideoCall(callData.callType === 'video');
-//     // Don't show modal yet — show it when offer with SDP arrives via WebSocket
-//   };
-
-// global.__callNotificationHandler = (callData) => {
-//   console.log(
-//     '📞 Call notification received in HomeScreen:',
-//     callData
-//   );
-
-//   if (global.__onCallScreen) {
-//     console.log('Already on call screen, ignoring');
-//     return;
-//   }
-
-//   InCallManager.stopRingtone();
-//   Vibration.cancel();
-
-//   setCallerInfo(prev => {
-//     console.log(
-//       '[Notification Handler] Previous SDP exists:',
-//       !!prev?.offer?.sdp
-//     );
-
-//     // KEEP EXISTING OFFER IF ALREADY RECEIVED
-//     if (prev?.offer?.sdp) {
-//       console.log(
-//         '[Notification Handler] Keeping existing SDP'
-//       );
-
-//       return {
-//         ...prev,
-//         profileImage:
-//           callData.profileImage ||
-//           prev.profileImage,
-//         name:
-//           callData.callerName ||
-//           prev.name,
-//       };
-//     }
-
-//     return {
-//       profileImage:
-//         callData.profileImage || '',
-//       name:
-//         callData.callerName ||
-//         'Unknown Caller',
-//       offer: null,
-//     };
-//   });
-
-//   setIsVideoCall(callData.callType === 'video');
-// };
 
 global.__callNotificationHandler = (callData) => {
   console.log('📞 Call notification received in HomeScreen:', callData);
@@ -1002,7 +782,8 @@ useEffect(() => {
       };
 
       
-//       ws.current.onmessage = (evt) => {
+
+// ws.current.onmessage = (evt) => {
 //   let data;
 //   try {
 //     data = JSON.parse(evt.data);
@@ -1016,7 +797,6 @@ useEffect(() => {
 //   console.log("HAS OFFER:", !!data?.offer);
 //   console.log("HAS SDP:", !!data?.offer?.sdp);
   
-//   // ✅ CRITICAL: Log where the profile image is in the message
 //   console.log("🔍 CHECKING IMAGE LOCATION:");
 //   console.log("  - data.offer.callerInfo:", data?.offer?.callerInfo);
 //   console.log("  - data.offer.callerInfo.profileImage:", data?.offer?.callerInfo?.profileImage);
@@ -1026,12 +806,17 @@ useEffect(() => {
 
 //   // SERVER SENDS incoming_call
 //   if (data.type === 'incoming_call' && data.offer?.sdp) {
+//     // 🔴 CRITICAL FIX: Prevent multiple modals
+//     if (isCallBeingHandledRef.current) {
+//       console.log('[Call WS] Already handling a call, ignoring duplicate');
+//       return;
+//     }
+    
 //     console.log('[Call WS Home] Valid offer received, SDP length:', data.offer.sdp.length);
     
 //     // ✅ FIX: Extract profile image from the correct location
-//     // Based on your log, it should be in data.offer.callerInfo.profileImage
 //     const profileImagePath = 
-//       data.offer?.callerInfo?.profileImage ||  // This is where you're sending it
+//       data.offer?.callerInfo?.profileImage || 
 //       data.callerInfo?.profileImage ||
 //       data.profile_image ||
 //       '';
@@ -1044,7 +829,9 @@ useEffect(() => {
     
 //     console.log('[Call WS Home] ✅ Extracted Profile Image Path:', profileImagePath);
 //     console.log('[Call WS Home] ✅ Extracted Caller Name:', callerName);
-//     console.log('[Call WS Home] 📸 Full Image URL would be:', profileImagePath ? `${API_ROUTE_IMAGE}${profileImagePath}` : 'No image');
+    
+//     // Set the lock
+//     isCallBeingHandledRef.current = true;
     
 //     setCallerInfo({
 //       profileImage: profileImagePath,
@@ -1068,44 +855,31 @@ ws.current.onmessage = (evt) => {
 
   console.log("========== HOME WS RECEIVED ==========");
   console.log("Full data:", JSON.stringify(data, null, 2));
-  console.log("TYPE:", data?.type);
-  console.log("HAS OFFER:", !!data?.offer);
-  console.log("HAS SDP:", !!data?.offer?.sdp);
   
-  console.log("🔍 CHECKING IMAGE LOCATION:");
-  console.log("  - data.offer.callerInfo:", data?.offer?.callerInfo);
-  console.log("  - data.offer.callerInfo.profileImage:", data?.offer?.callerInfo?.profileImage);
-  console.log("  - data.callerInfo:", data?.callerInfo);
-  console.log("  - data.profile_image:", data?.profile_image);
-  console.log("======================================");
-
-  // SERVER SENDS incoming_call
   if (data.type === 'incoming_call' && data.offer?.sdp) {
-    // 🔴 CRITICAL FIX: Prevent multiple modals
     if (isCallBeingHandledRef.current) {
       console.log('[Call WS] Already handling a call, ignoring duplicate');
       return;
     }
     
-    console.log('[Call WS Home] Valid offer received, SDP length:', data.offer.sdp.length);
-    
-    // ✅ FIX: Extract profile image from the correct location
+    // ✅ Extract profile image from ALL possible locations
     const profileImagePath = 
       data.offer?.callerInfo?.profileImage || 
       data.callerInfo?.profileImage ||
+      data.profileImage ||
       data.profile_image ||
       '';
     
     const callerName = 
       data.offer?.callerInfo?.name ||
+      data.callerInfo?.name ||
       data.caller_name ||
-      data.offer?.callerName ||
       'Unknown Caller';
     
     console.log('[Call WS Home] ✅ Extracted Profile Image Path:', profileImagePath);
     console.log('[Call WS Home] ✅ Extracted Caller Name:', callerName);
+    console.log('[Call WS Home] Full data.offer:', JSON.stringify(data.offer, null, 2));
     
-    // Set the lock
     isCallBeingHandledRef.current = true;
     
     setCallerInfo({
@@ -1119,8 +893,6 @@ ws.current.onmessage = (evt) => {
     return;
   }
 };
-
-
       ws.current.onerror = (e) => {
         // console.error('[Call WS] Error', e);
       };
@@ -1228,7 +1000,7 @@ ws.current.onmessage = (evt) => {
 
 const handleAcceptCall = () => {
   console.log("========== ACCEPT ==========");
-  console.log("callerInfo:", callerInfo);
+  console.log("caller-Info:", callerInfo);
   console.log("offer exists:", !!callerInfo?.offer);
   console.log("sdp exists:", !!callerInfo?.offer?.sdp);
   console.log("============================");
@@ -1520,24 +1292,6 @@ useEffect(()=>{
   };
 
 
-// const switchAccount = async (account) => {
-//   setIsLoading(true);
-//   try {
-//     // Don't actually switch - force back to personal
-//     if (account === 'business') {
-//       Alert.alert('Notice', 'Business account switching is disabled in this view');
-//       setIsLoading(false);
-//       return;
-//     }
-    
-//     await AsyncStorage.setItem('accountMode', 'personal');
-//     setAccountMode('personal');
-//     fetchChatList();
-//   } finally {
-//     setIsLoading(false);
-//   }
-// };
-
   const switchAccount = async (account) => {
     setIsLoading(true);
     try {
@@ -1703,7 +1457,7 @@ useEffect(()=>{
                 <Text style={[styles.exploreBadgeText,{fontWeight:'800'}]}>Explore</Text>
               </View>
             </TouchableOpacity>
-
+{/* 
             <TouchableOpacity 
                 onPress={() => navigation.navigate('NotificationsScreen')}
                 style={styles.notificationIconContainer}
@@ -1716,7 +1470,7 @@ useEffect(()=>{
                     </Text>
                   </View>
                 )}
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             {/* <TouchableOpacity onPress={handleCameraLaunch}>
               <Icon name="camera-outline" size={25} color="#fff" style={{ marginRight: 20 }} />
             </TouchableOpacity> */}
@@ -2068,15 +1822,6 @@ useEffect(()=>{
               style={{ zIndex: 9999 }}
           />
 
-      {/* {console.log('========== INCOMING CALL MODAL DEBUG from home page ==========')}
-      {console.log('showIncomingCallModal:', showIncomingCallModal)}
-      {console.log('Caller Name:', callerInfo.name)}
-      {console.log('Caller Profile Image Path:', callerInfo.profileImage)}
-      {console.log('Is Video Call:', isVideoCall)}
-      {console.log('Full Image URL:', callerInfo.profileImage ? `${API_ROUTE_IMAGE}${callerInfo.profileImage}` : 'No image provided')}
-      {console.log('Caller Info Object:', JSON.stringify(callerInfo, null, 2))}
-      {console.log('============================================')} */}
-
        <IncomingCallModal
         visible={showIncomingCallModal}
         onAccept={handleAcceptCall}
@@ -2295,13 +2040,13 @@ useEffect(()=>{
                <Text style={{color:'#fff', fontFamily:'PTSerif-Bold', fontSize:20}}>Ai</Text>
               
             </TouchableOpacity> */}
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={[styles.fabAi]}
         onPress={() => navigation.navigate('ChatAi')}
         //onPress={() => navigation.navigate('Earnings')}
       >
         <Text style={{color:'#fff', fontWeight:'600', fontSize:20}}>Ai</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('UserContactListPersonalAccount')}

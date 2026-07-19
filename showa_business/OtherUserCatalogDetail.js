@@ -1090,6 +1090,7 @@ const getFullImageUrl = (imagePath) => {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -48,9 +48,10 @@ export default function SplashScreen() {
     try {
       const profile = await fetchProfile();
       if (profile?.name?.trim()) {
-        return 'BroadcastHome';
+        return 'PHome';
       } else {
-        return 'BroadcastHome';
+        // return 'BroadcastHome';
+        return 'PHome';
       }
     } catch (error) {
       return 'Onboard';

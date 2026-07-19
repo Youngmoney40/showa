@@ -150,27 +150,71 @@ const PostDetailScreen = ({ route, navigation }) => {
     return { userId, username, userProfilePic, isVerified };
   }, []);
 
-  // Check follow status
-  const checkFollowStatus = useCallback(async (userId) => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) return;
+  const handleFollowToggle = useCallback(async () => {
+  if (isOwnPost) {
+    Alert.alert('Info', 'You cannot follow yourself');
+    return;
+  }
 
-      const response = await axios.get(
-        `${API_ROUTE}/check-follow-status/${userId}/`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  if (!post?.user_id) {
+    Alert.alert('Error', 'User information not available');
+    return;
+  }
 
-      if (response.status === 200) {
-        setIsFollowing(response.data.is_following);
-        setFollowerCount(response.data.follower_count || 0);
-      }
-    } catch (error) {
-      console.error('Error checking follow status:', error);
+  try {
+    setIsFollowingLoading(true);
+    const token = await AsyncStorage.getItem('userToken');
+    
+    if (!token) {
+      Alert.alert('Error', 'Please login to follow users');
+      return;
     }
-  }, []);
 
-  // Fetch post details
+    // Optimistic update
+    const newFollowState = !isFollowing;
+    setIsFollowing(newFollowState);
+    setFollowerCount(prev => newFollowState ? prev + 1 : Math.max(0, prev - 1));
+
+    // Call the follow endpoint
+    const response = await axios.post(
+      `${API_ROUTE}/follow-user/${post.user_id}/`,
+      {},
+      { 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        } 
+      }
+    );
+
+    // Update with actual response data
+    if (response.status === 200 || response.status === 201) {
+      if (response.data) {
+        setIsFollowing(response.data.is_following || newFollowState);
+        setFollowerCount(response.data.follower_count || followerCount);
+      }
+      
+      // Show success message
+      Alert.alert(
+        'Success', 
+        newFollowState ? 'You are now following this user!' : 'You have unfollowed this user.'
+      );
+    }
+  } catch (error) {
+    console.error('Error toggling follow:', error);
+    
+    // Revert optimistic update
+    setIsFollowing(!isFollowing);
+    setFollowerCount(prev => isFollowing ? prev + 1 : Math.max(0, prev - 1));
+    
+    // Show error message
+    Alert.alert('Error', 'Failed to update follow status. Please try again.');
+  } finally {
+    setIsFollowingLoading(false);
+  }
+}, [post, isFollowing, followerCount, isOwnPost]);
+
+  
   const fetchPostDetails = useCallback(async () => {
     try {
       setLoading(true);
@@ -214,7 +258,7 @@ const PostDetailScreen = ({ route, navigation }) => {
         setIsOwnPost(postData.user_id === userData?.id);
         
         if (postData.user_id !== userData?.id) {
-          await checkFollowStatus(postData.user_id);
+         // await checkFollowStatus(postData.user_id);
         } else {
           setIsFollowing(false);
         }
@@ -228,7 +272,7 @@ const PostDetailScreen = ({ route, navigation }) => {
     } finally {
       setLoading(false);
     }
-  }, [postId, navigation, checkFollowStatus]);
+  }, [postId, navigation,]);
 
   // Fetch comments with replies - MATCHES BROADCASTSCREEN
   const fetchComments = useCallback(async (id) => {
@@ -263,61 +307,7 @@ const PostDetailScreen = ({ route, navigation }) => {
   }, []);
 
   // Handle follow/unfollow
-  const handleFollowToggle = useCallback(async () => {
-    if (isOwnPost) {
-      Alert.alert('Info', 'You cannot follow yourself');
-      return;
-    }
-
-    if (!post?.user_id) {
-      Alert.alert('Error', 'User information not available');
-      return;
-    }
-
-    try {
-      setIsFollowingLoading(true);
-      const token = await AsyncStorage.getItem('userToken');
-      
-      if (!token) {
-        Alert.alert('Error', 'Please login to follow users');
-        return;
-      }
-
-      const newFollowState = !isFollowing;
-      setIsFollowing(newFollowState);
-      setFollowerCount(prev => newFollowState ? prev + 1 : Math.max(0, prev - 1));
-
-      const response = await axios.post(
-        `${API_ROUTE}/follow-user/${post.user_id}/`,
-        {},
-        { 
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          } 
-        }
-      );
-
-      if (response.status === 200 || response.status === 201) {
-        if (response.data) {
-          setIsFollowing(response.data.is_following || newFollowState);
-          setFollowerCount(response.data.follower_count || followerCount);
-        }
-      } else {
-        setIsFollowing(!newFollowState);
-        setFollowerCount(prev => newFollowState ? Math.max(0, prev - 1) : prev + 1);
-        Alert.alert('Error', 'Failed to update follow status');
-      }
-    } catch (error) {
-      console.error('Error toggling follow:', error);
-      setIsFollowing(!isFollowing);
-      setFollowerCount(prev => isFollowing ? prev + 1 : Math.max(0, prev - 1));
-      Alert.alert('Error', 'Failed to update follow status. Please try again.');
-    } finally {
-      setIsFollowingLoading(false);
-    }
-  }, [post, isFollowing, followerCount, isOwnPost]);
-
+ 
   // Handle like
   const handleLike = useCallback(async () => {
     try {
@@ -614,10 +604,10 @@ const PostDetailScreen = ({ route, navigation }) => {
     }
   }, [commentText, replyText, isReplyMode, replyToCommentId, post, currentUsername, currentUserProfilePic]);
 
-  // Handle share
+  
   const handleShare = useCallback(async () => {
     try {
-      const shareUrl = `https://showapp.com/post/${post?.id}`;
+      const shareUrl = `https://showapp.ng/post/${post?.id}`;
       const shareMessage = `${post?.username || 'Someone'} shared a post on ShowApp\n\n"${(post?.content || '').substring(0, 100)}${(post?.content || '').length > 100 ? '…' : ''}"\n\n${shareUrl}`;
 
       const shareResult = await Share.share({
@@ -724,9 +714,9 @@ const PostDetailScreen = ({ route, navigation }) => {
           setCurrentUsername(userData?.name || userData?.username || '');
           setCurrentUserProfilePic(userData?.profile_picture || null);
           setIsOwnPost(postData.user_id === userData?.id);
-          if (postData.user_id !== userData?.id) {
-            checkFollowStatus(postData.user_id);
-          }
+          // if (postData.user_id !== userData?.id) {
+          //   checkFollowStatus(postData.user_id);
+          // }
         }
       });
       
@@ -1129,7 +1119,7 @@ const PostDetailScreen = ({ route, navigation }) => {
           <MaterialCommunityIcons name="file-document-outline" size={64} color={colors.textSecondary} />
           <Text style={[styles.errorText, { color: colors.text }]}>Post not found</Text>
           <TouchableOpacity style={styles.goBackButton} onPress={() => navigation.goBack()}>
-            <Text style={[styles.goBackText, { color: colors.primary }]}>Go Back</Text>
+            <Text style={[styles.goBackText, { color: colors.primary }]}>Back to Home</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1142,9 +1132,8 @@ const PostDetailScreen = ({ route, navigation }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
-      {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.navigate('BroadcastHome')} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Post</Text>
@@ -1226,11 +1215,34 @@ const PostDetailScreen = ({ route, navigation }) => {
                 </TouchableOpacity>
               )} */}
               
-              {isOwnPost && (
+              {/* {isOwnPost && (
                 <View style={styles.ownPostBadge}>
                   <Text style={styles.ownPostBadgeText}>You</Text>
                 </View>
-              )}
+              )} */}
+
+              {!isOwnPost && (
+  <TouchableOpacity 
+    style={[
+      styles.followButton, 
+      isFollowing && styles.followingButton,
+      isFollowingLoading && styles.followButtonDisabled
+    ]}
+    onPress={handleFollowToggle}
+    disabled={isFollowingLoading}
+  >
+    {isFollowingLoading ? (
+      <ActivityIndicator size="small" color={isFollowing ? '#2C3E50' : '#FFFFFF'} />
+    ) : (
+      <Text style={[
+        styles.followButtonText, 
+        isFollowing && styles.followingButtonText
+      ]}>
+        {isFollowing ? 'Following' : 'Follow'}
+      </Text>
+    )}
+  </TouchableOpacity>
+)}
             </View>
 
             {/* Post Content */}

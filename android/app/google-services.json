@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "533452919809",
-    "project_id": "showa-app-ce045",
-    "storage_bucket": "showa-app-ce045.firebasestorage.app"
+    "project_number": "699055659173",
+    "project_id": "showa-54669",
+    "storage_bucket": "showa-54669.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:533452919809:android:c8e221f59048005ae29c00",
+        "mobilesdk_app_id": "1:699055659173:android:701ef6c278daf954cbd54c",
         "android_client_info": {
           "package_name": "com.showa"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDhne_3HG7prc90dzlHYvYLgmjfz2gvyaQ"
+          "current_key": "AIzaSyBWHVgYJ7li1l-pyLvgsJTwigkxBNIyP78"
         }
       ],
       "services": {

@@ -2340,12 +2340,14 @@
 //   );
 // }
 
+
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Alert,
+  PanResponder,
   PermissionsAndroid,
   Platform,
   TouchableOpacity,
@@ -2354,6 +2356,7 @@ import {
   StatusBar,
   ImageBackground,
   NativeModules,
+  Dimensions,
 } from "react-native";
 import {
   RTCPeerConnection,
@@ -2399,7 +2402,7 @@ export default function VoiceVideoCallScreen({ navigation, route }) {
   const isCleaningUpRef = useRef(false);
   const isCallActiveRef = useRef(true);
   const autoAnswerOnOfferRef = useRef(autoAnswerOnOffer || false); // ← NEW
-
+  const hasSwitchedToVideoRef = useRef(false);
   // --- state
   const [wsConnected, setWsConnected] = useState(false);
   const [webrtcReady, setWebrtcReady] = useState(false);
@@ -2415,6 +2418,57 @@ export default function VoiceVideoCallScreen({ navigation, route }) {
   const [currentCallId, setCurrentCallId] = useState(null);
   const [isRinging, setIsRinging] = useState(false);
 
+
+  useEffect(() => {
+    console.log("Profile image path:", profile_image);
+    console.log("Full URL:", `${API_ROUTE_IMAGE}${profile_image}`);
+  }, [profile_image]);
+
+  const pipPosition = useRef({ x: 16, y: Platform.OS === 'ios' ? 100 : 70 });
+const pipSize = useRef({ width: 100, height: 140 });
+const isDragging = useRef(false);
+const [pipVisible, setPipVisible] = useState(true);
+const [pipPositionState, setPipPositionState] = useState({ 
+  x: 16, 
+  y: Platform.OS === 'ios' ? 100 : 70 
+});
+
+// Add this function to handle PiP drag
+const handlePipDrag = (event) => {
+  const { pageX, pageY } = event.nativeEvent;
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  
+  // Keep PiP within screen bounds
+  const newX = Math.max(0, Math.min(pageX - pipSize.current.width / 2, screenWidth - pipSize.current.width));
+  const newY = Math.max(50, Math.min(pageY - pipSize.current.height / 2, screenHeight - 200));
+  
+  pipPosition.current = { x: newX, y: newY };
+  setPipPositionState({ x: newX, y: newY });
+};
+
+// Toggle PiP visibility
+const togglePipVisibility = () => {
+  setPipVisible(!pipVisible);
+};
+
+
+
+useEffect(() => {
+  if (isVideoCall && webrtcReady && pc.current && !hasSwitchedToVideoRef.current) {
+    hasSwitchedToVideoRef.current = true;
+    switchToVideoCall();
+  }
+  
+  // Reset the flag when call ends
+  if (!webrtcReady) {
+    hasSwitchedToVideoRef.current = false;
+  }
+  
+  return () => {
+    hasSwitchedToVideoRef.current = false;
+  };
+}, [isVideoCall, webrtcReady]);
+
   const updateCallId = (id) => {
     currentCallIdRef.current = id;
     setCurrentCallId(id);
@@ -2422,25 +2476,46 @@ export default function VoiceVideoCallScreen({ navigation, route }) {
 
   // ─── CallKeep callbacks ──────────────────────────────────────
 
+// const acceptCallWithCallKeep = useCallback(async () => {
+  
+//   InCallManager.stopRingtone(); 
+//   Vibration.cancel();
+//   setIsRinging(false);
+//   setShowIncomingModal(false);
+//   stopRinging();
+//   isCallerRef.current = false
+//   const offer = incomingSDP || incomingOffer;
+//   if (!offer) {
+//     console.error('[CallKeep] No offer to accept');
+//     return;
+//   }
+//   await handleIncomingCall(offer);
+//   if (currentCallIdRef.current) {
+//     await CallKeepService.setCallConnected(currentCallIdRef.current);
+//   }
+// }, [incomingSDP, incomingOffer]);
+
 const acceptCallWithCallKeep = useCallback(async () => {
-  // InCallManager.stopRingtone();
-  // console.log('[CallKeep] Accepting call....');
-  // stopRinging();
-  InCallManager.stopRingtone(); // Add this line first
-  Vibration.cancel();
-  setIsRinging(false);
-  setShowIncomingModal(false);
+
   stopRinging();
-  isCallerRef.current = false
+
+  setShowIncomingModal(false);
+
+  isCallerRef.current = false;
+
   const offer = incomingSDP || incomingOffer;
+
   if (!offer) {
-    console.error('[CallKeep] No offer to accept');
+    console.error("No offer");
     return;
   }
+
   await handleIncomingCall(offer);
+
   if (currentCallIdRef.current) {
     await CallKeepService.setCallConnected(currentCallIdRef.current);
   }
+
 }, [incomingSDP, incomingOffer]);
 
  const startCallWithCallKeep = useCallback(async (phoneNumber, callUUID) => {
@@ -2644,21 +2719,32 @@ useEffect(() => {
   //   InCallManager.stopRingtone();
   // };
 
-  const stopRinging = useCallback(() => {
+// const stopRinging = useCallback(() => {
+//   setIsRinging(false);
+//   Vibration.cancel();
+//   InCallManager.stopRingtone();
+//   // Force-stop the entire audio session on Android 14/15 then restart in call mode
+//   if (Platform.OS === 'android') {
+//     InCallManager.stop();
+//     setTimeout(() => {
+//       if (isCallActiveRef.current) {
+//         InCallManager.start({ media: 'audio' });
+//         InCallManager.setSpeakerphoneOn(isSpeakerOn);
+//       }
+//     }, 300);
+//   }
+// }, [isSpeakerOn]);
+
+const stopRinging = useCallback(() => {
   setIsRinging(false);
   Vibration.cancel();
+
   InCallManager.stopRingtone();
-  // Force-stop the entire audio session on Android 14/15 then restart in call mode
+
   if (Platform.OS === 'android') {
     InCallManager.stop();
-    setTimeout(() => {
-      if (isCallActiveRef.current) {
-        InCallManager.start({ media: 'audio' });
-        InCallManager.setSpeakerphoneOn(isSpeakerOn);
-      }
-    }, 300);
   }
-}, [isSpeakerOn]);
+}, []);
 
   // ─── Permissions ─────────────────────────────────────────────
 
@@ -2754,7 +2840,17 @@ useEffect(() => {
     }, Platform.OS === 'android' ? 400 : 0);
 
     const videoTracks = remoteStream.current.getVideoTracks();
-    if (videoTracks.length > 0) setIsVideoCall(true);
+    if (videoTracks.length > 0) {
+    setIsVideoCall(true);
+
+    // Automatically enable our camera if it isn't already
+    if (
+        !localStream.current ||
+        localStream.current.getVideoTracks().length === 0
+    ) {
+        switchToVideoCall();
+    }
+}
   }
 };
 
@@ -3319,6 +3415,7 @@ useEffect(() => {
         hasInitialOfferRef.current = true;
         console.log("[Outgoing Call] ✅ Offer sent successfully!");
         
+        
     } catch (e) {
         console.error("[Outgoing Call] ❌ Failed:", e?.message);
         console.error("[Outgoing Call] Error stack:", e?.stack);
@@ -3411,19 +3508,19 @@ useEffect(() => {
     console.log("[Incoming Call] Generated Call ID:", newCallId);
     updateCallId(newCallId);
 
-    // 🔍 OFFER CHECK
+    // OFFER CHECK
     console.log("[Incoming Call] Checking offer validity...");
     console.log("[Incoming Call] offer exists:", !!offer);
     console.log("[Incoming Call] offer.sdp exists:", !!offer?.sdp);
 
     if (!offer || typeof offer !== "object") {
-      console.error("[Incoming Call] ❌ OFFER IS NOT OBJECT:", offer);
+      console.error("[Incoming Call] OFFER IS NOT OBJECT:", offer);
       Alert.alert("Error", "Offer is not valid object");
       return;
     }
 
     if (!offer.sdp) {
-      console.error("[Incoming Call] ❌ MISSING SDP:", offer);
+      console.error("[Incoming Call] MISSING SDP:", offer);
       Alert.alert("Error", "Missing SDP in offer");
       return;
     }
@@ -3527,6 +3624,14 @@ useEffect(() => {
 
     await pc.current.setLocalDescription(answer);
 
+    InCallManager.start({ media: 'audio', });
+    InCallManager.setSpeakerphoneOn(isSpeakerOn);
+    
+    InCallManager.setForceSpeakerphoneOn(false);
+
+
+
+
     console.log("[Incoming Call] Local description set");
 
     // SEND ANSWER
@@ -3547,6 +3652,8 @@ useEffect(() => {
     setWebrtcReady(true);
     setShowIncomingModal(false);
     setIncomingSDP(null);
+
+    
 
     try {
       NativeModules.CallModule?.stopCallService();
@@ -3769,117 +3876,270 @@ useEffect(() => {
       <StatusBar barStyle={Platform.OS === 'android' ? 'light-content' : 'dark-content'} />
 
       {webrtcReady ? (
-        <LinearGradient colors={["#0f2027", "#203a43", "#2c5364"]} style={styles.callScreen}>
-          {isVideoCall && remoteURL ? (
-            <View style={styles.videoContainer}>
-              <RTCView streamURL={remoteURL} style={styles.remoteVideo} objectFit="cover" />
-              <View style={styles.callInfoOverlay}>
-                <Text style={styles.callerName}>{name}</Text>
-                <Text style={styles.callTypeText}>Video Call • {formatTime(callDuration)}</Text>
-              </View>
+  <View style={styles.callScreen}>
+    {/* Video Call Interface */}
+    {isVideoCall && remoteURL ? (
+      <View style={styles.videoContainer}>
+        {/* Remote Video - Full Screen Background */}
+        <RTCView 
+          streamURL={remoteURL} 
+          style={styles.remoteVideo} 
+          objectFit="cover" 
+        />
+
+        {/* Draggable Local Video PiP */}
+        {/* Draggable Local Video PiP */}
+{localURL && pipVisible && (
+  <View
+    style={[
+      styles.localVideoWrapper,
+      {
+        left: pipPositionState.x,
+        top: pipPositionState.y,
+      }
+    ]}
+    {...PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        isDragging.current = true;
+      },
+      onPanResponderMove: (event) => {
+        handlePipDrag(event);
+      },
+      onPanResponderRelease: () => {
+        isDragging.current = false;
+      },
+    }).panHandlers}
+  >
+    <View style={styles.pipContainer}>
+      <RTCView 
+        streamURL={localURL} 
+        style={styles.localVideoStream} 
+        objectFit="cover" 
+        mirror={isCameraFront}
+      />
+      
+      {/* Close button */}
+      <TouchableOpacity 
+        style={styles.pipCloseButton}
+        onPress={togglePipVisibility}
+        activeOpacity={0.7}
+      >
+        <Icon name="close" size={16} color="white" />
+      </TouchableOpacity>
+
+      {/* Switch camera button on PiP */}
+      <TouchableOpacity 
+        style={styles.pipSwitchButton}
+        onPress={switchCamera}
+        activeOpacity={0.7}
+      >
+        <Icon name="flip-camera-ios" size={16} color="white" />
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
+
+        {/* Show PiP again button when hidden */}
+        {!pipVisible && localURL && (
+          <TouchableOpacity 
+            style={styles.showPipButton}
+            onPress={togglePipVisibility}
+            activeOpacity={0.7}
+          >
+            <Icon name="videocam" size={20} color="white" />
+          </TouchableOpacity>
+        )}
+
+        {/* Top Bar with Call Info */}
+        <View style={styles.topBar}>
+          <View style={styles.topBarContent}>
+            <View style={styles.callerInfoRow}>
+              <Text style={styles.callerNameText} numberOfLines={1}>
+                {name || 'Unknown'}
+              </Text>
             </View>
-          ) : (
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Image
-                  source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
-                  style={styles.avatarImage}
-                  resizeMode="cover"
-                />
-              </View>
-              <View style={styles.voiceCallInfo}>
-                <Text style={styles.callerName}>{name}</Text>
-                <Text style={styles.callTypeText}>Audio Call • {formatTime(callDuration)}</Text>
-              </View>
-            </View>
-          )}
-
-          {isVideoCall && localURL && (
-            <RTCView streamURL={localURL} style={styles.localVideo} objectFit="cover" />
-          )}
-
-          <View style={styles.callControls}>
-            <TouchableOpacity style={styles.controlButton} onPress={toggleMute}>
-              <View style={[styles.controlIcon, { backgroundColor: isMuted ? "#e53e3e" : "#4a5568" }]}>
-                <Icon name={isMuted ? "mic-off" : "mic"} size={24} color="white" />
-              </View>
-              <Text style={styles.controlText}>{isMuted ? "Unmute" : "Mute"}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.controlButton} onPress={toggleSpeaker}>
-              <View style={[styles.controlIcon, { backgroundColor: isSpeakerOn ? "#38a169" : "#4a5568" }]}>
-                <Icon name={isSpeakerOn ? "volume-up" : "volume-off"} size={24} color="white" />
-              </View>
-              <Text style={styles.controlText}>{isSpeakerOn ? "Speaker Off" : "Speaker On"}</Text>
-            </TouchableOpacity>
-
-            {isVideoCall && (
-              <TouchableOpacity style={styles.controlButton} onPress={switchCamera}>
-                <View style={[styles.controlIcon, { backgroundColor: "#4a5568" }]}>
-                  <Icon name="flip-camera-ios" size={24} color="white" />
-                </View>
-                <Text style={styles.controlText}>Switch</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity style={styles.controlButton} onPress={() => endCall(true)}>
-              <View style={[styles.controlIcon, { backgroundColor: "#e53e3e" }]}>
-                <Icon name="call-end" size={24} color="white" />
-              </View>
-              <Text style={styles.controlText}>End</Text>
-            </TouchableOpacity>
-
-            {isVideoCall && (
-              <TouchableOpacity style={styles.controlButton} onPress={switchToVideoCall}>
-                <View style={[styles.controlIcon, { backgroundColor: "#4a5568" }]}>
-                  <Icon name="videocam-off" size={24} color="white" />
-                </View>
-                <Text style={styles.controlText}>Video off</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </LinearGradient>
-      ) : (
-        <ImageBackground
-          source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
-          style={{ flex: 1, backgroundColor: '#1a202c', justifyContent: 'center', alignItems: 'center' }}
-          blurRadius={10}
-        >
-          <View style={{ backgroundColor: 'rgba(0,0,0,0.7)', width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-            <View style={{ width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 30, borderWidth: 4, borderColor: 'rgba(255,255,255,0.2)' }}>
-              <Image
-                source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
-                style={{ width: 160, height: 160, borderRadius: 80 }}
-                resizeMode="cover"
-              />
-            </View>
-            <Text style={{ color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 10 }}>{name}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16, marginBottom: 40 }}>
-              {wsConnected
-                ? (isInitiator ? "Connecting..." : autoAnswerOnOffer ? "Connecting to call..." : "Waiting for call...")
-                : "Connecting..."}
+            <Text style={styles.callDurationText}>
+              {formatTime(callDuration)}
             </Text>
-
-            {isInitiator && (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '100%', maxWidth: 350 }}>
-                <TouchableOpacity style={{ alignItems: 'center' }} onPress={() => startCall(false)} disabled={!wsConnected}>
-                  <View style={{ width: 70, height: 70, borderRadius: 35, backgroundColor: wsConnected ? "#38a169" : "#718096", justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}>
-                    <Icon name="call" size={30} color="white" />
-                  </View>
-                  <Text style={{ color: 'white', fontSize: 14 }}>Voice Call</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={{ alignItems: 'center' }} onPress={() => endCall(true)} disabled={!wsConnected}>
-                  <View style={{ width: 70, height: 70, borderRadius: 35, backgroundColor: wsConnected ? "#ef0505" : "#718096", justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}>
-                    <Icon name="call-end" size={30} color="white" />
-                  </View>
-                  <Text style={{ color: 'white', fontSize: 14 }}>End Call</Text>
-                </TouchableOpacity>
-              </View>
-            )}
           </View>
+        </View>
+
+        {/* Bottom Controls - Normal sized WhatsApp Style */}
+        <View style={styles.bottomControls}>
+          <View style={styles.controlsRow}>
+            {/* Speaker */}
+            <TouchableOpacity 
+              style={styles.controlBtn} 
+              onPress={toggleSpeaker}
+              activeOpacity={0.6}
+            >
+              <Icon 
+                name={isSpeakerOn ? "volume-up" : "volume-off"} 
+                size={22} 
+                color="white" 
+              />
+            </TouchableOpacity>
+
+            {/* Mute */}
+            <TouchableOpacity 
+              style={styles.controlBtn} 
+              onPress={toggleMute}
+              activeOpacity={0.6}
+            >
+              <Icon 
+                name={isMuted ? "mic-off" : "mic"} 
+                size={22} 
+                color="white" 
+              />
+            </TouchableOpacity>
+
+            {/* Video Toggle */}
+            <TouchableOpacity 
+              style={styles.controlBtn} 
+              onPress={togglePipVisibility}
+              activeOpacity={0.6}
+            >
+              <Icon 
+                name={pipVisible ? "videocam" : "videocam-off"} 
+                size={22} 
+                color="white" 
+              />
+            </TouchableOpacity>
+
+            {/* Switch Camera */}
+            <TouchableOpacity 
+              style={styles.controlBtn} 
+              onPress={switchCamera}
+              activeOpacity={0.6}
+            >
+              <Icon name="flip-camera-ios" size={22} color="white" />
+            </TouchableOpacity>
+
+            {/* End Call */}
+            <TouchableOpacity 
+              style={styles.endCallBtn} 
+              onPress={() => endCall(true)}
+              activeOpacity={0.6}
+            >
+              <Icon name="call-end" size={26} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    ) : (
+      /* Audio Call Interface */
+      <View style={styles.audioCallContainer}>
+        {/* Background with blur effect */}
+        <ImageBackground
+          source={{ uri: `${profile_image}` }}
+          style={styles.audioBackground}
+          blurRadius={50}
+        >
+          <View style={styles.audioOverlay} />
         </ImageBackground>
+
+        {/* Content */}
+        <View style={styles.audioContent}>
+          {/* Avatar */}
+          <View style={styles.audioAvatarContainer}>
+            <Image
+              source={{ uri: `${profile_image}` }}
+              style={styles.audioAvatar}
+              resizeMode="cover"
+            />
+          </View>
+
+          {/* Caller Info */}
+          <View style={styles.audioInfoContainer}>
+            <Text style={styles.audioCallerName} numberOfLines={1}>
+              {name || 'Unknown Caller'}
+            </Text>
+            <Text style={styles.audioTimerText}>
+              {formatTime(callDuration)}
+            </Text>
+          </View>
+
+          {/* Audio Controls */}
+          <View style={styles.audioControls}>
+            <TouchableOpacity 
+              style={styles.controlBtn} 
+              onPress={toggleSpeaker}
+              activeOpacity={0.6}
+            >
+              <Icon 
+                name={isSpeakerOn ? "volume-up" : "volume-off"} 
+                size={22} 
+                color="white" 
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.controlBtn} 
+              onPress={toggleMute}
+              activeOpacity={0.6}
+            >
+              <Icon 
+                name={isMuted ? "mic-off" : "mic"} 
+                size={22} 
+                color="white" 
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.endCallBtn} 
+              onPress={() => endCall(true)}
+              activeOpacity={0.6}
+            >
+              <Icon name="call-end" size={26} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    )}
+  </View>
+) : (
+  /* Connecting Screen */
+  <View style={styles.connectingScreen}>
+    <View style={styles.connectingContent}>
+      {/* Avatar */}
+      <View style={styles.connectingAvatarContainer}>
+        <Image
+          source={{ uri: `${profile_image}` }}
+          style={styles.connectingAvatar}
+          resizeMode="cover"
+        />
+      </View>
+
+      {/* Name */}
+      <Text style={styles.connectingName}>{name || 'Unknown'}</Text>
+
+      {/* Status */}
+      <View style={styles.connectingStatusRow}>
+        <Text style={styles.connectingStatusText}>
+          {wsConnected
+            ? (isInitiator ? "Calling..." : "Ringing...")
+            : "Connecting..."}
+        </Text>
+      </View>
+
+      {/* Cancel Button */}
+      {isInitiator && (
+        <TouchableOpacity 
+          style={styles.connectingEndBtn} 
+          onPress={() => endCall(true)}
+          activeOpacity={0.6}
+        >
+          <View style={styles.connectingEndIcon}>
+            <Icon name="call-end" size={26} color="white" />
+          </View>
+          <Text style={styles.connectingEndText}>Cancel</Text>
+        </TouchableOpacity>
       )}
+    </View>
+  </View>
+)}
 
       {/* Incoming Call Modal */}
       <Modal visible={showIncomingModal} transparent animationType="fade" onRequestClose={rejectCall}>
@@ -3926,6 +4186,279 @@ const styles = StyleSheet.create({
   },
   callScreen: {
     flex: 1,
+    backgroundColor: '#000',
+  },
+  
+  // Video Container
+  videoContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  remoteVideo: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
+  },
+  
+  // Draggable Local Video PiP
+  localVideoWrapper: {
+    position: 'absolute',
+    zIndex: 10,
+  },
+  pipContainer: {
+    width: 100,
+    height: 140,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#2a2a2a',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  localVideoStream: {
+    width: '100%',
+    height: '100%',
+  },
+  
+  // PiP Close Button
+  pipCloseButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // PiP Switch Camera Button
+  pipSwitchButton: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // Show PiP Button (when hidden)
+  showPipButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 110 : 80,
+    right: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  
+  // Top Bar
+  topBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingBottom: 15,
+    paddingHorizontal: 16,
+    zIndex: 5,
+  },
+  topBarContent: {
+    alignItems: 'center',
+  },
+  callerInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 3,
+  },
+  callerNameText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: 'white',
+    textAlign: 'center',
+  },
+  callDurationText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+  },
+  
+  // Bottom Controls
+  bottomControls: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingBottom: Platform.OS === 'ios' ? 35 : 25,
+    paddingTop: 15,
+    paddingHorizontal: 16,
+    zIndex: 5,
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  
+  // Normal sized control buttons
+  controlBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // End Call Button (slightly larger but normal)
+  endCallBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#E53935',
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ rotate: '135deg' }],
+    elevation: 3,
+    shadowColor: '#E53935',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  
+  // Audio Call Screen
+  audioCallContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  audioBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  audioOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  audioContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'ios' ? 70 : 50,
+    paddingBottom: Platform.OS === 'ios' ? 35 : 25,
+    paddingHorizontal: 20,
+  },
+  
+  // Audio Call Avatar
+  audioAvatarContainer: {
+    alignItems: 'center',
+    marginTop: '20%',
+  },
+  audioAvatar: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  
+  // Audio Call Info
+  audioInfoContainer: {
+    alignItems: 'center',
+    marginTop: 25,
+  },
+  audioCallerName: {
+    fontSize: 26,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 8,
+  },
+  audioTimerText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  
+  // Audio Controls
+  audioControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginTop: 'auto',
+    paddingHorizontal: 20,
+  },
+  
+  // Connecting Screen
+  connectingScreen: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  connectingContent: {
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  connectingAvatarContainer: {
+    marginBottom: 25,
+  },
+  connectingAvatar: {
+    width: 140,
+    height: 140,
+    borderRadius: 55,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  connectingName: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 10,
+  },
+  connectingStatusRow: {
+    alignItems: 'center',
+    marginBottom: 45,
+  },
+  connectingStatusText: {
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.6)',
+  },
+  connectingEndBtn: {
+    alignItems: 'center',
+  },
+  connectingEndIcon: {
+    marginTop:20,
+    width: 70,
+    height: 70,
+    borderRadius: 32.5,
+    backgroundColor: '#E53935',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    transform: [{ rotate: '135deg' }],
+  },
+  connectingEndText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 13,
+  },
+  callScreen: {
+    flex: 1,
     justifyContent: 'space-between',
     padding: 0, 
   },
@@ -3958,7 +4491,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   callerName: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
     marginTop: 10,
@@ -4166,12 +4699,12 @@ const styles = StyleSheet.create({
   
   callInfoOverlay: {
     position: 'absolute',
-    top: 10, // Increased top margin for better visibility
+    top: 5, // Increased top margin for better visibility
     left: 0,
     right: 0,
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.7)', // Darker background for better contrast
-    padding: 15,
+    padding: 10,
     zIndex: 100, // Higher z-index to ensure it's above video
     borderBottomLeftRadius: 5,
     borderBottomRightRadius: 5,

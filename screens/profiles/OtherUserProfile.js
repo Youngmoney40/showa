@@ -3788,12 +3788,13 @@ const VideoGridItem = memo(({ item, onPress, colors, isPlaying }) => {
 });
 
 // ==================== POST GRID ITEM ====================
+// ==================== POST GRID ITEM ====================
 const PostGridItem = memo(({ item, onPress, colors }) => {
   const imageUrl = item.image_url ? getImageUrl(item.image_url) : null;
-  
+
   return (
-    <Pressable 
-      onPress={() => onPress(item)}
+    <TouchableOpacity 
+      onPress={() => onPress(item)}  
       style={[styles.gridItem, { backgroundColor: colors.card }]}
     >
       {imageUrl ? (
@@ -3816,7 +3817,7 @@ const PostGridItem = memo(({ item, onPress, colors }) => {
           </Text>
         </View>
       )}
-    </Pressable>
+    </TouchableOpacity>
   );
 });
 
@@ -4794,46 +4795,47 @@ const UserProfile = ({ navigation, route }) => {
       return 3;
     };
 
-    const renderGridItem = ({ item }) => {
-      if (selectedTab === 'videos') {
-        return (
-          <VideoGridItem
-            item={item}
-            onPress={() => {
-              setSelectedPost(item);
-              setSelectedPostType(selectedTab);
-              setBottomSheetVisible(true);
-            }}
-            colors={colors}
-            isPlaying={playingVideoId === item.id}
-          />
-        );
-      } else if (selectedTab === 'marketplace') {
-        return (
-          <MarketplaceGridItem
-            item={item}
-            onPress={() => {
-              setSelectedPost(item);
-              setSelectedPostType(selectedTab);
-              setBottomSheetVisible(true);
-            }}
-            colors={colors}
-          />
-        );
-      } else {
-        return (
-          <PostGridItem
-            item={item}
-            onPress={() => {
-              setSelectedPost(item);
-              setSelectedPostType(selectedTab);
-              setBottomSheetVisible(true);
-            }}
-            colors={colors}
-          />
-        );
-      }
-    };
+   const renderGridItem = ({ item }) => {
+  if (selectedTab === 'videos') {
+    return (
+      <VideoGridItem
+        item={item}
+        onPress={() => {
+          setSelectedPost(item);
+          setSelectedPostType(selectedTab);
+          setBottomSheetVisible(true);
+        }}
+        colors={colors}
+        isPlaying={playingVideoId === item.id}
+      />
+    );
+  } else if (selectedTab === 'marketplace') {
+    return (
+      <MarketplaceGridItem
+        item={item}
+        onPress={() => {
+          setSelectedPost(item);
+          setSelectedPostType(selectedTab);
+          setBottomSheetVisible(true);
+        }}
+        colors={colors}
+      />
+    );
+  } else {
+    return (
+      <PostGridItem
+        item={item}
+        onPress={() => {
+          navigation.navigate('ExplorePostDetails', { 
+            postId: item.id,
+            postData: item 
+          });
+        }}
+        colors={colors}
+      />
+    );
+  }
+};
 
     return (
       <FlatList

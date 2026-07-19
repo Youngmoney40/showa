@@ -6,7 +6,8 @@ import {
   Animated, 
   Text,
   Platform,
-  Dimensions
+  Dimensions,
+  StatusBar
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -24,11 +25,10 @@ const BottomNav = ({ navigation, activeRoute }) => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   
   useEffect(() => {
-    // Continuous pulse animation
     const pulseAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.2,
+          toValue: 1.15,
           duration: 1500,
           useNativeDriver: true,
         }),
@@ -44,11 +44,26 @@ const BottomNav = ({ navigation, activeRoute }) => {
     return () => pulseAnimation.stop();
   }, []);
 
+  // Get safe area insets for bottom padding
   const getBottomPadding = () => {
+    // For Android 14+ (API 34+), we need to account for the system navigation bar
+    const bottomInset = insets.bottom || 0;
+    
+    // On Android, the safe area insets might not always include the navigation bar
+    // So we add extra padding for Android devices
     if (Platform.OS === 'android') {
-      return Math.max(insets.bottom, 0);
+      // Minimum padding to ensure visibility on Android 14+
+      return Math.max(bottomInset, 8);
     }
-    return Math.max(insets.bottom, 0);
+    return Math.max(bottomInset, 0);
+  };
+
+  // Get status bar height for Android
+  const getStatusBarHeight = () => {
+    if (Platform.OS === 'android') {
+      return StatusBar.currentHeight || 0;
+    }
+    return 0;
   };
 
   const styles = createStyles(colors, isDark, getBottomPadding());
@@ -61,20 +76,18 @@ const BottomNav = ({ navigation, activeRoute }) => {
         style={styles.navItem} 
         onPress={onPress}
         activeOpacity={0.7}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <View style={styles.iconContainer}>
-          <View style={styles.iconWrapper}>
-            <IconComponent 
-              name={icon} 
-              size={24} 
-              color={isActive ? colors.primary : (isDark ? '#fff' : '#666')} 
-            />
-            {isActive && <View style={[styles.activeIndicator, { backgroundColor: colors.primary }]} />}
-          </View>
+          <IconComponent 
+            name={icon} 
+            size={22} 
+            color={isActive ? colors.primary : (isDark ? '#8E8E93' : '#8E8E93')} 
+          />
           <Text style={[
             styles.navLabel,
             { 
-              color: isActive ? colors.primary : (isDark ? '#fff' : '#666'),
+              color: isActive ? colors.primary : (isDark ? '#8E8E93' : '#8E8E93'),
               fontWeight: isActive ? '600' : '400'
             }
           ]}>
@@ -89,25 +102,29 @@ const BottomNav = ({ navigation, activeRoute }) => {
     <View style={[
       styles.container,
       { 
-        backgroundColor: isDark ? 'rgba(0,0,0,0.95)' : 'rgba(255,255,255,0.95)',
-        borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+        backgroundColor: '#000000',
+        borderTopColor: 'rgba(255,255,255,0.08)',
+        paddingBottom: getBottomPadding(),
       }
     ]}>
-      <View style={[styles.navInner, { paddingBottom: getBottomPadding() }]}>
+      <View style={[styles.navInner, { 
+        paddingBottom: Platform.OS === 'android' ? 4 : 4,
+      }]}>
         {/* Home */}
         <NavItem 
           icon="home" 
           label="Home" 
           route="SocialHome" 
-          onPress={() => navigation.navigate('SocialHome')}
+          onPress={() => navigation.navigate('BroadcastHome')}
         />
         
         {/* Discover */}
         <NavItem 
           icon="search" 
-          label="Discover" 
+          label="Explore" 
           route="Discover" 
-          onPress={() => navigation.navigate('Discover')}
+          //onPress={() => navigation.navigate('Discover')}
+          onPress={() => navigation.navigate('ExplorePost')}
         />
         
         {/* Upload Button */}
@@ -121,13 +138,13 @@ const BottomNav = ({ navigation, activeRoute }) => {
               style={[
                 styles.uploadPulseEffect,
                 { 
-                  backgroundColor: `${colors.primary}40`,
+                  backgroundColor: `${colors.primary}30`,
                   transform: [{ scale: pulseAnim }]
                 }
               ]} 
             />
             <View style={[styles.uploadIconBackground, { backgroundColor: colors.primary }]}>
-              <Icon name="plus" size={28} color="#fff" style={styles.plusIcon} />
+              <Icon name="plus" size={24} color="#fff" style={styles.plusIcon} />
             </View>
           </View>
         </TouchableOpacity>
@@ -160,51 +177,40 @@ const createStyles = (colors, isDark, bottomPadding) => StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    zIndex: 100,
+    zIndex: 999,
     backgroundColor: 'transparent',
   },
   navInner: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingTop: 8,
-    paddingBottom: Platform.OS === 'android' ? 8 : 8,
+    paddingTop: 6,
+    paddingBottom: Platform.OS === 'android' ? 6 : 6,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'transparent',
-    minHeight: Platform.OS === 'android' ? 60 : 70,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#000000',
+    height: Platform.OS === 'android' ? 56 : 60,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 4,
+    justifyContent: 'center',
+    paddingVertical: 2,
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapper: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 2,
-  },
   navLabel: {
     fontSize: 10,
     marginTop: 2,
     textAlign: 'center',
-  },
-  activeIndicator: {
-    position: 'absolute',
-    bottom: -6,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    letterSpacing: 0.3,
   },
   uploadButton: {
     position: 'relative',
-    bottom: 10,
-    marginHorizontal: 5,
+    bottom: 6,
+    marginHorizontal: 4,
   },
   uploadIconContainer: {
     position: 'relative',
@@ -212,17 +218,17 @@ const createStyles = (colors, isDark, bottomPadding) => StyleSheet.create({
     justifyContent: 'center',
   },
   uploadIconBackground: {
-    width: 50,
-    height: 50,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
   },
   plusIcon: {
     shadowColor: '#000',
@@ -232,9 +238,9 @@ const createStyles = (colors, isDark, bottomPadding) => StyleSheet.create({
   },
   uploadPulseEffect: {
     position: 'absolute',
-    width: 65,
-    height: 65,
-    borderRadius: 18,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     zIndex: 1,
   },
 });

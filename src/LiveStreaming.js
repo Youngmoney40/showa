@@ -166,11 +166,23 @@ const LivePage = ({ navigation }) => {
 
   const navigateToViewer = useCallback((broadcasterName) => {
     navigation.navigate('Viewer', {
-      roomName: `user-${broadcasterName}`,
-      streamId: `stream-${broadcasterName}`,
-      viewerId: 'viewer-1',
+      // roomName: `user-${broadcasterName}`,
+      // streamId: `stream-${broadcasterName}`,
+      // viewerId: 'viewer-1',
+      roomName: 'match-123',
+        streamId: 'stream-1',
+        viewerId: 'viewer-1',
     });
   }, [navigation]);
+
+  // navigation.navigate('Viewer', {
+  //       roomName: 'match-123',
+  //       streamId: 'stream-1',
+  //       viewerId: 'viewer-1',
+  //     },)
+  //   },
+
+ 
 
   const toggleSearch = useCallback(() => {
     Animated.spring(searchAnim, {

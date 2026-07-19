@@ -346,14 +346,14 @@ const SuggestedUsersScreen = ({ navigation }) => {
           </LinearGradient>
         </TouchableOpacity>
         
-        <TouchableOpacity 
+        {/* <TouchableOpacity 
           style={styles.exploreButton} 
           onPress={handleSkip}
           activeOpacity={0.7}
         >
           <Text style={styles.exploreButtonText}>Skip for now</Text>
           <Icon name="chevron-forward" size={16} color="#7F8C8D" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     );
   };

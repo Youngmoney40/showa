@@ -1,3 +1,5 @@
+
+
 // import React, { useEffect, useRef, useState, useCallback, memo } from 'react';
 // import { 
 //   View, 
@@ -24,21 +26,24 @@
 // import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 // import { useTheme } from '../src/context/ThemeContext';
 // import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
-// import { useNavigation } from '@react-navigation/native';
+// import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 // const { width, height } = Dimensions.get('window');
 
 // const API_URL = API_ROUTE;
 // const PLAYBACK_RATE = 1;
 
-// // Video Player Component
-// const VideoPlayer = ({ uri, isPlaying, onPress, style, navigation }) => {
+// // Cache keys
+// const SHORTS_CACHE_KEY = 'shorts_row_cache_v2';
+// const CACHE_EXPIRATION_TIME = 5 * 60 * 1000; // 5 minutes
+
+// // Video Player Component - Optimized
+// const VideoPlayer = memo(({ uri, isPlaying, onPress, style, navigation }) => {
 //   const videoRef = useRef(null);
 //   const [isLoading, setIsLoading] = useState(true);
 //   const [hasError, setHasError] = useState(false);
 
 //   useEffect(() => {
-//     // Reset states when URI changes
 //     setIsLoading(true);
 //     setHasError(false);
 //   }, [uri]);
@@ -67,11 +72,11 @@
 //         onReadyForDisplay={() => setIsLoading(false)}
 //       />
       
-//       {isLoading && (
+//       {/* {isLoading && (
 //         <View style={styles.videoLoading}>
 //           <ActivityIndicator size="small" color="#fff" />
 //         </View>
-//       )}
+//       )} */}
       
 //       {hasError && (
 //         <View style={styles.videoError}>
@@ -89,11 +94,62 @@
 //       )}
 //     </TouchableOpacity>
 //   );
-// };
+// });
 
-// // Main HomePage Component
+// // Video Card Component - Memoized
+// const VideoCard = memo(({ item, index, isPlaying, onPress, colors }) => {
+//   const [isPressed, setIsPressed] = useState(false);
+  
+//   return (
+//     <Pressable 
+//       onPressIn={() => setIsPressed(true)}
+//       onPressOut={() => setIsPressed(false)}
+//       onPress={() => onPress(item)}
+//       style={[
+//         styles.videoCardContainer,
+//         { 
+//           backgroundColor: colors.card,
+//           borderColor: colors.border,
+//         },
+//         isPressed && styles.cardPressed
+//       ]}
+//     >
+//       <VideoPlayer
+//         uri={item.video}
+//         isPlaying={isPlaying}
+//         onPress={() => onPress(item)}
+//         style={styles.videoPlayer}
+//       />
+      
+//       <View style={styles.minimalOverlay}>
+//         <View style={styles.minimalInfo}>
+//           <View style={styles.minimalStats}>
+//             {isPlaying && (
+//               <View style={[styles.playingIndicator, { backgroundColor: colors.primary }]}>
+//                 <Text style={styles.playingText}>LIVE</Text>
+//               </View>
+//             )}
+//           </View>
+//         </View>
+        
+//         <View style={styles.tapToWatchOverlay}>
+//           <Text style={styles.tapToWatchText}>Tap to watch</Text>
+//         </View>
+//       </View>
+      
+//       <TouchableOpacity 
+//         style={[styles.expandButton, { backgroundColor: colors.card + 'CC' }]}
+//         onPress={() => onPress(item)}
+//       >
+//         <Icon name="maximize-2" size={16} color={colors.text} />
+//       </TouchableOpacity>
+//     </Pressable>
+//   );
+// });
+
+// // Main Component
 // const HomePageShortsRow = () => {
-//    const navigation = useNavigation();
+//   const navigation = useNavigation();
 //   const { colors, isDark } = useTheme();
 //   const [shorts, setShorts] = useState([]);
 //   const [selectedShort, setSelectedShort] = useState(null);
@@ -106,23 +162,183 @@
 //   const [isMuted, setIsMuted] = useState(false);
 //   const [playingVideoId, setPlayingVideoId] = useState(null);
 //   const [viewableItems, setViewableItems] = useState([]);
- 
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+//   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   
 //   const scrollViewRef = useRef(null);
 //   const modalVideoRef = useRef(null);
+//   const isMountedRef = useRef(true);
+//   const isFirstLoadRef = useRef(true);
+
 //   const viewabilityConfig = useRef({
 //     itemVisiblePercentThreshold: 50,
 //     minimumViewTime: 500,
 //   });
 
+//   // ============================================================
+//   // FIX IMAGE URL - MATCHES OTHER SCREENS
+//   // ============================================================
+//   const fixImageUrl = useCallback((url) => {
+//     if (!url) return null;
+//     if (url.startsWith('http://') || url.startsWith('https://')) {
+//       return url;
+//     }
+//     if (url.startsWith('/media/')) {
+//       return `${API_ROUTE_IMAGE}${url}`;
+//     }
+//     return `${API_ROUTE_IMAGE}${url}`;
+//   }, []);
 
+//   // ============================================================
+//   // LOAD FROM CACHE - INSTANT DISPLAY
+//   // ============================================================
+//   const loadFromCache = useCallback(async () => {
+//     try {
+//       const cachedData = await AsyncStorage.getItem(SHORTS_CACHE_KEY);
+//       if (cachedData) {
+//         const parsed = JSON.parse(cachedData);
+//         const { data, timestamp } = parsed;
+        
+//         // Cache is valid for 5 minutes
+//         const isCacheValid = Date.now() - timestamp < CACHE_EXPIRATION_TIME;
+//         if (isCacheValid && data && data.length > 0) {
+//           console.log('📦 Loading shorts from cache:', data.length);
+//           setShorts(data);
+//           setIsLoading(false);
+//           setInitialLoadComplete(true);
+//           setHasLoadedOnce(true);
+//           return true;
+//         } else {
+//           console.log('⏰ Cache expired, will fetch fresh data');
+//         }
+//       }
+//     } catch (error) {
+//       console.error('Error loading shorts from cache:', error);
+//     }
+//     return false;
+//   }, []);
+
+//   // ============================================================
+//   // SAVE TO CACHE
+//   // ============================================================
+//   const saveToCache = useCallback(async (data) => {
+//     try {
+//       await AsyncStorage.setItem(
+//         SHORTS_CACHE_KEY,
+//         JSON.stringify({
+//           data: data,
+//           timestamp: Date.now()
+//         })
+//       );
+//       console.log('💾 Shorts saved to cache:', data.length);
+//     } catch (error) {
+//       console.error('Error saving shorts to cache:', error);
+//     }
+//   }, []);
+
+//   // ============================================================
+//   // GET AUTH HEADER
+//   // ============================================================
+//   const getAuthHeader = useCallback(async () => {
+//     const token = await AsyncStorage.getItem('userToken');
+//     if (!token) throw new Error('No access token found');
+//     return {
+//       Authorization: `Bearer ${token}`,
+//       'Content-Type': 'application/json',
+//     };
+//   }, []);
+
+//   // ============================================================
+//   // FETCH SHORTS - OPTIMIZED
+//   // ============================================================
+//   const fetchShorts = useCallback(async (forceRefresh = false) => {
+//     try {
+//       // If we already have data and it's not a forced refresh, skip
+//       if (hasLoadedOnce && !forceRefresh) {
+//         console.log('⏭️ Skipping fetch - already loaded');
+//         return true;
+//       }
+
+//       console.log('🌐 Fetching shorts from API...');
+//       const headers = await getAuthHeader();
+//       const response = await axios.get(`${API_URL}/shorts/?limit=5`, { 
+//         headers,
+//         timeout: 10000,
+//       });
+
+//       if (response.status === 200) {
+//         let processedShorts = response.data.slice(0, 5);
+//         processedShorts = processedShorts.sort((a, b) => (b.hot_score || 0) - (a.hot_score || 0));
+
+//         // Fix image URLs in shorts data
+//         processedShorts = processedShorts.map(short => ({
+//           ...short,
+//           user: {
+//             ...short.user,
+//             profile_picture: short.user?.profile_picture 
+//               ? fixImageUrl(short.user.profile_picture) 
+//               : null
+//           }
+//         }));
+
+//         setShorts(processedShorts);
+//         setHasLoadedOnce(true);
+        
+//         const likedState = {};
+//         const savedState = {};
+        
+//         processedShorts.forEach((short) => {
+//           likedState[short.id] = short.is_liked || false;
+//           savedState[short.id] = short.is_saved || false;
+//         });
+        
+//         setLikedShorts(likedState);
+//         setSavedShorts(savedState);
+
+//         // Save to cache
+//         await saveToCache(processedShorts);
+//         setIsLoading(false);
+//         setInitialLoadComplete(true);
+
+//         return true;
+//       }
+//     } catch (apiError) {
+//       console.error('API Error:', apiError);
+//     }
+//     return false;
+//   }, [getAuthHeader, fixImageUrl, saveToCache, hasLoadedOnce]);
+
+//   // ============================================================
+//   // LOAD DATA - CACHE FIRST, THEN NETWORK (ONLY ON FIRST LOAD)
+//   // ============================================================
+//   const loadData = useCallback(async (forceRefresh = false) => {
+//     // If we already have data and it's not a forced refresh, skip
+//     if (hasLoadedOnce && !forceRefresh) {
+//       console.log('⏭️ Skipping load - already loaded');
+//       return;
+//     }
+
+//     // Try cache first for instant display
+//     const hasCache = await loadFromCache();
+    
+//     if (hasCache) {
+//       // We have cache, but still fetch in background for fresh data
+//       // This only happens on first load or if cache expired
+//       fetchShorts(forceRefresh).catch(err => console.error('Background fetch error:', err));
+//     } else {
+//       // No cache, fetch from network
+//       await fetchShorts(forceRefresh);
+//     }
+//   }, [loadFromCache, fetchShorts, hasLoadedOnce]);
+
+//   // ============================================================
+//   // VIEWABILITY TRACKING
+//   // ============================================================
 //   const onViewableItemsChanged = useCallback(({ viewableItems: items }) => {
 //     if (items.length > 0) {
-//       // Get the most centered item
 //       const centeredItem = items[0];
 //       setPlayingVideoId(centeredItem.item.id);
-      
-//       // Store all viewable items for reference
 //       setViewableItems(items.map(item => item.item.id));
 //     } else {
 //       setPlayingVideoId(null);
@@ -134,99 +350,34 @@
 //     { viewabilityConfig: viewabilityConfig.current, onViewableItemsChanged }
 //   ]);
 
-
-//   const getAuthHeader = async () => {
-//     const token = await AsyncStorage.getItem('userToken');
-//     if (!token) throw new Error('No access token found');
-//     return {
-//       Authorization: `Bearer ${token}`,
-//       'Content-Type': 'application/json',
-//     };
-//   };
-
-//   // Fetch shorts for the row
-//   const fetchShorts = useCallback(async () => {
-//     try {
-//       setShorts([]);
-      
-//       try {
-//         const headers = await getAuthHeader();
-//         const response = await axios.get(`${API_URL}/shorts/?limit=3`, { headers });
-
-//         if (response.status === 200) {
-//           let processedShorts = response.data.slice(0, 3);
-//           processedShorts = processedShorts.sort((a, b) => (b.hot_score || 0) - (a.hot_score || 0));
-
-//           setShorts(processedShorts);
-          
-//           const likedState = {};
-//           const savedState = {};
-          
-//           processedShorts.forEach((short) => {
-//             likedState[short.id] = short.is_liked || false;
-//             savedState[short.id] = short.is_saved || false;
-//           });
-          
-//           setLikedShorts(likedState);
-//           setSavedShorts(savedState);
-//         }
-//       } catch (apiError) {
-//         console.error('API Error:', apiError);
-//       }
-//     } catch (error) {
-//       console.error('Fetch Shorts Error:', error);
-//     }
-//   }, []);
-
-//   // Initialize on mount
-//   useEffect(() => {
-//     fetchShorts();
-//   }, [fetchShorts]);
-
-//   // Format views
-//   const formatViews = (views) => {
-//     if (!views) return '0';
-//     if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M`;
-//     if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
-//     return views.toString();
-//   };
-
-//   // Get time ago
-//   const getTimeAgo = (dateString) => {
-//     if (!dateString) return 'Recently';
-    
-//     const date = new Date(dateString);
-//     const now = new Date();
-//     const diffMs = now - date;
-//     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-//     if (diffDays === 0) return 'Today';
-//     if (diffDays === 1) return 'Yesterday';
-//     if (diffDays < 7) return `${diffDays}d ago`;
-//     if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-//     return 'Over a month ago';
-//   };
-
-//   // Open modal with selected short
-//   const openModal = (short) => {
+//   // ============================================================
+//   // OPEN MODAL
+//   // ============================================================
+//   const openModal = useCallback((short) => {
 //     setSelectedShort({...short});
 //     setModalVisible(true);
 //     setIsMuted(false);
-//   };
+//   }, []);
 
-//   // Close modal
-//   const closeModal = () => {
+//   // ============================================================
+//   // CLOSE MODAL
+//   // ============================================================
+//   const closeModal = useCallback(() => {
 //     setModalVisible(false);
 //     setSelectedShort(null);
-//   };
+//   }, []);
 
-//   // Toggle mute in modal
-//   const toggleModalMute = () => {
+//   // ============================================================
+//   // TOGGLE MUTE
+//   // ============================================================
+//   const toggleModalMute = useCallback(() => {
 //     setIsMuted(!isMuted);
-//   };
+//   }, [isMuted]);
 
-//   // Like short in modal
-//   const likeShort = async (shortId) => {
+//   // ============================================================
+//   // LIKE SHORT
+//   // ============================================================
+//   const likeShort = useCallback(async (shortId) => {
 //     try {
 //       const headers = await getAuthHeader();
 //       const isCurrentlyLiked = likedShorts[shortId];
@@ -242,7 +393,6 @@
 //         await axios.post(`${API_URL}/shorts/${shortId}/unlike/`, {}, { headers });
 //       }
       
-//       // Update like count in local state
 //       setShorts(prev => prev.map(short => {
 //         if (short.id === shortId) {
 //           return {
@@ -255,7 +405,6 @@
 //         return short;
 //       }));
       
-//       // Update selected short if in modal
 //       if (selectedShort && selectedShort.id === shortId) {
 //         setSelectedShort(prev => ({
 //           ...prev,
@@ -271,10 +420,12 @@
 //         [shortId]: likedShorts[shortId],
 //       }));
 //     }
-//   };
+//   }, [getAuthHeader, likedShorts, selectedShort]);
 
-//   // Save short in modal
-//   const saveShort = async (shortId) => {
+//   // ============================================================
+//   // SAVE SHORT
+//   // ============================================================
+//   const saveShort = useCallback(async (shortId) => {
 //     try {
 //       const headers = await getAuthHeader();
 //       const isCurrentlySaved = savedShorts[shortId];
@@ -296,10 +447,12 @@
 //         [shortId]: savedShorts[shortId],
 //       }));
 //     }
-//   };
+//   }, [getAuthHeader, savedShorts]);
 
-//   // Share short
-//   const shareShort = async (short) => {
+//   // ============================================================
+//   // SHARE SHORT
+//   // ============================================================
+//   const shareShort = useCallback(async (short) => {
 //     try {
 //       const shareUrl = `https://example.com/short/${short.id}`;
 //       await Clipboard.setString(shareUrl);
@@ -308,31 +461,12 @@
 //       console.error('Share error:', error);
 //       Alert.alert('Error', 'Failed to copy link');
 //     }
-//   };
+//   }, []);
 
-//   // Fetch comments for modal
-//   const fetchCommentsForShort = async (shortId) => {
-//     try {
-//       const headers = await getAuthHeader();
-//       const response = await axios.get(
-//         `${API_URL}/shorts/${shortId}/comments/`,
-//         { headers }
-//       );
-      
-//       if (response.status === 200) {
-//         const comments = response.data.results || response.data;
-//         setSelectedShort(prev => ({
-//           ...prev,
-//           comments: comments,
-//         }));
-//       }
-//     } catch (error) {
-//       console.error('Fetch comments error:', error);
-//     }
-//   };
-
-//   // Post comment in modal
-//   const postComment = async () => {
+//   // ============================================================
+//   // POST COMMENT
+//   // ============================================================
+//   const postComment = useCallback(async () => {
 //     if (!commentText.trim() || !selectedShort) return;
     
 //     try {
@@ -345,120 +479,88 @@
       
 //       if (response.status === 201) {
 //         setCommentText('');
-//         fetchCommentsForShort(selectedShort.id);
+//         setSelectedShort(prev => ({
+//           ...prev,
+//           comments: [...(prev.comments || []), response.data],
+//           comment_count: (prev.comment_count || 0) + 1
+//         }));
 //       }
 //     } catch (error) {
 //       console.error('Post comment error:', error);
+//       Alert.alert('Error', 'Failed to post comment');
 //     }
-//   };
+//   }, [commentText, selectedShort, getAuthHeader]);
 
-//   // Like comment in modal
-//   const likeComment = async (commentId) => {
-//     try {
-//       const headers = await getAuthHeader();
-//       const isCurrentlyLiked = likedComments[commentId];
-      
-//       setLikedComments(prev => ({
-//         ...prev,
-//         [commentId]: !isCurrentlyLiked,
-//       }));
-      
-//       if (!isCurrentlyLiked) {
-//         await axios.post(`${API_URL}/comments/${commentId}/like/`, {}, { headers });
-//       } else {
-//         await axios.post(`${API_URL}/comments/${commentId}/unlike/`, {}, { headers });
-//       }
-//     } catch (error) {
-//       console.error('Like comment error:', error);
-//       setLikedComments(prev => ({
-//         ...prev,
-//         [commentId]: likedComments[commentId],
-//       }));
-//     }
-//   };
+//   // ============================================================
+//   // FORMAT VIEWS
+//   // ============================================================
+//   const formatViews = useCallback((views) => {
+//     if (!views) return '0';
+//     if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M`;
+//     if (views >= 1000) return `${(views / 1000).toFixed(1)}K`;
+//     return views.toString();
+//   }, []);
 
-//   // Video Card Component
-//   const VideoCard = memo(({ item, index }) => {
-//     const [isPressed, setIsPressed] = useState(false);
-//     const isPlaying = playingVideoId === item.id;
+//   // ============================================================
+//   // INITIAL LOAD - ONLY ONCE
+//   // ============================================================
+//   useEffect(() => {
+//     console.log('🚀 Initial load - checking cache...');
+//     loadData();
     
-//     const handleCardPress = () => {
-//       openModal(item);
+//     // Cleanup on unmount
+//     return () => {
+//       isMountedRef.current = false;
 //     };
+//   }, []); // Empty dependency array = ONLY RUNS ONCE
 
-//     const handleVideoPress = () => {
-//       openModal(item);
-//     };
+//   // ============================================================
+//   // FOCUS EFFECT - ONLY FOR REFRESH IF NEEDED
+//   // ============================================================
+//   useFocusEffect(
+//     useCallback(() => {
+//       // Only refresh if the user explicitly wants to refresh
+//       // We don't auto-refresh on focus to preserve cache
+//       console.log('👁️ Screen focused - using cached data');
+      
+//       // Optional: Check if cache is expired and refresh in background
+//       const checkCacheAndRefresh = async () => {
+//         try {
+//           const cachedData = await AsyncStorage.getItem(SHORTS_CACHE_KEY);
+//           if (cachedData) {
+//             const parsed = JSON.parse(cachedData);
+//             const isCacheValid = Date.now() - parsed.timestamp < CACHE_EXPIRATION_TIME;
+            
+//             // If cache is expired, refresh in background
+//             if (!isCacheValid) {
+//               console.log('🔄 Cache expired, refreshing in background...');
+//               await fetchShorts(true);
+//             }
+//           }
+//         } catch (error) {
+//           console.error('Error checking cache on focus:', error);
+//         }
+//       };
+      
+//       // Check cache in background without blocking UI
+//       checkCacheAndRefresh();
+      
+//       return () => {
+//         // Cleanup if needed
+//       };
+//     }, [fetchShorts])
+//   );
 
-//     return (
-//       <Pressable 
-//         onPressIn={() => setIsPressed(true)}
-//         onPressOut={() => setIsPressed(false)}
-//         onPress={handleCardPress}
-//         style={[
-//           styles.videoCardContainer,
-//           { 
-//             backgroundColor: colors.card,
-//             borderColor: colors.border,
-//           },
-//           isPressed && styles.cardPressed
-//         ]}
-//       >
-//         {/* Video Player */}
-//         <VideoPlayer
-//           uri={item.video}
-//           isPlaying={isPlaying}
-//           onPress={handleVideoPress}
-//           style={styles.videoPlayer}
-//         />
-        
-//         {/* Minimal Overlay - Only show on hover/tap */}
-//         <View style={styles.minimalOverlay}>
-//           {/* Only show minimal info */}
-//           <View style={styles.minimalInfo}>
-//             <View style={styles.minimalStats}>
-//               {/* <View style={styles.statItem}>
-//                 <Icon name="eye" size={12} color="rgba(255,255,255,0.9)" />
-//                 <Text style={styles.miniStatText}>{formatViews(item.views || 0)}</Text>
-//               </View> */}
-//               {isPlaying && (
-//                 <View style={[styles.playingIndicator, { backgroundColor: colors.primary }]}>
-//                   <Text style={styles.playingText}>LIVE</Text>
-//                 </View>
-//               )}
-//             </View>
-//           </View>
-          
-//           {/* Tap to watch overlay */}
-//           <View style={styles.tapToWatchOverlay}>
-//             <Text style={styles.tapToWatchText}>Tap to watch</Text>
-//           </View>
-//         </View>
-        
-//         {/* Expand Button */}
-//         <TouchableOpacity 
-//           style={[styles.expandButton, { backgroundColor: colors.card + 'CC' }]}
-//           onPress={handleCardPress}
-//         >
-//           <Icon name="maximize-2" size={16} color={colors.text} />
-//         </TouchableOpacity>
-//       </Pressable>
-//     );
-//   });
-
-//   // Render modal with full content
-//   const renderModal = () => {
+//   // ============================================================
+//   // RENDER MODAL
+//   // ============================================================
+//   const renderModal = useCallback(() => {
 //     if (!selectedShort) return null;
     
 //     const isLiked = likedShorts[selectedShort.id] || false;
 //     const isSaved = savedShorts[selectedShort.id] || false;
-//     const profilePic = selectedShort.user?.profile_picture 
-//       ? `${API_ROUTE_IMAGE}${selectedShort.user.profile_picture}` 
-//       : null;
+//     const profilePic = selectedShort.user?.profile_picture || null;
 //     const username = selectedShort.user?.username || 'user';
-//     const createdDate = selectedShort.created_at 
-//       ? new Date(selectedShort.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) 
-//       : '';
 
 //     return (
 //       <Modal
@@ -468,7 +570,6 @@
 //         statusBarTranslucent={true}
 //       >
 //         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-//           {/* Header with close and watch more */}
 //           <View style={styles.modalHeader}>
 //             <TouchableOpacity
 //               onPress={closeModal}
@@ -485,7 +586,6 @@
 //               style={[styles.watchMoreButton, { backgroundColor: colors.primary }]}
 //               onPress={() => {
 //                 closeModal();
-               
 //                 navigation.navigate('SocialHome');
 //               }}
 //             >
@@ -494,9 +594,7 @@
 //             </TouchableOpacity>
 //           </View>
           
-//           {/* Modal content */}
 //           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-//             {/* Left side - Video */}
 //             <View style={styles.videoContainer}>
 //               <Video
 //                 ref={modalVideoRef}
@@ -508,47 +606,18 @@
 //                 rate={PLAYBACK_RATE}
 //                 paused={false}
 //               />
-              
-//               {/* Video controls */}
-//               {/* <View style={styles.videoControls}>
-              
-//                 <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
-//                   <View style={[styles.progressFill, { backgroundColor: colors.primary }]} />
-//                 </View>
-                
-                
-//               </View> */}
 //             </View>
-            
-            
 //           </View>
 //         </View>
 //       </Modal>
 //     );
-//   };
+//   }, [selectedShort, isModalVisible, isMuted, likedShorts, savedShorts, colors, closeModal, navigation]);
 
-//   // Render comments modal
-//   const renderCommentsModal = () => {
+//   // ============================================================
+//   // RENDER COMMENTS MODAL
+//   // ============================================================
+//   const renderCommentsModal = useCallback(() => {
 //     if (!selectedShort) return null;
-
-//     const getCommentUser = (comment) => {
-//       if (typeof comment.user === 'string') {
-//         const username = comment.user.split('@')[0];
-//         return {
-//           username: username,
-//           profile_picture: null
-//         };
-//       }
-      
-//       if (comment.user && !comment.user.username) {
-//         return {
-//           username: comment.user.email ? comment.user.email.split('@')[0] : 'Unknown',
-//           profile_picture: comment.user.profile_picture || null
-//         };
-//       }
-      
-//       return comment.user || { username: 'Unknown', profile_picture: null };
-//     };
 
 //     return (
 //       <Modal
@@ -575,15 +644,9 @@
 //           <ScrollView style={styles.commentsList}>
 //             {selectedShort.comments?.length > 0 ? (
 //               selectedShort.comments.map(cmt => {
-//                 const commentUser = getCommentUser(cmt);
 //                 const isLiked = likedComments[cmt.id] || false;
-//                 const profilePic = commentUser.profile_picture 
-//                   ? `${API_ROUTE_IMAGE}${commentUser.profile_picture}` 
-//                   : null;
-//                 const time = new Date(cmt.created_at).toLocaleTimeString([], {
-//                   hour: '2-digit',
-//                   minute: '2-digit',
-//                 });
+//                 const profilePic = cmt.user?.profile_picture || null;
+//                 const username = cmt.user?.username || 'Unknown';
                 
 //                 return (
 //                   <View 
@@ -603,33 +666,22 @@
 //                         ) : (
 //                           <View style={[styles.commentProfilePlaceholder, { backgroundColor: colors.primary }]}>
 //                             <Text style={styles.commentProfileText}>
-//                               {commentUser.username?.[0]?.toUpperCase() || 'U'}
+//                               {username?.[0]?.toUpperCase() || 'U'}
 //                             </Text>
 //                           </View>
 //                         )}
 //                         <View>
 //                           <Text style={[styles.commentUsername, { color: colors.text }]}>
-//                             @{commentUser.username}
+//                             @{username}
 //                           </Text>
 //                           <Text style={[styles.commentTime, { color: colors.textSecondary }]}>
-//                             {time}
+//                             {new Date(cmt.created_at).toLocaleTimeString([], {
+//                               hour: '2-digit',
+//                               minute: '2-digit',
+//                             })}
 //                           </Text>
 //                         </View>
 //                       </View>
-                      
-//                       {/* <TouchableOpacity
-//                         onPress={() => likeComment(cmt.id)}
-//                         style={styles.commentLike}
-//                       >
-//                         <IonicIcon 
-//                           name={isLiked ? "heart" : "heart-outline"}
-//                           size={18} 
-//                           color={isLiked ? "#ff0050" : colors.textSecondary}
-//                         />
-//                         <Text style={[styles.commentLikeCount, { color: colors.textSecondary }]}>
-//                           {cmt.likes_count || 0}
-//                         </Text>
-//                       </TouchableOpacity> */}
 //                     </View>
 
 //                     <Text style={[styles.commentText, { color: colors.text }]}>
@@ -651,7 +703,6 @@
 //             )}
 //           </ScrollView>
           
-//           {/* Comment input */}
 //           <View style={[styles.commentInput, { borderTopColor: colors.border }]}>
 //             <TextInput
 //               style={[styles.input, { 
@@ -679,8 +730,11 @@
 //         </View>
 //       </Modal>
 //     );
-//   };
+//   }, [selectedShort, isReplyModalVisible, commentText, likedComments, colors, postComment]);
 
+//   // ============================================================
+//   // RENDER
+//   // ============================================================
 //   return (
 //     <View style={[styles.container, { backgroundColor: colors.background }]}>
 //       <View style={styles.titleSection}>
@@ -693,7 +747,8 @@
 //           </Text>
 //         </View>
 
-//         <TouchableOpacity onPress={()=>navigation.navigate('SocialHome')}
+//         <TouchableOpacity 
+//           onPress={() => navigation.navigate('SocialHome')}
 //           style={[styles.viewAllButton, { backgroundColor: colors.primary + '20' }]}
 //         >
 //           <Text style={[styles.viewAllText, { color: colors.primary }]}>
@@ -703,7 +758,6 @@
 //         </TouchableOpacity>
 //       </View>
       
-//       {/* Horizontal scroll row with viewability tracking */}
 //       <ScrollView 
 //         ref={scrollViewRef}
 //         horizontal
@@ -715,42 +769,45 @@
 //         viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
 //         onScrollToIndexFailed={() => {}}
 //       >
-//         {shorts.map((item, index) => (
-//           <VideoCard key={item.id} item={item} index={index} />
-//         ))}
-        
-//         {/* Loading state */}
-//         {shorts.length === 0 && (
-//           <View style={styles.loadingRow}>
-//             {[1, 2, 3].map(i => (
-//               <View 
-//                 key={i} 
-//                 style={[
-//                   styles.loadingItem, 
-//                   { backgroundColor: colors.backgroundSecondary }
-//                 ]} 
-//               />
-//             ))}
-//           </View>
+//         {shorts.length > 0 ? (
+//           shorts.map((item, index) => (
+//             <VideoCard 
+//               key={item.id} 
+//               item={item} 
+//               index={index}
+//               isPlaying={playingVideoId === item.id}
+//               onPress={openModal}
+//               colors={colors}
+//             />
+//           ))
+//         ) : (
+//           // Show placeholder cards while loading (no spinner)
+//           [1, 2, 3].map(i => (
+//             <View 
+//               key={i} 
+//               style={[
+//                 styles.videoCardContainer, 
+//                 { 
+//                   backgroundColor: colors.backgroundSecondary,
+//                   borderColor: colors.border,
+//                 }
+//               ]} 
+//             />
+//           ))
 //         )}
 //       </ScrollView>
       
-//       {/* Modal for full view */}
 //       {renderModal()}
-      
-//       {/* Comments Modal */}
 //       {renderCommentsModal()}
 //     </View>
 //   );
 // };
 
 // const styles = StyleSheet.create({
-  
 //   container: {
 //     paddingHorizontal: 16,
 //     paddingVertical: 24,
 //   },
-
 //   titleSection: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
@@ -916,16 +973,6 @@
 //     paddingRight: 16,
 //   },
   
-//   loadingRow: {
-//     flexDirection: 'row',
-//     gap: 16,
-//   },
-//   loadingItem: {
-//     width: width * 0.7,
-//     height: 400,
-//     borderRadius: 16,
-//   },
-  
 //   modalContainer: {
 //     flex: 1,
 //   },
@@ -983,153 +1030,8 @@
 //     width: '100%',
 //     height: '100%',
 //   },
-//   videoControls: {
-//     position: 'absolute',
-//     bottom: 24,
-//     left: 24,
-//     right: 24,
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     gap: 16,
-//   },
-//   progressBar: {
-//     flex: 1,
-//     height: 4,
-//     borderRadius: 2,
-//     overflow: 'hidden',
-//   },
-//   progressFill: {
-//     height: '100%',
-//     width: '33%',
-//   },
-//   volumeButton: {
-//     padding: 10,
-//     borderRadius: 20,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.2,
-//     shadowRadius: 4,
-//     elevation: 4,
-//   },
   
-
-//   rightPanel: {
-//     width: Platform.OS === 'web' ? 400 : '100%',
-//     height: Platform.OS === 'web' ? '100%' : '50%',
-//   },
-//   userInfo: {
-//     padding: 24,
-//     borderBottomWidth: 1,
-//   },
-//   userHeader: {
-//     flexDirection: 'row',
-//     alignItems: 'flex-start',
-//     justifyContent: 'space-between',
-//     marginBottom: 16,
-//   },
-//   userDetails: {
-//     flexDirection: 'row',
-//     alignItems: 'flex-start',
-//     gap: 12,
-//     flex: 1,
-//   },
-//   profilePic: {
-//     width: 48,
-//     height: 48,
-//     borderRadius: 24,
-//     borderWidth: 2,
-//     resizeMode: 'cover',
-//     borderColor: 'rgba(255,255,255,0.1)',
-//   },
-//   profilePicPlaceholder: {
-//     width: 48,
-//     height: 48,
-//     borderRadius: 24,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-//   profilePicText: {
-//     color: 'white',
-//     fontWeight: 'bold',
-//     fontSize: 18,
-//   },
-//   userInfoText: {
-//     flex: 1,
-//   },
-//   username: {
-//     fontWeight: 'bold',
-//     fontSize: 16,
-//     marginBottom: 4,
-//   },
-//   stats: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     gap: 16,
-//   },
-//   statText: {
-//     fontSize: 12,
-//   },
-//   followButton: {
-//     paddingHorizontal: 16,
-//     paddingVertical: 8,
-//     borderRadius: 20,
-//   },
-//   followText: {
-//     fontWeight: '600',
-//     fontSize: 12,
-//   },
-//   caption: {
-//     fontSize: 14,
-//     lineHeight: 20,
-//   },
-  
-//   // Reactions
-//   reactions: {
-//     padding: 24,
-//     borderBottomWidth: 1,
-//   },
-//   reactionsGrid: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-around',
-//   },
-//   reactionItem: {
-//     alignItems: 'center',
-//   },
-//   reactionButton: {
-//     padding: 12,
-//     borderRadius: 20,
-//     marginBottom: 8,
-//   },
-//   reactionCount: {
-//     fontSize: 12,
-//     fontWeight: '600',
-//     marginBottom: 2,
-//   },
-//   reactionLabel: {
-//     fontSize: 11,
-//   },
-  
-//   // More actions
-//   moreActions: {
-//     flexDirection: 'row',
-//     padding: 24,
-//     gap: 12,
-//   },
-//   actionButton: {
-//     flex: 1,
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     gap: 8,
-//     padding: 12,
-//     borderRadius: 12,
-//   },
-//   actionText: {
-//     fontSize: 14,
-//     fontWeight: '500',
-//   },
-  
-//   // Comments modal
+//   // Comments modal styles
 //   commentsContainer: {
 //     flex: 1,
 //   },
@@ -1196,14 +1098,6 @@
 //   commentTime: {
 //     fontSize: 12,
 //   },
-//   commentLike: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     gap: 4,
-//   },
-//   commentLikeCount: {
-//     fontSize: 12,
-//   },
 //   commentText: {
 //     fontSize: 14,
 //     lineHeight: 20,
@@ -1239,9 +1133,6 @@
 //     borderRadius: 25,
 //     padding: 14,
 //   },
-//   sendDisabled: {
-//     opacity: 0.5,
-//   },
 // });
 
 // export default HomePageShortsRow;
@@ -1265,6 +1156,7 @@ import {
 import Video from 'react-native-video';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createMMKV } from 'react-native-mmkv';
 import Clipboard from '@react-native-clipboard/clipboard';
 import Icon from 'react-native-vector-icons/Feather';
 import IonicIcon from 'react-native-vector-icons/Ionicons';
@@ -1278,6 +1170,11 @@ const { width, height } = Dimensions.get('window');
 
 const API_URL = API_ROUTE;
 const PLAYBACK_RATE = 1;
+
+// Initialize MMKV storage
+const storage = createMMKV({
+  id: 'shorts-row-storage',
+});
 
 // Cache keys
 const SHORTS_CACHE_KEY = 'shorts_row_cache_v2';
@@ -1317,12 +1214,6 @@ const VideoPlayer = memo(({ uri, isPlaying, onPress, style, navigation }) => {
         }}
         onReadyForDisplay={() => setIsLoading(false)}
       />
-      
-      {/* {isLoading && (
-        <View style={styles.videoLoading}>
-          <ActivityIndicator size="small" color="#fff" />
-        </View>
-      )} */}
       
       {hasError && (
         <View style={styles.videoError}>
@@ -1393,6 +1284,56 @@ const VideoCard = memo(({ item, index, isPlaying, onPress, colors }) => {
   );
 });
 
+// ============================================================
+// MMKV CACHE FUNCTIONS
+// ============================================================
+
+const saveToMMKV = (key, data) => {
+  try {
+    console.log(`💾 Saving ${key} to MMKV cache...`);
+    storage.set(key, JSON.stringify({
+      data: data,
+      timestamp: Date.now()
+    }));
+    console.log(`✅ ${key} saved to MMKV cache`);
+  } catch (error) {
+    console.error(`❌ Error saving ${key} to MMKV:`, error);
+  }
+};
+
+const getFromMMKV = (key) => {
+  try {
+    const cached = storage.getString(key);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      const { data, timestamp } = parsed;
+      const isCacheValid = Date.now() - timestamp < CACHE_EXPIRATION_TIME;
+      
+      if (isCacheValid && data && data.length > 0) {
+        console.log(`✅ ${key} loaded from MMKV cache (${data.length} items)`);
+        return data;
+      } else {
+        console.log(`⏰ ${key} cache expired`);
+      }
+    }
+    console.log(`📭 ${key} not found in MMKV cache`);
+    return null;
+  } catch (error) {
+    console.error(`❌ Error getting ${key} from MMKV:`, error);
+    return null;
+  }
+};
+
+const clearMMKVCache = () => {
+  try {
+    console.log('🗑️ Clearing shorts row MMKV cache...');
+    storage.delete(SHORTS_CACHE_KEY);
+    console.log('✅ Shorts row MMKV cache cleared');
+  } catch (error) {
+    console.error('❌ Error clearing MMKV cache:', error);
+  }
+};
+
 // Main Component
 const HomePageShortsRow = () => {
   const navigation = useNavigation();
@@ -1437,50 +1378,23 @@ const HomePageShortsRow = () => {
   }, []);
 
   // ============================================================
-  // LOAD FROM CACHE - INSTANT DISPLAY
+  // LOAD FROM CACHE - MMKV (INSTANT)
   // ============================================================
-  const loadFromCache = useCallback(async () => {
+  const loadFromCache = useCallback(() => {
     try {
-      const cachedData = await AsyncStorage.getItem(SHORTS_CACHE_KEY);
-      if (cachedData) {
-        const parsed = JSON.parse(cachedData);
-        const { data, timestamp } = parsed;
-        
-        // Cache is valid for 5 minutes
-        const isCacheValid = Date.now() - timestamp < CACHE_EXPIRATION_TIME;
-        if (isCacheValid && data && data.length > 0) {
-          console.log('📦 Loading shorts from cache:', data.length);
-          setShorts(data);
-          setIsLoading(false);
-          setInitialLoadComplete(true);
-          setHasLoadedOnce(true);
-          return true;
-        } else {
-          console.log('⏰ Cache expired, will fetch fresh data');
-        }
+      const data = getFromMMKV(SHORTS_CACHE_KEY);
+      if (data && data.length > 0) {
+        console.log('📦 Loading shorts from MMKV cache:', data.length);
+        setShorts(data);
+        setIsLoading(false);
+        setInitialLoadComplete(true);
+        setHasLoadedOnce(true);
+        return true;
       }
     } catch (error) {
-      console.error('Error loading shorts from cache:', error);
+      console.error('❌ Error loading shorts from MMKV cache:', error);
     }
     return false;
-  }, []);
-
-  // ============================================================
-  // SAVE TO CACHE
-  // ============================================================
-  const saveToCache = useCallback(async (data) => {
-    try {
-      await AsyncStorage.setItem(
-        SHORTS_CACHE_KEY,
-        JSON.stringify({
-          data: data,
-          timestamp: Date.now()
-        })
-      );
-      console.log('💾 Shorts saved to cache:', data.length);
-    } catch (error) {
-      console.error('Error saving shorts to cache:', error);
-    }
   }, []);
 
   // ============================================================
@@ -1542,21 +1456,23 @@ const HomePageShortsRow = () => {
         setLikedShorts(likedState);
         setSavedShorts(savedState);
 
-        // Save to cache
-        await saveToCache(processedShorts);
+        // Save to MMKV cache
+        saveToMMKV(SHORTS_CACHE_KEY, processedShorts);
+        console.log(`✅ Saved ${processedShorts.length} shorts to MMKV cache`);
+        
         setIsLoading(false);
         setInitialLoadComplete(true);
 
         return true;
       }
     } catch (apiError) {
-      console.error('API Error:', apiError);
+      console.error('❌ API Error:', apiError);
     }
     return false;
-  }, [getAuthHeader, fixImageUrl, saveToCache, hasLoadedOnce]);
+  }, [getAuthHeader, fixImageUrl, hasLoadedOnce]);
 
   // ============================================================
-  // LOAD DATA - CACHE FIRST, THEN NETWORK (ONLY ON FIRST LOAD)
+  // LOAD DATA - CACHE FIRST, THEN NETWORK
   // ============================================================
   const loadData = useCallback(async (forceRefresh = false) => {
     // If we already have data and it's not a forced refresh, skip
@@ -1565,15 +1481,16 @@ const HomePageShortsRow = () => {
       return;
     }
 
-    // Try cache first for instant display
-    const hasCache = await loadFromCache();
+    // Try MMKV cache first for instant display
+    const hasCache = loadFromCache();
     
     if (hasCache) {
+      console.log('📂 Cache loaded, fetching fresh data in background...');
       // We have cache, but still fetch in background for fresh data
-      // This only happens on first load or if cache expired
       fetchShorts(forceRefresh).catch(err => console.error('Background fetch error:', err));
     } else {
       // No cache, fetch from network
+      console.log('📭 No cache, fetching from API...');
       await fetchShorts(forceRefresh);
     }
   }, [loadFromCache, fetchShorts, hasLoadedOnce]);
@@ -1660,7 +1577,7 @@ const HomePageShortsRow = () => {
         }));
       }
     } catch (error) {
-      console.error('Like error:', error);
+      console.error('❌ Like error:', error);
       setLikedShorts(prev => ({
         ...prev,
         [shortId]: likedShorts[shortId],
@@ -1687,7 +1604,7 @@ const HomePageShortsRow = () => {
         await axios.post(`${API_URL}/shorts/${shortId}/unsave/`, {}, { headers });
       }
     } catch (error) {
-      console.error('Save error:', error);
+      console.error('❌ Save error:', error);
       setSavedShorts(prev => ({
         ...prev,
         [shortId]: savedShorts[shortId],
@@ -1704,7 +1621,7 @@ const HomePageShortsRow = () => {
       await Clipboard.setString(shareUrl);
       Alert.alert('Success', 'Link copied to clipboard!');
     } catch (error) {
-      console.error('Share error:', error);
+      console.error('❌ Share error:', error);
       Alert.alert('Error', 'Failed to copy link');
     }
   }, []);
@@ -1732,7 +1649,7 @@ const HomePageShortsRow = () => {
         }));
       }
     } catch (error) {
-      console.error('Post comment error:', error);
+      console.error('❌ Post comment error:', error);
       Alert.alert('Error', 'Failed to post comment');
     }
   }, [commentText, selectedShort, getAuthHeader]);
@@ -1751,7 +1668,7 @@ const HomePageShortsRow = () => {
   // INITIAL LOAD - ONLY ONCE
   // ============================================================
   useEffect(() => {
-    console.log('🚀 Initial load - checking cache...');
+    console.log('🚀 Initial load - checking MMKV cache...');
     loadData();
     
     // Cleanup on unmount
@@ -1765,26 +1682,26 @@ const HomePageShortsRow = () => {
   // ============================================================
   useFocusEffect(
     useCallback(() => {
-      // Only refresh if the user explicitly wants to refresh
-      // We don't auto-refresh on focus to preserve cache
       console.log('👁️ Screen focused - using cached data');
       
-      // Optional: Check if cache is expired and refresh in background
-      const checkCacheAndRefresh = async () => {
+      // Check cache expiry in background
+      const checkCacheAndRefresh = () => {
         try {
-          const cachedData = await AsyncStorage.getItem(SHORTS_CACHE_KEY);
-          if (cachedData) {
-            const parsed = JSON.parse(cachedData);
+          const cached = storage.getString(SHORTS_CACHE_KEY);
+          if (cached) {
+            const parsed = JSON.parse(cached);
             const isCacheValid = Date.now() - parsed.timestamp < CACHE_EXPIRATION_TIME;
             
             // If cache is expired, refresh in background
             if (!isCacheValid) {
               console.log('🔄 Cache expired, refreshing in background...');
-              await fetchShorts(true);
+              fetchShorts(true);
+            } else {
+              console.log('✅ Cache still valid');
             }
           }
         } catch (error) {
-          console.error('Error checking cache on focus:', error);
+          console.error('❌ Error checking cache on focus:', error);
         }
       };
       

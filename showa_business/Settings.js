@@ -423,7 +423,7 @@ const ContactProfile = ({ navigation }) => {
       ]);
       
       setLogoutModalVisible(false);
-      navigation.navigate('Signin_two');
+      navigation.navigate('EmailLogin');
     } catch (error) {
       console.error('Error logging out:', error);
       Alert.alert('Error', 'Failed to log out. Please try again.');
@@ -488,7 +488,7 @@ const ContactProfile = ({ navigation }) => {
           [
             {
               text: 'OK',
-              onPress: () => navigation.navigate('Signin')
+              onPress: () => navigation.navigate('EmailLogin')
             }
           ]
         );
@@ -513,6 +513,7 @@ const ContactProfile = ({ navigation }) => {
     { label: 'Notifications', icon: 'notifications-outline' },
     { label: 'Security / Privacy', icon: 'shield-checkmark-outline' },
     { label: 'Wallpaper', icon: 'images-outline' },
+    { label: 'Block', icon: 'person-outline' },
     { label: 'Theme', icon: 'contrast-outline', isTheme: true },
     { label: 'Logout', icon: 'log-out-outline', isLogout: true, isSignOut: true },
     { label: 'Delete Account', icon: 'trash-outline', isDelete: true },
@@ -561,7 +562,7 @@ const ContactProfile = ({ navigation }) => {
     } catch (error) {
       console.error('Error fetching user:', error.response?.data || error.message);
       if (error.response?.status === 401) {
-        navigation.navigate('Signin');
+        navigation.navigate('EmailLogin');
       }
       setUserProfileImage(null);
       return null;
@@ -650,9 +651,17 @@ const ContactProfile = ({ navigation }) => {
                       navigation.navigate('NotificationSetting');
                     } else if (label === 'Wallpaper') {
                       navigation.navigate('WallpaperSetting');
-                    } else if (label === 'Account') {
+                    } 
+                    
+                    else if (label === 'Account') {
+
                       navigation.navigate('ManageProfile');
-                    } else if (label === 'Chats') {
+                    } 
+                    else if (label === 'Block') {
+
+                      navigation.navigate('BlockedUsersList');
+                    } 
+                    else if (label === 'Chats') {
                       navigation.navigate('BusinessHome');
                     } else if (label === 'Security / Privacy') {
                       navigation.navigate('FaceSecuritySetting');

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -23,7 +24,7 @@ const BANNER_IMAGE = require('../assets/images/dad.jpg');
 // Create an animated version of FlatList
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
-const BrandApp = () => {
+const BrandApp = ({navigation}) => {
   const [channelId, setChannelId] = useState('');
   const [channelIdInput, setChannelIdInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -177,6 +178,27 @@ const BrandApp = () => {
           backgroundColor={isDark ? colors.background : '#F8FAFC'} 
           barStyle={isDark ? 'light-content' : 'dark-content'} 
         />
+
+        {/* Header with Back Button and Heading */}
+        <View style={[styles.headerContainer, { 
+          backgroundColor: colors.surface,
+          borderBottomColor: isDark ? '#333' : '#E2E8F0'
+        }]}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => {
+              
+             navigation.goBack()
+              
+            }}
+          >
+            <Icon name="arrow-left" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Brand Ecosystem
+          </Text>
+          <View style={styles.headerRightPlaceholder} />
+        </View>
 
         <ScrollView 
           showsVerticalScrollIndicator={false} 
@@ -356,6 +378,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerRightPlaceholder: {
+    width: 32,
+  },
   navContainer: {
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
@@ -488,7 +535,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 2,
-    borderLeftWidth: 4,
+    borderLeftWidth: 0,
   },
   brandIconContainer: {
     marginBottom: 12,

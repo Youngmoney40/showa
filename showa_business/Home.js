@@ -32,6 +32,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
 // import BottomNav from '../components/BottomNavBusiness';
 import BottomNav from '../components/BottomNavSocialMedia';
+//import BottomNav from '../components/BottomNavSocila_2';
 import { Divider } from 'react-native-paper';
 import SwitchAccountSheet from '../components/SwitchAccountSheet';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
@@ -976,7 +977,7 @@ const fetchUnreadNotificationCount = async () => {
               <Icon name="chatbubble-ellipses-outline" size={24} color="#fff" />
             </TouchableOpacity> */}
 
-            <TouchableOpacity 
+            {/* <TouchableOpacity 
                           onPress={() => navigation.navigate('NotificationsScreen')}
                           style={styles.notificationIconContainer}
                         >
@@ -988,7 +989,7 @@ const fetchUnreadNotificationCount = async () => {
                               </Text>
                             </View>
                           )}
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
             
             <TouchableOpacity ref={ellipsisRef} onPress={toggleDropdown}>
               <Icon name="ellipsis-vertical" size={25} color="#fff" />
@@ -1422,14 +1423,14 @@ const fetchUnreadNotificationCount = async () => {
         </Animated.View>
       </Modal>
       
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={styles.fab}
         onPress={() => {
           navigation.navigate('ChatAi');
         }}
       >
         <Text style={{color:'#fff', fontFamily:'PTSerif-Bold', fontSize:20}}>Ai</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
      
       <TouchableOpacity
         style={styles.fab2}

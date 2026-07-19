@@ -68,7 +68,7 @@ const ContactProfile = ({ navigation }) => {
     } catch (error) {
       console.error('Error fetching user:', error.response?.data || error.message);
       if (error.response?.status === 401) {
-        navigation.navigate('Loginscreen');
+        navigation.navigate('EmailLogin');
       }
       setUserProfileImage(null);
       return null;
@@ -98,7 +98,7 @@ const ContactProfile = ({ navigation }) => {
       ]);
       
       setSignOutModalVisible(false);
-      navigation.navigate('EmailLogin');
+      navigation.navigate('EmailLogin'); 
     } catch (error) {
       console.error('Error signing out:', error);
       Alert.alert('Error', 'Failed to sign out. Please try again.');
@@ -154,7 +154,7 @@ const ContactProfile = ({ navigation }) => {
           [
             {
               text: 'OK',
-              onPress: () => navigation.navigate('EmailSIgnin')
+              onPress: () => navigation.navigate('EmailLogin')
             }
           ]
         );
@@ -192,7 +192,9 @@ const ContactProfile = ({ navigation }) => {
     { label: 'Notifications', icon: 'notifications-outline' },
     { label: 'Security', icon: 'shield-checkmark-outline' },
     { label: 'Wallpaper', icon: 'images-outline' },
+    { label: 'Block', icon: 'person-outline' },
     { label: 'Theme', icon: 'contrast-outline', isTheme: true },
+    
     { label: 'Sign Out', icon: 'log-out-outline', isLogout: true, isSignOut: true },
     { label: 'Delete Account', icon: 'trash-outline', isDelete: true },
   ];
@@ -207,7 +209,7 @@ const ContactProfile = ({ navigation }) => {
     return isDark ? 'sunny-outline' : 'moon-outline';
   };
 
-  // Create dynamic styles based on theme
+  
   const dynamicStyles = {
     container: { flex: 1, backgroundColor: colors.background },
     header: { 
@@ -249,7 +251,7 @@ const ContactProfile = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Profile */}
+          {/* Profile gdgde */}
           {userData && userData.id && (
             <View style={styles.profileContainer}>
               <Image
@@ -284,9 +286,19 @@ const ContactProfile = ({ navigation }) => {
                       navigation.navigate('NotificationSetting');
                     } else if (label === 'Wallpaper') {
                       navigation.navigate('WallpaperSetting');
-                    } else if (label === 'Account') {
+                    } 
+                    
+                    else if (label === 'Account') {
+
                       navigation.navigate('UserPersonalAccountProfile');
-                    } else if (label === 'Chats') {
+                    } 
+                    else if (label === 'Block') {
+
+                      navigation.navigate('BlockedUsersList');
+                    } 
+                    
+                    else if (label === 'Chats') {
+
                       navigation.navigate('PHome');
                     } else if (label === 'Security') {
                       navigation.navigate('FaceSecuritySetting');

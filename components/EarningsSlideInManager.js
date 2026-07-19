@@ -1,4 +1,6 @@
-// import React, { useState, useEffect, useCallback } from 'react';
+
+
+// import React, { useState, useEffect, useCallback, useRef } from 'react';
 // import {
 //   View,
 //   Text,
@@ -22,15 +24,12 @@
 
 // const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
 //   const [timeSpent, setTimeSpent] = useState(0);
-//   const [forceShow, setForceShow] = useState(false);
 //   const [earnedAmount, setEarnedAmount] = useState(0);
 //   const [showDetails, setShowDetails] = useState(false);
-//   const [isVisible, setIsVisible] = useState(visible);
-//   const [animateValue] = useState(new Animated.Value(0));
 //   const [streakDays, setStreakDays] = useState(0);
 //   const [thresholds, setThresholds] = useState({
-//     first: { hours: 1, reward: 0.2, can_claim: false, claimed: false },
-//     second: { hours: 2, reward: 0.3, can_claim: false, claimed: false },
+//     first: { hours: 0.016, reward: 0.2, can_claim: false, claimed: false }, // 1 minute
+//     second: { hours: 0.033, reward: 0.3, can_claim: false, claimed: false }, // 2 minutes
 //     bonus: { reward: 0.1, can_claim: false, claimed: false }
 //   });
 //   const [streakBonus, setStreakBonus] = useState({
@@ -43,9 +42,183 @@
 //   const [loading, setLoading] = useState(false);
 //   const [error, setError] = useState(null);
 //   const slideAnim = useState(new Animated.Value(-500))[0];
+  
+//   const [displayAmount, setDisplayAmount] = useState('0.00');
+//   const amountAnim = useRef(new Animated.Value(0)).current;
 
+//   const [sessionId, setSessionId] = useState(null);
+//   const [isSessionActive, setIsSessionActive] = useState(false);
+//   const isEndingRef = useRef(false);
+//   const hasEndedRef = useRef(false);
+
+//   // Animate the displayed amount
+//   const animateToAmount = useCallback((newAmount) => {
+//     Animated.timing(amountAnim, {
+//       toValue: newAmount,
+//       duration: 800,
+//       useNativeDriver: false,
+//     }).start();
+//   }, [amountAnim]);
+
+//   // Add listener to update display amount
+//   useEffect(() => {
+//     const listener = amountAnim.addListener(({ value }) => {
+//       setDisplayAmount(value.toFixed(2));
+//     });
+//     return () => amountAnim.removeListener(listener);
+//   }, [amountAnim]);
+
+//  const fetchActiveTimeStatus = useCallback(async () => {
+//   try {
+//     const token = await AsyncStorage.getItem('userToken');
+//     if (!token) {
+//       console.log('No token found');
+//       return;
+//     }
+
+//     const response = await axios.get(`${API_ROUTE}/activity/status/`, {
+//       headers: { 
+//         'Authorization': `Bearer ${token}`,
+//         'Content-Type': 'application/json'
+//       }
+//     });
+//     console.log('=== ACTIVE TIME STATUS ===');
+//     console.log('Response:', JSON.stringify(response.data, null, 2));
+
+//     if (response.data) {
+//       const data = response.data;
+      
+//       setTimeSpent(data.active_hours_today || 0);
+//       setEarnedAmount(data.earned_today || 0);
+//       setStreakDays(data.streak_days || 0);
+//       setDailyMaximum(data.daily_maximum || 0.6);
+      
+//       animateToAmount(data.earned_today || 0);
+      
+//       // USE THE BACKEND VALUES DIRECTLY - DON'T OVERRIDE
+//       setThresholds({
+//         first: {
+//           hours: data.thresholds?.first?.hours || 0.016,
+//           reward: data.thresholds?.first?.reward || 0.2,
+//           can_claim: data.thresholds?.first?.can_claim || false,
+//           claimed: data.thresholds?.first?.claimed || false
+//         },
+//         second: {
+//           hours: data.thresholds?.second?.hours || 0.033,
+//           reward: data.thresholds?.second?.reward || 0.3,
+//           can_claim: data.thresholds?.second?.can_claim || false,
+//           claimed: data.thresholds?.second?.claimed || false
+//         },
+//         bonus: {
+//           reward: data.thresholds?.bonus?.reward || 0.1,
+//           can_claim: data.thresholds?.bonus?.can_claim || false,
+//           claimed: data.thresholds?.bonus?.claimed || false
+//         }
+//       });
+
+//       setStreakBonus({
+//         available: data.streak_bonus?.available || false,
+//         reward: data.streak_bonus?.reward || 0.5,
+//         claimed: data.streak_bonus?.claimed || false,
+//         days_needed: data.streak_bonus?.days_needed || 7
+//       });
+//     }
+//   } catch (err) {
+//     console.error('Error fetching active time status:', err);
+//     setError('Failed to load earnings data');
+//   }
+// }, [animateToAmount]);
+//   const startActivitySession = useCallback(async () => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       if (!token) return;
+
+//       if (isSessionActive) {
+//         console.log('Session already active');
+//         return;
+//       }
+
+//       const response = await axios.post(`${API_ROUTE}/activity/start/`, {}, {
+//         headers: { 
+//           'Authorization': `Bearer ${token}`,
+//           'Content-Type': 'application/json'
+//         }
+//       });
+      
+//       console.log('Activity session started:', response.data);
+      
+//       if (response.data && response.data.session_id) {
+//         setSessionId(response.data.session_id);
+//         setIsSessionActive(true);
+//         hasEndedRef.current = false;
+//         await AsyncStorage.setItem('activity_session_id', String(response.data.session_id));
+//       }
+//     } catch (err) {
+//       console.error('Error starting activity session:', err);
+//     }
+//   }, [isSessionActive]);
+
+//   const endActivitySession = useCallback(async () => {
+//     if (isEndingRef.current) {
+//       console.log('⏳ Session end already in progress, skipping...');
+//       return;
+//     }
+
+//     if (hasEndedRef.current) {
+//       console.log('✅ Session already ended, skipping...');
+//       return;
+//     }
+
+//     try {
+//       isEndingRef.current = true;
+      
+//       let currentSessionId = sessionId;
+      
+//       if (!currentSessionId) {
+//         currentSessionId = await AsyncStorage.getItem('activity_session_id');
+//       }
+      
+//       if (!currentSessionId) {
+//         console.log('No active session to end');
+//         return;
+//       }
+
+//       const token = await AsyncStorage.getItem('userToken');
+//       if (!token) return;
+
+//       console.log('🔄 Ending session with ID:', currentSessionId);
+      
+//       const response = await axios.post(`${API_ROUTE}/activity/end/`, 
+//         { session_id: currentSessionId },
+//         {
+//           headers: { 
+//             'Authorization': `Bearer ${token}`,
+//             'Content-Type': 'application/json'
+//           }
+//         }
+//       );
+      
+//       console.log('✅ Activity session ended:', response.data);
+      
+//       hasEndedRef.current = true;
+//       setSessionId(null);
+//       setIsSessionActive(false);
+//       await AsyncStorage.removeItem('activity_session_id');
+      
+//       await fetchActiveTimeStatus();
+      
+//     } catch (err) {
+//       console.error('❌ Error ending activity session:', err);
+//     } finally {
+//       isEndingRef.current = false;
+//     }
+//   }, [sessionId, fetchActiveTimeStatus]);
+
+//   // Handle visibility changes
 //   useEffect(() => {
 //     if (visible) {
+//       console.log('EarningsSlideIn opened');
+//       hasEndedRef.current = false;
 //       Animated.spring(slideAnim, {
 //         toValue: 0,
 //         useNativeDriver: true,
@@ -55,127 +228,39 @@
 //       fetchActiveTimeStatus();
 //       startActivitySession();
 //     } else {
+//       console.log('EarningsSlideIn closed - ending session');
+//       endActivitySession();
 //       Animated.timing(slideAnim, {
 //         toValue: -500,
 //         duration: 300,
 //         useNativeDriver: true
 //       }).start();
 //     }
-//   }, [visible]);
-
-//   useEffect(() => {
-//     setIsVisible(visible);
-//   }, [visible]);
-
-//   useEffect(() => {
-//     // Auto-claim interval
-//     const autoClaimInterval = setInterval(() => {
-//       checkAutoClaims();
-//     }, 30 * 1000);
 
 //     return () => {
-//       endActivitySession();
+//       if (visible && !hasEndedRef.current) {
+//         endActivitySession();
+//       }
+//     };
+//   }, [visible]);
+
+//   // Auto-claim interval - check every 10 seconds for testing
+//   useEffect(() => {
+//     const autoClaimInterval = setInterval(() => {
+//       if (visible) {
+//         console.log('🔄 Auto-checking claims...');
+//         checkAutoClaims();
+//       }
+//     }, 10 * 1000);
+
+//     return () => {
 //       clearInterval(autoClaimInterval);
 //     };
-//   }, []);
-
-//   const fetchActiveTimeStatus = useCallback(async () => {
-//     try {
-//       const token = await AsyncStorage.getItem('userToken');
-//       if (!token) {
-//         console.log('No token found');
-//         return;
-//       }
-
-//       const response = await axios.get(`${API_ROUTE}/activity/status/`, {
-//         headers: { 
-//           'Authorization': `Bearer ${token}`,
-//           'Content-Type': 'application/json'
-//         }
-//       });
-
-//       if (response.data) {
-//         const data = response.data;
-        
-//         setTimeSpent(data.active_hours_today || 0);
-//         setEarnedAmount(data.earned_today || 0);
-//         setStreakDays(data.streak_days || 0);
-//         setDailyMaximum(data.daily_maximum || 0.6);
-        
-//         setThresholds({
-//           first: {
-//             hours: data.thresholds?.first?.hours || 1,
-//             reward: data.thresholds?.first?.reward || 0.2,
-//             can_claim: data.thresholds?.first?.can_claim || false,
-//             claimed: data.thresholds?.first?.claimed || false
-//           },
-//           second: {
-//             hours: data.thresholds?.second?.hours || 2,
-//             reward: data.thresholds?.second?.reward || 0.3,
-//             can_claim: data.thresholds?.second?.can_claim || false,
-//             claimed: data.thresholds?.second?.claimed || false
-//           },
-//           bonus: {
-//             reward: data.thresholds?.bonus?.reward || 0.1,
-//             can_claim: data.thresholds?.bonus?.can_claim || false,
-//             claimed: data.thresholds?.bonus?.claimed || false
-//           }
-//         });
-
-//         setStreakBonus({
-//           available: data.streak_bonus?.available || false,
-//           reward: data.streak_bonus?.reward || 0.5,
-//           claimed: data.streak_bonus?.claimed || false,
-//           days_needed: data.streak_bonus?.days_needed || 7
-//         });
-
-//         Animated.timing(animateValue, {
-//           toValue: data.earned_today || 0,
-//           duration: 1000,
-//           useNativeDriver: false
-//         }).start();
-//       }
-//     } catch (err) {
-//       console.error('Error fetching active time status:', err);
-//       setError('Failed to load earnings data');
-//     }
-//   }, []);
-
-//   const startActivitySession = useCallback(async () => {
-//     try {
-//       const token = AsyncStorage.getItem('userToken');
-//       if (!token) return;
-
-//       await axios.post(`${API_ROUTE}/activity/start/`, {}, {
-//         headers: { 
-//           'Authorization': `Bearer ${token}`,
-//           'Content-Type': 'application/json'
-//         }
-//       });
-//     } catch (err) {
-//       console.error('Error starting activity session:', err);
-//     }
-//   }, []);
-
-//   const endActivitySession = useCallback(async () => {
-//     try {
-//       const token = AsyncStorage.getItem('userToken');
-//       if (!token) return;
-
-//       await axios.post(`${API_ROUTE}/activity/end/`, {}, {
-//         headers: { 
-//           'Authorization': `Bearer ${token}`,
-//           'Content-Type': 'application/json'
-//         }
-//       });
-//     } catch (err) {
-//       console.error('Error ending activity session:', err);
-//     }
-//   }, []);
+//   }, [visible]);
 
 //   const checkAutoClaims = useCallback(async () => {
 //     try {
-//       const token = AsyncStorage.getItem('userToken');
+//       const token = await AsyncStorage.getItem('userToken');
 //       if (!token) return;
 
 //       const response = await axios.post(`${API_ROUTE}/activity/check-auto/`, {}, {
@@ -185,8 +270,11 @@
 //         }
 //       });
 
+//       console.log('Auto-claim response:', response.data);
+
 //       if (response.data.claimed && response.data.claimed.length > 0) {
-//         fetchActiveTimeStatus();
+//         console.log('✅ Auto-claimed rewards:', response.data.claimed);
+//         await fetchActiveTimeStatus();
 //       }
 //     } catch (err) {
 //       console.error('Error checking auto claims:', err);
@@ -198,12 +286,13 @@
 //     setError(null);
     
 //     try {
-//       const token = AsyncStorage.getItem('userToken');
+//       const token = await AsyncStorage.getItem('userToken');
 //       if (!token) {
 //         setError('Please log in to claim rewards');
 //         return;
 //       }
 
+//       console.log('🎯 Claiming reward for threshold:', threshold);
 //       const response = await axios.post(`${API_ROUTE}/activity/claim/`, 
 //         { threshold },
 //         { 
@@ -214,30 +303,31 @@
 //         }
 //       );
 
+//       console.log('Claim response:', response.data);
+
 //       if (response.data.success) {
-//         setEarnedAmount(response.data.earned_today);
+//         const newEarnedAmount = response.data.earned_today || earnedAmount;
+//         setEarnedAmount(newEarnedAmount);
         
-//         Animated.timing(animateValue, {
-//           toValue: response.data.earned_today,
-//           duration: 1000,
-//           useNativeDriver: false
-//         }).start();
+//         animateToAmount(newEarnedAmount);
         
 //         if (onClaimReward) {
 //           onClaimReward({
-//             amount: response.data.amount_usd,
-//             coins: response.data.coins_awarded,
+//             amount: response.data.amount_usd || 0,
+//             coins: response.data.coins_awarded || 0,
 //             threshold: threshold
 //           });
 //         }
 
 //         await fetchActiveTimeStatus();
+        
+//         Alert.alert('Success!', `You earned $${(response.data.amount_usd || 0).toFixed(2)}!`);
 //       } else {
-//         setError(response.data.message);
+//         setError(response.data.message || 'Failed to claim reward');
 //       }
 //     } catch (err) {
 //       console.error('Error claiming reward:', err);
-//       setError('Failed to claim reward');
+//       setError(err.response?.data?.message || 'Failed to claim reward');
 //     } finally {
 //       setLoading(false);
 //     }
@@ -248,17 +338,17 @@
 //       return {
 //         target: thresholds.first.hours,
 //         reward: thresholds.first.reward,
-//         remaining: (thresholds.first.hours - timeSpent).toFixed(1)
+//         remaining: ((thresholds.first.hours - timeSpent) * 60).toFixed(0) + 'm'
 //       };
 //     }
 //     if (!thresholds.second.claimed && timeSpent < thresholds.second.hours) {
 //       return {
 //         target: thresholds.second.hours,
 //         reward: thresholds.second.reward,
-//         remaining: (thresholds.second.hours - timeSpent).toFixed(1)
+//         remaining: ((thresholds.second.hours - timeSpent) * 60).toFixed(0) + 'm'
 //       };
 //     }
-//     if (!thresholds.bonus.claimed && earnedAmount < dailyMaximum - thresholds.bonus.reward) {
+//     if (!thresholds.bonus.claimed && earnedAmount >= dailyMaximum - thresholds.bonus.reward && earnedAmount < dailyMaximum) {
 //       return {
 //         target: 'daily cap',
 //         reward: thresholds.bonus.reward,
@@ -269,18 +359,15 @@
 //   }, [timeSpent, earnedAmount, thresholds, dailyMaximum]);
 
 //   const formatTime = (hours) => {
-//     if (hours < 1) {
-//       const minutes = Math.round(hours * 60);
-//       return `${minutes} minutes`;
-//     }
-//     if (hours === 1) return '1 hour';
-//     if (hours < 2) return `${hours.toFixed(1)} hours`;
-//     return `${hours.toFixed(1)} hours`;
+//     const minutes = Math.round(hours * 60);
+//     if (minutes < 1) return 'less than a minute';
+//     if (minutes === 1) return '1 minute';
+//     return `${minutes} minutes`;
 //   };
 
 //   const nextMilestone = getNextMilestone();
 
-//   if (!isVisible) return null;
+//   if (!visible) return null;
 
 //   return (
 //     <Modal
@@ -296,18 +383,13 @@
 //             { transform: [{ translateY: slideAnim }] }
 //           ]}
 //         >
-          
 //           <TouchableOpacity
-//             onPress={() => {
-//               setIsVisible(false);
-//               if (onClose) onClose();
-//             }}
+//             onPress={onClose}
 //             style={styles.closeButton}
 //           >
 //             <Icon name="x" size={16} color="#9CA3AF" />
 //           </TouchableOpacity>
 
-          
 //           {error && (
 //             <View style={styles.errorContainer}>
 //               <Text style={styles.errorText}>{error}</Text>
@@ -322,7 +404,7 @@
 //               {/* Header */}
 //               <View style={styles.headerContainer}>
 //                 <LottieView
-//                   source='assets/animations/Sucess.json'
+//                   source={require('../assets/animations/Success.json')}
 //                   loop={true}
 //                   autoPlay={true}
 //                   style={styles.lottieAnimation}
@@ -336,20 +418,26 @@
 //                 </View>
 //               </View>
 
-//               {/* Earnings Counter =============*/}
+//               {/* Debug Info - Remove in production */}
+//               <View style={styles.debugContainer}>
+//                 <Text style={styles.debugText}>
+//                   Time: {timeSpent.toFixed(3)}h ({Math.round(timeSpent * 60)}m) | 
+//                   Earned: ${earnedAmount.toFixed(2)} | 
+//                   Can claim 1h: {thresholds.first.can_claim ? '✅' : '❌'}
+//                 </Text>
+//               </View>
+
+//               {/* Earnings Counter */}
 //               <View style={styles.counterContainer}>
 //                 <Animated.Text style={styles.counterAmount}>
-//                   ${animateValue.interpolate({
-//                     inputRange: [0, 100],
-//                     outputRange: ['$0.00', '$100.00']
-//                   })}
+//                   ${displayAmount}
 //                 </Animated.Text>
 //                 <Text style={styles.counterLabel}>
 //                   earned so far today
 //                 </Text>
 //               </View>
 
-//               {/* Daily Progress Bar ===========*/}
+//               {/* Daily Progress Bar */}
 //               <View style={styles.progressContainer}>
 //                 <View style={styles.progressHeader}>
 //                   <Text style={styles.progressLabel}>Daily progress</Text>
@@ -382,91 +470,31 @@
 //                     </Text>
 //                   </View>
                   
-//                   {nextMilestone.remaining !== 'completed' ? (
-//                     <>
-//                       <View style={styles.milestoneProgressHeader}>
-//                         <Text style={styles.milestoneProgressLabel}>
-//                           {nextMilestone.target === 1 ? '1 hour' : 
-//                            nextMilestone.target === 2 ? '2 hours' : 'Daily cap'}
-//                         </Text>
-//                         <Text style={styles.milestoneProgressRemaining}>
-//                           {typeof nextMilestone.remaining === 'string' && 
-//                            nextMilestone.remaining.includes('x') 
-//                             ? nextMilestone.remaining 
-//                             : `${nextMilestone.remaining}h left`}
-//                         </Text>
-//                       </View>
-//                       <View style={styles.milestoneProgressBar}>
-//                         <Animated.View 
-//                           style={[
-//                             styles.milestoneProgressFill,
-//                             { 
-//                               width: `${
-//                                 nextMilestone.target === 1 
-//                                   ? (timeSpent / thresholds.first.hours) * 100 
-//                                   : nextMilestone.target === 2 
-//                                     ? ((timeSpent - thresholds.first.hours) / 
-//                                        (thresholds.second.hours - thresholds.first.hours)) * 100 
-//                                     : ((dailyMaximum - earnedAmount) / dailyMaximum) * 100
-//                               }%` 
-//                             }
-//                           ]}
-//                         />
-//                       </View>
-//                     </>
-//                   ) : (
-//                     <View style={styles.completedContainer}>
-//                       <Icon name="check-circle" size={12} color="#34D399" />
-//                       <Text style={styles.completedText}>
-//                         Daily cap reached! Come back tomorrow.
-//                       </Text>
-//                     </View>
-//                   )}
-//                 </View>
-//               )}
-
-//               {/* Streak Bonus */}
-//               {streakDays > 0 && (
-//                 <View style={styles.streakCard}>
-//                   <View style={styles.streakHeader}>
-//                     <View style={styles.streakTitleContainer}>
-//                       <Icon name="zap" size={14} color="#F97316" />
-//                       <Text style={styles.streakTitle}>
-//                         {streakDays}-day streak!
-//                       </Text>
-//                     </View>
-//                     <Text style={styles.streakReward}>
-//                       +${streakBonus.reward.toFixed(2)} this week
+//                   <View style={styles.milestoneProgressHeader}>
+//                     <Text style={styles.milestoneProgressLabel}>
+//                       {nextMilestone.target === 'daily cap' ? 'Daily cap bonus' : 
+//                        `${Math.round(nextMilestone.target * 60)} minutes`}
+//                     </Text>
+//                     <Text style={styles.milestoneProgressRemaining}>
+//                       {nextMilestone.remaining}
 //                     </Text>
 //                   </View>
-                  
-//                   <View style={styles.streakProgress}>
-//                     {[...Array(7)].map((_, i) => (
-//                       <View 
-//                         key={i}
-//                         style={[
-//                           styles.streakBar,
-//                           i < streakDays && styles.streakBarActive
-//                         ]}
-//                       />
-//                     ))}
+//                   <View style={styles.milestoneProgressBar}>
+//                     <View 
+//                       style={[
+//                         styles.milestoneProgressFill,
+//                         { 
+//                           width: nextMilestone.target === 'daily cap' 
+//                             ? `${((dailyMaximum - earnedAmount) / dailyMaximum) * 100}%`
+//                             : Math.min((timeSpent / nextMilestone.target) * 100, 100)
+//                         }
+//                       ]}
+//                     />
 //                   </View>
-
-//                   {!streakBonus.claimed && streakBonus.available && (
-//                     <TouchableOpacity
-//                       onPress={() => handleClaimReward('streak')}
-//                       disabled={loading}
-//                       style={styles.streakButton}
-//                     >
-//                       <Text style={styles.streakButtonText}>
-//                         Claim Streak Bonus
-//                       </Text>
-//                     </TouchableOpacity>
-//                   )}
 //                 </View>
 //               )}
 
-//               {/* Earning Tiers Toggle ===================*/}
+//               {/* Earning Tiers Toggle */}
 //               {!showDetails ? (
 //                 <TouchableOpacity
 //                   onPress={() => setShowDetails(true)}
@@ -480,7 +508,7 @@
 //                 </TouchableOpacity>
 //               ) : (
 //                 <View style={styles.tiersContainer}>
-//                   {/* First Threshold ================ */}
+//                   {/* First Threshold - 1 minute */}
 //                   <View style={[
 //                     styles.tierItem,
 //                     thresholds.first.claimed && styles.tierItemClaimed,
@@ -489,7 +517,7 @@
 //                     <View style={styles.tierInfo}>
 //                       <Icon name="star" size={12} color="#FBBF24" />
 //                       <Text style={styles.tierText}>
-//                         {thresholds.first.hours} hour active
+//                         1 minute active
 //                       </Text>
 //                     </View>
 //                     <View style={styles.tierAction}>
@@ -515,7 +543,7 @@
 //                     </View>
 //                   </View>
 
-//                   {/* Second Threshold ============*/}
+//                   {/* Second Threshold - 2 minutes */}
 //                   <View style={[
 //                     styles.tierItem,
 //                     thresholds.second.claimed && styles.tierItemClaimed,
@@ -524,7 +552,7 @@
 //                     <View style={styles.tierInfo}>
 //                       <Icon name="star" size={12} color="#FBBF24" />
 //                       <Text style={styles.tierText}>
-//                         {thresholds.second.hours} hours active
+//                         2 minutes active
 //                       </Text>
 //                     </View>
 //                     <View style={styles.tierAction}>
@@ -550,7 +578,7 @@
 //                     </View>
 //                   </View>
 
-//                   {/* Daily Cap Bonus ============*/}
+//                   {/* Daily Cap Bonus */}
 //                   <View style={[
 //                     styles.tierItem,
 //                     thresholds.bonus.claimed && styles.tierItemClaimed,
@@ -592,7 +620,7 @@
 //                 </View>
 //               )}
 
-             
+//               {/* Claim All Button */}
 //               {(thresholds.first.can_claim || thresholds.second.can_claim || thresholds.bonus.can_claim) && (
 //                 <TouchableOpacity 
 //                   onPress={() => {
@@ -608,14 +636,13 @@
 //                 </TouchableOpacity>
 //               )}
 
-             
+//               {/* Footer Note */}
 //               <Text style={styles.footerNote}>
 //                 Keep going to reach ${dailyMaximum.toFixed(2)} today! ✨
 //               </Text>
 //             </View>
 //           </ScrollView>
 
-//           {/* Loading Overlay */}
 //           {loading && (
 //             <View style={styles.loadingOverlay}>
 //               <ActivityIndicator size="large" color="#10B981" />
@@ -626,79 +653,68 @@
 //     </Modal>
 //   );
 // };
+
+// // Manager component with test mode
 // const EarningsSlideInManager = () => {
 //   const [showEarnings, setShowEarnings] = useState(false);
-//   const [hasShownToday, setHasShownToday] = useState(false);
 //   const [userData, setUserData] = useState(null);
-//   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
 //   useEffect(() => {
-//   const initializeEarnings = async () => {
-//     try {
-//       const token = await AsyncStorage.getItem('userToken');
-//       console.log('token', token);
-      
-//       if (!token) {
-//         return;
-//       }
-      
-//       setIsLoggedIn(true);
+//     const initializeEarnings = async () => {
 //       try {
-//         const response = await axios.get(`${API_ROUTE}/user/profile/`, {
-//           headers: { 
-//             'Authorization': `Bearer ${token}`,
-//             'Content-Type': 'application/json'
-//           }
-//         });
-//         setUserData(response.data);
-//       } catch (err) {
-//         console.error('Error fetching user data:', err);
-//         if (err.response?.status === 401) {
-//           await AsyncStorage.removeItem('userToken');
-//           setIsLoggedIn(false);
-//         }
-//       }
-
-//       // Check last shown date
-//       const lastShownDate = await AsyncStorage.getItem('earningsLastShown');
-//       const today = new Date().toDateString();
-      
-//       if (lastShownDate && lastShownDate === today) {
-//         setHasShownToday(true);
-//         return;
-//       }
-
-//       const timerDuration = 3600000; 
-//       const timer = setTimeout(() => {
-//         const checkAndShow = async () => {
-//           const currentLastShown = await AsyncStorage.getItem('earningsLastShown');
-//           const currentToday = new Date().toDateString();
-//           const currentToken = await AsyncStorage.getItem('userToken');
-          
-//           if ((!currentLastShown || currentLastShown !== currentToday) && currentToken) {
-//             setShowEarnings(true);
-//             await AsyncStorage.setItem('earningsLastShown', currentToday);
-//           }
-//         };
+//         const token = await AsyncStorage.getItem('userToken');
+//         console.log('Token exists:', !!token);
         
-//         checkAndShow();
-//       }, timerDuration);
+//         if (!token) {
+//           console.log('No token found, user not logged in');
+//           return;
+//         }
+        
+//         try {
+//           const response = await axios.get(`${API_ROUTE}/user/profile/`, {
+//             headers: { 
+//               'Authorization': `Bearer ${token}`,
+//               'Content-Type': 'application/json'
+//             }
+//           });
+//           setUserData(response.data);
+//           console.log('User data fetched successfully');
+//         } catch (err) {
+//           console.error('Error fetching user data:', err);
+//           if (err.response?.status === 401) {
+//             await AsyncStorage.removeItem('userToken');
+//           }
+//           return;
+//         }
 
-//       return () => clearTimeout(timer);
-//     } catch (error) {
-//       console.error('Error in initializeEarnings:', error);
-//     }
-//   };
+//         // Show after 3 seconds for testing
+//         const timerDuration = 3000;
+//         console.log(`Will show earnings in ${timerDuration/1000} seconds...`);
+        
+//         const timer = setTimeout(() => {
+//           console.log('Showing earnings slide-in (TEST MODE)');
+//           setShowEarnings(true);
+//         }, timerDuration);
 
-//   initializeEarnings();
-// }, []);
+//         return () => {
+//           console.log('Cleaning up timer');
+//           clearTimeout(timer);
+//         };
+//       } catch (error) {
+//         console.error('Error in initializeEarnings:', error);
+//       }
+//     };
+
+//     initializeEarnings();
+//   }, []);
+
 //   const handleClose = () => {
+//     console.log('Closing earnings slide-in');
 //     setShowEarnings(false);
 //   };
 
 //   const handleClaimReward = (rewardData) => {
 //     console.log('Reward claimed:', rewardData);
-    
 //   };
 
 //   if (!showEarnings || !userData) return null;
@@ -713,364 +729,7 @@
 //   );
 // };
 
-// const styles = StyleSheet.create({
-//   modalOverlay: {
-//     flex: 1,
-//     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-//     justifyContent: 'flex-start',
-//     alignItems: Platform.OS === 'web' ? 'flex-end' : 'center',
-//     paddingTop: Platform.OS === 'web' ? 16 : 40,
-//     paddingRight: Platform.OS === 'web' ? 16 : 0,
-//   },
-//   container: {
-//     width: Platform.OS === 'web' ? 384 : width - 32,
-//     backgroundColor: '#1F2937',
-//     borderRadius: 16,
-//     borderWidth: 1,
-//     borderColor: 'rgba(55, 65, 81, 0.5)',
-//     overflow: 'hidden',
-//     maxHeight: Platform.OS === 'web' ? '90%' : '80%',
-//     position: 'relative',
-//   },
-//   closeButton: {
-//     position: 'absolute',
-//     top: 12,
-//     right: 12,
-//     zIndex: 10,
-//     padding: 6,
-//     borderRadius: 20,
-//     backgroundColor: 'rgba(31, 41, 55, 0.8)',
-//   },
-//   errorContainer: {
-//     position: 'absolute',
-//     top: 48,
-//     left: 12,
-//     right: 12,
-//     zIndex: 20,
-//     backgroundColor: '#EF4444',
-//     borderRadius: 8,
-//     padding: 8,
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//   },
-//   errorText: {
-//     color: '#FFFFFF',
-//     fontSize: 12,
-//     flex: 1,
-//   },
-//   content: {
-//     padding: 20,
-//   },
-//   headerContainer: {
-//     alignItems: 'center',
-//     marginBottom: 16,
-//   },
-//   lottieAnimation: {
-//     width: 180,
-//     height: 180,
-//   },
-//   headerTitle: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//     color: '#FFFFFF',
-//     marginTop: -20,
-//   },
-//   headerSubtitle: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginTop: 4,
-//   },
-//   headerSubtitleText: {
-//     fontSize: 12,
-//     color: '#9CA3AF',
-//     marginLeft: 4,
-//   },
-//   counterContainer: {
-//     alignItems: 'center',
-//     marginBottom: 16,
-//   },
-//   counterAmount: {
-//     fontSize: 36,
-//     fontWeight: 'bold',
-//     color: '#10B981',
-//   },
-//   counterLabel: {
-//     fontSize: 14,
-//     color: '#9CA3AF',
-//     marginTop: 4,
-//   },
-//   progressContainer: {
-//     marginBottom: 16,
-//   },
-//   progressHeader: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     marginBottom: 4,
-//   },
-//   progressLabel: {
-//     fontSize: 12,
-//     color: '#9CA3AF',
-//   },
-//   progressValue: {
-//     fontSize: 12,
-//     color: '#10B981',
-//   },
-//   progressBar: {
-//     height: 8,
-//     backgroundColor: '#374151',
-//     borderRadius: 4,
-//     overflow: 'hidden',
-//   },
-//   progressFill: {
-//     height: '100%',
-//     backgroundColor: '#10B981',
-//     borderRadius: 4,
-//   },
-//   milestoneCard: {
-//     backgroundColor: 'rgba(31, 41, 55, 0.5)',
-//     borderRadius: 12,
-//     padding: 12,
-//     marginBottom: 12,
-//     borderWidth: 1,
-//     borderColor: 'rgba(55, 65, 81, 0.5)',
-//   },
-//   milestoneHeader: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     marginBottom: 8,
-//   },
-//   milestoneTitleContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   milestoneTitle: {
-//     fontSize: 14,
-//     color: '#D1D5DB',
-//     marginLeft: 4,
-//   },
-//   milestoneReward: {
-//     fontSize: 14,
-//     fontWeight: '600',
-//     color: '#FBBF24',
-//   },
-//   milestoneProgressHeader: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     marginBottom: 4,
-//   },
-//   milestoneProgressLabel: {
-//     fontSize: 12,
-//     color: '#9CA3AF',
-//   },
-//   milestoneProgressRemaining: {
-//     fontSize: 12,
-//     color: '#9CA3AF',
-//   },
-//   milestoneProgressBar: {
-//     height: 6,
-//     backgroundColor: '#374151',
-//     borderRadius: 3,
-//     overflow: 'hidden',
-//   },
-//   milestoneProgressFill: {
-//     height: '100%',
-//     backgroundColor: '#F59E0B',
-//     borderRadius: 3,
-//   },
-//   completedContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   completedText: {
-//     fontSize: 12,
-//     color: '#10B981',
-//     marginLeft: 4,
-//   },
-//   streakCard: {
-//     backgroundColor: 'rgba(139, 92, 246, 0.3)',
-//     borderRadius: 12,
-//     padding: 12,
-//     marginBottom: 12,
-//     borderWidth: 1,
-//     borderColor: 'rgba(139, 92, 246, 0.5)',
-//   },
-//   streakHeader: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     marginBottom: 8,
-//   },
-//   streakTitleContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   streakTitle: {
-//     fontSize: 14,
-//     color: '#E5E7EB',
-//     marginLeft: 4,
-//   },
-//   streakReward: {
-//     fontSize: 14,
-//     fontWeight: '600',
-//     color: '#C084FC',
-//   },
-//   streakProgress: {
-//     flexDirection: 'row',
-//     marginTop: 8,
-//     gap: 2,
-//   },
-//   streakBar: {
-//     flex: 1,
-//     height: 4,
-//     backgroundColor: '#374151',
-//     borderRadius: 2,
-//   },
-//   streakBarActive: {
-//     backgroundColor: '#A855F7',
-//   },
-//   streakButton: {
-//     marginTop: 8,
-//     backgroundColor: '#9333EA',
-//     borderRadius: 8,
-//     paddingVertical: 6,
-//     alignItems: 'center',
-//   },
-//   streakButtonText: {
-//     color: '#FFFFFF',
-//     fontSize: 12,
-//     fontWeight: '500',
-//   },
-//   viewTiersButton: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     marginBottom: 8,
-//   },
-//   viewTiersContent: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   viewTiersText: {
-//     fontSize: 14,
-//     color: '#9CA3AF',
-//     marginLeft: 4,
-//   },
-//   tiersContainer: {
-//     marginBottom: 12,
-//     gap: 8,
-//   },
-//   tierItem: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     padding: 8,
-//     borderRadius: 8,
-//     backgroundColor: 'rgba(31, 41, 55, 0.5)',
-//   },
-//   tierItemClaimed: {
-//     backgroundColor: 'rgba(16, 185, 129, 0.2)',
-//     borderWidth: 1,
-//     borderColor: 'rgba(16, 185, 129, 0.3)',
-//   },
-//   tierItemAvailable: {
-//     backgroundColor: 'rgba(245, 158, 11, 0.2)',
-//     borderWidth: 1,
-//     borderColor: 'rgba(245, 158, 11, 0.3)',
-//   },
-//   tierItemBonus: {
-//     backgroundColor: 'rgba(236, 72, 153, 0.2)',
-//     borderWidth: 1,
-//     borderColor: 'rgba(236, 72, 153, 0.3)',
-//   },
-//   tierInfo: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   tierText: {
-//     fontSize: 12,
-//     color: '#D1D5DB',
-//     marginLeft: 4,
-//   },
-//   tierAction: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     gap: 8,
-//   },
-//   tierReward: {
-//     fontSize: 12,
-//     fontWeight: '600',
-//     color: '#9CA3AF',
-//   },
-//   tierRewardClaimed: {
-//     color: '#34D399',
-//   },
-//   tierRewardAvailable: {
-//     color: '#FBBF24',
-//   },
-//   tierRewardBonus: {
-//     color: '#F472B6',
-//   },
-//   claimButton: {
-//     backgroundColor: '#059669',
-//     borderRadius: 4,
-//     paddingHorizontal: 8,
-//     paddingVertical: 4,
-//   },
-//   claimButtonBonus: {
-//     backgroundColor: '#DB2777',
-//   },
-//   claimButtonText: {
-//     color: '#FFFFFF',
-//     fontSize: 10,
-//     fontWeight: '500',
-//   },
-//   showLessButton: {
-//     alignItems: 'center',
-//     marginTop: 4,
-//   },
-//   showLessText: {
-//     fontSize: 12,
-//     color: '#6B7280',
-//   },
-//   claimAllButton: {
-//     flexDirection: 'row',
-//     backgroundColor: '#10B981',
-//     borderRadius: 12,
-//     paddingVertical: 10,
-//     paddingHorizontal: 16,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     gap: 8,
-//     shadowColor: '#10B981',
-//     shadowOffset: { width: 0, height: 4 },
-//     shadowOpacity: 0.25,
-//     shadowRadius: 8,
-//     elevation: 8,
-//   },
-//   claimAllText: {
-//     color: '#FFFFFF',
-//     fontSize: 14,
-//     fontWeight: '500',
-//   },
-//   footerNote: {
-//     textAlign: 'center',
-//     fontSize: 10,
-//     color: '#6B7280',
-//     marginTop: 8,
-//   },
-//   loadingOverlay: {
-//     ...StyleSheet.absoluteFillObject,
-//     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-// });
-
-// export default EarningsSlideInManager;
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -1094,14 +753,12 @@ const { width } = Dimensions.get('window');
 
 const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
   const [timeSpent, setTimeSpent] = useState(0);
-  const [forceShow, setForceShow] = useState(false);
   const [earnedAmount, setEarnedAmount] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
-  const [animateValue] = useState(new Animated.Value(0));
   const [streakDays, setStreakDays] = useState(0);
   const [thresholds, setThresholds] = useState({
-    first: { hours: 1, reward: 0.2, can_claim: false, claimed: false },
-    second: { hours: 2, reward: 0.3, can_claim: false, claimed: false },
+    first: { hours: 1.0, reward: 0.2, can_claim: false, claimed: false },
+    second: { hours: 2.0, reward: 0.3, can_claim: false, claimed: false },
     bonus: { reward: 0.1, can_claim: false, claimed: false }
   });
   const [streakBonus, setStreakBonus] = useState({
@@ -1114,42 +771,31 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const slideAnim = useState(new Animated.Value(-500))[0];
+  
+  const [displayAmount, setDisplayAmount] = useState('0.00');
+  const amountAnim = useRef(new Animated.Value(0)).current;
 
+  const [sessionId, setSessionId] = useState(null);
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  const isEndingRef = useRef(false);
+  const hasEndedRef = useRef(false);
+
+  // Animate the displayed amount
+  const animateToAmount = useCallback((newAmount) => {
+    Animated.timing(amountAnim, {
+      toValue: newAmount,
+      duration: 800,
+      useNativeDriver: false,
+    }).start();
+  }, [amountAnim]);
+
+  // Add listener to update display amount
   useEffect(() => {
-    if (visible) {
-      console.log('EarningsSlideIn opened');
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 50,
-        friction: 8
-      }).start();
-      fetchActiveTimeStatus();
-      startActivitySession();
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: -500,
-        duration: 300,
-        useNativeDriver: true
-      }).start();
-    }
-  }, [visible]);
-
-  useEffect(() => {
-    // Auto-claim interval
-    const autoClaimInterval = setInterval(() => {
-      if (visible) {
-        checkAutoClaims();
-      }
-    }, 30 * 1000);
-
-    return () => {
-      if (visible) {
-        endActivitySession();
-      }
-      clearInterval(autoClaimInterval);
-    };
-  }, [visible]);
+    const listener = amountAnim.addListener(({ value }) => {
+      setDisplayAmount(value.toFixed(2));
+    });
+    return () => amountAnim.removeListener(listener);
+  }, [amountAnim]);
 
   const fetchActiveTimeStatus = useCallback(async () => {
     try {
@@ -1159,14 +805,14 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
         return;
       }
 
-      
       const response = await axios.get(`${API_ROUTE}/activity/status/`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      console.log('Fetching active time status...', response.data);
+      console.log('=== ACTIVE TIME STATUS ===');
+      console.log('Response:', JSON.stringify(response.data, null, 2));
 
       if (response.data) {
         const data = response.data;
@@ -1176,15 +822,18 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
         setStreakDays(data.streak_days || 0);
         setDailyMaximum(data.daily_maximum || 0.6);
         
+        animateToAmount(data.earned_today || 0);
+        
+        // USE THE BACKEND VALUES DIRECTLY
         setThresholds({
           first: {
-            hours: data.thresholds?.first?.hours || 1,
+            hours: data.thresholds?.first?.hours || 1.0,
             reward: data.thresholds?.first?.reward || 0.2,
             can_claim: data.thresholds?.first?.can_claim || false,
             claimed: data.thresholds?.first?.claimed || false
           },
           second: {
-            hours: data.thresholds?.second?.hours || 2,
+            hours: data.thresholds?.second?.hours || 2.0,
             reward: data.thresholds?.second?.reward || 0.3,
             can_claim: data.thresholds?.second?.can_claim || false,
             claimed: data.thresholds?.second?.claimed || false
@@ -1202,53 +851,142 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
           claimed: data.streak_bonus?.claimed || false,
           days_needed: data.streak_bonus?.days_needed || 7
         });
-
-        // Animate to current earned amount
-        Animated.timing(animateValue, {
-          toValue: data.earned_today || 0,
-          duration: 1000,
-          useNativeDriver: false
-        }).start();
       }
     } catch (err) {
       console.error('Error fetching active time status:', err);
       setError('Failed to load earnings data');
     }
-  }, [animateValue]);
+  }, [animateToAmount]);
 
   const startActivitySession = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) return;
 
-      await axios.post(`${API_ROUTE}/activity/start/`, {}, {
+      if (isSessionActive) {
+        console.log('Session already active');
+        return;
+      }
+
+      const response = await axios.post(`${API_ROUTE}/activity/start/`, {}, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      console.log('Activity session started');
+      
+      console.log('Activity session started:', response.data);
+      
+      if (response.data && response.data.session_id) {
+        setSessionId(response.data.session_id);
+        setIsSessionActive(true);
+        hasEndedRef.current = false;
+        await AsyncStorage.setItem('activity_session_id', String(response.data.session_id));
+      }
     } catch (err) {
       console.error('Error starting activity session:', err);
     }
-  }, []);
+  }, [isSessionActive]);
 
   const endActivitySession = useCallback(async () => {
+    if (isEndingRef.current) {
+      console.log('⏳ Session end already in progress, skipping...');
+      return;
+    }
+
+    if (hasEndedRef.current) {
+      console.log('✅ Session already ended, skipping...');
+      return;
+    }
+
     try {
+      isEndingRef.current = true;
+      
+      let currentSessionId = sessionId;
+      
+      if (!currentSessionId) {
+        currentSessionId = await AsyncStorage.getItem('activity_session_id');
+      }
+      
+      if (!currentSessionId) {
+        console.log('No active session to end');
+        return;
+      }
+
       const token = await AsyncStorage.getItem('userToken');
       if (!token) return;
 
-      await axios.post(`${API_ROUTE}/activity/end/`, {}, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      console.log('🔄 Ending session with ID:', currentSessionId);
+      
+      const response = await axios.post(`${API_ROUTE}/activity/end/`, 
+        { session_id: currentSessionId },
+        {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      });
-      console.log('Activity session ended');
+      );
+      
+      console.log('✅ Activity session ended:', response.data);
+      
+      hasEndedRef.current = true;
+      setSessionId(null);
+      setIsSessionActive(false);
+      await AsyncStorage.removeItem('activity_session_id');
+      
+      await fetchActiveTimeStatus();
+      
     } catch (err) {
-      console.error('Error ending activity session:', err);
+      console.error('❌ Error ending activity session:', err);
+    } finally {
+      isEndingRef.current = false;
     }
-  }, []);
+  }, [sessionId, fetchActiveTimeStatus]);
+
+  // Handle visibility changes
+  useEffect(() => {
+    if (visible) {
+      console.log('EarningsSlideIn opened');
+      hasEndedRef.current = false;
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8
+      }).start();
+      fetchActiveTimeStatus();
+      startActivitySession();
+    } else {
+      console.log('EarningsSlideIn closed - ending session');
+      endActivitySession();
+      Animated.timing(slideAnim, {
+        toValue: -500,
+        duration: 300,
+        useNativeDriver: true
+      }).start();
+    }
+
+    return () => {
+      if (visible && !hasEndedRef.current) {
+        endActivitySession();
+      }
+    };
+  }, [visible]);
+
+  // Auto-claim interval - check every 30 seconds for production
+  useEffect(() => {
+    const autoClaimInterval = setInterval(() => {
+      if (visible) {
+        console.log('🔄 Auto-checking claims...');
+        checkAutoClaims();
+      }
+    }, 30 * 1000); // Changed from 10s to 30s for production
+
+    return () => {
+      clearInterval(autoClaimInterval);
+    };
+  }, [visible]);
 
   const checkAutoClaims = useCallback(async () => {
     try {
@@ -1262,9 +1000,11 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
         }
       });
 
+      console.log('Auto-claim response:', response.data);
+
       if (response.data.claimed && response.data.claimed.length > 0) {
-        console.log('Auto-claimed rewards:', response.data.claimed);
-        fetchActiveTimeStatus();
+        console.log('✅ Auto-claimed rewards:', response.data.claimed);
+        await fetchActiveTimeStatus();
       }
     } catch (err) {
       console.error('Error checking auto claims:', err);
@@ -1282,7 +1022,7 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
         return;
       }
 
-      console.log('Claiming reward for threshold:', threshold);
+      console.log('🎯 Claiming reward for threshold:', threshold);
       const response = await axios.post(`${API_ROUTE}/activity/claim/`, 
         { threshold },
         { 
@@ -1293,27 +1033,25 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
         }
       );
 
+      console.log('Claim response:', response.data);
+
       if (response.data.success) {
-        setEarnedAmount(response.data.earned_today);
+        const newEarnedAmount = response.data.earned_today || earnedAmount;
+        setEarnedAmount(newEarnedAmount);
         
-        Animated.timing(animateValue, {
-          toValue: response.data.earned_today,
-          duration: 1000,
-          useNativeDriver: false
-        }).start();
+        animateToAmount(newEarnedAmount);
         
         if (onClaimReward) {
           onClaimReward({
-            amount: response.data.amount_usd,
-            coins: response.data.coins_awarded,
+            amount: response.data.amount_usd || 0,
+            coins: response.data.coins_awarded || 0,
             threshold: threshold
           });
         }
 
         await fetchActiveTimeStatus();
         
-        // Show success message
-        Alert.alert('Success!', `You earned $${response.data.amount_usd.toFixed(2)}!`);
+        Alert.alert('Success!', `You earned $${(response.data.amount_usd || 0).toFixed(2)}!`);
       } else {
         setError(response.data.message || 'Failed to claim reward');
       }
@@ -1327,38 +1065,55 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
 
   const getNextMilestone = useCallback(() => {
     if (!thresholds.first.claimed && timeSpent < thresholds.first.hours) {
+      const remainingMinutes = Math.round((thresholds.first.hours - timeSpent) * 60);
       return {
         target: thresholds.first.hours,
         reward: thresholds.first.reward,
-        remaining: (thresholds.first.hours - timeSpent).toFixed(1)
+        remaining: remainingMinutes > 0 ? `${remainingMinutes}m` : 'Almost there!',
+        label: `${Math.round(thresholds.first.hours)} hour${thresholds.first.hours > 1 ? 's' : ''}`
       };
     }
     if (!thresholds.second.claimed && timeSpent < thresholds.second.hours) {
+      const remainingMinutes = Math.round((thresholds.second.hours - timeSpent) * 60);
       return {
         target: thresholds.second.hours,
         reward: thresholds.second.reward,
-        remaining: (thresholds.second.hours - timeSpent).toFixed(1)
+        remaining: remainingMinutes > 0 ? `${remainingMinutes}m` : 'Almost there!',
+        label: `${Math.round(thresholds.second.hours)} hours`
       };
     }
-    // Fixed bonus condition - show when close to daily cap
     if (!thresholds.bonus.claimed && earnedAmount >= dailyMaximum - thresholds.bonus.reward && earnedAmount < dailyMaximum) {
       return {
         target: 'daily cap',
         reward: thresholds.bonus.reward,
-        remaining: ((dailyMaximum - earnedAmount) / thresholds.bonus.reward).toFixed(1) + 'x'
+        remaining: ((dailyMaximum - earnedAmount) / thresholds.bonus.reward).toFixed(1) + 'x',
+        label: 'Daily cap bonus'
       };
     }
-    return { target: 'completed', reward: 0, remaining: 'completed' };
+    return { target: 'completed', reward: 0, remaining: 'completed', label: 'Completed!' };
   }, [timeSpent, earnedAmount, thresholds, dailyMaximum]);
 
   const formatTime = (hours) => {
     if (hours < 1) {
       const minutes = Math.round(hours * 60);
-      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+      if (minutes < 1) return 'less than a minute';
+      if (minutes === 1) return '1 minute';
+      return `${minutes} minutes`;
     }
     if (hours === 1) return '1 hour';
     if (hours < 2) return `${hours.toFixed(1)} hours`;
-    return `${hours.toFixed(1)} hours`;
+    return `${Math.round(hours)} hours`;
+  };
+
+  // Format threshold label dynamically
+  const formatThresholdLabel = (hours) => {
+    if (hours < 1) {
+      const minutes = Math.round(hours * 60);
+      return `${minutes} minute${minutes > 1 ? 's' : ''} active`;
+    }
+    if (hours === 1) return '1 hour active';
+    if (hours === 2) return '2 hours active';
+    return `${Math.round(hours)} hours active`;
   };
 
   const nextMilestone = getNextMilestone();
@@ -1379,7 +1134,6 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
             { transform: [{ translateY: slideAnim }] }
           ]}
         >
-          {/* Close Button */}
           <TouchableOpacity
             onPress={onClose}
             style={styles.closeButton}
@@ -1387,7 +1141,6 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
             <Icon name="x" size={16} color="#9CA3AF" />
           </TouchableOpacity>
 
-          {/* Error Container */}
           {error && (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{error}</Text>
@@ -1416,19 +1169,22 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
                 </View>
               </View>
 
+              {/* Debug Info - Remove in production or keep for monitoring */}
+              {__DEV__ && (
+                <View style={styles.debugContainer}>
+                  <Text style={styles.debugText}>
+                    Time: {timeSpent.toFixed(3)}h ({Math.round(timeSpent * 60)}m) | 
+                    Earned: ${earnedAmount.toFixed(2)} | 
+                    1h: {thresholds.first.can_claim ? '✅' : '❌'} | 
+                    2h: {thresholds.second.can_claim ? '✅' : '❌'}
+                  </Text>
+                </View>
+              )}
+
               {/* Earnings Counter */}
               <View style={styles.counterContainer}>
-                {/* <Animated.Text style={styles.counterAmount}>
-                  ${animateValue.interpolate({
-                    inputRange: [0, dailyMaximum],
-                    outputRange: ['$0.00', `$${dailyMaximum.toFixed(2)}`]
-                  })}
-                </Animated.Text> */}
                 <Animated.Text style={styles.counterAmount}>
-                  {animateValue.interpolate({
-                    inputRange: [0, dailyMaximum],
-                    outputRange: ['$0.00', `$${dailyMaximum.toFixed(2)}`]
-                  })}
+                  ${displayAmount}
                 </Animated.Text>
                 <Text style={styles.counterLabel}>
                   earned so far today
@@ -1468,85 +1224,26 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
                     </Text>
                   </View>
                   
-                  {nextMilestone.remaining !== 'completed' ? (
-                    <>
-                      <View style={styles.milestoneProgressHeader}>
-                        <Text style={styles.milestoneProgressLabel}>
-                          {nextMilestone.target === 'daily cap' ? 'Daily cap bonus' : 
-                           nextMilestone.target === 1 ? '1 hour' : '2 hours'}
-                        </Text>
-                        <Text style={styles.milestoneProgressRemaining}>
-                          {typeof nextMilestone.remaining === 'string' && 
-                           nextMilestone.remaining.includes('x') 
-                            ? nextMilestone.remaining 
-                            : `${nextMilestone.remaining}h left`}
-                        </Text>
-                      </View>
-                      <View style={styles.milestoneProgressBar}>
-                        <View 
-                          style={[
-                            styles.milestoneProgressFill,
-                            { 
-                              width: nextMilestone.target === 'daily cap' 
-                                ? `${((dailyMaximum - earnedAmount) / dailyMaximum) * 100}%`
-                                : nextMilestone.target === 1 
-                                  ? (timeSpent / thresholds.first.hours) * 100 
-                                  : ((timeSpent - thresholds.first.hours) / 
-                                     (thresholds.second.hours - thresholds.first.hours)) * 100
-                            }
-                          ]}
-                        />
-                      </View>
-                    </>
-                  ) : (
-                    <View style={styles.completedContainer}>
-                      <Icon name="check-circle" size={12} color="#34D399" />
-                      <Text style={styles.completedText}>
-                        Daily cap reached! Come back tomorrow.
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {/* Streak Bonus */}
-              {streakDays > 0 && (
-                <View style={styles.streakCard}>
-                  <View style={styles.streakHeader}>
-                    <View style={styles.streakTitleContainer}>
-                      <Icon name="zap" size={14} color="#F97316" />
-                      <Text style={styles.streakTitle}>
-                        {streakDays}-day streak!
-                      </Text>
-                    </View>
-                    <Text style={styles.streakReward}>
-                      +${streakBonus.reward.toFixed(2)} this week
+                  <View style={styles.milestoneProgressHeader}>
+                    <Text style={styles.milestoneProgressLabel}>
+                      {nextMilestone.label}
+                    </Text>
+                    <Text style={styles.milestoneProgressRemaining}>
+                      {nextMilestone.remaining}
                     </Text>
                   </View>
-                  
-                  <View style={styles.streakProgress}>
-                    {[...Array(7)].map((_, i) => (
-                      <View 
-                        key={i}
-                        style={[
-                          styles.streakBar,
-                          i < streakDays && styles.streakBarActive
-                        ]}
-                      />
-                    ))}
+                  <View style={styles.milestoneProgressBar}>
+                    <View 
+                      style={[
+                        styles.milestoneProgressFill,
+                        { 
+                          width: nextMilestone.target === 'daily cap' 
+                            ? `${((dailyMaximum - earnedAmount) / dailyMaximum) * 100}%`
+                            : Math.min((timeSpent / nextMilestone.target) * 100, 100)
+                        }
+                      ]}
+                    />
                   </View>
-
-                  {!streakBonus.claimed && streakBonus.available && (
-                    <TouchableOpacity
-                      onPress={() => handleClaimReward('streak')}
-                      disabled={loading}
-                      style={styles.streakButton}
-                    >
-                      <Text style={styles.streakButtonText}>
-                        Claim Streak Bonus
-                      </Text>
-                    </TouchableOpacity>
-                  )}
                 </View>
               )}
 
@@ -1564,7 +1261,7 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
                 </TouchableOpacity>
               ) : (
                 <View style={styles.tiersContainer}>
-                  {/* First Threshold */}
+                  {/* First Threshold - Dynamic */}
                   <View style={[
                     styles.tierItem,
                     thresholds.first.claimed && styles.tierItemClaimed,
@@ -1573,7 +1270,7 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
                     <View style={styles.tierInfo}>
                       <Icon name="star" size={12} color="#FBBF24" />
                       <Text style={styles.tierText}>
-                        {thresholds.first.hours} hour active
+                        {formatThresholdLabel(thresholds.first.hours)}
                       </Text>
                     </View>
                     <View style={styles.tierAction}>
@@ -1599,7 +1296,7 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
                     </View>
                   </View>
 
-                  {/* Second Threshold */}
+                  {/* Second Threshold - Dynamic */}
                   <View style={[
                     styles.tierItem,
                     thresholds.second.claimed && styles.tierItemClaimed,
@@ -1608,7 +1305,7 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
                     <View style={styles.tierInfo}>
                       <Icon name="star" size={12} color="#FBBF24" />
                       <Text style={styles.tierText}>
-                        {thresholds.second.hours} hours active
+                        {formatThresholdLabel(thresholds.second.hours)}
                       </Text>
                     </View>
                     <View style={styles.tierAction}>
@@ -1699,7 +1396,6 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
             </View>
           </ScrollView>
 
-          {/* Loading Overlay */}
           {loading && (
             <View style={styles.loadingOverlay}>
               <ActivityIndicator size="large" color="#10B981" />
@@ -1711,10 +1407,10 @@ const EarningsSlideIn = ({ visible, onClose, onClaimReward, userData }) => {
   );
 };
 
+// Manager component
 const EarningsSlideInManager = () => {
   const [showEarnings, setShowEarnings] = useState(false);
   const [userData, setUserData] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const initializeEarnings = async () => {
@@ -1727,9 +1423,6 @@ const EarningsSlideInManager = () => {
           return;
         }
         
-        setIsLoggedIn(true);
-        
-        // Fetch user data
         try {
           const response = await axios.get(`${API_ROUTE}/user/profile/`, {
             headers: { 
@@ -1743,37 +1436,19 @@ const EarningsSlideInManager = () => {
           console.error('Error fetching user data:', err);
           if (err.response?.status === 401) {
             await AsyncStorage.removeItem('userToken');
-            setIsLoggedIn(false);
           }
           return;
         }
 
-        // Check last shown date
-        const lastShownDate = await AsyncStorage.getItem('earningsLastShown');
-        const today = new Date().toDateString();
+        // Show after 3 seconds for testing, change to 60 seconds for production
+        //const timerDuration = 3000; // 3 seconds for testing
+        //const timerDuration = 60000; // 1 minute for production
+         const timerDuration = 3600000;
+        console.log(`Will show earnings in ${timerDuration/1000} seconds...`);
         
-        if (lastShownDate && lastShownDate === today) {
-          console.log('Already shown earnings today');
-          return;
-        }
-
-        // Set timer to show earnings after 1 hour (3600000 ms)
-        // For testing, you can use a shorter time like 5000 (5 seconds)
-        const timerDuration = 3600000; // 1 hour
-        console.log(`Setting timer to show earnings in ${timerDuration/1000} seconds`);
-        
-        const timer = setTimeout(async () => {
-          const currentLastShown = await AsyncStorage.getItem('earningsLastShown');
-          const currentToday = new Date().toDateString();
-          const currentToken = await AsyncStorage.getItem('userToken');
-          
-          if ((!currentLastShown || currentLastShown !== currentToday) && currentToken) {
-            console.log('Showing earnings slide-in');
-            setShowEarnings(true);
-            await AsyncStorage.setItem('earningsLastShown', currentToday);
-          } else {
-            console.log('Earnings already shown today or user logged out');
-          }
+        const timer = setTimeout(() => {
+          console.log('Showing earnings slide-in');
+          setShowEarnings(true);
         }, timerDuration);
 
         return () => {
@@ -1795,7 +1470,6 @@ const EarningsSlideInManager = () => {
 
   const handleClaimReward = (rewardData) => {
     console.log('Reward claimed:', rewardData);
-    // You can add additional logic here like updating user balance
   };
 
   if (!showEarnings || !userData) return null;
@@ -1809,6 +1483,8 @@ const EarningsSlideInManager = () => {
     />
   );
 };
+
+
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -1858,6 +1534,17 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+  },
+  debugContainer: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  debugText: {
+    color: '#FBBF24',
+    fontSize: 10,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   headerContainer: {
     alignItems: 'center',
