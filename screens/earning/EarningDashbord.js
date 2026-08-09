@@ -1,12 +1,13 @@
-// import React, { useState, useEffect } from 'react';
+
+
+// import React, { useState, useEffect, useRef } from 'react';
 // import { 
 //   View, Text, StyleSheet, ScrollView, 
 //   TouchableOpacity, RefreshControl, ActivityIndicator,
-//    Animated, Dimensions, Modal,
-//    Alert, Linking,
-//    Platform, StatusBar,
+//   Animated, Dimensions, Modal,
+//   Alert, Linking,
+//   Platform, StatusBar,
 // } from 'react-native';
-
 // import Icon from 'react-native-vector-icons/MaterialIcons';
 // import Icon2 from 'react-native-vector-icons/FontAwesome5';
 // import LinearGradient from 'react-native-linear-gradient';
@@ -100,10 +101,9 @@
 //   const [fadeAnim] = useState(new Animated.Value(0));
 //   const [slideAnim] = useState(new Animated.Value(30));
 //   const [welcomeVisible, setWelcomeVisible] = useState(false);
-//   const [welcomeFadeAnim] = useState(new Animated.Value(0));
-//   const [welcomeScaleAnim] = useState(new Animated.Value(0.8));
   
 //   const { colors, theme, isDark } = useTheme();
+//   const hasCheckedFirstVisit = useRef(false);
 
 //   useEffect(() => {
 //     checkFirstVisit();
@@ -123,135 +123,105 @@
 //     ]).start();
 //   }, []);
 
-//   useEffect(() => {
-//     if (welcomeVisible) {
-//       Animated.parallel([
-//         Animated.timing(welcomeFadeAnim, {
-//           toValue: 1,
-//           duration: 500,
-//           useNativeDriver: true,
-//         }),
-//         Animated.spring(welcomeScaleAnim, {
-//           toValue: 1,
-//           tension: 50,
-//           friction: 7,
-//           useNativeDriver: true,
-//         }),
-//       ]).start();
-//     }
-//   }, [welcomeVisible]);
-
 //   const checkFirstVisit = async () => {
-//   try {
-//     const hasVisited = await AsyncStorage.getItem('hasVisitedEarnScreen');
-//     if (!hasVisited) {
-//       setWelcomeVisible(true);
-//       await AsyncStorage.setItem('hasVisitedEarnScreen', 'true');
-//     }
-//   } catch (error) {
-//     console.error('Error checking first visit:', error);
-//   }
-// };
-
-//   // const fetchEarnData = async () => {
-//   //   try {
-//   //     setLoading(true);
-//   //     const response = await api.get('/earn/enhanced/');
-//   //     setTasks(response.data.tasks);
-//   //     setStats(response.data.stats);
+//     if (hasCheckedFirstVisit.current) return;
+//     hasCheckedFirstVisit.current = true;
+    
+//     try {
+//       const hasVisited = await AsyncStorage.getItem('hasVisitedEarnScreen');
       
-//   //     if (response.data.stats) {
-//   //       setDailyProgress((response.data.stats.coins_today / response.data.stats.daily_cap) * 100);
-//   //       setWeeklyProgress((response.data.stats.coins_this_week / response.data.stats.weekly_cap) * 100);
-//   //     }
-//   //   } catch (error) {
-//   //     console.error('Error fetching earn data:', error);
-//   //     Alert.alert('Error', 'Failed to load earn tasks. Please try again.');
-//   //   } finally {
-//   //     setLoading(false);
-//   //     setRefreshing(false);
-//   //   }
-//   // };
+//       if (!hasVisited) {
+//         setTimeout(() => {
+//           setWelcomeVisible(true);
+//         }, 500);
+        
+//         await AsyncStorage.setItem('hasVisitedEarnScreen', 'true');
+//       }
+//     } catch (error) {
+//       console.error('Error checking first visit:', error);
+//     }
+//   };
+
+//   const closeWelcome = () => {
+//     setWelcomeVisible(false);
+//   };
 
 //   const fetchEarnData = async () => {
-//   try {
-//     setLoading(true);
-//     const response = await api.get('/earn/enhanced/');
-//     setTasks(response.data.tasks || []);
-  
-//     const statsData = response.data.stats || {
-//       coins_total: 0,
-//       usd_total: 0,
-//       streak: 0,
-//       coins_today: 0,
-//       daily_cap: 50,
-//       exchange_rate: 0.01,
-//       usd_available: 0,
-//     };
+//     try {
+//       setLoading(true);
+//       const response = await api.get('/earn/enhanced/');
+//       setTasks(response.data.tasks || []);
     
-    
-//     let coinsThisWeek = 0;
-//     const storedEarnings = await AsyncStorage.getItem('dailyEarnings');
-    
-//     if (storedEarnings) {
-//       const earningsHistory = JSON.parse(storedEarnings);
+//       const statsData = response.data.stats || {
+//         coins_total: 0,
+//         usd_total: 0,
+//         streak: 0,
+//         coins_today: 0,
+//         daily_cap: 50,
+//         exchange_rate: 0.01,
+//         usd_available: 0,
+//       };
+      
+//       let coinsThisWeek = 0;
+//       const storedEarnings = await AsyncStorage.getItem('dailyEarnings');
+      
+//       if (storedEarnings) {
+//         const earningsHistory = JSON.parse(storedEarnings);
+//         const today = new Date().toDateString();
+//         const sevenDaysAgo = new Date();
+//         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+//         coinsThisWeek = earningsHistory
+//           .filter(day => new Date(day.date) >= sevenDaysAgo)
+//           .reduce((sum, day) => sum + day.earned, 0);
+//       } else {
+//         coinsThisWeek = statsData.coins_today;
+//       }
+      
+//       const enhancedStats = {
+//         ...statsData,
+//         weekly_cap: 250,
+//         coins_this_week: coinsThisWeek,
+//       };
+      
+//       setStats(enhancedStats);
+//       setDailyProgress((enhancedStats.coins_today / enhancedStats.daily_cap) * 100);
+//       setWeeklyProgress((enhancedStats.coins_this_week / enhancedStats.weekly_cap) * 100);
+      
+//       await updateDailyEarnings(statsData.coins_today);
+      
+//     } catch (error) {
+//       console.error('Error fetching earn data:', error);
+//     } finally {
+//       setLoading(false);
+//       setRefreshing(false);
+//     }
+//   };
+
+//   const updateDailyEarnings = async (todayEarned) => {
+//     try {
+//       const stored = await AsyncStorage.getItem('dailyEarnings');
+//       let history = stored ? JSON.parse(stored) : [];
+      
 //       const today = new Date().toDateString();
-//       const sevenDaysAgo = new Date();
-//       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-//       coinsThisWeek = earningsHistory
-//         .filter(day => new Date(day.date) >= sevenDaysAgo)
-//         .reduce((sum, day) => sum + day.earned, 0);
-//     } else {
-     
-//       coinsThisWeek = statsData.coins_today;
+//       const todayIndex = history.findIndex(day => day.date === today);
+      
+//       if (todayIndex >= 0) {
+//         history[todayIndex].earned = todayEarned;
+//       } else {
+//         history.push({
+//           date: today,
+//           earned: todayEarned
+//         });
+//       }
+      
+//       history = history.slice(-30);
+      
+//       await AsyncStorage.setItem('dailyEarnings', JSON.stringify(history));
+//     } catch (error) {
+//       console.error('Error updating daily earnings:', error);
 //     }
-    
-//     const enhancedStats = {
-//       ...statsData,
-//       weekly_cap: 250,
-//       coins_this_week: coinsThisWeek,
-//     };
-    
-//     setStats(enhancedStats);
-//     setDailyProgress((enhancedStats.coins_today / enhancedStats.daily_cap) * 100);
-//     setWeeklyProgress((enhancedStats.coins_this_week / enhancedStats.weekly_cap) * 100);
-    
-//     await updateDailyEarnings(statsData.coins_today);
-    
-//   } catch (error) {
-//     console.error('Error fetching earn data:', error);
-//     Alert.alert('Error', 'Failed to load earn tasks. Please try again.');
-//   } finally {
-//     setLoading(false);
-//     setRefreshing(false);
-//   }
-// };
-
-// const updateDailyEarnings = async (todayEarned) => {
-//   try {
-//     const stored = await AsyncStorage.getItem('dailyEarnings');
-//     let history = stored ? JSON.parse(stored) : [];
-    
-//     const today = new Date().toDateString();
-//     const todayIndex = history.findIndex(day => day.date === today);
-    
-//     if (todayIndex >= 0) {
-//       history[todayIndex].earned = todayEarned;
-//     } else {
-//       history.push({
-//         date: today,
-//         earned: todayEarned
-//       });
-//     }
-    
-//     history = history.slice(-30);
-    
-//     await AsyncStorage.setItem('dailyEarnings', JSON.stringify(history));
-//   } catch (error) {
-//     console.error('Error updating daily earnings:', error);
-//   }
-// };
+//   };
 
 //   const onRefresh = () => {
 //     setRefreshing(true);
@@ -330,148 +300,156 @@
 //     );
 //   };
 
-//  const WelcomePopup = () => (
-//   <Modal
-//     transparent={true}
-//     visible={welcomeVisible}
-//     animationType="none" // Changed from "fade" to "none"
-//     onRequestClose={() => setWelcomeVisible(false)}
-//   >
-//     <View style={[styles.welcomeOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
-//       <View 
-//         style={[
-//           styles.welcomeContainer,
-//           { backgroundColor: colors.surface }
-//         ]}
+//   // ✅ STABLE WELCOME BOTTOM SHEET - No shaking
+//   const WelcomeBottomSheet = () => {
+//     if (!welcomeVisible) return null;
+
+//     return (
+//       <Modal
+//         transparent={true}
+//         visible={welcomeVisible}
+//         animationType="slide"
+//         onRequestClose={closeWelcome}
 //       >
-//         <LinearGradient
-//           colors={[colors.primary, colors.primaryDark || colors.primary]}
-//           style={styles.welcomeHeader}
-//         >
-//           <View style={[styles.welcomeIconCircle, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-//             <Icon name="monetization-on" size={50} color="#FFD700" />
-//           </View>
-//           <Text style={styles.welcomeTitle}>Welcome to Earn!</Text>
-//           <Text style={styles.welcomeSubtitle}>Start Making Money with Showa</Text>
-//         </LinearGradient>
-
-//         <ScrollView style={styles.welcomeContent} showsVerticalScrollIndicator={false}>
-//           <View style={styles.welcomeFeature}>
-//             <View style={[styles.featureIcon, { backgroundColor: isDark ? '#4CAF5030' : '#4CAF5020' }]}>
-//               <Icon name="auto-awesome" size={24} color="#4CAF50" />
-//             </View>
-//             <View style={styles.featureText}>
-//               <Text style={[styles.featureTitle, { color: colors.text }]}>Auto-Earn System</Text>
-//               <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>
-//                 Earn coins automatically while using Showa normally. No extra steps needed!
-//               </Text>
-//             </View>
-//           </View>
-
-//           <View style={styles.welcomeFeature}>
-//             <View style={[styles.featureIcon, { backgroundColor: isDark ? '#2196F330' : '#2196F320' }]}>
-//               <Icon name="trending-up" size={24} color="#2196F3" />
-//             </View>
-//             <View style={styles.featureText}>
-//               <Text style={[styles.featureTitle, { color: colors.text }]}>Multiple Earning Ways</Text>
-//               <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>
-//                 Watch videos, create posts, chat, and more - everything earns you money!
-//               </Text>
-//             </View>
-//           </View>
-
-//           <View style={styles.welcomeFeature}>
-//             <View style={[styles.featureIcon, { backgroundColor: isDark ? '#FF980030' : '#FF980020' }]}>
-//               <Icon name="attach-money" size={24} color="#FF9800" />
-//             </View>
-//             <View style={styles.featureText}>
-//               <Text style={[styles.featureTitle, { color: colors.text }]}>Real Cash Withdrawals</Text>
-//               <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>
-//                 Convert coins to real money via PayPal, bank transfer, or mobile money.
-//               </Text>
-//             </View>
-//           </View>
-
-//           <View style={styles.welcomeFeature}>
-//             <View style={[styles.featureIcon, { backgroundColor: isDark ? '#9C27B030' : '#9C27B020' }]}>
-//               <Icon name="security" size={24} color="#9C27B0" />
-//             </View>
-//             <View style={styles.featureText}>
-//               <Text style={[styles.featureTitle, { color: colors.text }]}>Secure & Reliable</Text>
-//               <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>
-//                 Your earnings are safe and withdrawals are processed quickly.
-//               </Text>
-//             </View>
-//           </View>
-
-//           <View style={[styles.earningsPreview, { backgroundColor: colors.surfaceSecondary }]}>
-//             <Text style={[styles.earningsTitle, { color: colors.text }]}>Quick Earnings Preview</Text>
-//             <View style={styles.earningsGrid}>
-//               <View style={[styles.earningItem, { backgroundColor: colors.surface }]}>
-//                 <Icon name="play-arrow" size={20} color="#2196F3" />
-//                 <Text style={[styles.earningText, { color: colors.text }]}>Watch Video</Text>
-//                 <Text style={styles.earningReward}>+1 coin</Text>
-//               </View>
-//               <View style={[styles.earningItem, { backgroundColor: colors.surface }]}>
-//                 <Icon name="favorite" size={20} color="#E91E63" />
-//                 <Text style={[styles.earningText, { color: colors.text }]}>Like Post</Text>
-//                 <Text style={styles.earningReward}>+0.5 coins</Text>
-//               </View>
-//               <View style={[styles.earningItem, { backgroundColor: colors.surface }]}>
-//                 <Icon name="create" size={20} color="#9C27B0" />
-//                 <Text style={[styles.earningText, { color: colors.text }]}>Create Post</Text>
-//                 <Text style={styles.earningReward}>+1 coin</Text>
-//               </View>
-//               <View style={[styles.earningItem, { backgroundColor: colors.surface }]}>
-//                 <Icon name="message" size={20} color="#00BCD4" />
-//                 <Text style={[styles.earningText, { color: colors.text }]}>Send Message</Text>
-//                 <Text style={styles.earningReward}>+1 coin</Text>
-//               </View>
-//             </View>
-//           </View>
-
-//           <View style={[styles.dailyLimitCard, { backgroundColor: isDark ? '#2E7D3220' : '#E8F5E9' }]}>
-//             <View style={styles.limitHeader}>
-//               <Icon name="today" size={22} color="#4CAF50" />
-//               <View style={styles.limitTexts}>
-//                 <Text style={[styles.limitTitle, { color: isDark ? '#A5D6A7' : '#2E7D32' }]}>Daily Earnings Limit</Text>
-//                 <Text style={[styles.limitAmount, { color: '#4CAF50' }]}>Up to {stats?.daily_cap || 50} coins/day</Text>
-//               </View>
-//             </View>
-//             <Text style={[styles.limitNote, { color: colors.textSecondary }]}>
-//               That's ≈ {formatCurrency((stats?.daily_cap || 50) * (stats?.exchange_rate || 0.01))} per day!
-//             </Text>
-//           </View>
-//         </ScrollView>
-
-//         <View style={[styles.welcomeFooter, { borderTopColor: colors.border }]}>
+//         <View style={[styles.bottomSheetOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
 //           <TouchableOpacity 
-//             style={styles.getStartedButton}
-//             onPress={() => setWelcomeVisible(false)}
-//             activeOpacity={0.8}
+//             style={styles.bottomSheetBackdrop}
+//             activeOpacity={1}
+//             onPress={closeWelcome}
+//           />
+//           <View 
+//             style={[
+//               styles.bottomSheetContainer,
+//               { 
+//                 backgroundColor: colors.surface,
+//                 borderTopLeftRadius: 28,
+//                 borderTopRightRadius: 28,
+//               }
+//             ]}
 //           >
-//             <LinearGradient
-//               colors={[colors.primary, colors.primaryDark || colors.primary]}
-//               style={styles.gradientButton}
+//             {/* Drag Handle */}
+//             <View style={styles.bottomSheetHandle}>
+//               <View style={[styles.handleBar, { backgroundColor: isDark ? '#444' : '#ddd' }]} />
+//             </View>
+
+//             {/* Header */}
+//             <View style={[styles.bottomSheetHeader, { borderBottomColor: colors.border }]}>
+//               <View style={[styles.bottomSheetIconContainer, { backgroundColor: colors.primary + '20' }]}>
+//                 <Icon name="monetization-on" size={32} color={colors.primary} />
+//               </View>
+//               <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>Welcome to Earn!</Text>
+//               <Text style={[styles.bottomSheetSubtitle, { color: colors.textSecondary }]}>
+//                 Start earning rewards on Showa
+//               </Text>
+//             </View>
+
+//             {/* Content */}
+//             <ScrollView 
+//               style={styles.bottomSheetContent}
+//               showsVerticalScrollIndicator={false}
 //             >
-//               <Text style={styles.getStartedText}>Get Started</Text>
-//               <Icon name="arrow-forward" size={22} color="#fff" style={styles.buttonIcon} />
-//             </LinearGradient>
-//           </TouchableOpacity>
-//           <TouchableOpacity 
-//             style={styles.skipButton}
-//             onPress={() => setWelcomeVisible(false)}
-//           >
-//             <Text style={[styles.skipText, { color: colors.textSecondary }]}>Maybe Later</Text>
-//           </TouchableOpacity>
-//           <Text style={[styles.welcomeFooterNote, { color: colors.textTertiary }]}>
-//             💡 Pro Tip: Check back daily for streak bonuses!
-//           </Text>
+//               {/* Feature 1 */}
+//               <View style={styles.bottomSheetFeature}>
+//                 <View style={[styles.bsFeatureIcon, { backgroundColor: isDark ? '#4CAF5030' : '#4CAF5020' }]}>
+//                   <Icon name="auto-awesome" size={20} color="#4CAF50" />
+//                 </View>
+//                 <View style={styles.bsFeatureText}>
+//                   <Text style={[styles.bsFeatureTitle, { color: colors.text }]}>Auto-Earn System</Text>
+//                   <Text style={[styles.bsFeatureDesc, { color: colors.textSecondary }]}>
+//                     Earn coins automatically while using Showa
+//                   </Text>
+//                 </View>
+//               </View>
+
+//               {/* Feature 2 */}
+//               <View style={styles.bottomSheetFeature}>
+//                 <View style={[styles.bsFeatureIcon, { backgroundColor: isDark ? '#2196F330' : '#2196F320' }]}>
+//                   <Icon name="trending-up" size={20} color="#2196F3" />
+//                 </View>
+//                 <View style={styles.bsFeatureText}>
+//                   <Text style={[styles.bsFeatureTitle, { color: colors.text }]}>Multiple Earning Ways</Text>
+//                   <Text style={[styles.bsFeatureDesc, { color: colors.textSecondary }]}>
+//                     Watch, create, chat, engage — everything earns!
+//                   </Text>
+//                 </View>
+//               </View>
+
+//               {/* Feature 3 */}
+//               <View style={styles.bottomSheetFeature}>
+//                 <View style={[styles.bsFeatureIcon, { backgroundColor: isDark ? '#FF980030' : '#FF980020' }]}>
+//                   <Icon name="attach-money" size={20} color="#FF9800" />
+//                 </View>
+//                 <View style={styles.bsFeatureText}>
+//                   <Text style={[styles.bsFeatureTitle, { color: colors.text }]}>Real Cash Withdrawals</Text>
+//                   <Text style={[styles.bsFeatureDesc, { color: colors.textSecondary }]}>
+//                     Convert coins to real money anytime
+//                   </Text>
+//                 </View>
+//               </View>
+
+//               {/* Quick Stats */}
+//               <View style={[styles.bsQuickStats, { backgroundColor: isDark ? colors.surfaceSecondary : '#f5f5f5' }]}>
+//                 <View style={styles.bsStatItem}>
+//                   <Icon name="play-arrow" size={16} color="#2196F3" />
+//                   <Text style={[styles.bsStatLabel, { color: colors.textSecondary }]}>Watch</Text>
+//                   <Text style={[styles.bsStatValue, { color: colors.text }]}>+1 coin</Text>
+//                 </View>
+//                 <View style={[styles.bsStatDivider, { backgroundColor: colors.border }]} />
+//                 <View style={styles.bsStatItem}>
+//                   <Icon name="favorite" size={16} color="#E91E63" />
+//                   <Text style={[styles.bsStatLabel, { color: colors.textSecondary }]}>Like</Text>
+//                   <Text style={[styles.bsStatValue, { color: colors.text }]}>+0.5 coin</Text>
+//                 </View>
+//                 <View style={[styles.bsStatDivider, { backgroundColor: colors.border }]} />
+//                 <View style={styles.bsStatItem}>
+//                   <Icon name="create" size={16} color="#9C27B0" />
+//                   <Text style={[styles.bsStatLabel, { color: colors.textSecondary }]}>Post</Text>
+//                   <Text style={[styles.bsStatValue, { color: colors.text }]}>+1 coin</Text>
+//                 </View>
+//                 <View style={[styles.bsStatDivider, { backgroundColor: colors.border }]} />
+//                 <View style={styles.bsStatItem}>
+//                   <Icon name="message" size={16} color="#00BCD4" />
+//                   <Text style={[styles.bsStatLabel, { color: colors.textSecondary }]}>Chat</Text>
+//                   <Text style={[styles.bsStatValue, { color: colors.text }]}>+1 coin</Text>
+//                 </View>
+//               </View>
+
+//               {/* Daily Limit */}
+//               <View style={[styles.bsLimitCard, { backgroundColor: isDark ? '#2E7D3220' : '#E8F5E9' }]}>
+//                 <Icon name="today" size={18} color="#4CAF50" />
+//                 <View style={styles.bsLimitText}>
+//                   <Text style={[styles.bsLimitTitle, { color: isDark ? '#A5D6A7' : '#2E7D32' }]}>
+//                     Daily Earnings Limit
+//                   </Text>
+//                   <Text style={[styles.bsLimitAmount, { color: '#4CAF50' }]}>
+//                     Up to {stats?.daily_cap || 50} coins/day
+//                   </Text>
+//                 </View>
+//               </View>
+//             </ScrollView>
+
+//             {/* Footer */}
+//             <View style={[styles.bottomSheetFooter, { borderTopColor: colors.border }]}>
+//               <TouchableOpacity 
+//                 style={[styles.bsGetStartedBtn, { backgroundColor: colors.primary }]}
+//                 onPress={closeWelcome}
+//                 activeOpacity={0.8}
+//               >
+//                 <Text style={styles.bsGetStartedText}>Get Started</Text>
+//                 <Icon name="arrow-forward" size={20} color="#fff" />
+//               </TouchableOpacity>
+//               <TouchableOpacity 
+//                 style={styles.bsSkipBtn}
+//                 onPress={closeWelcome}
+//               >
+//                 <Text style={[styles.bsSkipText, { color: colors.textSecondary }]}>Skip for now</Text>
+//               </TouchableOpacity>
+//             </View>
+//           </View>
 //         </View>
-//       </View>
-//     </View>
-//   </Modal>
-// );
+//       </Modal>
+//     );
+//   };
 
 //   return (
 //     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -480,7 +458,8 @@
 //         translucent={Platform.OS === 'android'}
 //         backgroundColor={Platform.OS === 'android' ? colors.primary : undefined}
 //       />
-//       <WelcomePopup />
+      
+     
       
 //       <ScrollView 
 //         showsVerticalScrollIndicator={false}
@@ -506,7 +485,6 @@
 //           </TouchableOpacity>
 //           <View>
 //             <Text style={styles.headerTitle}>Earn On Showa</Text>
-            
 //           </View>
 //           <TouchableOpacity 
 //             style={styles.walletButton}
@@ -668,8 +646,9 @@
 //               </View>
 //               <Text style={[styles.actionTitle, { color: colors.text }]}>Verify identity</Text>
 //               <Text style={styles.actionReward}>+700 coin per verification</Text>
-//               <Text style={[styles.actionSub, { color: colors.textSecondary }]}>0ne time</Text>
+//               <Text style={[styles.actionSub, { color: colors.textSecondary }]}>One time</Text>
 //             </TouchableOpacity>
+            
 //             <TouchableOpacity 
 //               style={[styles.actionCard, { backgroundColor: colors.surface }]}
 //               onPress={() => navigation.navigate('PurchaseData')}
@@ -678,8 +657,8 @@
 //                 <Icon name="create" size={28} color="#9C27B0" />
 //               </View>
 //               <Text style={[styles.actionTitle, { color: colors.text }]}>Purchase Data</Text>
-//               <Text style={styles.actionReward}>+70 coin per verification</Text>
-//               <Text style={[styles.actionSub, { color: colors.textSecondary }]}>constact reward</Text>
+//               <Text style={styles.actionReward}>+70 coin per purchase</Text>
+//               <Text style={[styles.actionSub, { color: colors.textSecondary }]}>Contact reward</Text>
 //             </TouchableOpacity>
             
 //             <TouchableOpacity 
@@ -1009,78 +988,75 @@
 //           </View>
 //         </View>
 
-        
-//        {/* Withdrawal Info */}
-//       <View style={styles.withdrawalSection}>
-//         <LinearGradient
-//           colors={[colors.primary, colors.primaryDark || colors.primary]}
-//           style={styles.withdrawalCard}
-//         >
-//           <Icon name="account-balance" size={40} color="#fff" style={styles.withdrawalIcon} />
-//           <Text style={styles.withdrawalTitle}>Ready to Cash Out?</Text>
-//           <Text style={styles.withdrawalAmount}>
-//             {formatCurrency(stats?.usd_available || 0)} available
-//           </Text>
-          
-//           <View style={[styles.withdrawalInfo, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
-//             <View style={styles.infoRow}>
-//               <Icon name="check-circle" size={16} color="#4CAF50" />
-//               <Text style={styles.infoText}>Minimum: {formatCurrency((stats?.withdrawal?.minimum_usd || 1))}</Text>
-//             </View>
-//             <View style={styles.infoRow}>
-//               <Icon name="check-circle" size={16} color="#4CAF50" />
-//               <Text style={styles.infoText}>Exchange Rate: 1 coin = {formatCurrency(stats?.exchange_rate || 0.01)}</Text>
-//             </View>
-//             <View style={styles.infoRow}>
-//               <Icon name="check-circle" size={16} color="#4CAF50" />
-//               <Text style={styles.infoText}>Withdrawal Fee: {stats?.withdrawal?.fee_percent || 5}%</Text>
-//             </View>
-//           </View>
-          
-//           {/* Updated Withdraw Button */}
-//           <TouchableOpacity 
-//             style={[
-//               styles.withdrawButton, 
-//               { 
-//                 backgroundColor: (stats?.usd_available || 0) <= 0 ? '#cccccc' : '#fff',
-//                 opacity: (stats?.usd_available || 0) <= 0 ? 0.6 : 1
-//               }
-//             ]}
-//             onPress={() => {
-//               if ((stats?.usd_available || 0) > 0) {
-//                 navigation.navigate('WithdrawEarning');
-//               } else {
-//                 Alert.alert(
-//                   'No Funds Available',
-//                   'You need to earn more coins before you can withdraw. Complete tasks to earn coins!',
-//                   [{ text: 'OK' }]
-//                 );
-//               }
-//             }}
-//             disabled={(stats?.usd_available || 0) <= 0}
+//         {/* Withdrawal Info */}
+//         <View style={styles.withdrawalSection}>
+//           <LinearGradient
+//             colors={[colors.primary, colors.primaryDark || colors.primary]}
+//             style={styles.withdrawalCard}
 //           >
-//             <Text style={[
-//               styles.withdrawButtonText, 
-//               { color: (stats?.usd_available || 0) <= 0 ? '#666666' : colors.primary }
-//             ]}>
-//               {(stats?.usd_available || 0) <= 0 ? 'No Funds Available' : 'Withdraw Now'}
+//             <Icon name="account-balance" size={40} color="#fff" style={styles.withdrawalIcon} />
+//             <Text style={styles.withdrawalTitle}>Ready to Cash Out?</Text>
+//             <Text style={styles.withdrawalAmount}>
+//               {formatCurrency(stats?.usd_available || 0)} available
 //             </Text>
-//             {(stats?.usd_available || 0) > 0 && (
-//               <Icon name="arrow-forward" size={20} color={colors.primary} />
-//             )}
-//           </TouchableOpacity>
-          
-//           {/* Optional: Add a message when funds are zero */}
-//           {(stats?.usd_available || 0) <= 0 && (
-//             <View style={[styles.zeroFundsMessage, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
-//               <Icon name="info" size={16} color="#FFD700" />
-//               <Text style={[styles.zeroFundsText, { color: '#fff', fontSize: 12, marginLeft: 5 }]}>
-//                 Complete tasks above to earn coins
-//               </Text>
+            
+//             <View style={[styles.withdrawalInfo, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+//               <View style={styles.infoRow}>
+//                 <Icon name="check-circle" size={16} color="#4CAF50" />
+//                 <Text style={styles.infoText}>Minimum: {formatCurrency((stats?.withdrawal?.minimum_usd || 1))}</Text>
+//               </View>
+//               <View style={styles.infoRow}>
+//                 <Icon name="check-circle" size={16} color="#4CAF50" />
+//                 <Text style={styles.infoText}>Exchange Rate: 1 coin = {formatCurrency(stats?.exchange_rate || 0.01)}</Text>
+//               </View>
+//               <View style={styles.infoRow}>
+//                 <Icon name="check-circle" size={16} color="#4CAF50" />
+//                 <Text style={styles.infoText}>Withdrawal Fee: {stats?.withdrawal?.fee_percent || 5}%</Text>
+//               </View>
 //             </View>
-//           )}
-//         </LinearGradient>
-//       </View>
+            
+//             <TouchableOpacity 
+//               style={[
+//                 styles.withdrawButton, 
+//                 { 
+//                   backgroundColor: (stats?.usd_available || 0) <= 0 ? '#cccccc' : '#fff',
+//                   opacity: (stats?.usd_available || 0) <= 0 ? 0.6 : 1
+//                 }
+//               ]}
+//               onPress={() => {
+//                 if ((stats?.usd_available || 0) > 0) {
+//                   navigation.navigate('WithdrawEarning');
+//                 } else {
+//                   Alert.alert(
+//                     'No Funds Available',
+//                     'You need to earn more coins before you can withdraw. Complete tasks to earn coins!',
+//                     [{ text: 'OK' }]
+//                   );
+//                 }
+//               }}
+//               disabled={(stats?.usd_available || 0) <= 0}
+//             >
+//               <Text style={[
+//                 styles.withdrawButtonText, 
+//                 { color: (stats?.usd_available || 0) <= 0 ? '#666666' : colors.primary }
+//               ]}>
+//                 {(stats?.usd_available || 0) <= 0 ? 'No Funds Available' : 'Withdraw Now'}
+//               </Text>
+//               {(stats?.usd_available || 0) > 0 && (
+//                 <Icon name="arrow-forward" size={20} color={colors.primary} />
+//               )}
+//             </TouchableOpacity>
+            
+//             {(stats?.usd_available || 0) <= 0 && (
+//               <View style={[styles.zeroFundsMessage, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+//                 <Icon name="info" size={16} color="#FFD700" />
+//                 <Text style={[styles.zeroFundsText, { color: '#fff', fontSize: 12, marginLeft: 5 }]}>
+//                   Complete tasks above to earn coins
+//                 </Text>
+//               </View>
+//             )}
+//           </LinearGradient>
+//         </View>
 
 //         {/* FAQ Section */}
 //         <View style={styles.faqSection}>
@@ -1261,218 +1237,164 @@
 //   container: {
 //     flex: 1,
 //   },
-//   // Welcome Popup Styles
-//   welcomeOverlay: {
+//   // ============================================================
+//   // BOTTOM SHEET STYLES - STABLE VERSION
+//   // ============================================================
+//   bottomSheetOverlay: {
 //     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     padding: 20,
+//     justifyContent: 'flex-end',
 //   },
-//   welcomeContainer: {
-//     width: '100%',
-//     maxWidth: 400,
-//     maxHeight: '85%',
-//     borderRadius: 25,
-//     overflow: 'hidden',
+//   bottomSheetBackdrop: {
+//     position: 'absolute',
+//     top: 0,
+//     left: 0,
+//     right: 0,
+//     bottom: 0,
+//   },
+//   bottomSheetContainer: {
+//     maxHeight: height * 0.85,
+//     paddingHorizontal: 20,
+//     paddingBottom: 20,
 //     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 20 },
-//     shadowOpacity: 0.3,
-//     shadowRadius: 30,
-//     elevation: 20,
+//     shadowOffset: { width: 0, height: -5 },
+//     shadowOpacity: 0.2,
+//     shadowRadius: 20,
+//     elevation: 25,
 //   },
-//   welcomeHeader: {
-//     paddingVertical: Platform.OS === 'android'? 30 : 0,
-//     paddingHorizontal: Platform.OS === 'android'? 20 :20,
+//   bottomSheetHandle: {
 //     alignItems: 'center',
+//     paddingVertical: 12,
 //   },
-//   welcomeIconCircle: {
-//     width: 80,
-//     marginTop:20,
-//     height: 80,
-//     borderRadius: 40,
+//   handleBar: {
+//     width: 40,
+//     height: 4,
+//     borderRadius: 2,
+//   },
+//   bottomSheetHeader: {
+//     alignItems: 'center',
+//     paddingBottom: 16,
+//     borderBottomWidth: 1,
+//   },
+//   bottomSheetIconContainer: {
+//     width: 64,
+//     height: 64,
+//     borderRadius: 32,
 //     justifyContent: 'center',
 //     alignItems: 'center',
-//     marginBottom: 15,
+//     marginBottom: 12,
 //   },
-//   welcomeTitle: {
-//     fontSize: 28,
-//     fontWeight: 'bold',
-//     color: '#fff',
-//     textAlign: 'center',
-//     marginBottom: 5,
-//   },
-//   welcomeSubtitle: {
-//     fontSize: 16,
-//     color: 'rgba(255,255,255,0.9)',
-//     textAlign: 'center',
-//     marginBottom:20
-//   },
-//   welcomeContent: {
-//     maxHeight: height * 0.45,
-//     padding: 20,
-//   },
-//   welcomeFeature: {
-//     flexDirection: 'row',
-//     alignItems: 'flex-start',
-//     marginBottom: 20,
-//   },
-//   featureIcon: {
-//     width: 50,
-//     height: 50,
-//     borderRadius: 25,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     marginRight: 15,
-//   },
-//   featureText: {
-//     flex: 1,
-//   },
-//   featureTitle: {
-//     fontSize: 16,
+//   bottomSheetTitle: {
+//     fontSize: 24,
 //     fontWeight: 'bold',
 //     marginBottom: 4,
 //   },
-//   featureDescription: {
-//     fontSize: 14,
-//     lineHeight: 20,
+//   bottomSheetSubtitle: {
+//     fontSize: 15,
 //   },
-//   earningsPreview: {
-//     marginTop: 15,
-//     marginBottom: 20,
-//     padding: 15,
-//     borderRadius: 15,
+//   bottomSheetContent: {
+//     paddingVertical: 16,
 //   },
-//   earningsTitle: {
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//     marginBottom: 12,
-//     textAlign: 'center',
-//   },
-//   earningsGrid: {
-//     flexDirection: 'row',
-//     flexWrap: 'wrap',
-//     justifyContent: 'space-between',
-//   },
-//   earningItem: {
-//     width: '48%',
-//     borderRadius: 10,
-//     padding: 12,
-//     marginBottom: 10,
-//     alignItems: 'center',
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 1 },
-//     shadowOpacity: 0.05,
-//     shadowRadius: 2,
-//     elevation: 1,
-//   },
-//   earningText: {
-//     fontSize: 12,
-//     marginVertical: 5,
-//     textAlign: 'center',
-//   },
-//   earningReward: {
-//     fontSize: 13,
-//     fontWeight: 'bold',
-//     color: '#0d64dd',
-//   },
-//   dailyLimitCard: {
-//     borderRadius: 12,
-//     padding: 15,
-//     marginTop: 10,
-//   },
-//   limitHeader: {
+//   bottomSheetFeature: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
-//     marginBottom: 8,
+//     paddingVertical: 10,
+//     paddingHorizontal: 4,
 //   },
-//   limitTexts: {
-//     marginLeft: 10,
+//   bsFeatureIcon: {
+//     width: 40,
+//     height: 40,
+//     borderRadius: 20,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginRight: 14,
+//   },
+//   bsFeatureText: {
 //     flex: 1,
 //   },
-//   limitTitle: {
+//   bsFeatureTitle: {
 //     fontSize: 15,
+//     fontWeight: '600',
+//     marginBottom: 2,
+//   },
+//   bsFeatureDesc: {
+//     fontSize: 13,
+//     lineHeight: 18,
+//   },
+//   bsQuickStats: {
+//     flexDirection: 'row',
+//     borderRadius: 12,
+//     paddingVertical: 12,
+//     marginTop: 12,
+//     marginBottom: 16,
+//     justifyContent: 'space-around',
+//     alignItems: 'center',
+//   },
+//   bsStatItem: {
+//     flex: 1,
+//     alignItems: 'center',
+//     paddingHorizontal: 4,
+//   },
+//   bsStatLabel: {
+//     fontSize: 11,
+//     marginVertical: 2,
+//   },
+//   bsStatValue: {
+//     fontSize: 14,
 //     fontWeight: 'bold',
 //   },
-//   limitAmount: {
-//     fontSize: 13,
+//   bsStatDivider: {
+//     width: 1,
+//     height: 30,
 //   },
-//   limitNote: {
-//     fontSize: 13,
-//     fontStyle: 'italic',
+//   bsLimitCard: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     borderRadius: 12,
+//     padding: 14,
+//     marginBottom: 8,
 //   },
-//   welcomeFooter: {
-//     padding: 20,
+//   bsLimitText: {
+//     marginLeft: 12,
+//     flex: 1,
+//   },
+//   bsLimitTitle: {
+//     fontSize: 14,
+//     fontWeight: '600',
+//     marginBottom: 2,
+//   },
+//   bsLimitAmount: {
+//     fontSize: 13,
+//     fontWeight: '500',
+//   },
+//   bottomSheetFooter: {
+//     paddingTop: 16,
 //     borderTopWidth: 1,
 //     alignItems: 'center',
 //   },
-//   getStartedButton: {
-//     width: '100%',
-//     marginBottom: 15,
-//   },
-//   gradientButton: {
+//   bsGetStartedBtn: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
 //     justifyContent: 'center',
+//     paddingVertical: 14,
 //     borderRadius: 25,
+//     width: '100%',
+//     marginBottom: 10,
 //   },
-//   getStartedText: {
+//   bsGetStartedText: {
 //     color: '#fff',
-//     fontSize: 18,
+//     fontSize: 16,
 //     fontWeight: 'bold',
 //     marginRight: 10,
-//     padding:20,
 //   },
-//   buttonIcon: {
-//     marginLeft: 5,
+//   bsSkipBtn: {
+//     paddingVertical: 8,
 //   },
-//   skipButton: {
-//     padding: 10,
-//   },
-//   skipText: {
+//   bsSkipText: {
 //     fontSize: 14,
 //   },
-//   welcomeFooterNote: {
-//     fontSize: 12,
-//     marginTop: 15,
-//     textAlign: 'center',
-//     fontStyle: 'italic',
-//   },
-//   loadingContainer: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   loadingText: {
-//     marginTop: 10,
-//     fontSize: 16,
-//   },
-//   withdrawButton: {
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   justifyContent: 'center',
-//   paddingVertical: 15,
-//   marginBottom: 20,
-//   borderRadius: 25,
-//   width: '90%',
-// },
-// withdrawButtonText: {
-//   fontSize: 16,
-//   fontWeight: 'bold',
-//   marginRight: 10,
-// },
-// zeroFundsMessage: {
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   justifyContent: 'center',
-//   padding: 10,
-//   borderRadius: 10,
-//   marginBottom: 10,
-//   width: '90%',
-// },
-// zeroFundsText: {
-//   fontSize: 12,
-//   fontStyle: 'italic',
-// },
+//   // ============================================================
+//   // EXISTING STYLES (unchanged)
+//   // ============================================================
 //   header: {
 //     flexDirection: 'row',
 //     justifyContent: 'space-between',
@@ -1482,8 +1404,8 @@
 //   },
 //   backButton: {
 //     padding: 5,
-//      marginHorizontal:20,
-//      marginTop:60
+//     marginHorizontal:20,
+//     marginTop:60
 //   },
 //   headerTitle: {
 //     fontSize: 27,
@@ -1794,12 +1716,24 @@
 //     marginBottom:20,
 //     borderRadius: 25,
 //     width: '90%',
-    
 //   },
 //   withdrawButtonText: {
 //     fontSize: 16,
 //     fontWeight: 'bold',
 //     marginRight: 10,
+//   },
+//   zeroFundsMessage: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     padding: 10,
+//     borderRadius: 10,
+//     marginBottom: 10,
+//     width: '90%',
+//   },
+//   zeroFundsText: {
+//     fontSize: 12,
+//     fontStyle: 'italic',
 //   },
 //   faqSection: {
 //     marginHorizontal: 20,
@@ -1987,6 +1921,7 @@
 // });
 
 // export default EarnTasksScreen;
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, 
@@ -2088,6 +2023,7 @@ const EarnTasksScreen = ({ navigation }) => {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(30));
   const [welcomeVisible, setWelcomeVisible] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   
   const { colors, theme, isDark } = useTheme();
   const hasCheckedFirstVisit = useRef(false);
@@ -2129,10 +2065,28 @@ const EarnTasksScreen = ({ navigation }) => {
     }
   };
 
+  const closeWelcome = () => {
+    setWelcomeVisible(false);
+  };
+
   const fetchEarnData = async () => {
     try {
       setLoading(true);
+      setLoadingProgress(10);
+      
+      const progressInterval = setInterval(() => {
+        setLoadingProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+      
       const response = await api.get('/earn/enhanced/');
+      setLoadingProgress(70);
+      
       setTasks(response.data.tasks || []);
     
       const statsData = response.data.stats || {
@@ -2173,11 +2127,17 @@ const EarnTasksScreen = ({ navigation }) => {
       
       await updateDailyEarnings(statsData.coins_today);
       
+      clearInterval(progressInterval);
+      setLoadingProgress(100);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, 300);
+      
     } catch (error) {
       console.error('Error fetching earn data:', error);
-      //Alert.alert('Error', 'Failed to load earn tasks. Please try again.');
-    } finally {
       setLoading(false);
+    } finally {
       setRefreshing(false);
     }
   };
@@ -2284,152 +2244,69 @@ const EarnTasksScreen = ({ navigation }) => {
     );
   };
 
-  const WelcomePopup = () => {
-    if (!welcomeVisible) return null;
-    
+  // ✅ LOADING SPINNER COMPONENT
+  const LoadingSpinner = () => {
     return (
-      <Modal
-        transparent={true}
-        visible={welcomeVisible}
-        animationType="fade"
-        onRequestClose={() => setWelcomeVisible(false)}
-      >
-        <View style={[styles.welcomeOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
-          <View 
-            style={[
-              styles.welcomeContainer,
-              { backgroundColor: colors.surface }
-            ]}
-          >
-            <LinearGradient
-              colors={[colors.primary, colors.primaryDark || colors.primary]}
-              style={styles.welcomeHeader}
-            >
-              <View style={[styles.welcomeIconCircle, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                <Icon name="monetization-on" size={50} color="#FFD700" />
-              </View>
-              <Text style={styles.welcomeTitle}>Welcome to Earn!</Text>
-              <Text style={styles.welcomeSubtitle}>Start Making Money with Showa</Text>
-            </LinearGradient>
-
-            <ScrollView style={styles.welcomeContent} showsVerticalScrollIndicator={false}>
-              <View style={styles.welcomeFeature}>
-                <View style={[styles.featureIcon, { backgroundColor: isDark ? '#4CAF5030' : '#4CAF5020' }]}>
-                  <Icon name="auto-awesome" size={24} color="#4CAF50" />
-                </View>
-                <View style={styles.featureText}>
-                  <Text style={[styles.featureTitle, { color: colors.text }]}>Auto-Earn System</Text>
-                  <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>
-                    Earn coins automatically while using Showa normally. No extra steps needed!
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.welcomeFeature}>
-                <View style={[styles.featureIcon, { backgroundColor: isDark ? '#2196F330' : '#2196F320' }]}>
-                  <Icon name="trending-up" size={24} color="#2196F3" />
-                </View>
-                <View style={styles.featureText}>
-                  <Text style={[styles.featureTitle, { color: colors.text }]}>Multiple Earning Ways</Text>
-                  <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>
-                    Watch videos, create posts, chat, and more - everything earns you money!
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.welcomeFeature}>
-                <View style={[styles.featureIcon, { backgroundColor: isDark ? '#FF980030' : '#FF980020' }]}>
-                  <Icon name="attach-money" size={24} color="#FF9800" />
-                </View>
-                <View style={styles.featureText}>
-                  <Text style={[styles.featureTitle, { color: colors.text }]}>Real Cash Withdrawals</Text>
-                  <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>
-                    Convert coins to real money via PayPal, bank transfer, or mobile money.
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.welcomeFeature}>
-                <View style={[styles.featureIcon, { backgroundColor: isDark ? '#9C27B030' : '#9C27B020' }]}>
-                  <Icon name="security" size={24} color="#9C27B0" />
-                </View>
-                <View style={styles.featureText}>
-                  <Text style={[styles.featureTitle, { color: colors.text }]}>Secure & Reliable</Text>
-                  <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>
-                    Your earnings are safe and withdrawals are processed quickly.
-                  </Text>
-                </View>
-              </View>
-
-              <View style={[styles.earningsPreview, { backgroundColor: colors.surfaceSecondary }]}>
-                <Text style={[styles.earningsTitle, { color: colors.text }]}>Quick Earnings Preview</Text>
-                <View style={styles.earningsGrid}>
-                  <View style={[styles.earningItem, { backgroundColor: colors.surface }]}>
-                    <Icon name="play-arrow" size={20} color="#2196F3" />
-                    <Text style={[styles.earningText, { color: colors.text }]}>Watch Video</Text>
-                    <Text style={styles.earningReward}>+1 coin</Text>
-                  </View>
-                  <View style={[styles.earningItem, { backgroundColor: colors.surface }]}>
-                    <Icon name="favorite" size={20} color="#E91E63" />
-                    <Text style={[styles.earningText, { color: colors.text }]}>Like Post</Text>
-                    <Text style={styles.earningReward}>+0.5 coins</Text>
-                  </View>
-                  <View style={[styles.earningItem, { backgroundColor: colors.surface }]}>
-                    <Icon name="create" size={20} color="#9C27B0" />
-                    <Text style={[styles.earningText, { color: colors.text }]}>Create Post</Text>
-                    <Text style={styles.earningReward}>+1 coin</Text>
-                  </View>
-                  <View style={[styles.earningItem, { backgroundColor: colors.surface }]}>
-                    <Icon name="message" size={20} color="#00BCD4" />
-                    <Text style={[styles.earningText, { color: colors.text }]}>Send Message</Text>
-                    <Text style={styles.earningReward}>+1 coin</Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={[styles.dailyLimitCard, { backgroundColor: isDark ? '#2E7D3220' : '#E8F5E9' }]}>
-                <View style={styles.limitHeader}>
-                  <Icon name="today" size={22} color="#4CAF50" />
-                  <View style={styles.limitTexts}>
-                    <Text style={[styles.limitTitle, { color: isDark ? '#A5D6A7' : '#2E7D32' }]}>Daily Earnings Limit</Text>
-                    <Text style={[styles.limitAmount, { color: '#4CAF50' }]}>Up to {stats?.daily_cap || 50} coins/day</Text>
-                  </View>
-                </View>
-                <Text style={[styles.limitNote, { color: colors.textSecondary }]}>
-                  That's ≈ {formatCurrency((stats?.daily_cap || 50) * (stats?.exchange_rate || 0.01))} per day!
-                </Text>
-              </View>
-            </ScrollView>
-
-            <View style={[styles.welcomeFooter, { borderTopColor: colors.border }]}>
-              <TouchableOpacity 
-                style={styles.getStartedButton}
-                onPress={() => setWelcomeVisible(false)}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={[colors.primary, colors.primaryDark || colors.primary]}
-                  style={styles.gradientButton}
-                >
-                  <Text style={styles.getStartedText}>Get Started</Text>
-                  <Icon name="arrow-forward" size={22} color="#fff" style={styles.buttonIcon} />
-                </LinearGradient>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.skipButton}
-                onPress={() => setWelcomeVisible(false)}
-              >
-                <Text style={[styles.skipText, { color: colors.textSecondary }]}>Maybe Later</Text>
-              </TouchableOpacity>
-              <Text style={[styles.welcomeFooterNote, { color: colors.textTertiary }]}>
-                💡 Pro Tip: Check back daily for streak bonuses!
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <View style={styles.loadingContent}>
+          <View style={styles.loadingSpinnerWrapper}>
+            <View style={[styles.loadingSpinner, { borderColor: colors.primary + '30' }]}>
+              <View style={[styles.loadingSpinnerInner, { borderTopColor: colors.primary }]} />
+            </View>
+          </View>
+          
+          <Text style={[styles.loadingTitle, { color: colors.text }]}>
+            Loading Earn Dashboard
+          </Text>
+          
+          <View style={styles.loadingProgressContainer}>
+            <View style={[styles.loadingProgressBar, { backgroundColor: colors.border }]}>
+              <Animated.View 
+                style={[
+                  styles.loadingProgressFill, 
+                  { 
+                    width: `${loadingProgress}%`,
+                    backgroundColor: colors.primary 
+                  }
+                ]} 
+              />
+            </View>
+            <Text style={[styles.loadingProgressText, { color: colors.textSecondary }]}>
+              {loadingProgress}%
+            </Text>
+          </View>
+          
+          <View style={styles.loadingTips}>
+            <View style={styles.loadingTipItem}>
+              <View style={[styles.loadingTipDot, { backgroundColor: colors.primary }]} />
+              <Text style={[styles.loadingTipText, { color: colors.textSecondary }]}>
+                Loading your earnings...d
+              </Text>
+            </View>
+            <View style={styles.loadingTipItem}>
+              <View style={[styles.loadingTipDot, { backgroundColor: colors.primary + '80' }]} />
+              <Text style={[styles.loadingTipText, { color: colors.textSecondary }]}>
+                Calculating rewards...
+              </Text>
+            </View>
+            <View style={styles.loadingTipItem}>
+              <View style={[styles.loadingTipDot, { backgroundColor: colors.primary + '50' }]} />
+              <Text style={[styles.loadingTipText, { color: colors.textSecondary }]}>
+                Preparing your dashboard...
               </Text>
             </View>
           </View>
         </View>
-      </Modal>
+      </View>
     );
   };
+
+
+
+  // If loading, show spinner
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -2438,8 +2315,6 @@ const EarnTasksScreen = ({ navigation }) => {
         translucent={Platform.OS === 'android'}
         backgroundColor={Platform.OS === 'android' ? colors.primary : undefined}
       />
-      
-      <WelcomePopup />
       
       <ScrollView 
         showsVerticalScrollIndicator={false}
@@ -3209,6 +3084,8 @@ const EarnTasksScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+
+     
     </View>
   );
 };
@@ -3217,182 +3094,242 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  // Welcome Popup Styles
-  welcomeOverlay: {
+  // ============================================================
+  // LOADING SPINNER STYLES
+  // ============================================================
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
-  welcomeContainer: {
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '85%',
-    borderRadius: 25,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.3,
-    shadowRadius: 30,
-    elevation: 20,
-  },
-  welcomeHeader: {
-    paddingVertical: Platform.OS === 'android'? 30 : 0,
-    paddingHorizontal: Platform.OS === 'android'? 20 :20,
+  loadingContent: {
     alignItems: 'center',
+    paddingHorizontal: 40,
+    width: '100%',
   },
-  welcomeIconCircle: {
-    width: 80,
-    marginTop:20,
-    height: 80,
-    borderRadius: 40,
+  loadingSpinnerWrapper: {
+    marginBottom: 30,
+  },
+  loadingSpinner: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 4,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
   },
-  welcomeTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  welcomeSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.9)',
-    textAlign: 'center',
-    marginBottom:20
-  },
-  welcomeContent: {
-    maxHeight: height * 0.45,
-    padding: 20,
-  },
-  welcomeFeature: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-  },
-  featureIcon: {
+  loadingSpinnerInner: {
     width: 50,
     height: 50,
     borderRadius: 25,
+    borderWidth: 4,
+    borderColor: 'transparent',
+    borderTopColor: '#0D64DD',
+  },
+  loadingTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  loadingProgressContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 30,
+  },
+  loadingProgressBar: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  loadingProgressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  loadingProgressText: {
+    fontSize: 14,
+    fontWeight: '600',
+    minWidth: 40,
+    textAlign: 'right',
+  },
+  loadingTips: {
+    width: '100%',
+    gap: 10,
+  },
+  loadingTipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  loadingTipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  loadingTipText: {
+    fontSize: 14,
+  },
+  // ============================================================
+  // BOTTOM SHEET STYLES - STABLE VERSION
+  // ============================================================
+  bottomSheetOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  bottomSheetBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  bottomSheetContainer: {
+    maxHeight: height * 0.85,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 25,
+  },
+  bottomSheetHandle: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  handleBar: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+  },
+  bottomSheetHeader: {
+    alignItems: 'center',
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+  },
+  bottomSheetIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginBottom: 12,
   },
-  featureText: {
-    flex: 1,
-  },
-  featureTitle: {
-    fontSize: 16,
+  bottomSheetTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  featureDescription: {
-    fontSize: 14,
-    lineHeight: 20,
+  bottomSheetSubtitle: {
+    fontSize: 15,
   },
-  earningsPreview: {
-    marginTop: 15,
-    marginBottom: 20,
-    padding: 15,
-    borderRadius: 15,
+  bottomSheetContent: {
+    paddingVertical: 16,
   },
-  earningsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  earningsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  earningItem: {
-    width: '48%',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  earningText: {
-    fontSize: 12,
-    marginVertical: 5,
-    textAlign: 'center',
-  },
-  earningReward: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#0d64dd',
-  },
-  dailyLimitCard: {
-    borderRadius: 12,
-    padding: 15,
-    marginTop: 10,
-  },
-  limitHeader: {
+  bottomSheetFeature: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
   },
-  limitTexts: {
-    marginLeft: 10,
+  bsFeatureIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  bsFeatureText: {
     flex: 1,
   },
-  limitTitle: {
+  bsFeatureTitle: {
     fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  bsFeatureDesc: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  bsQuickStats: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginTop: 12,
+    marginBottom: 16,
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  bsStatItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  bsStatLabel: {
+    fontSize: 11,
+    marginVertical: 2,
+  },
+  bsStatValue: {
+    fontSize: 14,
     fontWeight: 'bold',
   },
-  limitAmount: {
-    fontSize: 13,
+  bsStatDivider: {
+    width: 1,
+    height: 30,
   },
-  limitNote: {
-    fontSize: 13,
-    fontStyle: 'italic',
+  bsLimitCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
   },
-  welcomeFooter: {
-    padding: 20,
+  bsLimitText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  bsLimitTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  bsLimitAmount: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  bottomSheetFooter: {
+    paddingTop: 16,
     borderTopWidth: 1,
     alignItems: 'center',
   },
-  getStartedButton: {
-    width: '100%',
-    marginBottom: 15,
-  },
-  gradientButton: {
+  bsGetStartedBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 14,
     borderRadius: 25,
+    width: '100%',
+    marginBottom: 10,
   },
-  getStartedText: {
+  bsGetStartedText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     marginRight: 10,
-    padding:20,
   },
-  buttonIcon: {
-    marginLeft: 5,
+  bsSkipBtn: {
+    paddingVertical: 8,
   },
-  skipButton: {
-    padding: 10,
-  },
-  skipText: {
+  bsSkipText: {
     fontSize: 14,
   },
-  welcomeFooterNote: {
-    fontSize: 12,
-    marginTop: 15,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
+  // ============================================================
+  // EXISTING STYLES (unchanged)
+  // ============================================================
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

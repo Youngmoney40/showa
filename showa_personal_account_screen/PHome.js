@@ -21,9 +21,11 @@ import {
   Keyboard,
   Linking,
   Vibration,
+  NativeModules,
   KeyboardAvoidingView, 
   ScrollView
 } from 'react-native';
+import { useBackHandler } from '../src/hooks/useBackHandler';
 import { useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -45,12 +47,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PinUnlockModal from '../screens/PinUnlockModal'; 
 import EarningsSlideInManager from '../components/EarningsSlideInManager';
 import OnlineStatusBadge from '../components/OnlineStatusBadge';
+import CallKeepService from '../src/services/CallKeepService';
 
 
 
 
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ navigation,route }) => {
+  useBackHandler(navigation, 'BroadcastHome');
 
   const { colors, theme, toggleTheme, isDark  } = useTheme(); 
   const [tab, setTab] = useState('Chats');
@@ -82,6 +86,7 @@ const HomeScreen = ({ navigation }) => {
   const [isVideoCall, setIsVideoCall] = useState(false);
 
   const isCallBeingHandledRef = useRef(false);
+  const currentCallIdRef = useRef(null);
   
 
      const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -92,6 +97,34 @@ const HomeScreen = ({ navigation }) => {
     showNotifications: true,
     doNotDisturb: false,
   });
+
+  useEffect(() => {
+  const p = route?.params;
+  if (!p?.isIncomingCall) return;
+
+  console.log('[PHome] Incoming call via route params:', p);
+
+  currentCallIdRef.current = p.callId || currentCallIdRef.current;
+
+  setCallerInfo({
+    profileImage: p.profile_image || '',
+    name: p.name || 'Unknown Caller',
+    offer: p.incomingOffer || null,
+  });
+  setIsVideoCall(p.isVideoCall || false);
+
+  if (p.incomingOffer?.sdp) {
+    // We already have the SDP — show the modal immediately, don't wait for WS
+    setShowIncomingCallModal(true);
+  }
+
+  // Clear the params so re-focusing PHome later doesn't re-trigger this
+  navigation.setParams({
+    isIncomingCall: undefined,
+    incomingOffer: undefined,
+    callId: undefined,
+  });
+}, [route?.params?.callId]);
 
 
   useEffect(() => {
@@ -654,20 +687,62 @@ const fetchChatListSilently = async () => {
  // ─── Global call notification handler (from FCM foreground) ──────────────────
 useEffect(() => {
 
+// global.__callNotificationHandler = (callData) => {
+//   console.log('📞 Call notification received in HomeScreen:', callData);
+//   console.log('🔍 CallData structure:', JSON.stringify(callData, null, 2));
+//   console.log('Profile Image in notification:', callData.profileImage);
+//   console.log('Caller Name in notification:', callData.callerName);
+  
+//   // ✅ Check if profile image is nested
+//   const profileImagePath = 
+//     callData.profileImage || 
+//     callData.callerInfo?.profileImage || 
+//     '';
+  
+//   console.log('📸 Extracted profile image path:', profileImagePath);
+//   console.log('🔗 Full URL would be:', profileImagePath ? `${API_ROUTE_IMAGE}${profileImagePath}` : 'No image');
+
+//   if (global.__onCallScreen) {
+//     console.log('Already on call screen, ignoring');
+//     return;
+//   }
+
+//   InCallManager.stopRingtone();
+//   Vibration.cancel();
+
+//   setCallerInfo(prev => {
+//     console.log('[Notification Handler] Previous SDP exists:', !!prev?.offer?.sdp);
+
+//     if (prev?.offer?.sdp) {
+//       console.log('[Notification Handler] Keeping existing SDP');
+//       return {
+//         ...prev,
+//         profileImage: profileImagePath || prev.profileImage,
+//         name: callData.callerName || callData.callerInfo?.name || prev.name,
+//       };
+//     }
+
+//     return {
+//       profileImage: profileImagePath,
+//       name: callData.callerName || callData.callerInfo?.name || 'Unknown Caller',
+//       offer: null,
+//     };
+//   });
+
+//   setIsVideoCall(callData.callType === 'video' || callData.isVideoCall || false);
+// };
+
 global.__callNotificationHandler = (callData) => {
   console.log('📞 Call notification received in HomeScreen:', callData);
-  console.log('🔍 CallData structure:', JSON.stringify(callData, null, 2));
-  console.log('Profile Image in notification:', callData.profileImage);
-  console.log('Caller Name in notification:', callData.callerName);
-  
-  // ✅ Check if profile image is nested
-  const profileImagePath = 
-    callData.profileImage || 
-    callData.callerInfo?.profileImage || 
+
+  console.log('[callNotificationHandler] fired, callId:', callData.callId)
+
+  console.log('[HomeScreen] global.__callNotificationHandler registered')
+
+  const profileImagePath =
+    callData.profileImage ||
+    callData.callerInfo?.profileImage ||
     '';
-  
-  console.log('📸 Extracted profile image path:', profileImagePath);
-  console.log('🔗 Full URL would be:', profileImagePath ? `${API_ROUTE_IMAGE}${profileImagePath}` : 'No image');
 
   if (global.__onCallScreen) {
     console.log('Already on call screen, ignoring');
@@ -677,18 +752,16 @@ global.__callNotificationHandler = (callData) => {
   InCallManager.stopRingtone();
   Vibration.cancel();
 
-  setCallerInfo(prev => {
-    console.log('[Notification Handler] Previous SDP exists:', !!prev?.offer?.sdp);
+  currentCallIdRef.current = callData.callId || currentCallIdRef.current; // ✅ capture it, don't discard
 
+  setCallerInfo(prev => {
     if (prev?.offer?.sdp) {
-      console.log('[Notification Handler] Keeping existing SDP');
       return {
         ...prev,
         profileImage: profileImagePath || prev.profileImage,
         name: callData.callerName || callData.callerInfo?.name || prev.name,
       };
     }
-
     return {
       profileImage: profileImagePath,
       name: callData.callerName || callData.callerInfo?.name || 'Unknown Caller',
@@ -955,29 +1028,21 @@ ws.current.onmessage = (evt) => {
       
     },[])
 
-// const handleAcceptCall = () => {
-//   console.log('accept call pressed with offer:', callerInfo.offer);
-//   navigation.navigate('VoiceCalls', {
-//     profile_image: callerInfo.profileImage,
-//     name: callerInfo.name,
-//     incomingOffer: callerInfo.offer,
-//     isIncomingCall: true,
-//     isInitiator: false,
-//     isVideoCall: isVideoCall // Pass the video call state
-//   });
-//   setShowIncomingCallModal(false);
-// };
 
 // const handleAcceptCall = () => {
-
 //   console.log("========== ACCEPT ==========");
-// console.log("callerInfo:", callerInfo);
-// console.log("offer exists:", !!callerInfo?.offer);
-// console.log("sdp exists:", !!callerInfo?.offer?.sdp);
-// console.log("============================");
+//   console.log("caller-Info:", callerInfo);
+//   console.log("offer exists:", !!callerInfo?.offer);
+//   console.log("sdp exists:", !!callerInfo?.offer?.sdp);
+//   console.log("============================");
+  
+//   // Release the lock
+//   isCallBeingHandledRef.current = false;
+  
 //   setShowIncomingCallModal(false);
 //   InCallManager.stopRingtone();
 //   Vibration.cancel();
+//   try { NativeModules.CallModule?.stopCallService(); } catch (e) {}
 
 //   if (!callerInfo?.offer?.sdp) {
 //     console.error('[Accept] Offer has no SDP!');
@@ -991,26 +1056,45 @@ ws.current.onmessage = (evt) => {
 //     profile_image: callerInfo.profileImage || '',
 //     name: callerInfo.name || 'Unknown',
 //     targetUserId: callerInfo.offer?.targetUserId || callerInfo.offer?.callerId || '',
-//     incomingOffer: callerInfo.offer,  // ← FULL offer WITH SDP
+//     incomingOffer: callerInfo.offer,
 //     isIncomingCall: true,
 //     isInitiator: false,
-//     autoAnswerOnOffer: false,         // ← false: offer already has SDP, handle directly
+//     autoAnswerOnOffer: false,
+//   });
+// };
+
+// const handleAcceptCall = () => {
+//   isCallBeingHandledRef.current = false;
+//   setShowIncomingCallModal(false);
+//   InCallManager.stopRingtone();
+//   Vibration.cancel();
+//   try { NativeModules.CallModule?.stopCallService(); } catch (e) {}   // ✅ add this
+//   console.log('[Accept] Navigating with full offer, SDP length:', callerInfo.offer.sdp.length);
+
+//   navigation.navigate('VoiceCalls', {
+//     profile_image: callerInfo.profileImage || '',
+//     name: callerInfo.name || 'Unknown',
+//     targetUserId: callerInfo.offer?.targetUserId || callerInfo.offer?.callerId || '',
+//     incomingOffer: callerInfo.offer,
+//     isIncomingCall: true,
+//     isInitiator: false,
+//     autoAnswerOnOffer: false,
 //   });
 // };
 
 const handleAcceptCall = () => {
   console.log("========== ACCEPT ==========");
-  console.log("caller-Info:", callerInfo);
-  console.log("offer exists:", !!callerInfo?.offer);
-  console.log("sdp exists:", !!callerInfo?.offer?.sdp);
-  console.log("============================");
-  
-  // Release the lock
   isCallBeingHandledRef.current = false;
-  
+
   setShowIncomingCallModal(false);
   InCallManager.stopRingtone();
   Vibration.cancel();
+  try { NativeModules.CallModule?.stopCallService(); } catch (e) {} 
+
+  if (currentCallIdRef.current) {
+    CallKeepService.endCall(currentCallIdRef.current); // ✅ stops foreground service + ConnectionService
+  }
+  currentCallIdRef.current = null;
 
   if (!callerInfo?.offer?.sdp) {
     console.error('[Accept] Offer has no SDP!');
@@ -1018,9 +1102,15 @@ const handleAcceptCall = () => {
     return;
   }
 
-  console.log('[Accept] Navigating with full offer, SDP length:', callerInfo.offer.sdp.length);
+  if (ws.current) {
+    ws.current.close();
+    ws.current = null;
+  }
 
-  navigation.navigate('VoiceCalls', {
+  const targetScreen = callerInfo.offer?.isVideoCall ? 'VideoCalls' : 'VoiceCalls';
+  //navigation.navigate(targetScreen, { ... });
+
+  navigation.navigate(targetScreen, {
     profile_image: callerInfo.profileImage || '',
     name: callerInfo.name || 'Unknown',
     targetUserId: callerInfo.offer?.targetUserId || callerInfo.offer?.callerId || '',
@@ -1031,41 +1121,50 @@ const handleAcceptCall = () => {
   });
 };
 
-// Update handleRejectCall to release the lock
 const handleRejectCall = () => {
-  // Release the lock
   isCallBeingHandledRef.current = false;
-  
+
   InCallManager.stopRingtone();
   Vibration.cancel();
-  
+  try { NativeModules.CallModule?.stopCallService(); } catch (e) {} 
+
+  if (currentCallIdRef.current) {
+    CallKeepService.endCall(currentCallIdRef.current); // ✅
+  }
+  currentCallIdRef.current = null;
+
   if (ws.current?.readyState === WebSocket.OPEN) {
-    ws.current.send(JSON.stringify({ 
+    ws.current.send(JSON.stringify({
       type: 'reject_call',
       caller_id: callerInfo.offer?.targetUserId,
       room_id: callerInfo.offer?.roomId
     }));
   }
-  
+
   setShowIncomingCallModal(false);
   setCallerInfo({ profileImage: '', name: 'Unknown', offer: null });
 };
 
+
 // const handleRejectCall = () => {
+//   isCallBeingHandledRef.current = false;
 //   InCallManager.stopRingtone();
 //   Vibration.cancel();
-  
-//   if (ws.current?.readyState === WebSocket.OPEN) {
-//     ws.current.send(JSON.stringify({ 
-//       type: 'reject_call',
-//       caller_id: callerInfo.offer?.targetUserId,
-//       room_id: callerInfo.offer?.roomId
-//     }));
+//   try { NativeModules.CallModule?.stopCallService(); } catch (e) {}
+
+//   const cid = callerInfo.offer?.callId; // needs to be threaded through from displayIncomingCall
+//   if (cid) {
+//     try { CallKeepService.endCall(cid); } catch {}
 //   }
-  
+//   try { NativeModules.CallModule?.stopCallService(); } catch {}
+
+//   if (ws.current?.readyState === WebSocket.OPEN) {
+//     ws.current.send(JSON.stringify({ type: 'reject_call', callId: cid }));
+//   }
 //   setShowIncomingCallModal(false);
 //   setCallerInfo({ profileImage: '', name: 'Unknown', offer: null });
 // };
+
 
 const handleCameraLaunch = async () => {
   try {
@@ -1788,7 +1887,7 @@ useEffect(()=>{
           ) : (
             <View style={{ alignItems: "center" }}>
               <Icon name="chatbubbles-outline" size={60} color="#D1D5DB" style={{ marginBottom: 10 }} />
-              <Text style={styles.emptyText}>You have no chats available</Text>
+              <Text style={[styles.emptyText,{color: colors.textSecondary}]}>You have no chats available</Text>
               <TouchableOpacity
                 style={styles.startChatButton}
                 onPress={()=>navigation.navigate('UserContactListPersonalAccount')}
@@ -2280,6 +2379,8 @@ header: {
     shadowRadius: 6,
     borderWidth: 0.2,
     borderColor: colors.border,
+  
+  
   },
   avatar: {
     width: 48,
@@ -2290,6 +2391,7 @@ header: {
   },
   chatContent: {
     flex: 1,
+      
   },
   chatName: {
     fontFamily: 'SourceSansPro-SemiBold',

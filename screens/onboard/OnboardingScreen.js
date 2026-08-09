@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -9,17 +8,15 @@ import {
   Dimensions,
   StatusBar,
   Animated,
-  ScrollView
+  ScrollView,
+  useWindowDimensions,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.52;
-const CARD_HEIGHT = CARD_WIDTH * 1.45;
-
 
 const cardImages = [
   require('../../assets/images/showaa.jpg'), 
@@ -30,6 +27,11 @@ const cardImages = [
 const OnboardingScreen = ({navigation}) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const fadeAnim = useState(new Animated.Value(1))[0];
+  const { width, height } = useWindowDimensions();
+
+  // Responsive card sizing
+  const CARD_WIDTH = width * 0.45;
+  const CARD_HEIGHT = CARD_WIDTH * 1.35;
 
   // Auto-changing card images
   useEffect(() => {
@@ -54,150 +56,156 @@ const OnboardingScreen = ({navigation}) => {
   }, [fadeAnim]);
 
   const handleGetStarted = () => {
-    navigation.navigate('Signin_two')
-    
-    
+    navigation.navigate('Signin_two');
   };
 
   const handleLogin = () => {
-    navigation.navigate('EmailLogin')
+    navigation.navigate('EmailLogin');
   };
 
   return (
-     <ScrollView>
     <SafeAreaView style={styles.container}>
       <StatusBar
         barStyle="dark-content"
         backgroundColor="#fff"
         translucent={false}
       />
-     
-
       
+      <KeyboardAvoidingView 
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {/* Image Stack */}
+          <View style={[styles.imageContainer, { height: height * 0.5 }]}>
+            {/* Left Card */}
+            <Animated.View
+              style={[
+                styles.card,
+                styles.leftCard,
+                { 
+                  opacity: fadeAnim,
+                  width: CARD_WIDTH,
+                  height: CARD_HEIGHT,
+                },
+              ]}
+            >
+              <Image
+                source={cardImages[currentImageIndex]}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            </Animated.View>
 
-      <View style={styles.container}>
-        {/* Image Stack */}
-        <View style={styles.imageContainer}>
-          {/* Left Card */}
-          <Animated.View
-            style={[
-              styles.card,
-              styles.leftCard,
-              { opacity: fadeAnim },
-            ]}
-          >
-            <Image
-              source={cardImages[currentImageIndex]}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          </Animated.View>
+            {/* Right Card */}
+            <Animated.View
+              style={[
+                styles.card,
+                styles.rightCard,
+                { 
+                  opacity: fadeAnim,
+                  width: CARD_WIDTH,
+                  height: CARD_HEIGHT,
+                },
+              ]}
+            >
+              <Image
+                source={cardImages[(currentImageIndex + 1) % cardImages.length]}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            </Animated.View>
 
-          {/* Right Card */}
-          <Animated.View
-            style={[
-              styles.card,
-              styles.rightCard,
-              { opacity: fadeAnim },
-            ]}
-          >
-            <Image
-              source={cardImages[(currentImageIndex + 1) % cardImages.length]}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          </Animated.View>
+            {/* Center Card */}
+            <Animated.View
+              style={[
+                styles.centerCard,
+                { 
+                  opacity: fadeAnim,
+                  width: CARD_WIDTH * 1.1,
+                  height: CARD_HEIGHT * 1.1,
+                },
+              ]}
+            >
+              <Image
+                source={cardImages[(currentImageIndex + 2) % cardImages.length]}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            </Animated.View>
 
-          {/* Center Card */}
-          <Animated.View
-            style={[
-              styles.centerCard,
-              { opacity: fadeAnim },
-            ]}
-          >
-            <Image
-              source={cardImages[(currentImageIndex + 2) % cardImages.length]}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          </Animated.View>
+            {/* Floating Elements */}
+            <View style={styles.chatBubble}>
+              <Ionicons
+                name="chatbubble-ellipses"
+                size={18}
+                color="#FF8A00"
+              />
+              <Text style={styles.emoji}>💜</Text>
+            </View>
 
-          {/* Floating Elements */}
-          <View style={styles.chatBubble}>
-            <Ionicons
-              name="chatbubble-ellipses"
-              size={20}
-              color="#FF8A00"
-            />
-            <Text style={styles.emoji}>💜</Text>
+            <View style={styles.heartCircle}>
+              <Ionicons
+                name="heart"
+                size={24}
+                color="#ff375f"
+              />
+            </View>
+
+            <View style={styles.likeBubble}>
+              <MaterialCommunityIcons
+                name="heart"
+                size={16}
+                color="#fff"
+              />
+              <Text style={styles.likeText}>+</Text>
+            </View>
+
+            <View style={styles.avatarContainer}>
+              <Image
+                source={cardImages[currentImageIndex]}
+                style={styles.avatar}
+              />
+              <View style={styles.ring} />
+            </View>
           </View>
 
-          <View style={styles.heartCircle}>
-            <Ionicons
-              name="heart"
-              size={28}
-              color="#ff375f"
-            />
-          </View>
-
-          <View style={styles.likeBubble}>
-            <MaterialCommunityIcons
-              name="heart"
-              size={18}
-              color="#fff"
-            />
-            <Text style={styles.likeText}>+</Text>
-          </View>
-
-          <View style={styles.avatarContainer}>
-            <Image
-              source={cardImages[currentImageIndex]}
-              style={styles.avatar}
-            />
-            <View style={styles.ring} />
-          </View>
-        </View>
-
-        {/* Bottom Section */}
-        <View style={styles.bottomSection}>
-          <Text style={[styles.title, { color: '#073ff8' }]}>
-            Join Showa
-          </Text>
-          <Text style={styles.title}>Discover Amazing Stories</Text>
-          <Text style={styles.subtitle}>
-            Connect with friends, share your moments,
-            watch short videos and explore your world.
-          </Text>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleGetStarted}
-            activeOpacity={0.9}
-          >
-            <Text style={styles.buttonText}>Get Started</Text>
-            {/* <FontAwesome
-              name="arrow-right"
-              size={18}
-              color="#fff"
-              style={{ marginLeft: 10 }}
-            /> */}
-          </TouchableOpacity>
-
-         
-          <TouchableOpacity
-            style={[styles.button, styles.loginButton]}
-            onPress={handleLogin}
-            activeOpacity={0.9}
-          >
-            <Text style={[styles.buttonText, { color: '#405DE6' }]}>
-              Already have profile? Login
+          {/* Bottom Section */}
+          <View style={[styles.bottomSection, { paddingBottom: height * 0.06, marginTop:-30 }]}>
+            <Text style={[styles.title, { color: '#073ff8' }]}>
+              Join Showa
             </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      
+            <Text style={styles.title}>Discover Amazing Stories</Text>
+            <Text style={styles.subtitle}>
+              Connect with friends, share your moments,
+              watch short videos and explore your world.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.button, { width: width - 50 }]}
+              onPress={handleGetStarted}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.buttonText}>Get Started</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, styles.loginButton, { width: width - 50 }]}
+              onPress={handleLogin}
+              activeOpacity={0.9}
+            >
+              <Text style={[styles.buttonText, { color: '#405DE6' }]}>
+                Already on Showa? Login
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
-    </ScrollView>
   );
 };
 
@@ -207,20 +215,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'space-between',
-    paddingTop: 0,
-    paddingBottom: 40,
+    paddingVertical: 10,
   },
   imageContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 450,
+    position: 'relative',
+    marginTop: 10,
   },
   card: {
     position: 'absolute',
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    borderRadius: 30,
+    borderRadius: 28,
     overflow: 'hidden',
     backgroundColor: '#ddd',
     shadowColor: '#000',
@@ -231,20 +243,18 @@ const styles = StyleSheet.create({
   },
   leftCard: {
     transform: [{ rotate: '-14deg' }],
-    left: 45,
-    top: 70,
+    left: 25,
+    top: 30,
     zIndex: 1,
   },
   rightCard: {
     transform: [{ rotate: '13deg' }],
-    right: 45,
-    top: 75,
+    right: 25,
+    top: 40,
     zIndex: 2,
   },
   centerCard: {
-    width: CARD_WIDTH * 1.05,
-    height: CARD_HEIGHT * 1.05,
-    borderRadius: 30,
+    borderRadius: 28,
     overflow: 'hidden',
     elevation: 15,
     backgroundColor: '#eee',
@@ -256,54 +266,64 @@ const styles = StyleSheet.create({
   },
   heartCircle: {
     position: 'absolute',
-    left: 18,
-    bottom: 30,
+    left: 12,
+    bottom: 20,
     zIndex: 10,
   },
   chatBubble: {
     position: 'absolute',
-    top: 30,
-    left: 70,
+    top: 15,
+    left: 40,
     backgroundColor: '#fff',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 30,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 25,
     elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
     zIndex: 10,
   },
   emoji: {
-    fontSize: 16,
-    marginLeft: 6,
+    fontSize: 14,
+    marginLeft: 5,
   },
   likeBubble: {
     position: 'absolute',
-    top: 105,
-    right: 45,
+    top: 75,
+    right: 25,
     backgroundColor: '#34C759',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 25,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 22,
     zIndex: 10,
+    shadowColor: '#34C759',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   likeText: {
     color: '#fff',
-    marginLeft: 5,
+    marginLeft: 4,
     fontWeight: '700',
+    fontSize: 14,
   },
   avatarContainer: {
     position: 'absolute',
-    right: 70,
-    bottom: 70,
+    right: 40,
+    bottom: 50,
     zIndex: 10,
   },
   avatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     borderWidth: 3,
     borderColor: '#fff',
   },
@@ -311,60 +331,57 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -5,
     left: -5,
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     borderWidth: 3,
     borderColor: '#7B61FF',
   },
   bottomSection: {
     alignItems: 'center',
-    paddingHorizontal: 30,
-    marginTop: -40,
+    paddingHorizontal: 25,
+    paddingTop: 10,
   },
   title: {
     fontSize: 30,
     fontWeight: '800',
     color: '#111',
     textAlign: 'center',
+    lineHeight: 34,
   },
   subtitle: {
-    marginTop: 15,
-    fontSize: 16,
+    marginTop: 10,
+    fontSize: 14,
     color: '#777',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 20,
+    paddingHorizontal: 8,
   },
   button: {
-    marginTop: 35,
+    marginTop: 24,
     backgroundColor: '#405DE6',
-    width: width - 70,
-    height: 58,
-    borderRadius: 16,
+    height: 54,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
     shadowColor: '#405DE6',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 6,
   },
   loginButton: {
     backgroundColor: '#fff',
     borderWidth: 2,
     borderColor: '#405DE6',
-    marginTop: 16,
+    marginTop: 10,
+    shadowColor: 'transparent',
+    elevation: 0,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
 });
-
-
-
-
-
-

@@ -2314,7 +2314,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: 142,
     fontSize: 16,
   },
   errorContainer: {

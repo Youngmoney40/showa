@@ -24,6 +24,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Feather from 'react-native-vector-icons/Feather';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -32,12 +33,14 @@ import axios from 'axios';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { useBackHandler } from '../src/hooks/useBackHandler';
 
 dayjs.extend(relativeTime);
 
 const { width, height } = Dimensions.get('window');
 
 const PostDetailScreen = ({ route, navigation }) => {
+  useBackHandler(navigation, 'BroadcastHome');
   const { postId, postData } = route.params;
   const { colors, isDark } = useTheme();
   
@@ -1133,12 +1136,12 @@ const PostDetailScreen = ({ route, navigation }) => {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => navigation.navigate('BroadcastHome')} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Post</Text>
-        <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
-          <Ionicons name="share-social-outline" size={24} color={colors.text} />
+        <TouchableOpacity style={styles.shareButton}>
+          {/* <Ionicons name="share-social-outline" size={24} color={colors.text} /> */}
         </TouchableOpacity>
       </View>
 
@@ -1275,7 +1278,8 @@ const PostDetailScreen = ({ route, navigation }) => {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.statButton} onPress={handleShare}>
-                  <Ionicons name="share-social-outline" size={24} color={colors.textSecondary} />
+                  <Feather name="send" size={23} color={colors.textSecondary} />
+                  {/* <Ionicons name="share-social-outline" size={24} color={colors.textSecondary} /> */}
                   <Text style={[styles.statCount, { color: colors.textSecondary }]}>
                     {shareCount} Share
                   </Text>

@@ -2363,7 +2363,7 @@ import BottomNav from '../components/BottomNavSocialMedia';
 import SwitchAccountSheet from '../components/SwitchAccountSheet';
 import { useTheme } from '../src/context/ThemeContext';
 import { Snackbar } from 'react-native-paper';
-import StatusSection from '../components/StatusSection_2';
+import StatusSection from '../components/StatusSection';
 
 const { width, height } = Dimensions.get('window');
 
@@ -3651,9 +3651,10 @@ const StatusScreen = () => {
                           showAddButton={true}
                           maxItems={15}
                           onLivePress={(stream) => {
-                            navigation.navigate('LiveViewer', {
-                              streamId: stream.id,
-                              broadcasterName: stream.broadcaster_name,
+                            navigation.navigate('Viewer', {
+                              roomName: 'match-123',
+                              streamId: 'stream-1',
+                              viewerId: 'viewer-1',
                             });
                           }}
                           containerStyle={{ marginTop: 0 }}

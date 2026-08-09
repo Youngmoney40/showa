@@ -2357,6 +2357,7 @@ import {
   ImageBackground,
   NativeModules,
   Dimensions,
+  BackHandler
 } from "react-native";
 import {
   RTCPeerConnection,
@@ -2374,10 +2375,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_ROUTE_IMAGE } from "../api_routing/api";
 import InCallManager from "react-native-incall-manager";
 import CallKeepService from '../src/services/CallKeepService';
+import { useBackHandler } from '../src/hooks/useBackHandler';
 
 const SIGNALING_SERVER = "wss://api.showapp.ng";
 
 export default function VoiceVideoCallScreen({ navigation, route }) {
+    useBackHandler(navigation, 'BroadcastHome');
   const {
     profile_image,
     name,
@@ -2401,7 +2404,7 @@ export default function VoiceVideoCallScreen({ navigation, route }) {
   const hasInitialOfferRef = useRef(false);
   const isCleaningUpRef = useRef(false);
   const isCallActiveRef = useRef(true);
-  const autoAnswerOnOfferRef = useRef(autoAnswerOnOffer || false); // ← NEW
+  const autoAnswerOnOfferRef = useRef(autoAnswerOnOffer || false); 
   const hasSwitchedToVideoRef = useRef(false);
   // --- state
   const [wsConnected, setWsConnected] = useState(false);
@@ -2417,6 +2420,34 @@ export default function VoiceVideoCallScreen({ navigation, route }) {
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const [currentCallId, setCurrentCallId] = useState(null);
   const [isRinging, setIsRinging] = useState(false);
+
+
+  useEffect(() => {
+  const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+    if (webrtcReady) {
+      // Show confirmation dialog
+      Alert.alert(
+        'End Call?',
+        'Are you sure you want to end this call?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'End Call', 
+            style: 'destructive', 
+            onPress: () => endCall(true) 
+          }
+        ]
+      );
+      return true; // Prevent default back behavior
+    } else if (showIncomingModal) {
+      rejectCall();
+      return true;
+    }
+    return false; // Allow default back behavior
+  });
+
+  return () => backHandler.remove();
+}, [webrtcReady, showIncomingModal, endCall, rejectCall]);
 
 
   useEffect(() => {
@@ -3504,6 +3535,18 @@ const stopRinging = useCallback(() => {
   console.log("====================================");
 
   try {
+
+    if (!currentCallIdRef.current) {                       // ✅ only create if not already set
+      const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
+      updateCallId(newCallId);
+    }
+
+    // if (!currentCallIdRef.current) {
+    //   const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
+    //   updateCallId(newCallId);
+    // }
+
+
     const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
     console.log("[Incoming Call] Generated Call ID:", newCallId);
     updateCallId(newCallId);
@@ -3728,74 +3771,433 @@ const stopRinging = useCallback(() => {
     await createAndSendInitialOffer();
   };
 
-  
   const endCall = useCallback(async (notify = true) => {
-    stopRinging();
-    isCallActiveRef.current = false;
+  console.log("[VideoCall] Ending call...");
 
-    const callDetails = {
-      contact: { name: name || 'Unknown', profileImage: profile_image || '', userId: targetUserId || 'unknown' },
-      direction: isInitiator ? 'outgoing' : 'incoming',
-      isVideoCall: isVideoCall || false,
-      status: webrtcReady ? 'ended' : 'missed',
-      duration: callDuration || 0,
-    };
-
-    // End CallKeep call
-    const cid = currentCallIdRef.current || currentCallId;
-    if (cid) {
-      try { CallKeepService.endCall(cid); } catch {}
-    }
-
-    // Stop foreground service
-    try { NativeModules.CallModule?.stopCallService(); } catch {}
-
-    if (notify) {
-      try { sendMessage({ type: "call-ended" }); } catch {}
-    }
-
-    try {
-      if (ws.current) {
-        ws.current.onopen = null;
-        ws.current.onmessage = null;
-        ws.current.onclose = null;
-        ws.current.onerror = null;
-        ws.current.close();
-      }
-    } catch {}
-    ws.current = null;
-
-    try {
-      InCallManager.stop();
-      InCallManager.stopRingtone();
-    } catch {}
-
-    cleanupPeerConnection();
-    setCurrentCallId(null);
-    await saveCallToHistory(callDetails);
-
+  // 1. Navigate immediately
+  try {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
       navigation.navigate("PHome");
     }
-  }, [isVideoCall, webrtcReady, callDuration, name, profile_image, targetUserId, isInitiator, currentCallId, navigation]);
+  } catch (e) {
+    navigation.navigate("PHome");
+  }
 
+  // 2. Cleanup in background
+  setTimeout(() => {
+    const callId = currentCallIdRef.current;
+    
+    // Stop media
+    if (localStream.current) {
+      localStream.current.getTracks().forEach(t => t.stop());
+      localStream.current = null;
+    }
+    
+    if (remoteStream.current) {
+      remoteStream.current.getTracks().forEach(t => t.stop());
+      remoteStream.current = null;
+    }
 
-  const rejectCall = async () => {
-    stopRinging();
-    sendMessage({ type: "call-rejected" });
-    await saveCallToHistory({
-      contact: { name, profileImage: profile_image, userId: targetUserId },
-      direction: 'incoming',
-      isVideoCall,
-      status: 'rejected',
-      duration: 0,
-    });
+    // Close peer connection
+    if (pc.current) {
+      try { pc.current.close(); } catch (e) {}
+      pc.current = null;
+    }
+
+    // Notify other party
+    if (notify && ws.current?.readyState === WebSocket.OPEN) {
+      try {
+        ws.current.send(JSON.stringify({ type: "call-ended" }));
+      } catch (e) {}
+    }
+
+    // Cleanup CallKeep - safe version
+    try {
+      if (callId) {
+        CallKeepService.endCall(callId).catch(() => {});
+      } else {
+        // No callId, just cleanup
+        if (Platform.OS === 'android') {
+          try { NativeModules.CallModule?.stopCallService(); } catch (e) {}
+        }
+        CallKeepService.removeAllListeners();
+      }
+    } catch (e) {
+      console.warn('[CallKeep] Cleanup error:', e);
+    }
+
+    // Cleanup audio
+    try {
+      InCallManager.stop();
+      InCallManager.stopRingtone();
+      InCallManager.setKeepScreenOn(false);
+    } catch (e) {}
+
+    // Clear timer
+    if (callTimerRef.current) {
+      clearInterval(callTimerRef.current);
+      callTimerRef.current = null;
+    }
+
+    // Reset refs
+    isCallActiveRef.current = false;
+    hasInitialOfferRef.current = false;
+    queuedRemoteCandidates.current = [];
+    isCallerRef.current = false;
+    isCleaningUpRef.current = false;
+    hasSwitchedToVideoRef.current = false;
+
+    // Reset state
+    setWebrtcReady(false);
+    setLocalURL(null);
+    setRemoteURL(null);
+    setCallDuration(0);
+    setCurrentCallId(null);
     setShowIncomingModal(false);
     setIncomingSDP(null);
-    navigation.navigate("PHome");
-  };
+    
+    // Save history
+    saveCallToHistory({
+      contact: { name, profileImage: profile_image, userId: targetUserId },
+      direction: isInitiator ? 'outgoing' : 'incoming',
+      isVideoCall: isVideoCall || false,
+      status: webrtcReady ? 'ended' : 'missed',
+      duration: callDuration || 0,
+    }).catch(() => {});
+
+    console.log("[VideoCall] Cleanup complete");
+  }, 0);
+
+}, [isVideoCall, webrtcReady, callDuration, name, profile_image, targetUserId, isInitiator, navigation]);
+
+
+//   const endCall = useCallback(async (notify = true) => {
+//   console.log("[VideoCall] Ending call...");
+
+//   // 1. Navigate immediately
+//   try {
+//     if (navigation.canGoBack()) {
+//       navigation.goBack();
+//     } else {
+//       navigation.navigate("PHome");
+//     }
+//   } catch (e) {
+//     navigation.navigate("PHome");
+//   }
+
+//   // 2. Cleanup in background
+//   setTimeout(() => {
+//     // Get the current call ID
+//     const callId = currentCallIdRef.current;
+    
+//     // Stop all media
+//     if (localStream.current) {
+//       localStream.current.getTracks().forEach(t => t.stop());
+//       localStream.current = null;
+//     }
+    
+//     if (remoteStream.current) {
+//       remoteStream.current.getTracks().forEach(t => t.stop());
+//       remoteStream.current = null;
+//     }
+
+//     // Close peer connection
+//     if (pc.current) {
+//       try { 
+//         pc.current.close(); 
+//       } catch (e) {}
+//       pc.current = null;
+//     }
+
+//     // Notify other party (only if not already ended by CallKeep)
+//     if (notify && ws.current?.readyState === WebSocket.OPEN) {
+//       try {
+//         ws.current.send(JSON.stringify({ type: "call-ended" }));
+//       } catch (e) {}
+//     }
+
+//     // Cleanup CallKeep
+//     if (callId) {
+//       CallKeepService.endCall(callId).catch(() => {});
+//     } else {
+//       // Force cleanup if no callId
+//       CallKeepService.forceEndCall();
+//     }
+
+//     // Cleanup audio
+//     try {
+//       InCallManager.stop();
+//       InCallManager.stopRingtone();
+//       InCallManager.setKeepScreenOn(false);
+//     } catch (e) {}
+
+//     // Clear timer
+//     if (callTimerRef.current) {
+//       clearInterval(callTimerRef.current);
+//       callTimerRef.current = null;
+//     }
+
+//     // Reset refs
+//     isCallActiveRef.current = false;
+//     hasInitialOfferRef.current = false;
+//     queuedRemoteCandidates.current = [];
+//     isCallerRef.current = false;
+//     isCleaningUpRef.current = false;
+//     hasSwitchedToVideoRef.current = false;
+
+//     // Reset state
+//     setWebrtcReady(false);
+//     setLocalURL(null);
+//     setRemoteURL(null);
+//     setCallDuration(0);
+//     setCurrentCallId(null);
+//     setShowIncomingModal(false);
+//     setIncomingSDP(null);
+    
+//     // Save history
+//     saveCallToHistory({
+//       contact: { name, profileImage: profile_image, userId: targetUserId },
+//       direction: isInitiator ? 'outgoing' : 'incoming',
+//       isVideoCall: isVideoCall || false,
+//       status: webrtcReady ? 'ended' : 'missed',
+//       duration: callDuration || 0,
+//     }).catch(() => {});
+
+//     console.log("[VideoCall] ✅ Cleanup complete");
+//   }, 0);
+
+// }, [isVideoCall, webrtcReady, callDuration, name, profile_image, targetUserId, isInitiator, navigation]);
+
+// const endCall = useCallback(async (notify = true) => {
+//   console.log("[VideoCall] Ending call...");
+
+//   // 1. Navigate immediately (user sees instant response)
+//   try {
+//     if (navigation.canGoBack()) {
+//       navigation.goBack();
+//     } else {
+//       navigation.navigate("PHome");
+//     }
+//   } catch (e) {
+//     // Fallback navigation
+//     navigation.navigate("PHome");
+//   }
+
+//   // 2. Cleanup in background (runs after navigation)
+//   setTimeout(() => {
+//     // Save history
+//     saveCallToHistory({
+//       contact: { name, profileImage: profile_image, userId: targetUserId },
+//       direction: isInitiator ? 'outgoing' : 'incoming',
+//       isVideoCall: isVideoCall || false,
+//       status: webrtcReady ? 'ended' : 'missed',
+//       duration: callDuration || 0,
+//     }).catch(() => {});
+
+//     // Stop media
+//     if (localStream.current) {
+//       localStream.current.getTracks().forEach(t => t.stop());
+//       localStream.current = null;
+//     }
+    
+//     if (remoteStream.current) {
+//       remoteStream.current.getTracks().forEach(t => t.stop());
+//       remoteStream.current = null;
+//     }
+
+//     // Close peer connection
+//     if (pc.current) {
+//       try { 
+//         pc.current.close(); 
+//       } catch (e) {}
+//       pc.current = null;
+//     }
+
+//     // Notify other party
+//     if (notify && ws.current?.readyState === WebSocket.OPEN) {
+//       try {
+//         ws.current.send(JSON.stringify({ type: "call-ended" }));
+//       } catch (e) {}
+//     }
+
+//     // Cleanup audio
+//     try {
+//       InCallManager.stop();
+//       InCallManager.stopRingtone();
+//       InCallManager.setKeepScreenOn(false);
+//     } catch (e) {}
+
+//     // Clear timer
+//     if (callTimerRef.current) {
+//       clearInterval(callTimerRef.current);
+//       callTimerRef.current = null;
+//     }
+
+//     // Reset refs
+//     isCallActiveRef.current = false;
+//     hasInitialOfferRef.current = false;
+//     queuedRemoteCandidates.current = [];
+//     isCallerRef.current = false;
+//     isCleaningUpRef.current = false;
+//     hasSwitchedToVideoRef.current = false;
+
+//     // Reset state
+//     setWebrtcReady(false);
+//     setLocalURL(null);
+//     setRemoteURL(null);
+//     setCallDuration(0);
+//     setCurrentCallId(null);
+//     setShowIncomingModal(false);
+//     setIncomingSDP(null);
+    
+//     // Also reset these if needed
+//     // setIsVideoCall(false); // Keep this if you want to reset
+//     // setIsMuted(false);
+//     // setIsSpeakerOn(false);
+//   }, 0);
+
+// }, [isVideoCall, webrtcReady, callDuration, name, profile_image, targetUserId, isInitiator, navigation]);
+
+// const endCall = useCallback(async (notify = true) => {
+//   console.log("[VideoCall] Ending call...");
+
+//   // 1. Save history (async, don't await - let it run in background)
+//   saveCallToHistory({
+//     contact: { name, profileImage: profile_image, userId: targetUserId },
+//     direction: isInitiator ? 'outgoing' : 'incoming',
+//     isVideoCall: isVideoCall || false,
+//     status: webrtcReady ? 'ended' : 'missed',
+//     duration: callDuration || 0,
+//   }).catch(() => {});
+
+//   // 2. Stop media (CRITICAL - do this first)
+//   if (localStream.current) {
+//     localStream.current.getTracks().forEach(t => t.stop());
+//     localStream.current = null;
+//   }
+  
+//   if (remoteStream.current) {
+//     remoteStream.current.getTracks().forEach(t => t.stop());
+//     remoteStream.current = null;
+//   }
+
+//   // 3. Close peer connection
+//   if (pc.current) {
+//     try { 
+//       pc.current.close(); 
+//     } catch (e) {
+//       console.warn("[Cleanup] PC close error:", e);
+//     }
+//     pc.current = null;
+//   }
+
+//   // 4. Notify other party
+//   if (notify && ws.current?.readyState === WebSocket.OPEN) {
+//     try {
+//       ws.current.send(JSON.stringify({ type: "call-ended" }));
+//     } catch (e) {
+//       console.warn("[Cleanup] Send ended error:", e);
+//     }
+//   }
+
+//   // 5. Cleanup audio manager
+//   try {
+//     InCallManager.stop();
+//     InCallManager.stopRingtone();
+//     InCallManager.setKeepScreenOn(false);
+//   } catch (e) {
+//     console.warn("[Cleanup] InCallManager error:", e);
+//   }
+
+//   // 6. Clear timer
+//   if (callTimerRef.current) {
+//     clearInterval(callTimerRef.current);
+//     callTimerRef.current = null;
+//   }
+
+//   // 7. Reset refs
+//   isCallActiveRef.current = false;
+//   hasInitialOfferRef.current = false;
+//   queuedRemoteCandidates.current = [];
+//   isCallerRef.current = false;
+//   isCleaningUpRef.current = false;
+//   hasSwitchedToVideoRef.current = false;
+
+//   // 8. Reset state (minimal)
+//   setWebrtcReady(false);
+//   setLocalURL(null);
+//   setRemoteURL(null);
+//   setCallDuration(0);
+//   setCurrentCallId(null);
+//   setCallAccepted(false);
+//   setCallStarted(false);
+//   setShowIncomingModal(false);
+//   setIncomingSDP(null);
+
+//   // ✅ KEEP user preferences (don't reset these)
+//   // - isSpeakerOn 
+//   // - isMuted 
+//   // - isCameraFront 
+//   // - isVideoCall (will be set by next call)
+
+//   console.log("[VideoCall] ✅ Call ended - ready for next call");
+
+//   // Navigate back
+//   setTimeout(() => {
+//     // try {
+//     //   if (navigation.canGoBack()) {
+//     //     navigation.goBack();
+//     //   } else {
+//     //     navigation.navigate("PHome");
+//     //   }
+//     // } catch (e) {
+//     //   console.warn("[Navigation] Error:", e);
+//     //   navigation.navigate("PHome");
+//     // }
+//     navigation.navigate("PHome");
+//   }, 200);
+// }, [isVideoCall, webrtcReady, callDuration, name, profile_image, targetUserId, isInitiator, navigation]);
+
+
+  // const rejectCall = async () => {
+  //   stopRinging();
+  //   sendMessage({ type: "call-rejected" });
+  //   await saveCallToHistory({
+  //     contact: { name, profileImage: profile_image, userId: targetUserId },
+  //     direction: 'incoming',
+  //     isVideoCall,
+  //     status: 'rejected',
+  //     duration: 0,
+  //   });
+  //   setShowIncomingModal(false);
+  //   setIncomingSDP(null);
+  //   navigation.navigate("PHome");
+  // };
+
+const rejectCall = async () => {
+  stopRinging();
+  sendMessage({ type: "call-rejected" });
+
+  const cid = currentCallIdRef.current;
+  if (cid) {
+    try { await CallKeepService.endCall(cid); } catch {}
+  }
+  try { NativeModules.CallModule?.stopCallService(); } catch {}
+
+  await saveCallToHistory({
+    contact: { name, profileImage: profile_image, userId: targetUserId },
+    direction: 'incoming',
+    isVideoCall,
+    status: 'rejected',
+    duration: 0,
+  });
+  setShowIncomingModal(false);
+  setIncomingSDP(null);
+  //navigation.navigate("PHome");
+  navigation.goBack();
+};
 
   const startAudioSession = () => {
     InCallManager.start({ media: 'audio' });
@@ -3828,6 +4230,7 @@ const stopRinging = useCallback(() => {
   };
 
   const switchToVideoCall = async () => {
+    console.log('[SWITCHING TO VIDEO INITIALIZE]')
     if (!webrtcReady || !pc.current) return;
     try {
       const hasPermission = await requestPermissions();
@@ -3887,7 +4290,7 @@ const stopRinging = useCallback(() => {
           objectFit="cover" 
         />
 
-        {/* Draggable Local Video PiP */}
+       
         {/* Draggable Local Video PiP */}
 {localURL && pipVisible && (
   <View
@@ -3966,7 +4369,7 @@ const stopRinging = useCallback(() => {
           </View>
         </View>
 
-        {/* Bottom Controls - Normal sized WhatsApp Style */}
+        {/* Bottom Controls ============ */}
         <View style={styles.bottomControls}>
           <View style={styles.controlsRow}>
             {/* Speaker */}
@@ -4018,6 +4421,13 @@ const stopRinging = useCallback(() => {
             </TouchableOpacity>
 
             {/* End Call */}
+            {/* <TouchableOpacity 
+              style={styles.endCallBtn} 
+              onPress={() => endCall(true)}
+              activeOpacity={0.6}
+            >
+              <Icon name="call-end" size={26} color="white" />
+            </TouchableOpacity> */}
             <TouchableOpacity 
               style={styles.endCallBtn} 
               onPress={() => endCall(true)}
@@ -4033,16 +4443,15 @@ const stopRinging = useCallback(() => {
       <View style={styles.audioCallContainer}>
         {/* Background with blur effect */}
         <ImageBackground
-          source={{ uri: `${profile_image}` }}
+          source={{ uri: `${profile_image}` || `${API_ROUTE_IMAGE}${profile_image}` }}
           style={styles.audioBackground}
           blurRadius={50}
         >
           <View style={styles.audioOverlay} />
         </ImageBackground>
 
-        {/* Content */}
         <View style={styles.audioContent}>
-          {/* Avatar */}
+          {/* caler Avatar =============================*/}
           <View style={styles.audioAvatarContainer}>
             <Image
               source={{ uri: `${profile_image}` }}
@@ -4088,6 +4497,18 @@ const stopRinging = useCallback(() => {
             </TouchableOpacity>
 
             <TouchableOpacity 
+              style={styles.controlBtn} 
+              onPress={switchToVideoCall}
+              activeOpacity={0.6}
+            >
+              <Icon 
+                name="videocam-off" 
+                size={22} 
+                color="white" 
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
               style={styles.endCallBtn} 
               onPress={() => endCall(true)}
               activeOpacity={0.6}
@@ -4112,14 +4533,13 @@ const stopRinging = useCallback(() => {
         />
       </View>
 
-      {/* Name */}
       <Text style={styles.connectingName}>{name || 'Unknown'}</Text>
 
       {/* Status */}
       <View style={styles.connectingStatusRow}>
         <Text style={styles.connectingStatusText}>
           {wsConnected
-            ? (isInitiator ? "Calling..." : "Ringing...")
+            ? (isInitiator ? "Calling..." : "please wait while call is processing...")
             : "Connecting..."}
         </Text>
       </View>
@@ -4150,7 +4570,7 @@ const stopRinging = useCallback(() => {
               <View style={styles.callerInfo}>
                 <View style={styles.modalAvatar}>
                   <Image
-                    source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
+                    source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` || `${profile_image}` }}
                     style={styles.modalAvatarImage}
                     resizeMode="cover"
                   />
@@ -4317,8 +4737,8 @@ const styles = StyleSheet.create({
   
   // Normal sized control buttons
   controlBtn: {
-    width: 44,
-    height: 44,
+    width: 50,
+    height: 50,
     borderRadius: 22,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
@@ -4344,7 +4764,7 @@ const styles = StyleSheet.create({
   // Audio Call Screen
   audioCallContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#161616',
   },
   audioBackground: {
     position: 'absolute',
@@ -4401,6 +4821,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 'auto',
     paddingHorizontal: 20,
+    backgroundColor:'#252525',
+    borderRadius:10,
+    padding:10,
   },
   
   // Connecting Screen
@@ -4416,12 +4839,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   connectingAvatarContainer: {
-    marginBottom: 25,
+    marginBottom: 35,
   },
   connectingAvatar: {
-    width: 140,
-    height: 140,
-    borderRadius: 55,
+    width: 150,
+    height: 150,
+    borderRadius: 50,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
@@ -4443,10 +4866,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   connectingEndIcon: {
-    marginTop:20,
-    width: 70,
-    height: 70,
-    borderRadius: 32.5,
+    marginTop:40,
+    width: 80,
+    height: 80,
+    borderRadius: 100,
     backgroundColor: '#E53935',
     justifyContent: 'center',
     alignItems: 'center',

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -19,10 +18,12 @@ import Video from 'react-native-video';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
 const Music = () => {
+  const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [tracks, setTracks] = useState([]);
   const [currentTrack, setCurrentTrack] = useState(null);
@@ -61,10 +62,8 @@ const Music = () => {
 
   const handleTrackPress = async (track) => {
     if (currentTrack?.id === track.id) {
-     
       togglePlayback();
     } else {
-     
       await playTrack(track);
     }
   };
@@ -73,7 +72,6 @@ const Music = () => {
     try {
       const audioUrl = `${API_ROUTE_IMAGE}${track.audio_file}`;
       
-     
       if (videoRef.current) {
         videoRef.current.seek(0);
       }
@@ -81,7 +79,6 @@ const Music = () => {
       setCurrentTrack(track);
       setIsPlaying(true);
       
-    
     } catch (error) {
       Alert.alert(
         'Playback Error',
@@ -218,124 +215,130 @@ const Music = () => {
   );
 
   return (
-    <SafeAreaView style={{flex:1}}>
-    <View style={styles.container}>
-        
-          {currentTrack && (
-            <Video
-              ref={videoRef}
-              source={{ 
-                uri: `${API_ROUTE_IMAGE}${currentTrack.audio_file}` 
-              }}
-              paused={!isPlaying}
-              audioOnly={true}
-              playInBackground={true}
-              playWhenInactive={true}
-              ignoreSilentSwitch="ignore"
-              onLoad={onLoad}
-              onProgress={onProgress}
-              onEnd={onEnd}
-              onError={onError}
-              style={styles.hiddenVideo}
-              resizeMode="contain"
-            />
-          )}
-          
-          
-          <View style={[styles.searchContainer, isSearchFocused && styles.searchContainerFocused]}>
-            <Icon name="search" size={24} color="#888" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search songs, artists..."
-              placeholderTextColor="#aaa"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onSubmitEditing={() => fetchMusic(searchQuery)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Icon name="close" size={20} color="#888" />
-              </TouchableOpacity>
-            )}
-          </View>
+    <SafeAreaView style={{flex: 1}}>
+      <View style={styles.container}>
+        {/* Header with Back Button */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon name="arrow-back" size={28} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Music</Text>
+          <View style={styles.headerRight} />
+        </View>
 
-         
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#0768F0" />
-            </View>
-          ) : (
-            <FlatList
-              data={tracks}
-              contentContainerStyle={styles.listContent}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Icon name="music-off" size={60} color="#ccc" />
-                  <Text style={styles.emptyText}>No music found</Text>
-                </View>
-              }
-              ListFooterComponent={renderFooter}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderTrackItem}
-              showsVerticalScrollIndicator={false}
-            />
-          )}
-          
+        {currentTrack && (
+          <Video
+            ref={videoRef}
+            source={{ 
+              uri: `${API_ROUTE_IMAGE}${currentTrack.audio_file}` 
+            }}
+            paused={!isPlaying}
+            audioOnly={true}
+            playInBackground={true}
+            playWhenInactive={true}
+            ignoreSilentSwitch="ignore"
+            onLoad={onLoad}
+            onProgress={onProgress}
+            onEnd={onEnd}
+            onError={onError}
+            style={styles.hiddenVideo}
+            resizeMode="contain"
+          />
+        )}
         
-          {currentTrack && (
-            <View style={styles.bottomPlayer}>
-              <Image
-                source={{
-                  uri: currentTrack.cover_image
-                    ? `${API_ROUTE_IMAGE}${currentTrack.cover_image}`
-                    : 'https://via.placeholder.com/300',
-                }}
-                style={styles.bottomPlayerImage}
-              />
-              <View style={styles.bottomPlayerInfo}>
-                <Text style={styles.bottomPlayerTitle} numberOfLines={1}>
-                  {currentTrack.title}
-                </Text>
-                <Text style={styles.bottomPlayerArtist} numberOfLines={1}>
-                  {currentTrack.artist || 'Unknown Artist'}
-                </Text>
-              </View>
-              <View style={styles.bottomPlayerControls}>
-                <TouchableOpacity 
-                  onPress={stopTrack}
-                  style={styles.controlButton}
-                >
-                  <Icon name="stop" size={24} color="#fff" />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  onPress={togglePlayback}
-                  style={styles.controlButton}
-                >
-                  <Icon
-                    name={isPlaying ? 'pause-circle-filled' : 'play-circle-filled'}
-                    size={40}
-                    color="#0768F0"
-                  />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  onPress={() => {
-                  
-                    seekTo(Math.min(currentTime + 10, duration));
-                  }}
-                  style={styles.controlButton}
-                >
-                  <Icon name="forward-10" size={24} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            </View>
+        <View style={[styles.searchContainer, isSearchFocused && styles.searchContainerFocused]}>
+          <Icon name="search" size={24} color="#888" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search songs, artists..."
+            placeholderTextColor="#aaa"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={() => fetchMusic(searchQuery)}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Icon name="close" size={20} color="#888" />
+            </TouchableOpacity>
           )}
         </View>
+
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#0768F0" />
+          </View>
+        ) : (
+          <FlatList
+            data={tracks}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Icon name="music-off" size={60} color="#ccc" />
+                <Text style={styles.emptyText}>No music found</Text>
+              </View>
+            }
+            ListFooterComponent={renderFooter}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderTrackItem}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+        
+        {currentTrack && (
+          <View style={styles.bottomPlayer}>
+            <Image
+              source={{
+                uri: currentTrack.cover_image
+                  ? `${API_ROUTE_IMAGE}${currentTrack.cover_image}`
+                  : 'https://via.placeholder.com/300',
+              }}
+              style={styles.bottomPlayerImage}
+            />
+            <View style={styles.bottomPlayerInfo}>
+              <Text style={styles.bottomPlayerTitle} numberOfLines={1}>
+                {currentTrack.title}
+              </Text>
+              <Text style={styles.bottomPlayerArtist} numberOfLines={1}>
+                {currentTrack.artist || 'Unknown Artist'}
+              </Text>
+            </View>
+            <View style={styles.bottomPlayerControls}>
+              <TouchableOpacity 
+                onPress={stopTrack}
+                style={styles.controlButton}
+              >
+                <Icon name="stop" size={24} color="#fff" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={togglePlayback}
+                style={styles.controlButton}
+              >
+                <Icon
+                  name={isPlaying ? 'pause-circle-filled' : 'play-circle-filled'}
+                  size={40}
+                  color="#0768F0"
+                />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={() => {
+                  seekTo(Math.min(currentTime + 10, duration));
+                }}
+                style={styles.controlButton}
+              >
+                <Icon name="forward-10" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
     </SafeAreaView>
-    
   );
 };
 
@@ -343,6 +346,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#101010',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
+    backgroundColor: '#101010',
+    borderBottomWidth: 1,
+    borderBottomColor: '#1c1c1c',
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  headerRight: {
+    width: 44,
   },
   hiddenVideo: {
     position: 'absolute',
@@ -489,7 +515,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginRight: 10,
   },
-
   bottomPlayer: {
     position: 'absolute',
     bottom: 0,

@@ -566,9 +566,9 @@ class NotificationService {
   if (type === 'incoming_call') {
     const callId = `call_${Date.now()}_${caller_id || room_id || 'unknown'}`;
  console.log("========== INCOMING CALL RECEIVED from notificationServices_page ==========");
-  console.log("Full data:", data);
-  console.log("data.offer:", data.offer);
-  console.log("data.offer?.sdp exists:", !!data.offer?.sdp);
+  // console.log("Full data:", data);
+  // console.log("data.offer:", data.offer);
+  // console.log("data.offer?.sdp exists:", !!data.offer?.sdp); 
   console.log("===========================================");
     this.storePendingCall({
       callerName: caller_name,
@@ -619,7 +619,7 @@ class NotificationService {
         const callData = JSON.parse(pendingCall);
         const callAge = Date.now() - callData.timestamp;
         
-        if (callAge < 30000) {
+        if (callAge >= 30000) {
           await AsyncStorage.removeItem('pending_call');
           
           PushNotification.localNotification({

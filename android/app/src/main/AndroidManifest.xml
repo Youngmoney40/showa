@@ -8,13 +8,11 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
-    
+
     <!-- ========== CALL PERMISSIONS ========== -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.BIND_TELECOM_CONNECTION_SERVICE"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
@@ -44,19 +42,31 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
     
-    <!-- Android 12 and below -->
+    <!-- ✅ CORRECT - Android 12 and below (maxSdkVersion 32) -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
         android:maxSdkVersion="32" />
+    
+    <!-- ✅ CORRECT - Android 9 and below (maxSdkVersion 28) -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="29" 
+        android:maxSdkVersion="28" 
         tools:ignore="ScopedStorage" />
+    
+    <!-- ========== FOREGROUND SERVICES (Android 14+) ========== -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     
     <!-- ========== DOWNLOADS ========== -->
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
 
-    <!-- ========== QUERIES ========== -->
+    <!-- ========== QUERIES (Android 11+) ========== -->
     <queries>
+        <!-- Existing intents -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
@@ -73,6 +83,24 @@
             <action android:name="android.intent.action.PICK" />
             <data android:mimeType="video/*" />
         </intent>
+        
+        <!-- ✅ ADD THESE FOR DEEP LINKS -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="showa" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="smsto" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="*/*" />
+        </intent>
     </queries>
 
     <application
@@ -87,10 +115,10 @@
         android:enableOnBackInvokedCallback="true"
         tools:targetApi="35">
         
-        <!-- Android 15+ Edge-to-Edge -->
+        <!-- ✅ Conditionally enable edge-to-edge -->
         <meta-data
             android:name="android.edge_to_edge_enable"
-            android:value="true" />
+            android:value="${edgeToEdgeEnabled}" />
 
         <!-- MAIN ACTIVITY -->
         <activity
@@ -113,7 +141,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             
-            <!-- ✅ DEEP LINKS - Post (showa://post/123) -->
+            <!-- ✅ DEEP LINKS -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -125,44 +153,16 @@
             
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data
-                    android:scheme="https"
-                    android:host="showapp.ng"
-                    android:pathPrefix="/post" />
-
-                <data
-                    android:scheme="https"
-                    android:host="www.showapp.ng"
-                    android:pathPrefix="/post" />
-
-                <data
-                    android:scheme="http"
-                    android:host="showapp.ng"
-                    android:pathPrefix="/post" />
-
-                <data
-                    android:scheme="http"
-                    android:host="www.showapp.ng"
-                    android:pathPrefix="/post" />
-            </intent-filter>
-            
-            <!-- ✅ UNIVERSAL LINKS - https://showapp.com/p/123 -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" />
                 <data android:scheme="http" />
                 <data android:host="showapp.ng" />
                 <data android:host="www.showapp.ng" />
+                <data android:pathPrefix="/post" />
                 <data android:pathPrefix="/p" />
             </intent-filter>
             
-            <!-- ✅ DEEP LINKS - User Profile (showa://user/123) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -172,7 +172,6 @@
                 <data android:pathPattern="/.*" />
             </intent-filter>
             
-            <!-- ✅ DEEP LINKS - Short Video (showa://short/123) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -182,7 +181,6 @@
                 <data android:pathPattern="/.*" />
             </intent-filter>
             
-            <!-- ✅ DEEP LINKS - Short Video (showa://s/123) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -240,6 +238,12 @@
         <service
             android:name=".CallForegroundService"
             android:foregroundServiceType="phoneCall"
+            android:exported="false" />
+        
+        <!-- BACKGROUND SYNC SERVICE (Android 14+) -->
+        <service
+            android:name=".BackgroundSyncService"
+            android:foregroundServiceType="dataSync"
             android:exported="false" />
         
     </application>

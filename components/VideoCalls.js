@@ -3292,10 +3292,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_ROUTE_IMAGE } from "../api_routing/api";
 import InCallManager from "react-native-incall-manager";
 import CallKeepService from '../src/services/CallKeepService';
+import { useBackHandler } from '../src/hooks/useBackHandler';
 
 const SIGNALING_SERVER = "wss://api.showapp.ng";
 
 export default function VideoCallScreen({ navigation, route }) {
+    useBackHandler(navigation, 'BroadcastHome');
   const {
     profile_image,
     name,
@@ -3631,114 +3633,285 @@ export default function VideoCallScreen({ navigation, route }) {
   };
 
   // ─── Peer connection ─────────────────────────────────────────
+  // const ensurePeerConnection = async () => {
+  //   if (pc.current) return;
+  //   if (!rtcConfig.iceServers.length) await getIceServers();
+
+  //   pc.current = new RTCPeerConnection(rtcConfig);
+  //   console.log("[WebRTC] RTCPeerConnection created");
+
+  //   pc.current.onnegotiationneeded = () => {
+  //     console.log("[WebRTC] onnegotiationneeded, signalingState:", pc.current?.signalingState);
+  //   };
+
+  //   pc.current.onicecandidate = (evt) => {
+  //     if (evt.candidate) {
+  //       const cand = evt.candidate.candidate;
+  //       if (cand.includes("typ relay")) console.log("🟢 [TURN WORKING]", cand);
+  //       else if (cand.includes("typ srflx")) console.log("🟡 [STUN WORKING]", cand);
+  //       sendMessage({ type: "candidate", candidate: evt.candidate });
+  //     } else {
+  //       console.log("[ICE] Gathering finished");
+  //     }
+  //   };
+
+  //   pc.current.ontrack = (evt) => {
+  //     console.log("========= TRACK RECEIVED =========");
+
+  //   console.log("Track Kind:", evt.track.kind);
+
+  //   console.log(
+  //       "Tracks in stream:",
+  //       evt.streams[0].getTracks().map(t => ({
+  //           kind: t.kind,
+  //           enabled: t.enabled,
+  //           readyState: t.readyState
+  //       }))
+  //   );
+  //     console.log("[WebRTC] Track received:", evt.track?.kind);
+  //     if (evt.streams && evt.streams[0]) {
+  //       remoteStream.current = evt.streams[0];
+  //       try { setRemoteURL(remoteStream.current.toURL()); 
+  //         console.log(remoteStream.current.toURL());
+  //         console.log("remote_stream url:", remoteStream.current.toURL());
+  //       } catch {}
+  //       setWebrtcReady(true);
+  //       setCallAccepted(true);
+  //       InCallManager.start({ media: 'video' });
+  //       InCallManager.setSpeakerphoneOn(true);
+  //     }
+  //   };
+
+  //   pc.current.onconnectionstatechange = async () => {
+  //     if (!pc.current) return;
+  //     const state = pc.current.connectionState;
+  //     console.log("[WebRTC] connectionState =>", state);
+
+  //     if (state === "connected") {
+  //       console.log("VIDEO CALL CONNECTED");
+  //       try {
+  //         const stats = await pc.current.getStats();
+  //         stats.forEach((report) => {
+  //           if (report.type === "candidate-pair" && report.state === "succeeded") {
+  //             const local = stats.get(report.localCandidateId);
+  //             const remote = stats.get(report.remoteCandidateId);
+  //             if (local?.candidateType === "relay" || remote?.candidateType === "relay") {
+  //               console.log("🟢 USING TURN (Xirsys)");
+  //             } else if (local?.candidateType === "srflx") {
+  //               console.log("🟡 USING STUN");
+  //             } else {
+  //               console.log("⚪ USING LOCAL");
+  //             }
+  //           }
+  //         });
+  //       } catch (err) {
+  //         console.warn("[WebRTC] getStats failed:", err);
+  //       }
+  //     }
+
+  //     if (state === "failed") {
+  //       console.warn("VIDEO CONNECTION FAILED");
+  //       saveCallToHistory({
+  //         contact: { name, profileImage: profile_image, userId: targetUserId },
+  //         direction: isInitiator ? 'outgoing' : 'incoming',
+  //         isVideoCall: true,
+  //         status: 'failed',
+  //         duration: callDuration,
+  //       });
+  //     }
+  //   };
+
+  //   pc.current.oniceconnectionstatechange = () => {
+  //     if (!pc.current) return;
+  //     console.log("[WebRTC] iceConnectionState =>", pc.current.iceConnectionState);
+  //   };
+  // };
+
   const ensurePeerConnection = async () => {
-    if (pc.current) return;
-    if (!rtcConfig.iceServers.length) await getIceServers();
+  if (pc.current) return;
+  if (!rtcConfig.iceServers.length) await getIceServers();
 
-    pc.current = new RTCPeerConnection(rtcConfig);
-    console.log("[WebRTC] RTCPeerConnection created");
+  pc.current = new RTCPeerConnection(rtcConfig);
+  console.log("[WebRTC] RTCPeerConnection created");
 
-    pc.current.onnegotiationneeded = () => {
-      console.log("[WebRTC] onnegotiationneeded, signalingState:", pc.current?.signalingState);
-    };
-
-    pc.current.onicecandidate = (evt) => {
-      if (evt.candidate) {
-        const cand = evt.candidate.candidate;
-        if (cand.includes("typ relay")) console.log("🟢 [TURN WORKING]", cand);
-        else if (cand.includes("typ srflx")) console.log("🟡 [STUN WORKING]", cand);
-        sendMessage({ type: "candidate", candidate: evt.candidate });
-      } else {
-        console.log("[ICE] Gathering finished");
-      }
-    };
-
-    pc.current.ontrack = (evt) => {
-      console.log("[WebRTC] Track received:", evt.track?.kind);
-      if (evt.streams && evt.streams[0]) {
-        remoteStream.current = evt.streams[0];
-        try { setRemoteURL(remoteStream.current.toURL()); } catch {}
-        setWebrtcReady(true);
-        setCallAccepted(true);
-        InCallManager.start({ media: 'video' });
-        InCallManager.setSpeakerphoneOn(true);
-      }
-    };
-
-    pc.current.onconnectionstatechange = async () => {
-      if (!pc.current) return;
-      const state = pc.current.connectionState;
-      console.log("[WebRTC] connectionState =>", state);
-
-      if (state === "connected") {
-        console.log("✅ VIDEO CALL CONNECTED");
-        try {
-          const stats = await pc.current.getStats();
-          stats.forEach((report) => {
-            if (report.type === "candidate-pair" && report.state === "succeeded") {
-              const local = stats.get(report.localCandidateId);
-              const remote = stats.get(report.remoteCandidateId);
-              if (local?.candidateType === "relay" || remote?.candidateType === "relay") {
-                console.log("🟢 USING TURN (Xirsys)");
-              } else if (local?.candidateType === "srflx") {
-                console.log("🟡 USING STUN");
-              } else {
-                console.log("⚪ USING LOCAL");
-              }
-            }
-          });
-        } catch (err) {
-          console.warn("[WebRTC] getStats failed:", err);
-        }
-      }
-
-      if (state === "failed") {
-        console.warn("❌ VIDEO CONNECTION FAILED");
-        saveCallToHistory({
-          contact: { name, profileImage: profile_image, userId: targetUserId },
-          direction: isInitiator ? 'outgoing' : 'incoming',
-          isVideoCall: true,
-          status: 'failed',
-          duration: callDuration,
-        });
-      }
-    };
-
-    pc.current.oniceconnectionstatechange = () => {
-      if (!pc.current) return;
-      console.log("[WebRTC] iceConnectionState =>", pc.current.iceConnectionState);
-    };
+  // --- Negotiation ---
+  pc.current.onnegotiationneeded = () => {
+    console.log("[WebRTC] onnegotiationneeded, signalingState:", pc.current?.signalingState);
   };
 
-  const ensureLocalStreamAndAttach = async () => {
-    if (!localStream.current) {
-      const hasPermission = await requestPermissions();
-      if (!hasPermission) {
-        Alert.alert("Permission denied", "Cannot access camera or microphone.");
-        return false;
-      }
-      try {
-        const s = await mediaDevices.getUserMedia({
-          audio: true,
-          video: { facingMode: isCameraFront ? "user" : "environment" },
-        });
-        localStream.current = s;
-        try { setLocalURL(s.toURL()); } catch {}
+  // --- ICE Candidates ---
+  pc.current.onicecandidate = (evt) => {
+    if (evt.candidate) {
+      const cand = evt.candidate.candidate;
+      if (cand.includes("typ relay")) console.log("🟢 [TURN WORKING]", cand);
+      else if (cand.includes("typ srflx")) console.log("🟡 [STUN WORKING]", cand);
+      sendMessage({ type: "candidate", candidate: evt.candidate });
+    } else {
+      console.log("[ICE] Gathering finished");
+    }
+  };
+
+  // --- TRACK RECEIVED (THIS IS THE ONE YOU NEED) ---
+  pc.current.ontrack = (evt) => {
+    console.log("========= TRACK RECEIVED =========");
+    console.log("Track Kind:", evt.track.kind);
+    console.log("Track enabled:", evt.track.enabled);
+    console.log("Track readyState:", evt.track.readyState);
+    
+    if (evt.streams && evt.streams[0]) {
+      remoteStream.current = evt.streams[0];
+      
+      const tracks = evt.streams[0].getTracks();
+      console.log(`Received stream with ${tracks.length} tracks:`, 
+        tracks.map(t => ({ kind: t.kind, enabled: t.enabled }))
+      );
+      
+      try { 
+        const url = remoteStream.current.toURL();
+        setRemoteURL(url); 
+        console.log("remote_stream url:", url);
       } catch (e) {
-        Alert.alert("Error", "Failed to get camera/mic: " + e.message);
-        return false;
+        console.error("Error getting remote URL:", e);
+      }
+      
+      setWebrtcReady(true);
+      setCallAccepted(true);
+      InCallManager.start({ media: 'video' });
+      InCallManager.setSpeakerphoneOn(true);
+    } else {
+      console.warn("[WebRTC] Track received but no stream!");
+    }
+  };
+
+  // --- Connection State ---
+  pc.current.onconnectionstatechange = async () => {
+    if (!pc.current) return;
+    const state = pc.current.connectionState;
+    console.log("[WebRTC] connectionState =>", state);
+
+    if (state === "connected") {
+      console.log("VIDEO CALL CONNECTED");
+      try {
+        const stats = await pc.current.getStats();
+        stats.forEach((report) => {
+          if (report.type === "candidate-pair" && report.state === "succeeded") {
+            const local = stats.get(report.localCandidateId);
+            const remote = stats.get(report.remoteCandidateId);
+            if (local?.candidateType === "relay" || remote?.candidateType === "relay") {
+              console.log("🟢 USING TURN (Xirsys)");
+            } else if (local?.candidateType === "srflx") {
+              console.log("🟡 USING STUN");
+            } else {
+              console.log("⚪ USING LOCAL");
+            }
+          }
+        });
+      } catch (err) {
+        console.warn("[WebRTC] getStats failed:", err);
       }
     }
-    if (pc.current) {
-      const existingTracks = pc.current.getSenders().map((s) => s.track);
-      localStream.current.getTracks().forEach((track) => {
-        if (!existingTracks.includes(track)) {
-          pc.current.addTrack(track, localStream.current);
-        }
+
+    if (state === "failed") {
+      console.warn("VIDEO CONNECTION FAILED");
+      saveCallToHistory({
+        contact: { name, profileImage: profile_image, userId: targetUserId },
+        direction: isInitiator ? 'outgoing' : 'incoming',
+        isVideoCall: true,
+        status: 'failed',
+        duration: callDuration,
       });
     }
-    return true;
   };
+
+  // --- ICE State ---
+  pc.current.oniceconnectionstatechange = () => {
+    if (!pc.current) return;
+    console.log("[WebRTC] iceConnectionState =>", pc.current.iceConnectionState);
+  };
+};
+
+ const ensureLocalStreamAndAttach = async () => {
+  if (!localStream.current) {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) {
+      Alert.alert("Permission denied", "Cannot access camera or microphone.");
+      return false;
+    }
+    try {
+      const s = await mediaDevices.getUserMedia({
+        audio: true,
+        video: { 
+          facingMode: isCameraFront ? "user" : "environment",
+          frameRate: 30,
+        },
+      });
+      
+      // ✅ Ensure video track is enabled
+      const videoTrack = s.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = true;
+        console.log("[Local] Video track enabled:", videoTrack.enabled);
+      }
+      
+      localStream.current = s;
+      try { setLocalURL(s.toURL()); } catch {}
+    } catch (e) {
+      Alert.alert("Error", "Failed to get camera/mic: " + e.message);
+      return false;
+    }
+  }
+  
+  // ✅ Re-enable video track if it's disabled
+  if (localStream.current) {
+    const videoTrack = localStream.current.getVideoTracks()[0];
+    if (videoTrack && !videoTrack.enabled) {
+      videoTrack.enabled = true;
+      console.log("[Local] Re-enabled video track");
+    }
+  }
+  
+  // Only attach if we have a peer connection
+  if (pc.current && localStream.current) {
+    const existingTracks = pc.current.getSenders().map((s) => s.track);
+    localStream.current.getTracks().forEach((track) => {
+      if (!existingTracks.includes(track)) {
+        pc.current.addTrack(track, localStream.current);
+        console.log(`[Local] Attached ${track.kind} track to peer connection`);
+      }
+    });
+  }
+  return true;
+};
+
+  // const ensureLocalStreamAndAttach = async () => {
+  //   if (!localStream.current) {
+  //     const hasPermission = await requestPermissions();
+  //     if (!hasPermission) {
+  //       Alert.alert("Permission denied", "Cannot access camera or microphone.");
+  //       return false;
+  //     }
+  //     try {
+  //       const s = await mediaDevices.getUserMedia({
+  //         audio: true,
+  //         video: { facingMode: isCameraFront ? "user" : "environment" },
+  //       });
+  //       localStream.current = s;
+  //       try { setLocalURL(s.toURL()); } catch {}
+  //     } catch (e) {
+  //       Alert.alert("Error", "Failed to get camera/mic: " + e.message);
+  //       return false;
+  //     }
+  //   }
+  //   if (pc.current) {
+  //     const existingTracks = pc.current.getSenders().map((s) => s.track);
+  //     localStream.current.getTracks().forEach((track) => {
+  //       if (!existingTracks.includes(track)) {
+  //         pc.current.addTrack(track, localStream.current);
+  //       }
+  //     });
+  //   }
+  //   return true;
+  // };
 
   const drainQueuedCandidates = async () => {
     if (!pc.current) return;
@@ -4117,63 +4290,219 @@ export default function VideoCallScreen({ navigation, route }) {
     }
   };
 
-  const handleIncomingCall = async (offer) => {
-    try {
-      const newCallId = `call_${Date.now()}_${offer.callerId || 'unknown'}`;
+//  const handleIncomingCall = async (offer) => {
+//   try {
+//     console.log("[Incoming] Starting...");
+
+//     if (!currentCallIdRef.current) {                       //  only create if not already set
+//       const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
+//       updateCallId(newCallId);
+//     }
+    
+//     const newCallId = `call_${Date.now()}_${offer.callerId || 'unknown'}`;
+//     updateCallId(newCallId);
+
+//     if (!offer?.sdp) {
+//       console.error("[VideoCall] Missing SDP in offer");
+//       Alert.alert("Error", "Invalid video call offer.");
+//       rejectCall();
+//       return;
+//     }
+
+//     await ensurePeerConnection();
+//     const ok = await ensureLocalStreamAndAttach();
+//     if (!ok || !pc.current) {
+//       rejectCall();
+//       return;
+//     }
+
+//     // Add tracks
+//     if (pc.current && localStream.current) {
+//       const existingTracks = pc.current.getSenders().map((s) => s.track);
+//       localStream.current.getTracks().forEach((track) => {
+//         if (!existingTracks.includes(track)) {
+//           pc.current.addTrack(track, localStream.current);
+//         }
+//       });
+//     }
+
+//     // ✅ Set remote description
+//     await pc.current.setRemoteDescription(
+//       new RTCSessionDescription({ 
+//         type: offer.type || 'offer', 
+//         sdp: offer.sdp 
+//       })
+//     );
+    
+//     await drainQueuedCandidates();
+
+//     // Create answer
+//     const answer = await pc.current.createAnswer();
+//     await pc.current.setLocalDescription(answer);
+
+//     console.log("========= ANSWER SDP =========");
+// console.log(answer.sdp);
+
+//     console.log("========= BEFORE CREATE ANSWER =========");
+
+// console.log(
+//     "Local video tracks:",
+//     localStream.current.getVideoTracks().length
+// );
+
+// console.log(
+//     "Local audio tracks:",
+//     localStream.current.getAudioTracks().length
+// );
+
+// console.log(
+//     "Peer senders:",
+//     pc.current.getSenders().map(sender => ({
+//         kind: sender.track?.kind,
+//         enabled: sender.track?.enabled,
+//         readyState: sender.track?.readyState
+//     }))
+// );
+
+//     // Send answer
+//     sendMessage({
+//       type: "answer",
+//       answer: { type: answer.type, sdp: answer.sdp },
+//       isVideoCall: true,
+//     });
+
+//     // Wait for ontrack to fire
+//     console.log("[Incoming] Waiting for remote tracks...");
+    
+//     const trackTimeout = setTimeout(() => {
+//       if (!remoteStream.current) {
+//         console.warn("[Incoming] No remote tracks received after 5 seconds!");
+       
+//         const receivers = pc.current?.getReceivers();
+//         if (receivers && receivers.length > 0) {
+//           console.log("[Incoming] Found receivers:", receivers.length);
+//           receivers.forEach(r => {
+//             console.log("[Incoming] Receiver track:", r.track?.kind);
+//           });
+//         }
+//       }
+//     }, 5000);
+
+//     setWebrtcReady(true);
+//     setCallAccepted(true);
+//     setShowIncomingModal(false);
+//     setIncomingSDP(null);
+
+//     try { NativeModules.CallModule?.stopCallService(); } catch {}
+
+//     console.log("[VideoCall] Incoming call accepted");
+    
+//     // Clear timeout
+//     return () => clearTimeout(trackTimeout);
+    
+//   } catch (error) {
+//     console.error("[VideoCall] handleIncomingCall error:", error?.message);
+//     Alert.alert("Error", "Failed to accept video call: " + (error?.message || "Unknown"));
+//     rejectCall();
+//   }
+// };
+
+const handleIncomingCall = async (offer) => {
+  try {
+    console.log("[Incoming] Starting...");
+
+    if (!currentCallIdRef.current) {
+      const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
       updateCallId(newCallId);
-
-      if (!offer?.sdp) {
-        console.error("[VideoCall] Missing SDP in offer");
-        Alert.alert("Error", "Invalid video call offer.");
-        rejectCall();
-        return;
-      }
-
-      await ensurePeerConnection();
-      const ok = await ensureLocalStreamAndAttach();
-      if (!ok || !pc.current) {
-        rejectCall();
-        return;
-      }
-
-      if (pc.current && localStream.current) {
-        const existingTracks = pc.current.getSenders().map((s) => s.track);
-        localStream.current.getTracks().forEach((track) => {
-          if (!existingTracks.includes(track)) {
-            pc.current.addTrack(track, localStream.current);
-          }
-        });
-      }
-
-      await pc.current.setRemoteDescription(
-        new RTCSessionDescription({ type: 'offer', sdp: offer.sdp })
-      );
-      await drainQueuedCandidates();
-
-      const answer = await pc.current.createAnswer();
-      await pc.current.setLocalDescription(answer);
-
-      sendMessage({
-        type: "answer",
-        answer: { type: answer.type, sdp: answer.sdp },
-        isVideoCall: true,
-      });
-
-      setWebrtcReady(true);
-      setCallAccepted(true);
-      setShowIncomingModal(false);
-      setIncomingSDP(null);
-
-      // Stop foreground service notification
-      try { NativeModules.CallModule?.stopCallService(); } catch {}
-
-      console.log("[VideoCall] Incoming call accepted ✅");
-    } catch (error) {
-      console.error("[VideoCall] handleIncomingCall error:", error?.message);
-      Alert.alert("Error", "Failed to accept video call: " + (error?.message || "Unknown"));
-      rejectCall();
     }
-  };
+
+    if (!offer?.sdp) {
+      console.error("[VideoCall] Missing SDP in offer");
+      Alert.alert("Error", "Invalid video call offer.");
+      rejectCall();
+      return;
+    }
+
+    // ✅ STEP 1: Ensure peer connection is created
+    await ensurePeerConnection();
+    
+    // ✅ STEP 2: Ensure local stream is created
+    const ok = await ensureLocalStreamAndAttach();
+    if (!ok || !pc.current) {
+      rejectCall();
+      return;
+    }
+
+    // ✅ STEP 3: Add tracks to peer connection BEFORE setting remote description
+    if (pc.current && localStream.current) {
+      const existingSenders = pc.current.getSenders();
+      const existingTrackIds = new Set(existingSenders.map(s => s.track?.id).filter(Boolean));
+      
+      // Clear existing senders to avoid duplication
+      existingSenders.forEach(sender => {
+        pc.current.removeTrack(sender);
+      });
+      
+      // Add all tracks fresh
+      localStream.current.getTracks().forEach((track) => {
+        console.log(`[Incoming] Adding track: ${track.kind}`);
+        pc.current.addTrack(track, localStream.current);
+      });
+    }
+
+    // ✅ STEP 4: Set remote description
+    await pc.current.setRemoteDescription(
+      new RTCSessionDescription({ 
+        type: offer.type || 'offer', 
+        sdp: offer.sdp 
+      })
+    );
+    
+    await drainQueuedCandidates();
+
+    // ✅ STEP 5: Create answer with explicit video/audio options
+    const answer = await pc.current.createAnswer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true,
+    });
+    
+    await pc.current.setLocalDescription(answer);
+
+    // Debug logging
+    console.log("========= ANSWER SDP =========");
+    console.log(answer.sdp);
+    console.log("Local video tracks:", localStream.current.getVideoTracks().length);
+    console.log("Local audio tracks:", localStream.current.getAudioTracks().length);
+    console.log("Peer senders:", pc.current.getSenders().map(sender => ({
+      kind: sender.track?.kind,
+      enabled: sender.track?.enabled,
+      readyState: sender.track?.readyState
+    })));
+
+    // ✅ STEP 6: Send answer
+    sendMessage({
+      type: "answer",
+      answer: { type: answer.type, sdp: answer.sdp },
+      isVideoCall: true,
+    });
+
+    setWebrtcReady(true);
+    setCallAccepted(true);
+    setShowIncomingModal(false);
+    setIncomingSDP(null);
+
+    // Stop foreground service notification
+    try { NativeModules.CallModule?.stopCallService(); } catch {}
+
+    console.log("[VideoCall] Incoming call accepted");
+    
+  } catch (error) {
+    console.error("[VideoCall] handleIncomingCall error:", error?.message);
+    Alert.alert("Error", "Failed to accept video call: " + (error?.message || "Unknown"));
+    rejectCall();
+  }
+};
+
 
   // ─── Lifecycle ────────────────────────────────────────────────
   useEffect(() => {
@@ -4220,36 +4549,65 @@ export default function VideoCallScreen({ navigation, route }) {
     await createAndSendInitialOffer();
   };
 
-  const endCall = async (notify = true) => {
-    console.log("[VideoCall] Ending call...");
-    stopRinging();
-    isCallActiveRef.current = false;
+  const endCall = useCallback(async (notify = true) => {
+  console.log("[VideoCall] Ending call...");
+  
+  // ─── 1. IMMEDIATE STOP ───
+  // Stop ringing immediately
+  try { InCallManager.stopRingtone(); } catch (e) {}
+  
+  // Mark call as inactive immediately
+  isCallActiveRef.current = false;
 
-    const callDetails = {
-      contact: {
-        name: name || 'Unknown',
-        profileImage: profile_image || '',
-        userId: targetUserId || 'unknown',
-      },
-      direction: isInitiator ? 'outgoing' : 'incoming',
-      isVideoCall: true,
-      status: webrtcReady ? 'ended' : 'missed',
-      duration: callDuration || 0,
-    };
+  // ─── 2. IMMEDIATE STATE RESET ───
+  // Reset all UI state immediately
+  setWebrtcReady(false);
+  setLocalURL(null);
+  setRemoteURL(null);
+  setCallDuration(0);
+  setCurrentCallId(null);
+  setShowIncomingModal(false);
+  setIncomingSDP(null);
 
+  // ─── 3. NAVIGATE INSTANTLY ───
+  // Use setTimeout(0) for immediate navigation in next tick
+  setTimeout(() => {
+    try {
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate("PHome");
+      }
+    } catch (e) {
+      navigation.navigate("PHome");
+    }
+  }, 0);
+
+  // ─── 4. BACKGROUND CLEANUP (non-blocking) ───
+  const cid = currentCallIdRef.current || currentCallId;
+  
+  // Use setTimeout with 0 to defer all cleanup
+  setTimeout(() => {
     // End CallKeep call
-    const cid = currentCallIdRef.current || currentCallId;
     if (cid) {
-      try { CallKeepService.endCall(cid); } catch {}
+      try { 
+        CallKeepService.endCall(cid).catch(() => {}); 
+      } catch (e) {}
     }
 
     // Stop foreground service
-    try { NativeModules.CallModule?.stopCallService(); } catch {}
+    try { 
+      NativeModules.CallModule?.stopCallService(); 
+    } catch (e) {}
 
-    if (notify) {
-      try { sendMessage({ type: "call-ended" }); } catch {}
+    // Notify other party
+    if (notify && ws.current?.readyState === WebSocket.OPEN) {
+      try { 
+        ws.current.send(JSON.stringify({ type: "call-ended" })); 
+      } catch (e) {}
     }
 
+    // Close WebSocket
     try {
       if (ws.current) {
         ws.current.onopen = null;
@@ -4257,26 +4615,42 @@ export default function VideoCallScreen({ navigation, route }) {
         ws.current.onclose = null;
         ws.current.onerror = null;
         ws.current.close();
+        ws.current = null;
       }
-    } catch {}
-    ws.current = null;
+    } catch (e) {}
 
+    // Stop audio
     try {
       InCallManager.stop();
-      InCallManager.stopRingtone();
-    } catch {}
+    } catch (e) {}
 
-    cleanupPeerConnection();
-    setCurrentCallId(null);
+    // Cleanup peer connection
+    try {
+      cleanupPeerConnection();
+    } catch (e) {}
 
-    await saveCallToHistory(callDetails);
+    console.log("[VideoCall] Cleanup complete");
+  }, 0);
 
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation.navigate("PHome");
-    }
+  // ─── 5. SAVE HISTORY (async, no await) ───
+  const callDetails = {
+    contact: {
+      name: name || 'Unknown',
+      profileImage: profile_image || '',
+      userId: targetUserId || 'unknown',
+    },
+    direction: isInitiator ? 'outgoing' : 'incoming',
+    isVideoCall: true,
+    status: webrtcReady ? 'ended' : 'missed',
+    duration: callDuration || 0,
   };
+
+  // Fire and forget save
+  saveCallToHistory(callDetails).catch(() => {});
+
+}, [navigation, isInitiator, name, profile_image, targetUserId, webrtcReady, callDuration, currentCallId]);
+
+
 
   const rejectCall = async () => {
     stopRinging();
@@ -4290,7 +4664,7 @@ export default function VideoCallScreen({ navigation, route }) {
     });
     setShowIncomingModal(false);
     setIncomingSDP(null);
-    navigation.navigate("PHome");
+    navigation.goBack();
   };
 
   const switchCamera = async () => {
@@ -4327,6 +4701,7 @@ export default function VideoCallScreen({ navigation, route }) {
   // ─── UI ───────────────────────────────────────────────────────
 
   return (
+  
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
 
@@ -4336,13 +4711,16 @@ export default function VideoCallScreen({ navigation, route }) {
           {remoteURL ? (
             <View style={styles.videoContainer}>
               {/* Remote Video - Full Screen */}
+              <>
+               {console.log("RTCView rendering with:", remoteURL)}
               <RTCView 
                 streamURL={remoteURL} 
                 style={styles.remoteVideo} 
                 objectFit="cover" 
               />
+              </>
 
-              {/* Draggable Local Video PiP */}
+              {/* Draggable Local Video PiP========= */}
               {localURL && pipVisible && (
                 <View
                   style={[
@@ -4406,7 +4784,7 @@ export default function VideoCallScreen({ navigation, route }) {
                 </View>
               </View>
 
-              {/* Bottom Controls - WhatsApp Style */}
+              {/* Bottom Controls  */}
               <View style={styles.bottomControls}>
                 <View style={styles.controlsRow}>
                   {/* Mute Button */}
@@ -4474,7 +4852,8 @@ export default function VideoCallScreen({ navigation, route }) {
               <View style={styles.avatarContainer}>
                 <View style={styles.avatar}>
                   <Image
-                    source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
+                    source={{ uri: `${profile_image}` }}
+                    // source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
                     style={styles.avatarImage}
                     resizeMode="cover"
                   />
@@ -4508,7 +4887,7 @@ export default function VideoCallScreen({ navigation, route }) {
               <Text style={styles.connectingStatusText}>
                 {wsConnected
                   ? (isInitiator
-                      ? (callAccepted ? "Connecting..." : "Ringing...")
+                      ? (callAccepted ? "Connecting..." : "Processing please wait...")
                       : autoAnswerOnOffer
                         ? "Connecting to video call..."
                         : "Incoming video call...")
@@ -4548,7 +4927,8 @@ export default function VideoCallScreen({ navigation, route }) {
                 <View style={styles.callerInfo}>
                   <View style={styles.modalAvatar}>
                     <Image
-                      source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
+                      source={{ uri: `${profile_image}` }}
+                      // source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
                       style={styles.modalAvatarImage}
                       resizeMode="cover"
                     />
@@ -4603,13 +4983,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-  remoteVideo: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
-  },
+  // remoteVideo: {
+  //   position: 'absolute',
+  //   top: 0,
+  //   left: 0,
+  //   bottom: 0,
+  //   right: 0,
+  // },
   
   // Draggable PiP
   localVideoWrapper: {
@@ -4937,6 +5317,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.2)',
   },
   avatarImage: { width: '100%', height: '100%', borderRadius: 75 },
+  
   remoteVideo: { flex: 1, width: '100%', backgroundColor: '#000', zIndex: 1 },
   localVideo: {
     position: 'absolute',

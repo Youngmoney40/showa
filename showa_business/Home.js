@@ -191,7 +191,7 @@ const fetchUnreadNotificationCount = async () => {
             });
   
             // Set the states
-            setIsVideoCall(isVideo);
+           // setIsVideoCall(isVideo);
             
             setCallerInfo({
               profileImage: profileImage,
@@ -1197,13 +1197,13 @@ const fetchUnreadNotificationCount = async () => {
       
       {/* <BottomNav navigation={navigation} setShowAccountModal={setShowAccountModal} /> */}
       
-      <IncomingCallModal
+      {/* <IncomingCallModal
         visible={showIncomingCallModal}
         onAccept={handleAcceptCall}
         onReject={handleRejectCall}
         profileImage={callerInfo.profileImage}
         callerName={callerInfo.name}
-      />
+      /> */}
      
       <Modal
         visible={showMediaModal}

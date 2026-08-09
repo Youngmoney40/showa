@@ -30,7 +30,7 @@ const UpdateModal = ({ visible, updateInfo, onClose }) => {
         // Fallback to store URLs
         const storeUrl = Platform.select({
           ios: 'https://apps.apple.com/app/idYOUR_APP_ID', 
-          android: 'https://play.google.com/store/apps/details?id=com.showa&hl=en_US', // Replace with your package name
+          android: 'https://play.google.com/store/apps/details?id=com.showa&hl=en_US', 
         });
         
         await Linking.openURL(storeUrl);
@@ -90,7 +90,6 @@ const UpdateModal = ({ visible, updateInfo, onClose }) => {
     >
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContainer, getUpdateTypeStyle()]}>
-          {/* Header */}
           <View style={styles.header}>
             <Icon name="system-update" size={50} color={getUpdateTypeColor()} />
             <Text style={[styles.title, { color: getUpdateTypeColor() }]}>

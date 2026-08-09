@@ -799,11 +799,17 @@ export default function CreateAdForm({ onClose, onAdCreated }) {
                 </View>
               )}
 
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={styles.doneButton}
                 onPress={() => setTargeting(prev => ({ ...prev, showLocationDropdown: false }))}
               >
                 <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity> */}
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={() => setTargeting(prev => ({ ...prev, showLocationDropdown: false }))}
+              >
+                <Text style={styles.doneButtonText}>✓ Done</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1608,13 +1614,18 @@ const getStyles = (isDarkMode) => StyleSheet.create({
     fontSize: 11,
     color: '#1e40af',
   },
+
   locationModalContent: {
-    backgroundColor: isDarkMode ? '#1e293b' : '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '80%',
-  },
+  backgroundColor: isDarkMode ? '#1e293b' : '#fff',
+  borderRadius: 24,
+  padding: 24,
+  width: '95%',
+  maxWidth: 500,
+  maxHeight: '90%',
+  alignSelf: 'center',
+},
+ 
+
   locationModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1755,23 +1766,29 @@ const getStyles = (isDarkMode) => StyleSheet.create({
     color: isDarkMode ? '#cbd5e1' : '#4b5563',
     fontStyle: 'italic',
   },
-  doneButton: {
-    backgroundColor: '#2563eb',
-    paddingVertical: 14,
-    borderRadius: 25,
-    alignItems: 'center',
-    marginTop: 16,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    width: '100%',
-  },
-  doneButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-    textAlign: 'center',
-  },
+  
+ doneButton: {
+  backgroundColor: '#2563eb',
+  paddingVertical: 14,
+  paddingHorizontal: 40,
+  borderRadius: 25,
+  alignItems: 'center',
+  marginTop: 16,
+  alignSelf: 'center',
+  minWidth: 120,
+  shadowColor: '#2563eb',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.3,
+  shadowRadius: 8,
+  elevation: 4,
+},
+
+doneButtonText: {
+  color: '#fff',
+  fontWeight: '600',
+  fontSize: 16,
+  textAlign: 'center',
+},
   closeButton: {
     padding: 8,
     borderRadius: 20,
@@ -2249,11 +2266,13 @@ const getStyles = (isDarkMode) => StyleSheet.create({
     fontWeight: '600',
   },
   modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: 16,
+},
+
   modalContent: {
     width: '80%',
     backgroundColor: isDarkMode ? '#1e293b' : '#fff',

@@ -48,10 +48,10 @@ export default function SplashScreen() {
     try {
       const profile = await fetchProfile();
       if (profile?.name?.trim()) {
-        return 'PHome';
+        return 'BroadcastHome';
       } else {
-        // return 'BroadcastHome';
-        return 'PHome';
+        return 'BroadcastHome';
+    
       }
     } catch (error) {
       return 'Onboard';
@@ -108,7 +108,7 @@ export default function SplashScreen() {
   };
 
   useEffect(() => {
-    // Logo animations
+
     Animated.parallel([
       Animated.timing(logoScale, {
         toValue: 1,
