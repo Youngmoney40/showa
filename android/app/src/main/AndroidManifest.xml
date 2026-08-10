@@ -115,7 +115,7 @@
         android:enableOnBackInvokedCallback="true"
         tools:targetApi="35">
         
-        <!-- ✅ Conditionally enable edge-to-edge -->
+        <!-- Conditionally enable edge-to-edge -->
         <meta-data
             android:name="android.edge_to_edge_enable"
             android:value="${edgeToEdgeEnabled}" />
@@ -141,7 +141,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             
-            <!-- ✅ DEEP LINKS -->
+            <!-- DEEP LINKS -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
