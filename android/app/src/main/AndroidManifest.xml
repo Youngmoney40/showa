@@ -225,6 +225,7 @@
         </activity>
         
         <!-- ========== INCOMING CALL ACTIVITY ========== -->
+        <!-- FIXED: Removed invalid android:excludeTaskFromRecents -->
         <activity
             android:name=".IncomingCallActivity"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
@@ -235,7 +236,6 @@
             android:exported="true"
             android:excludeFromRecents="true"
             android:taskAffinity=""
-            android:excludeTaskFromRecents="true"
             android:noHistory="true" />
 
         <!-- ========== FILE PROVIDER ========== -->
@@ -300,4 +300,3 @@
     </application>
 
 </manifest>
-
