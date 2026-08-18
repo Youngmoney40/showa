@@ -2476,7 +2476,7 @@ const EarnTasksScreen = ({ navigation }) => {
                 <Icon name="ondemand-video" size={28} color="#2196F3" />
               </View>
               <Text style={[styles.actionTitle, { color: colors.text }]}>Watch Videos</Text>
-              <Text style={styles.actionReward}>+1 coin per video</Text>
+              <Text style={[styles.actionReward, { color: colors.textSecondary }]}>+1 coin per video</Text>
               <Text style={[styles.actionSub, { color: colors.textSecondary }]}>15 videos/day</Text>
             </TouchableOpacity>
             
@@ -2488,7 +2488,7 @@ const EarnTasksScreen = ({ navigation }) => {
                 <Icon name="create" size={28} color="#9C27B0" />
               </View>
               <Text style={[styles.actionTitle, { color: colors.text }]}>Create Posts</Text>
-              <Text style={styles.actionReward}>+1 coin per post</Text>
+              <Text style={[styles.actionReward,{color: colors.textSecondary}]} >+1 coin per post</Text>
               <Text style={[styles.actionSub, { color: colors.textSecondary }]}>5 posts/day</Text>
             </TouchableOpacity>
 
@@ -2500,7 +2500,7 @@ const EarnTasksScreen = ({ navigation }) => {
                 <Icon name="create" size={28} color="#9C27B0" />
               </View>
               <Text style={[styles.actionTitle, { color: colors.text }]}>Verify identity</Text>
-              <Text style={styles.actionReward}>+700 coin per verification</Text>
+              <Text style={[styles.actionReward,{color: colors.textSecondary}]} >+700 coin per verification</Text>
               <Text style={[styles.actionSub, { color: colors.textSecondary }]}>One time</Text>
             </TouchableOpacity>
             
@@ -2512,7 +2512,7 @@ const EarnTasksScreen = ({ navigation }) => {
                 <Icon name="create" size={28} color="#9C27B0" />
               </View>
               <Text style={[styles.actionTitle, { color: colors.text }]}>Purchase Data</Text>
-              <Text style={styles.actionReward}>+70 coin per purchase</Text>
+              <Text style={[styles.actionReward,{color: colors.textSecondary}]} >+70 coin per purchase</Text>
               <Text style={[styles.actionSub, { color: colors.textSecondary }]}>Contact reward</Text>
             </TouchableOpacity>
             
@@ -2524,7 +2524,7 @@ const EarnTasksScreen = ({ navigation }) => {
                 <Icon name="message" size={28} color="#FF9800" />
               </View>
               <Text style={[styles.actionTitle, { color: colors.text }]}>Send Messages</Text>
-              <Text style={styles.actionReward}>+1 coin per reply</Text>
+              <Text style={[styles.actionReward,{color: colors.textSecondary}]} >+1 coin per reply</Text>
               <Text style={[styles.actionSub, { color: colors.textSecondary }]}>10 replies/day</Text>
             </TouchableOpacity>
             
@@ -2536,7 +2536,7 @@ const EarnTasksScreen = ({ navigation }) => {
                 <Icon name="person" size={28} color="#00BCD4" />
               </View>
               <Text style={[styles.actionTitle, { color: colors.text }]}>Complete Profile</Text>
-              <Text style={styles.actionReward}>+5 coins</Text>
+              <Text style={[styles.actionReward,{color: colors.textSecondary}]} >+5 coins</Text>
               <Text style={[styles.actionSub, { color: colors.textSecondary }]}>One-time reward</Text>
             </TouchableOpacity>
           </View>

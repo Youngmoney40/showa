@@ -6,7 +6,6 @@ import {
   TouchableOpacity, 
   ScrollView, 
   Linking,
-  SafeAreaView,
   StatusBar,
   Image,
   TextInput,
@@ -17,12 +16,11 @@ import {
   TouchableWithoutFeedback,
   Keyboard
 } from 'react-native';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import LottieView from 'lottie-react-native';
 import { useTheme } from '../src/context/ThemeContext'; 
 
 const ContactUsScreen = ({ navigation }) => {
@@ -38,15 +36,15 @@ const ContactUsScreen = ({ navigation }) => {
   });
 
   const handleEmailPress = () => {
-    Linking.openURL('mailto:sinfo@showapp.ng?subject=App Support');
+    Linking.openURL('mailto:info@showaapp.com?subject=App Support');
   };
 
   const handlePhonePress = () => {
-    Linking.openURL('tel:+1234567890');
+    Linking.openURL('tel:+2349785745');
   };
 
   const handleWebsitePress = () => {
-    Linking.openURL('https://showapp.ng');
+    Linking.openURL('https://showaapp.com');
   };
 
   const handleSocialMediaPress = (platform) => {
@@ -63,7 +61,6 @@ const ContactUsScreen = ({ navigation }) => {
   };
 
   const handleSubmitStory = () => {
-   
     if (!storyForm.name || !storyForm.title || !storyForm.story) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
@@ -71,11 +68,9 @@ const ContactUsScreen = ({ navigation }) => {
 
     console.log('Story submitted:', storyForm);
     
-    // Show success modal
     setIsStoryModalVisible(false);
     setIsSuccessModalVisible(true);
     
-    // Reset form
     setStoryForm({
       name: '',
       email: '',
@@ -94,42 +89,55 @@ const ContactUsScreen = ({ navigation }) => {
     'Other'
   ];
 
+  const styles = createStyles(colors, isDark);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.card} />
+      <StatusBar
+        barStyle={Platform.OS === 'android' ? 'light-content' : 'dark-content'}
+        translucent={Platform.OS === 'android'}
+        backgroundColor={Platform.OS === 'android' ? colors.primary : undefined}
+      />
       
-      {/* Header with Back Button */}
-      <View style={[styles.header, { 
-        backgroundColor: colors.card,
-        borderBottomColor: colors.border 
-      }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+      {/* Navbar / Header */}
+      <View style={[styles.header, { backgroundColor: colors.primary }]}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={styles.backButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back-outline" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={[styles.headerText, { color: colors.text }]}>Contact Us</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.headerText}>Contact Us</Text>
+        <View style={styles.headerRight} />
       </View>
 
-      <ScrollView style={styles.scrollContainer}>
+      <ScrollView 
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
+      >
         {/* Hero Section */}
         <View style={styles.heroSection}>
-          <Image 
-            source={require('../assets/images/zenithdirect-rep-animation-big.png')} 
-            style={{width:150, height:150, borderRadius:50, justifyContent:'center', alignSelf:'center'}}
-          />
-          <Text style={[styles.heroText, {marginTop:18, alignSelf:'center', color: colors.text}]}>
+          <View style={styles.heroImageContainer}>
+            <Image 
+              source={require('../assets/images/zenithdirect-rep-animation-big.png')} 
+              style={styles.heroImage}
+            />
+          </View>
+          <Text style={[styles.heroText, { color: colors.text }]}>
             We're here to help!
           </Text>
           <Text style={[styles.heroSubtext, { color: colors.textSecondary }]}>
-            Reach out to our team for any questions or support.
+            Reach out to our team for any questions or support
           </Text>
         </View>
 
         {/* Contact Methods */}
         <View style={[styles.section, { 
-          backgroundColor: colors.card,
-          shadowColor: isDark ? '#000' : '#000',
-          shadowOpacity: isDark ? 0.1 : 0.05,
+          backgroundColor: colors.surface,
+          shadowColor: isDark ? 'transparent' : '#000',
+          shadowOpacity: isDark ? 0 : 0.05,
         }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Contact Options</Text>
           
@@ -137,53 +145,56 @@ const ContactUsScreen = ({ navigation }) => {
           <TouchableOpacity 
             style={[styles.contactMethod, { borderBottomColor: colors.border }]} 
             onPress={handleEmailPress}
+            activeOpacity={0.7}
           >
-            <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.backgroundSecondary : '#3498db20' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.surfaceSecondary : '#3498db20' }]}>
               <Icon name="envelope" size={20} color="#3498db" />
             </View>
             <View style={styles.contactText}>
               <Text style={[styles.contactLabel, { color: colors.text }]}>Email Support</Text>
               <Text style={[styles.contactValue, { color: colors.textSecondary }]}>info@showaapp.com</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+            <MaterialIcons name="chevron-right" size={24} color={colors.textTertiary} />
           </TouchableOpacity>
 
           {/* Phone */}
-          {/* <TouchableOpacity 
+          <TouchableOpacity 
             style={[styles.contactMethod, { borderBottomColor: colors.border }]} 
             onPress={handlePhonePress}
+            activeOpacity={0.7}
           >
-            <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.backgroundSecondary : '#2ecc7120' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.surfaceSecondary : '#2ecc7120' }]}>
               <Icon name="phone" size={20} color="#2ecc71" />
             </View>
             <View style={styles.contactText}>
               <Text style={[styles.contactLabel, { color: colors.text }]}>Call Us</Text>
               <Text style={[styles.contactValue, { color: colors.textSecondary }]}>+234 9785 745</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
-          </TouchableOpacity> */}
+            <MaterialIcons name="chevron-right" size={24} color={colors.textTertiary} />
+          </TouchableOpacity>
 
           {/* Website */}
           <TouchableOpacity 
             style={[styles.contactMethod, { borderBottomColor: colors.border }]} 
             onPress={handleWebsitePress}
+            activeOpacity={0.7}
           >
-            <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.backgroundSecondary : '#9b59b620' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.surfaceSecondary : '#9b59b620' }]}>
               <Icon name="globe" size={20} color="#9b59b6" />
             </View>
             <View style={styles.contactText}>
               <Text style={[styles.contactLabel, { color: colors.text }]}>Visit Website</Text>
-              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>https://showaapp.com</Text>
+              <Text style={[styles.contactValue, { color: colors.textSecondary }]}>showapp.com</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+            <MaterialIcons name="chevron-right" size={24} color={colors.textTertiary} />
           </TouchableOpacity>
         </View>
 
         {/* Social Media */}
-        {/* <View style={[styles.section, { 
-          backgroundColor: colors.card,
-          shadowColor: isDark ? '#000' : '#000',
-          shadowOpacity: isDark ? 0.1 : 0.05,
+        <View style={[styles.section, { 
+          backgroundColor: colors.surface,
+          shadowColor: isDark ? 'transparent' : '#000',
+          shadowOpacity: isDark ? 0 : 0.05,
         }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Follow Us</Text>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
@@ -191,64 +202,69 @@ const ContactUsScreen = ({ navigation }) => {
           </Text>
           <View style={styles.socialIcons}>
             <TouchableOpacity 
-              style={[styles.socialIconContainer, { backgroundColor: isDark ? colors.backgroundSecondary : '#3b599820' }]}
+              style={[styles.socialIconContainer, { backgroundColor: isDark ? colors.surfaceSecondary : '#3b599820' }]}
               onPress={() => handleSocialMediaPress('facebook')}
+              activeOpacity={0.7}
             >
-              <Icon name="facebook" size={20} color="#3b5998" />
+              <Icon name="facebook" size={24} color="#3b5998" />
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.socialIconContainer, { backgroundColor: isDark ? colors.backgroundSecondary : '#1da1f220' }]}
+              style={[styles.socialIconContainer, { backgroundColor: isDark ? colors.surfaceSecondary : '#1da1f220' }]}
               onPress={() => handleSocialMediaPress('twitter')}
+              activeOpacity={0.7}
             >
-              <Icon name="twitter" size={20} color="#1da1f2" />
+              <Icon name="twitter" size={24} color="#1da1f2" />
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.socialIconContainer, { backgroundColor: isDark ? colors.backgroundSecondary : '#e1306c20' }]}
+              style={[styles.socialIconContainer, { backgroundColor: isDark ? colors.surfaceSecondary : '#e1306c20' }]}
               onPress={() => handleSocialMediaPress('instagram')}
+              activeOpacity={0.7}
             >
-              <Icon name="instagram" size={20} color="#e1306c" />
+              <Icon name="instagram" size={24} color="#e1306c" />
             </TouchableOpacity>
           </View>
-        </View> */}
+        </View>
 
         {/* Office Address */}
         <View style={[styles.section, { 
-          backgroundColor: colors.card,
-          shadowColor: isDark ? '#000' : '#000',
-          shadowOpacity: isDark ? 0.1 : 0.05,
+          backgroundColor: colors.surface,
+          shadowColor: isDark ? 'transparent' : '#000',
+          shadowOpacity: isDark ? 0 : 0.05,
         }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Our Location</Text>
-          <View style={[styles.contactMethod, { borderBottomColor: colors.border }]}>
-            <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.backgroundSecondary : '#e74c3c20' }]}>
+          <View style={styles.locationContainer}>
+            <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.surfaceSecondary : '#e74c3c20' }]}>
               <Fontisto name="map-marker-alt" size={20} color="#e74c3c" />
             </View>
             <View style={styles.contactText}>
               <Text style={[styles.contactLabel, { color: colors.text }]}>Headquarters</Text>
               <Text style={[styles.contactValue, { color: colors.textSecondary }]}>Lagos State, Nigeria</Text>
-              
             </View>
           </View>
         </View>
 
-        {/* Success Stories */}
+        {/* Share Your Story */}
         <View style={[styles.section, { 
-          backgroundColor: colors.card,
-          shadowColor: isDark ? '#000' : '#000',
-          shadowOpacity: isDark ? 0.1 : 0.05,
+          backgroundColor: colors.surface,
+          shadowColor: isDark ? 'transparent' : '#000',
+          shadowOpacity: isDark ? 0 : 0.05,
+          marginBottom: 20,
         }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Community Stories</Text>
-          <Text style={[styles.successIntro, { color: colors.textSecondary }]}>
-            Hear from people who shared their stories with us
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Share Your Story</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+            Your story could inspire others in the community
           </Text>
 
-          <View style={[styles.storyCard, { backgroundColor: colors.backgroundSecondary }]}>
+          <View style={[styles.storyCard, { backgroundColor: isDark ? colors.surfaceSecondary : '#f8f9fa' }]}>
+            <Ionicons name="chatbubble-outline" size={24} color={colors.primary} style={styles.storyIcon} />
             <Text style={[styles.storyText, { color: colors.textSecondary }]}>
               "I was hesitant to post at first, but after sharing my experience, I connected with so many people going through similar challenges."
             </Text>
             <Text style={[styles.storyAuthor, { color: colors.text }]}>- Sarah J.</Text>
           </View>
 
-          <View style={[styles.storyCard, { backgroundColor: colors.backgroundSecondary }]}>
+          <View style={[styles.storyCard, { backgroundColor: isDark ? colors.surfaceSecondary : '#f8f9fa' }]}>
+            <Ionicons name="bulb-outline" size={24} color={colors.primary} style={styles.storyIcon} />
             <Text style={[styles.storyText, { color: colors.textSecondary }]}>
               "Posting my story led to unexpected opportunities. A local organization reached out and offered resources that helped me tremendously."
             </Text>
@@ -258,11 +274,15 @@ const ContactUsScreen = ({ navigation }) => {
           <TouchableOpacity 
             style={[styles.ctaButton, { backgroundColor: colors.primary }]} 
             onPress={handleShareStory}
+            activeOpacity={0.8}
           >
+            <Ionicons name="create-outline" size={20} color="#fff" style={styles.ctaIcon} />
             <Text style={styles.ctaButtonText}>Share Your Story</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Story Modal */}
       <Modal
         visible={isStoryModalVisible}
         animationType="slide"
@@ -271,10 +291,10 @@ const ContactUsScreen = ({ navigation }) => {
       >
         <KeyboardAvoidingView 
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalContainer}
+          style={styles.modalOverlay}
         >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
               <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>Share Your Story</Text>
                 <TouchableOpacity 
@@ -285,18 +305,22 @@ const ContactUsScreen = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView style={styles.formContainer}>
+              <ScrollView 
+                style={styles.formContainer}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.formContent}
+              >
                 <View style={styles.inputGroup}>
                   <Text style={[styles.inputLabel, { color: colors.text }]}>Your Name *</Text>
                   <TextInput
                     style={[styles.input, { 
                       borderColor: colors.border,
                       color: colors.text,
-                      backgroundColor: colors.backgroundSecondary 
+                      backgroundColor: isDark ? colors.background : '#fff'
                     }]}
                     placeholder="Enter your full name"
                     value={storyForm.name}
-                    placeholderTextColor={colors.textSecondary}
+                    placeholderTextColor={colors.textTertiary}
                     onChangeText={(text) => setStoryForm({...storyForm, name: text})}
                   />
                 </View>
@@ -307,11 +331,11 @@ const ContactUsScreen = ({ navigation }) => {
                     style={[styles.input, { 
                       borderColor: colors.border,
                       color: colors.text,
-                      backgroundColor: colors.backgroundSecondary 
+                      backgroundColor: isDark ? colors.background : '#fff'
                     }]}
                     placeholder="Enter your email"
                     keyboardType="email-address"
-                    placeholderTextColor={colors.textSecondary}
+                    placeholderTextColor={colors.textTertiary}
                     value={storyForm.email}
                     onChangeText={(text) => setStoryForm({...storyForm, email: text})}
                   />
@@ -323,9 +347,9 @@ const ContactUsScreen = ({ navigation }) => {
                     style={[styles.input, { 
                       borderColor: colors.border,
                       color: colors.text,
-                      backgroundColor: colors.backgroundSecondary 
+                      backgroundColor: isDark ? colors.background : '#fff'
                     }]}
-                    placeholderTextColor={colors.textSecondary}
+                    placeholderTextColor={colors.textTertiary}
                     placeholder="Give your story a title"
                     value={storyForm.title}
                     onChangeText={(text) => setStoryForm({...storyForm, title: text})}
@@ -341,7 +365,7 @@ const ContactUsScreen = ({ navigation }) => {
                         style={[
                           styles.categoryPill, 
                           { 
-                            backgroundColor: isDark ? colors.backgroundSecondary : '#f8f9fa',
+                            backgroundColor: isDark ? colors.background : '#f8f9fa',
                             borderColor: colors.border 
                           },
                           storyForm.category === category && [
@@ -353,11 +377,8 @@ const ContactUsScreen = ({ navigation }) => {
                       >
                         <Text style={[
                           styles.categoryText, 
-                          { color: colors.textSecondary },
-                          storyForm.category === category && [
-                            styles.categoryTextActive, 
-                            { color: '#fff' }
-                          ]
+                          { color: storyForm.category === category ? '#fff' : colors.textSecondary },
+                          storyForm.category === category && styles.categoryTextActive
                         ]}>
                           {category}
                         </Text>
@@ -375,7 +396,7 @@ const ContactUsScreen = ({ navigation }) => {
                       { 
                         borderColor: colors.border,
                         color: colors.text,
-                        backgroundColor: colors.backgroundSecondary 
+                        backgroundColor: isDark ? colors.background : '#fff'
                       }
                     ]}
                     placeholder="Share your inspiring story..."
@@ -383,7 +404,7 @@ const ContactUsScreen = ({ navigation }) => {
                     numberOfLines={6}
                     textAlignVertical="top"
                     value={storyForm.story}
-                    placeholderTextColor={colors.textSecondary}
+                    placeholderTextColor={colors.textTertiary}
                     onChangeText={(text) => setStoryForm({...storyForm, story: text})}
                   />
                 </View>
@@ -391,10 +412,12 @@ const ContactUsScreen = ({ navigation }) => {
                 <TouchableOpacity 
                   style={[styles.submitButton, { backgroundColor: colors.primary }]} 
                   onPress={handleSubmitStory}
+                  activeOpacity={0.8}
                 >
                   <Text style={styles.submitButtonText}>Submit Your Story</Text>
                 </TouchableOpacity>
-                <View style={{padding:40}}></View>
+                
+                <View style={styles.modalBottomSpacer} />
               </ScrollView>
             </View>
           </TouchableWithoutFeedback>
@@ -408,14 +431,11 @@ const ContactUsScreen = ({ navigation }) => {
         transparent={true}
         onRequestClose={() => setIsSuccessModalVisible(false)}
       >
-        <View style={styles.successModalContainer}>
-          <View style={[styles.successModalContent, { backgroundColor: colors.card }]}>
-            {/* <LottieView
-              source={require('../assets/animations/success.json')}
-              autoPlay
-              loop={false}
-              style={styles.successAnimation}
-            /> */}
+        <View style={[styles.successModalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[styles.successModalContent, { backgroundColor: colors.surface }]}>
+            <View style={styles.successIconContainer}>
+              <Ionicons name="checkmark-circle" size={70} color="#27ae60" />
+            </View>
             <Text style={[styles.successTitle, { color: colors.text }]}>Thank You!</Text>
             <Text style={[styles.successMessage, { color: colors.textSecondary }]}>
               Your story has been received and will be published soon after review.
@@ -423,6 +443,7 @@ const ContactUsScreen = ({ navigation }) => {
             <TouchableOpacity 
               style={[styles.successButton, { backgroundColor: colors.primary }]}
               onPress={() => setIsSuccessModalVisible(false)}
+              activeOpacity={0.8}
             >
               <Text style={styles.successButtonText}>Continue</Text>
             </TouchableOpacity>
@@ -433,70 +454,93 @@ const ContactUsScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors, isDark) => StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor handled inline
   },
   scrollContainer: {
+    flex: 1,
+  },
+  contentContainer: {
     paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    // backgroundColor handled inline
-    borderBottomWidth: 1,
-    // borderBottomColor handled inline
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 14,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    zIndex: 10,
   },
   backButton: {
-    padding: 4,
+    padding: 5,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerText: {
     fontSize: 20,
-    fontWeight: '600',
-    // color handled inline
+    fontWeight: '700',
+    color: '#ffffff',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerRight: {
+    width: 40,
   },
   heroSection: {
     paddingVertical: 24,
     paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  heroImageContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: isDark ? colors.surfaceSecondary : '#f0f4ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  heroImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   heroText: {
     fontSize: 24,
     fontWeight: '700',
-    // color handled inline
     marginBottom: 8,
+    textAlign: 'center',
   },
   heroSubtext: {
     fontSize: 16,
-    // color handled inline
     lineHeight: 24,
-    alignSelf:'center',
-    justifyContent:'center',
-    alignContent:'center',
-    textAlign:'center'
+    textAlign: 'center',
   },
   section: {
-    // backgroundColor handled inline
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     shadowOffset: { width: 0, height: 2 },
-    // shadowColor handled inline
-    // shadowOpacity handled inline
     shadowRadius: 8,
     elevation: 2,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    // color handled inline
-    marginBottom: 12,
+    marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 14,
-    // color handled inline
     marginBottom: 16,
   },
   contactMethod: {
@@ -504,59 +548,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    // borderBottomColor handled inline
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-    // backgroundColor handled inline
+    marginRight: 14,
   },
   contactText: {
     flex: 1,
   },
   contactLabel: {
     fontSize: 16,
-    // color handled inline
     fontWeight: '500',
   },
   contactValue: {
     fontSize: 14,
-    // color handled inline
     marginTop: 2,
   },
   socialIcons: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: 4,
   },
   socialIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 8,
-    // backgroundColor handled inline
-  },
-  successIntro: {
-    fontSize: 15,
-    // color handled inline
-    marginBottom: 16,
-    lineHeight: 22,
+    marginHorizontal: 12,
   },
   storyCard: {
-    // backgroundColor handled inline
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 14,
+    position: 'relative',
+  },
+  storyIcon: {
+    marginBottom: 8,
   },
   storyText: {
     fontSize: 15,
-    // color handled inline
     fontStyle: 'italic',
     lineHeight: 22,
     marginBottom: 8,
@@ -564,15 +604,18 @@ const styles = StyleSheet.create({
   storyAuthor: {
     fontSize: 14,
     fontWeight: '600',
-    // color handled inline
     textAlign: 'right',
   },
   ctaButton: {
-    // backgroundColor handled inline
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 4,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  ctaIcon: {
+    marginRight: 8,
   },
   ctaButtonText: {
     color: 'white',
@@ -580,16 +623,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   // Modal Styles
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    // backgroundColor handled inline
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '90%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '92%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -597,36 +638,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    // borderBottomColor handled inline
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '600',
-    // color handled inline
   },
   closeButton: {
     padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   formContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
+  },
+  formContent: {
+    paddingBottom: 30,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   inputLabel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
-    // color handled inline
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    // borderColor handled inline
-    borderRadius: 8,
-    // color handled inline
+    borderRadius: 10,
     padding: 12,
     fontSize: 16,
-    // backgroundColor handled inline
   },
   textArea: {
     minHeight: 120,
@@ -634,79 +677,72 @@ const styles = StyleSheet.create({
   },
   categoryContainer: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   categoryPill: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    // backgroundColor handled inline
     borderWidth: 1,
-    // borderColor handled inline
     marginRight: 8,
   },
-  categoryPillActive: {
-    // backgroundColor handled inline
-    // borderColor handled inline
-  },
+  categoryPillActive: {},
   categoryText: {
     fontSize: 14,
-    // color handled inline
   },
   categoryTextActive: {
-    // color handled inline
     fontWeight: '500',
   },
   submitButton: {
-    // backgroundColor handled inline
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 10,
   },
   submitButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
+  modalBottomSpacer: {
+    height: 30,
+  },
   // Success Modal Styles
-  successModalContainer: {
+  successModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 0,
+    padding: 20,
   },
   successModalContent: {
-    // backgroundColor handled inline
-    borderRadius: 20,
-    padding: 30,
+    borderRadius: 24,
+    padding: 32,
     alignItems: 'center',
     width: '100%',
-    maxWidth: 350,
+    maxWidth: 340,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
   },
-  successAnimation: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
+  successIconContainer: {
+    marginBottom: 16,
   },
   successTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#27ae60',
-    marginBottom: 12,
+    marginBottom: 8,
     textAlign: 'center',
   },
   successMessage: {
-    fontSize: 16,
-    // color handled inline
+    fontSize: 15,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 24,
   },
   successButton: {
-    // backgroundColor handled inline
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     width: '100%',
     alignItems: 'center',

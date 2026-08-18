@@ -26,8 +26,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Icontt from 'react-native-vector-icons/MaterialCommunityIcons';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
 import { createMMKV } from 'react-native-mmkv';
@@ -37,7 +35,6 @@ import dayjs from 'dayjs';
 import LinearGradient from "react-native-linear-gradient";
 import relativeTime from 'dayjs/plugin/relativeTime';
 import Icon from 'react-native-vector-icons/Ionicons';
-import colors from '../theme/colorscustom';
 import Icont from 'react-native-vector-icons/MaterialIcons';
 import Video from 'react-native-video';
 import axios from 'axios';
@@ -46,6 +43,7 @@ import FriendSuggestion from '../components/FriendSuggestion';
 import { useTheme } from '../src/context/ThemeContext'; 
 import Jobs from '../screens/Jobs';
 import VideoFeeds from '../screens/ShortFeedVideo';
+import AutoShort from '../showa_business/AutoShort';
 import HangoutPlacesExplore from '../screens/HangoutPlacesExplore';
 import Ads from '../screens/AdsFeed';
 import EdateDiscoverScreen from '../screens/EdateDiscoverScreen';
@@ -54,7 +52,6 @@ import MusicListComponent from '../components/Emusic';
 import EarningsSlideInManager from '../components/EarningsSlideInManager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import StatusSection from '../components/StatusSection';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import Feather from 'react-native-vector-icons/Feather';
 
 dayjs.extend(relativeTime);
@@ -2217,18 +2214,18 @@ const getCommentUserImage = (profilePicture) => {
       id: 2,
       image: require('../assets/images/show.jpg'),
       badge: '🔥 HOT',
-      title: 'Refer & Earn Bonus',
-      subtitle: 'Invite friends and earn up to ₦500,000 per referral!',
-      buttonText: 'Start Referring →',
-      screen: 'ReferralScreen'
+      title: 'Make Money',
+      subtitle: 'make money on Showa',
+      buttonText: 'Start Now →',
+      screen: 'EarningDashboard'
     },
     {
       id: 3,
       image: require('../assets/images/dad.jpg'),
-      badge: '🎯 LIMITED',
+      badge: 'LIMITED',
       title: 'Daily Challenges',
       subtitle: 'Complete daily tasks and earn rewards every day!',
-      buttonText: 'View Challenges →',
+      buttonText: 'Get Started Now →',
       screen: 'EarningDashbord'
     }
   ];
@@ -4114,6 +4111,8 @@ ${shareUrl}`;
         )}
         {renderPromoBanner()}
 
+        {/* <AutoShort navigation={navigation} /> */}
+
 
         
         {firstPart.length > 0 && (
@@ -4276,9 +4275,7 @@ ${shareUrl}`;
         {combinedPosts.length > 8 && (
           <EdateDiscoverScreen />
         )}
-        {combinedPosts.length > 11 && (
-          <FriendSuggestion />
-        )}
+        
       </>
     );
   }, [
@@ -4320,9 +4317,10 @@ ${shareUrl}`;
         }]}>
           <Text style={[styles.headerTitle, { color: colors.primary }]}>Showa</Text>
           <View style={styles.headerActions}>
-            <TouchableOpacity onPress={() => navigation.navigate('SocialHome')}>
-              <Icontt name="video-outline" size={28} color={colors.text} style={{ marginRight: 20 }} />
-            </TouchableOpacity>
+            {/* <TouchableOpacity onPress={() => navigation.navigate('SocialHome')}>
+              <Icontt name="video-outline" size={28} color={colors.text} style={{ marginRight: 18 }} />
+            </TouchableOpacity> */}
+           
             <TouchableOpacity 
               onPress={() => navigation.navigate('NotificationsScreen')}
               style={styles.notificationIconContainer}
@@ -4336,11 +4334,20 @@ ${shareUrl}`;
                 </View>
               )}
             </TouchableOpacity>
+
+             <TouchableOpacity style={{ marginRight: 12 }} onPress={() => navigation.navigate('Search')}>
+              <Ionicons name="search-outline" size={30} color={colors.text} />
+            </TouchableOpacity>
+            
+
             <TouchableOpacity onPress={() => navigation.navigate('CreateBroadcastPost')}>
               <Ionicons name="add-circle-outline" size={30} color={colors.text} />
             </TouchableOpacity>
+
+            
+
             <TouchableOpacity onPress={()=>navigation.navigate('ExploreFeaturePersonalAcount')}>
-              <Icon name="ellipsis-vertical" style={{ marginLeft: 10 }} size={25} color={colors.text} />
+              <Icon name="ellipsis-vertical" style={{ marginLeft: 8 }} size={25} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>

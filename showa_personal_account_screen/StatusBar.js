@@ -2705,50 +2705,205 @@ const StatusScreen = () => {
     });
   };
 
+  // const handlePostStatus = async () => {
+  //   if (!image) {
+  //     Alert.alert('Error', 'Please select media.');
+  //     return;
+  //   }
+
+  //   setPostingStatus(true);
+  //   try {
+  //     const token = await AsyncStorage.getItem('userToken');
+  //     if (!token) {
+  //       Alert.alert('Error', 'User not authenticated. Please log in.');
+  //       return;
+  //     }
+  //     const formData = new FormData();
+  //     formData.append('media', {
+  //       uri: Platform.OS === 'ios' ? image.uri.replace('file://', '') : image.uri,
+  //       type: image.type || 'image/jpeg',
+  //       name: image.fileName || 'status.jpg',
+  //     });
+  //     formData.append('text', caption);
+  //     formData.append('status_type', 'image');
+      
+  //     console.log('Posting status...');
+  //     const res = await axios.post(`${API_ROUTE}/status/`, formData, {
+  //       headers: {
+  //         'Content-Type': 'multipart/form-data',
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //       timeout: 30000,
+  //     });
+      
+  //     console.log('Status uploaded successfully');
+  //     Alert.alert('Success', 'Status uploaded successfully!');
+  //     setImage(null);
+  //     setCaption('');
+  //     setAddStatusModalVisible(false);
+  //     await fetchAllData();
+  //   } catch (error) {
+  //     console.error('Upload error:', error.response?.data || error.message);
+  //     Alert.alert('Upload Failed', 'Please try again.');
+  //   } finally {
+  //     setPostingStatus(false);
+  //   }
+  // };
+
   const handlePostStatus = async () => {
-    if (!image) {
-      Alert.alert('Error', 'Please select media.');
+  // Check if media is selected
+  if (!image) {
+    Alert.alert('Error', 'Please select media.');
+    return;
+  }
+
+  // ===== FILE SIZE VALIDATION (5MB MAX) =====
+  // Get file size from image object
+  let fileSize = image.fileSize || 0;
+  
+  // If fileSize is not available, try to get it from the uri
+  if (!fileSize && image.uri) {
+    try {
+      // For React Native, we can get file size from the file system
+      if (Platform.OS === 'android') {
+        const RNFS = require('react-native-fs');
+        const stats = await RNFS.stat(image.uri);
+        fileSize = stats.size;
+      } else if (Platform.OS === 'ios') {
+        const RNFS = require('react-native-fs');
+        const stats = await RNFS.stat(image.uri.replace('file://', ''));
+        fileSize = stats.size;
+      }
+    } catch (error) {
+      console.log('Could not get file size:', error);
+    }
+  }
+
+  // Check if file size is available and exceeds 5MB
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+  
+  if (fileSize > 0 && fileSize > MAX_FILE_SIZE) {
+    const sizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+    Alert.alert(
+      'File Too Large',
+      `File size is ${sizeMB}MB. Maximum allowed size is 5MB.\n\nPlease compress your image/video or choose a smaller file.`,
+      [
+        { text: 'OK', onPress: () => console.log('User acknowledged file size limit') }
+      ]
+    );
+    return;
+  }
+
+  // If file size is unknown, show a warning but proceed
+  if (fileSize === 0) {
+    console.log('⚠️ File size unknown, proceeding with upload...');
+  }
+
+  setPostingStatus(true);
+  
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) {
+      Alert.alert('Error', 'User not authenticated. Please log in.');
+      setPostingStatus(false);
       return;
     }
 
-    setPostingStatus(true);
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) {
-        Alert.alert('Error', 'User not authenticated. Please log in.');
-        return;
-      }
-      const formData = new FormData();
-      formData.append('media', {
-        uri: Platform.OS === 'ios' ? image.uri.replace('file://', '') : image.uri,
-        type: image.type || 'image/jpeg',
-        name: image.fileName || 'status.jpg',
-      });
-      formData.append('text', caption);
-      formData.append('status_type', 'image');
-      
-      console.log('📤 Posting status...');
-      const res = await axios.post(`${API_ROUTE}/status/`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-        timeout: 30000,
-      });
-      
-      console.log('✅ Status uploaded successfully');
-      Alert.alert('Success', 'Status uploaded successfully!');
-      setImage(null);
-      setCaption('');
-      setAddStatusModalVisible(false);
-      await fetchAllData();
-    } catch (error) {
-      console.error('❌ Upload error:', error.response?.data || error.message);
-      Alert.alert('Upload Failed', 'Please try again.');
-    } finally {
-      setPostingStatus(false);
+    const formData = new FormData();
+    
+    // Handle media file
+    const mediaUri = Platform.OS === 'ios' 
+      ? image.uri.replace('file://', '') 
+      : image.uri;
+    
+    const mediaName = image.fileName || `status_${Date.now()}.jpg`;
+    const mediaType = image.type || 'image/jpeg';
+
+    formData.append('media', {
+      uri: mediaUri,
+      type: mediaType,
+      name: mediaName,
+    });
+    
+    if (caption && caption.trim()) {
+      formData.append('text', caption.trim());
     }
-  };
+    
+    formData.append('status_type', image.type?.startsWith('video') ? 'video' : 'image');
+
+    // console.log('📤 Posting status...');
+    // console.log('📁 File:', {
+    //   name: mediaName,
+    //   type: mediaType,
+    //   size: fileSize > 0 ? `${(fileSize / (1024 * 1024)).toFixed(2)}MB` : 'Unknown'
+    // });
+
+    const res = await axios.post(`${API_ROUTE}/status/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`,
+      },
+      timeout: 30000,
+    });
+    
+    //console.log('✅ Status uploaded successfully');
+    
+    Alert.alert(
+      'Success', 
+      'Status uploaded successfully!',
+      [{ text: 'OK', onPress: () => console.log('Status posted') }]
+    );
+    
+    // Reset form
+    setImage(null);
+    setCaption('');
+    setAddStatusModalVisible(false);
+    
+    // Refresh data
+    await fetchAllData();
+    
+  } catch (error) {
+    console.error('❌ Upload error:', error.response?.data || error.message);
+    
+    // ===== HANDLE SERVER ERROR RESPONSES =====
+    const errorData = error.response?.data;
+    
+    // Check for file size error from server
+    if (errorData?.error && errorData.error.includes('exceeds 5MB')) {
+      Alert.alert(
+        'File Too Large',
+        `${errorData.error}\n\nMaximum allowed size is ${errorData.max_size_mb || 5}MB. Please compress your file and try again.`,
+        [
+          { 
+            text: 'OK', 
+            onPress: () => console.log('User acknowledged file size error')
+          }
+        ]
+      );
+      return;
+    }
+    
+    // Check for unsupported file type error
+    if (errorData?.error && errorData.error.includes('Unsupported')) {
+      Alert.alert(
+        'Unsupported File Type',
+        errorData.error || 'Please use JPEG, PNG, GIF, WebP for images or MP4, MOV for videos.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
+    // Generic error
+    Alert.alert(
+      'Upload Failed', 
+      errorData?.error || 'Failed to upload status. Please try again.',
+      [{ text: 'OK' }]
+    );
+    
+  } finally {
+    setPostingStatus(false);
+  }
+};
 
   const trackStatusView = async (statusId) => {
     try {
@@ -2759,7 +2914,7 @@ const StatusScreen = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch (error) {
-      console.error('❌ Error tracking status view:', error);
+      console.error('Error tracking status view:', error);
     }
   };
 
@@ -3978,6 +4133,7 @@ const StatusScreen = () => {
               <TouchableOpacity style={styles.imagePlaceholder} onPress={handleSelectMedia}>
                 <Icon name="image-outline" size={50} color={colors.textSecondary} />
                 <Text style={styles.imagePlaceholderText}>Select Media</Text>
+               
               </TouchableOpacity>
             )}
             

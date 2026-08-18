@@ -2421,6 +2421,10 @@ export default function VoiceVideoCallScreen({ navigation, route }) {
   const [currentCallId, setCurrentCallId] = useState(null);
   const [isRinging, setIsRinging] = useState(false);
 
+  useEffect(() => {
+  getIceServers(); // fire-and-forget, so accept never blocks on this network call
+}, []);
+
 
   useEffect(() => {
   const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -2853,9 +2857,40 @@ const stopRinging = useCallback(() => {
     //   }
     // };
 
-    pc.current.ontrack = (evt) => {
+//     pc.current.ontrack = (evt) => {
+//   if (evt.streams && evt.streams[0]) {
+//     // STOP RINGING FIRST — critical for Android 14/15
+//     InCallManager.stopRingtone();
+//     Vibration.cancel();
+//     setIsRinging(false);
+
+//     remoteStream.current = evt.streams[0];
+//     try { setRemoteURL(remoteStream.current.toURL()); } catch {}
+//     setWebrtcReady(true);
+
+//     // Small delay on Android ensures ringtone session fully closes first
+//     setTimeout(() => {
+//       InCallManager.start({ media: 'audio' });
+//       InCallManager.setSpeakerphoneOn(isSpeakerOn);
+//     }, Platform.OS === 'android' ? 400 : 0);
+
+//     const videoTracks = remoteStream.current.getVideoTracks();
+//     if (videoTracks.length > 0) {
+//     setIsVideoCall(true);
+
+//     // Automatically enable our camera if it isn't already
+//     if (
+//         !localStream.current ||
+//         localStream.current.getVideoTracks().length === 0
+//     ) {
+//         switchToVideoCall();
+//     }
+// }
+//   }
+// };
+
+pc.current.ontrack = (evt) => {
   if (evt.streams && evt.streams[0]) {
-    // STOP RINGING FIRST — critical for Android 14/15
     InCallManager.stopRingtone();
     Vibration.cancel();
     setIsRinging(false);
@@ -2864,24 +2899,21 @@ const stopRinging = useCallback(() => {
     try { setRemoteURL(remoteStream.current.toURL()); } catch {}
     setWebrtcReady(true);
 
-    // Small delay on Android ensures ringtone session fully closes first
+    // Only Android needs a beat for the ringtone session to release;
+    // skip the delay entirely if we were never ringing.
+    const delay = Platform.OS === 'android' && isRinging ? 150 : 0;
     setTimeout(() => {
       InCallManager.start({ media: 'audio' });
       InCallManager.setSpeakerphoneOn(isSpeakerOn);
-    }, Platform.OS === 'android' ? 400 : 0);
+    }, delay);
 
     const videoTracks = remoteStream.current.getVideoTracks();
     if (videoTracks.length > 0) {
-    setIsVideoCall(true);
-
-    // Automatically enable our camera if it isn't already
-    if (
-        !localStream.current ||
-        localStream.current.getVideoTracks().length === 0
-    ) {
+      setIsVideoCall(true);
+      if (!localStream.current || localStream.current.getVideoTracks().length === 0) {
         switchToVideoCall();
+      }
     }
-}
   }
 };
 
@@ -3527,198 +3559,278 @@ const stopRinging = useCallback(() => {
   //   }
   // };
 
-  const handleIncomingCall = async (offer) => {
-  console.log("====================================");
-  console.log("[Incoming Call] FUNCTION TRIGGERED");
-  console.log("[Incoming Call] RAW PARAM:", offer);
-  console.log("[Incoming Call] TYPE:", typeof offer);
-  console.log("====================================");
+//   const handleIncomingCall = async (offer) => {
+//   console.log("====================================");
+//   console.log("[Incoming Call] FUNCTION TRIGGERED");
+//   console.log("[Incoming Call] RAW PARAM:", offer);
+//   console.log("[Incoming Call] TYPE:", typeof offer);
+//   console.log("====================================");
 
+//   try {
+
+//     if (!currentCallIdRef.current) {                       // ✅ only create if not already set
+//       const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
+//       updateCallId(newCallId);
+//     }
+
+//     // if (!currentCallIdRef.current) {
+//     //   const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
+//     //   updateCallId(newCallId);
+//     // }
+
+
+//     const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
+//     console.log("[Incoming Call] Generated Call ID:", newCallId);
+//     updateCallId(newCallId);
+
+//     // OFFER CHECK
+//     console.log("[Incoming Call] Checking offer validity...");
+//     console.log("[Incoming Call] offer exists:", !!offer);
+//     console.log("[Incoming Call] offer.sdp exists:", !!offer?.sdp);
+
+//     if (!offer || typeof offer !== "object") {
+//       console.error("[Incoming Call] OFFER IS NOT OBJECT:", offer);
+//       Alert.alert("Error", "Offer is not valid object");
+//       return;
+//     }
+
+//     if (!offer.sdp) {
+//       console.error("[Incoming Call] MISSING SDP:", offer);
+//       Alert.alert("Error", "Missing SDP in offer");
+//       return;
+//     }
+
+//     console.log("[Incoming Call] ✔ Offer validation passed");
+
+//     // 🔌 PEER CONNECTION
+//     console.log("[Incoming Call] Ensuring peer connection...");
+//     await ensurePeerConnection();
+//     console.log("[Incoming Call] Peer connection ready");
+
+//     const isVideo = offer.isVideoCall || false;
+//     setIsVideoCall(isVideo);
+
+//     console.log("[Incoming Call] Call type:", isVideo ? "VIDEO" : "AUDIO");
+
+//     // 🎥 MEDIA
+//     console.log("[Incoming Call] Setting up media...");
+
+//     if (isVideo) {
+//       const hasPermission = await requestPermissions();
+//       console.log("[Incoming Call] Camera permission:", hasPermission);
+
+//       if (hasPermission) {
+//         try {
+//           console.log("[Incoming Call] Getting user media (video)...");
+//           const stream = await mediaDevices.getUserMedia({
+//             audio: true,
+//             video: { facingMode: "user" },
+//           });
+
+//           console.log("[Incoming Call] Media stream acquired");
+//           localStream.current = stream;
+//           setLocalURL(stream.toURL());
+//         } catch (e) {
+//           console.error("[Incoming Call] getUserMedia failed:", e);
+
+//           const ok = await ensureLocalStreamAndAttach(false);
+//           console.log("[Incoming Call] fallback stream result:", ok);
+
+//           if (!ok) return;
+//         }
+//       } else {
+//         const ok = await ensureLocalStreamAndAttach(false);
+//         console.log("[Incoming Call] permission fallback stream:", ok);
+//         if (!ok) return;
+//       }
+//     } else {
+//       console.log("[Incoming Call] Audio call - attaching audio only");
+//       const ok = await ensureLocalStreamAndAttach(false);
+//       console.log("[Incoming Call] audio stream result:", ok);
+//       if (!ok) return;
+//     }
+
+//     // 🔗 TRACK DEBUG
+//     console.log("[Incoming Call] Attaching tracks...");
+//     console.log("[Incoming Call] PC exists:", !!pc.current);
+//     console.log("[Incoming Call] Local stream exists:", !!localStream.current);
+
+//     if (pc.current && localStream.current) {
+//       const existingTracks = pc.current.getSenders().map((s) => s.track);
+//       console.log("[Incoming Call] Existing tracks:", existingTracks.length);
+
+//       localStream.current.getTracks().forEach((track, i) => {
+//         console.log(`[Incoming Call] Adding track ${i}:`, track.kind);
+
+//         if (!existingTracks.includes(track)) {
+//           pc.current.addTrack(track, localStream.current);
+//         }
+//       });
+//     }
+
+//     // 📡 SDP STEP
+//     console.log("====================================");
+//     console.log("[Incoming Call] SETTING REMOTE DESCRIPTION");
+//     console.log("[Incoming Call] SDP length:", offer.sdp?.length);
+//     console.log("====================================");
+
+//     await pc.current.setRemoteDescription(
+//       new RTCSessionDescription({
+//         type: "offer",
+//         sdp: offer.sdp,
+//       })
+//     );
+
+//     console.log("[Incoming Call] Remote description set SUCCESS");
+
+//     // ICE QUEUE
+//     console.log("[Incoming Call] Draining ICE candidates...");
+//     await drainQueuedCandidates();
+//     console.log("[Incoming Call] ICE drained");
+
+//     // ANSWER
+//     console.log("[Incoming Call] Creating answer...");
+//     const answer = await pc.current.createAnswer();
+
+//     console.log("[Incoming Call] Answer created:", {
+//       type: answer.type,
+//       sdpLength: answer.sdp?.length,
+//     });
+
+//     await pc.current.setLocalDescription(answer);
+
+//     InCallManager.start({ media: 'audio', });
+//     InCallManager.setSpeakerphoneOn(isSpeakerOn);
+    
+//     InCallManager.setForceSpeakerphoneOn(false);
+
+
+
+
+//     console.log("[Incoming Call] Local description set");
+
+//     // SEND ANSWER
+//     console.log("[Incoming Call] Sending answer to backend...");
+
+//     sendMessage({
+//       type: "answer",
+//       answer: {
+//         type: answer.type,
+//         sdp: answer.sdp,
+//       },
+//       isVideoCall: isVideo,
+//     });
+
+//     console.log("[Incoming Call] Answer sent");
+
+//     // UI
+//     setWebrtcReady(true);
+//     setShowIncomingModal(false);
+//     setIncomingSDP(null);
+
+    
+
+//     try {
+//       NativeModules.CallModule?.stopCallService();
+//       console.log("[Incoming Call] Call service stopped");
+//     } catch (e) {
+//       console.warn("[Incoming Call] stopCallService failed:", e);
+//     }
+
+//     console.log("====================================");
+//     console.log("[Incoming Call] CALL ACCEPTED SUCCESSFULLY");
+//     console.log("====================================");
+
+//   } catch (error) {
+//     console.log("====================================");
+//     console.error("[Incoming Call] ❌ FULL ERROR:", error);
+//     console.log("====================================");
+
+//     Alert.alert(
+//       "Call Failed",
+//       error?.message || "Unknown error occurred"
+//     );
+
+//     rejectCall();
+//   }
+// };
+
+const handleIncomingCall = async (offer) => {
   try {
-
-    if (!currentCallIdRef.current) {                       // ✅ only create if not already set
-      const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
-      updateCallId(newCallId);
+    if (!currentCallIdRef.current) {
+      updateCallId(`call_${Date.now()}_${offer?.callerId || 'unknown'}`);
     }
 
-    // if (!currentCallIdRef.current) {
-    //   const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
-    //   updateCallId(newCallId);
-    // }
-
-
-    const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
-    console.log("[Incoming Call] Generated Call ID:", newCallId);
-    updateCallId(newCallId);
-
-    // OFFER CHECK
-    console.log("[Incoming Call] Checking offer validity...");
-    console.log("[Incoming Call] offer exists:", !!offer);
-    console.log("[Incoming Call] offer.sdp exists:", !!offer?.sdp);
-
-    if (!offer || typeof offer !== "object") {
-      console.error("[Incoming Call] OFFER IS NOT OBJECT:", offer);
-      Alert.alert("Error", "Offer is not valid object");
+    if (!offer || typeof offer !== "object" || !offer.sdp) {
+      Alert.alert("Error", "Invalid call offer.");
+      rejectCall();
       return;
     }
-
-    if (!offer.sdp) {
-      console.error("[Incoming Call] MISSING SDP:", offer);
-      Alert.alert("Error", "Missing SDP in offer");
-      return;
-    }
-
-    console.log("[Incoming Call] ✔ Offer validation passed");
-
-    // 🔌 PEER CONNECTION
-    console.log("[Incoming Call] Ensuring peer connection...");
-    await ensurePeerConnection();
-    console.log("[Incoming Call] Peer connection ready");
 
     const isVideo = offer.isVideoCall || false;
     setIsVideoCall(isVideo);
 
-    console.log("[Incoming Call] Call type:", isVideo ? "VIDEO" : "AUDIO");
-
-    // 🎥 MEDIA
-    console.log("[Incoming Call] Setting up media...");
-
-    if (isVideo) {
-      const hasPermission = await requestPermissions();
-      console.log("[Incoming Call] Camera permission:", hasPermission);
-
-      if (hasPermission) {
+    const mediaPromise = (async () => {
+      if (isVideo) {
+        // Reuse an existing stream if it already has video — avoids re-opening the camera
+        if (localStream.current && localStream.current.getVideoTracks().length > 0) {
+          return true;
+        }
+        const hasPermission = await requestPermissions();
+        if (!hasPermission) return ensureLocalStreamAndAttach(false);
         try {
-          console.log("[Incoming Call] Getting user media (video)...");
           const stream = await mediaDevices.getUserMedia({
             audio: true,
             video: { facingMode: "user" },
           });
-
-          console.log("[Incoming Call] Media stream acquired");
+          if (localStream.current) {
+            localStream.current.getTracks().forEach((t) => t.stop());
+          }
           localStream.current = stream;
           setLocalURL(stream.toURL());
+          return true;
         } catch (e) {
-          console.error("[Incoming Call] getUserMedia failed:", e);
-
-          const ok = await ensureLocalStreamAndAttach(false);
-          console.log("[Incoming Call] fallback stream result:", ok);
-
-          if (!ok) return;
+          return ensureLocalStreamAndAttach(false);
         }
-      } else {
-        const ok = await ensureLocalStreamAndAttach(false);
-        console.log("[Incoming Call] permission fallback stream:", ok);
-        if (!ok) return;
       }
-    } else {
-      console.log("[Incoming Call] Audio call - attaching audio only");
-      const ok = await ensureLocalStreamAndAttach(false);
-      console.log("[Incoming Call] audio stream result:", ok);
-      if (!ok) return;
-    }
+      return ensureLocalStreamAndAttach(false);
+    })();
 
-    // 🔗 TRACK DEBUG
-    console.log("[Incoming Call] Attaching tracks...");
-    console.log("[Incoming Call] PC exists:", !!pc.current);
-    console.log("[Incoming Call] Local stream exists:", !!localStream.current);
+    const [, mediaOk] = await Promise.all([ensurePeerConnection(), mediaPromise]);
+    if (!mediaOk || !pc.current) { rejectCall(); return; }
 
-    if (pc.current && localStream.current) {
+    if (localStream.current) {
       const existingTracks = pc.current.getSenders().map((s) => s.track);
-      console.log("[Incoming Call] Existing tracks:", existingTracks.length);
-
-      localStream.current.getTracks().forEach((track, i) => {
-        console.log(`[Incoming Call] Adding track ${i}:`, track.kind);
-
-        if (!existingTracks.includes(track)) {
-          pc.current.addTrack(track, localStream.current);
-        }
+      localStream.current.getTracks().forEach((track) => {
+        if (!existingTracks.includes(track)) pc.current.addTrack(track, localStream.current);
       });
     }
 
-    // 📡 SDP STEP
-    console.log("====================================");
-    console.log("[Incoming Call] SETTING REMOTE DESCRIPTION");
-    console.log("[Incoming Call] SDP length:", offer.sdp?.length);
-    console.log("====================================");
-
     await pc.current.setRemoteDescription(
-      new RTCSessionDescription({
-        type: "offer",
-        sdp: offer.sdp,
-      })
+      new RTCSessionDescription({ type: "offer", sdp: offer.sdp })
     );
+    drainQueuedCandidates(); // don't await — ICE candidates can trickle in without blocking answer
 
-    console.log("[Incoming Call] Remote description set SUCCESS");
-
-    // ICE QUEUE
-    console.log("[Incoming Call] Draining ICE candidates...");
-    await drainQueuedCandidates();
-    console.log("[Incoming Call] ICE drained");
-
-    // ANSWER
-    console.log("[Incoming Call] Creating answer...");
     const answer = await pc.current.createAnswer();
-
-    console.log("[Incoming Call] Answer created:", {
-      type: answer.type,
-      sdpLength: answer.sdp?.length,
-    });
-
     await pc.current.setLocalDescription(answer);
 
-    InCallManager.start({ media: 'audio', });
+    InCallManager.start({ media: 'audio' });
     InCallManager.setSpeakerphoneOn(isSpeakerOn);
-    
     InCallManager.setForceSpeakerphoneOn(false);
-
-
-
-
-    console.log("[Incoming Call] Local description set");
-
-    // SEND ANSWER
-    console.log("[Incoming Call] Sending answer to backend...");
 
     sendMessage({
       type: "answer",
-      answer: {
-        type: answer.type,
-        sdp: answer.sdp,
-      },
+      answer: { type: answer.type, sdp: answer.sdp },
       isVideoCall: isVideo,
     });
 
-    console.log("[Incoming Call] Answer sent");
-
-    // UI
     setWebrtcReady(true);
     setShowIncomingModal(false);
     setIncomingSDP(null);
 
-    
-
-    try {
-      NativeModules.CallModule?.stopCallService();
-      console.log("[Incoming Call] Call service stopped");
-    } catch (e) {
-      console.warn("[Incoming Call] stopCallService failed:", e);
-    }
-
-    console.log("====================================");
-    console.log("[Incoming Call] CALL ACCEPTED SUCCESSFULLY");
-    console.log("====================================");
-
+    try { NativeModules.CallModule?.stopCallService(); } catch (e) {}
   } catch (error) {
-    console.log("====================================");
-    console.error("[Incoming Call] ❌ FULL ERROR:", error);
-    console.log("====================================");
-
-    Alert.alert(
-      "Call Failed",
-      error?.message || "Unknown error occurred"
-    );
-
+    Alert.alert("Call Failed", error?.message || "Unknown error occurred");
     rejectCall();
   }
 };

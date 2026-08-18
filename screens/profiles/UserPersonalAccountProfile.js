@@ -223,17 +223,42 @@ const UserProfile = ({ navigation, route }) => {
   const abortControllerRef = useRef(null);
   const mountedRef = useRef(true);
 
+  const checkMonetizationStatus = async () => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    const response = await axios.get(`${API_ROUTE}/monetization/status/`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success && response.data.application) {
+      const app = response.data.application;
+      if (app.status === 'approved') {
+        setUserData(prev => ({ ...prev, is_monetized: true }));
+      }
+    }
+  } catch (error) {
+    console.error('Error checking monetization status:', error);
+  }
+};
+
+  useEffect(() => {
+  
+  checkMonetizationStatus();
+  
+}, []);
+
+
   // ============ CACHE HELPERS (MMKV) ============
   const saveToCache = useCallback((key, data) => {
     try {
-      console.log(`💾 Saving ${key} to MMKV cache...`);
+      console.log(`Saving ${key} to MMKV cache...`);
       storage.set(key, JSON.stringify({
         data,
         timestamp: Date.now()
       }));
-      console.log(`✅ ${key} saved to MMKV cache`);
+      console.log(`${key} saved to MMKV cache`);
     } catch (error) {
-      console.error('Cache save error:', error);
+     // console.error('Cache save error:', error);
     }
   }, []);
 
@@ -243,14 +268,14 @@ const UserProfile = ({ navigation, route }) => {
       if (cached) {
         const { data, timestamp } = JSON.parse(cached);
         if (Date.now() - timestamp < CACHE_EXPIRY) {
-          console.log(`✅ ${key} loaded from MMKV cache`);
+          ///console.log(`${key} loaded from MMKV cache`);
           return data;
         }
-        console.log(`⏰ ${key} cache expired`);
+       // console.log(`${key} cache expired`);
       }
       return null;
     } catch (error) {
-      console.error('Cache read error:', error);
+      //console.error('Cache read error:', error);
       return null;
     }
   }, []);
@@ -1060,13 +1085,21 @@ const UserProfile = ({ navigation, route }) => {
                 <Icon name="create-outline" size={18} color="#fff" />
                 <Text style={styles.editButtonText}>Edit Profile</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
+                style={[styles.servicesButton, { backgroundColor: colors.primary + '20' }]}
+                onPress={() => navigation.navigate('MyServicePostsScreen')}
+              >
+                <Icon name="briefcase-outline" size={18} color={colors.primary} />
+                <Text style={[styles.servicesButtonText, { color: colors.primary }]}>Services</Text>
+              </TouchableOpacity>
+              
+              {/* <TouchableOpacity
                 style={[styles.settingsButton, { borderColor: colors.border }]}
                 onPress={() => navigation.navigate('Settings')}
               >
                 <Icon name="settings-outline" size={18} color={colors.text} />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </>
           ) : (
             <>
@@ -1105,6 +1138,30 @@ const UserProfile = ({ navigation, route }) => {
             </>
           )}
         </View>
+
+{/*     
+{isOwnProfile && (
+  <TouchableOpacity
+    style={[styles.monetizationButton, { 
+      backgroundColor: colors.primary,
+      marginHorizontal: 16,
+      marginTop: 8,
+      paddingVertical: 14,
+      borderRadius: 25,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+    }]}
+    onPress={() => navigation.navigate('MonetizationDashboard')}
+  >
+    <Icon name="trophy-outline" size={20} color="#fff" />
+    <Text style={[styles.monetizationButtonText, { color: '#fff', fontSize: 16, fontWeight: '600' }]}>
+      Professional Dashboard
+    </Text>
+    <Icon name="chevron-forward-outline" size={20} color="#fff" />
+  </TouchableOpacity>
+)} */}
 
         <View style={styles.additionalInfo}>
           {userData.country && (
@@ -1400,7 +1457,9 @@ const UserProfile = ({ navigation, route }) => {
       if (isOwnProfile) {
         await Promise.all([
           fetchUserPosts(),
-          fetchBusinessCatalog()
+          fetchBusinessCatalog(),
+          
+          
         ]);
       }
     };
@@ -1501,12 +1560,18 @@ const UserProfile = ({ navigation, route }) => {
         </View>
       </Modal>
 
+    
+
       {/* Menu Modal */}
       <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
         <TouchableOpacity style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]} activeOpacity={1} onPress={() => setModalVisible(false)}>
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             {isOwnProfile && (
               <>
+                <TouchableOpacity style={styles.modalOption} onPress={() => navigation.navigate('MonetizationDashboard')}>
+                  <Icon name="eye-outline" size={22} color={colors.text} />
+                  <Text style={[styles.modalOptionText, { color: colors.text }]}> Professional Dashboard</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.modalOption} onPress={() => { setModalVisible(false); setIsEditing(true); }}>
                   <Icon name="create-outline" size={22} color={colors.text} />
                   <Text style={[styles.modalOptionText, { color: colors.text }]}>Edit Profile</Text>
@@ -1765,6 +1830,59 @@ const styles = StyleSheet.create({
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   cancelButton: { marginHorizontal: 16, paddingVertical: 16, borderRadius: 25, alignItems: 'center', borderWidth: 1 },
   cancelButtonText: { fontSize: 16, fontWeight: '600' },
+  servicesButton: {
+  flex: 1,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingVertical: 14,
+  borderRadius: 25,
+  gap: 8,
+  borderWidth: 1,
+  borderColor: 'transparent',
+},
+servicesButtonText: {
+  fontSize: 15,
+  fontWeight: '600',
+},
+servicesCard: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginHorizontal: 16,
+  marginVertical: 8,
+  padding: 16,
+  borderRadius: 16,
+  borderWidth: 1,
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.05,
+  shadowRadius: 8,
+  elevation: 2,
+},
+servicesCardLeft: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  flex: 1,
+},
+servicesIconContainer: {
+  width: 50,
+  height: 50,
+  borderRadius: 12,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginRight: 14,
+},
+servicesCardContent: {
+  flex: 1,
+},
+servicesCardTitle: {
+  fontSize: 16,
+  fontWeight: '600',
+  marginBottom: 2,
+},
+servicesCardSubtitle: {
+  fontSize: 13,
+},
 });
 
 // Export the getImageUrl function for use in FollowItem

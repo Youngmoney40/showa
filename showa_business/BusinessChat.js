@@ -4863,7 +4863,7 @@ const sendMessage = async (caption = '', emoji = null) => {
   // ==================== RENDER ====================
 
   const redirectBack = () => {
-    navigation.navigate('PHome');
+    navigation.goBack();
   };
 
   return (

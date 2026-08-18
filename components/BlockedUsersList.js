@@ -8,7 +8,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  RefreshControl
+  RefreshControl,
+  StatusBar,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
@@ -16,8 +18,10 @@ import Iconn from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
+import { useTheme } from '../src/context/ThemeContext';
 
 const BlockedUsersList = ({ navigation }) => {
+  const { colors, isDark } = useTheme();
   const [blockedUsers, setBlockedUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -28,7 +32,6 @@ const BlockedUsersList = ({ navigation }) => {
     return await AsyncStorage.getItem('userToken');
   };
 
-  
   const getBlockedUsers = async () => {
     try {
       const token = await getToken();
@@ -119,11 +122,13 @@ const BlockedUsersList = ({ navigation }) => {
 
   // Render each blocked user item
   const renderBlockedUser = ({ item }) => (
-    <View style={styles.userItem}>
+    <View style={[styles.userItem, { 
+      backgroundColor: colors.card,
+      shadowColor: isDark ? 'transparent' : '#000',
+    }]}>
       <TouchableOpacity
         style={styles.userInfo}
         onPress={() => {
-         
           if (navigation) {
             navigation.navigate('OtherUserProfile', { userId: item.id });
           }
@@ -135,29 +140,28 @@ const BlockedUsersList = ({ navigation }) => {
               ? { uri: `${API_ROUTE_IMAGE}${item.profile_picture}` }
               : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
           }
-          style={styles.avatar}
+          style={[styles.avatar, { backgroundColor: colors.backgroundSecondary }]}
         />
         <View style={styles.userDetails}>
-          <Text style={styles.userName}>{item.name}</Text>
-          <Text style={styles.userUsername}>@{item.username || item.name}</Text>
-          <Text style={styles.blockedDate}>
+          <Text style={[styles.userName, { color: colors.text }]}>{item.name}</Text>
+          <Text style={[styles.userUsername, { color: colors.textSecondary }]}>
+            @{item.username || item.name}
+          </Text>
+          <Text style={[styles.blockedDate, { color: colors.textTertiary }]}>
             Blocked: {new Date(item.blocked_at).toLocaleDateString()}
           </Text>
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.unblockButton}
+        style={[styles.unblockButton, { backgroundColor: colors.error || '#EF4444' }]}
         onPress={() => handleUnblock(item.id, item.name)}
         disabled={unblockingId === item.id}
       >
         {unblockingId === item.id ? (
-          <ActivityIndicator size="small" color="#000" />
+          <ActivityIndicator size="small" color="#fff" />
         ) : (
-          <>
-            
-            <Text style={styles.unblockButtonText}>Unblock</Text>
-          </>
+          <Text style={styles.unblockButtonText}>Unblock</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -166,125 +170,139 @@ const BlockedUsersList = ({ navigation }) => {
   // Empty state
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Icon name="users" size={64} color="#4B5563" />
-      <Text style={styles.emptyTitle}>No Blocked Users</Text>
-      <Text style={styles.emptyText}>
+      <Icon name="users" size={64} color={colors.textTertiary} />
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>No Blocked Users</Text>
+      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
         You haven't blocked anyone yet. Blocked users will appear here.
       </Text>
     </View>
   );
 
+  const styles = createStyles(colors, isDark);
+
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1e10b9" />
-        <Text style={styles.loadingText}>Loading blocked users...</Text>
-      </View>
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          Loading blocked users...
+        </Text>
+      </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={()=>navigation.goBack()}>
-          <Iconn  name='arrow-back' size={25} color='#000'/>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Blocked Users</Text>
-        <Text style={styles.headerCount}>
-          {blockedUsers.length} {blockedUsers.length === 1 ? 'user' : 'users'}
-        </Text>
-      </View>
-
-      {/* List */}
-      <FlatList
-        data={blockedUsers}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderBlockedUser}
-        ListEmptyComponent={renderEmpty}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              fetchBlockedUsers();
-            }}
-            colors={['#10B981']}
-            tintColor="#10B981"
-          />
-        }
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
       />
+      
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Header */}
+        <View style={[styles.header, { 
+          backgroundColor: colors.primary,
+          borderBottomColor: colors.border 
+        }]}>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()} 
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <Iconn name='arrow-back-outline' size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Blocked Users</Text>
+          <Text style={styles.headerCount}>
+            {blockedUsers.length} {blockedUsers.length === 1 ? 'user' : 'users'}
+          </Text>
+        </View>
 
-      {/* Unblock all button (if more than 1 blocked user) */}
-      {blockedUsers.length > 1 && (
-        <TouchableOpacity
-          style={styles.unblockAllButton}
-          onPress={() => {
-            Alert.alert(
-              'Unblock All',
-              `Are you sure you want to unblock all ${blockedUsers.length} users?`,
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Unblock All',
-                  style: 'destructive',
-                  onPress: async () => {
-                    // Unblock all users one by one
-                    let successCount = 0;
-                    let failedUsers = [];
-                    for (const user of blockedUsers) {
-                      try {
-                        const response = await unblockUser(user.id);
-                        if (response.success) {
-                          successCount++;
-                        } else {
+        {/* List */}
+        <FlatList
+          data={blockedUsers}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderBlockedUser}
+          ListEmptyComponent={renderEmpty}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                fetchBlockedUsers();
+              }}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+              progressBackgroundColor={colors.card}
+            />
+          }
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+
+        {/* Unblock all button (if more than 1 blocked user) */}
+        {blockedUsers.length > 1 && (
+          <TouchableOpacity
+            style={[styles.unblockAllButton, { backgroundColor: colors.error || '#EF4444' }]}
+            onPress={() => {
+              Alert.alert(
+                'Unblock All',
+                `Are you sure you want to unblock all ${blockedUsers.length} users?`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Unblock All',
+                    style: 'destructive',
+                    onPress: async () => {
+                      // Unblock all users one by one
+                      let successCount = 0;
+                      let failedUsers = [];
+                      for (const user of blockedUsers) {
+                        try {
+                          const response = await unblockUser(user.id);
+                          if (response.success) {
+                            successCount++;
+                          } else {
+                            failedUsers.push(user.name);
+                          }
+                        } catch (error) {
+                          console.error(`Failed to unblock ${user.name}:`, error);
                           failedUsers.push(user.name);
                         }
-                      } catch (error) {
-                        console.error(`Failed to unblock ${user.name}:`, error);
-                        failedUsers.push(user.name);
+                      }
+                      // Refresh the list
+                      fetchBlockedUsers();
+                      if (failedUsers.length === 0) {
+                        Alert.alert('Success', `All ${successCount} users have been unblocked`);
+                      } else {
+                        Alert.alert(
+                          'Partial Success',
+                          `Unblocked ${successCount} users. Failed to unblock: ${failedUsers.join(', ')}`
+                        );
                       }
                     }
-                    // Refresh the list
-                    fetchBlockedUsers();
-                    if (failedUsers.length === 0) {
-                      Alert.alert('Success', `All ${successCount} users have been unblocked`);
-                    } else {
-                      Alert.alert(
-                        'Partial Success',
-                        `Unblocked ${successCount} users. Failed to unblock: ${failedUsers.join(', ')}`
-                      );
-                    }
                   }
-                }
-              ]
-            );
-          }}
-        >
-          <Text style={styles.unblockAllText}>Unblock All</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+                ]
+              );
+            }}
+          >
+            <Text style={styles.unblockAllText}>Unblock All</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors, isDark) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
   },
   loadingText: {
-    color: '#77787a',
     marginTop: 12,
     fontSize: 16,
   },
@@ -292,31 +310,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#b1b1b1',
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 14,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    zIndex: 10,
+  },
+  backButton: {
+    padding: 5,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: '700',
+    color: '#fff',
+    flex: 1,
+    textAlign: 'center',
   },
   headerCount: {
     fontSize: 14,
-    color: '#5c5f63',
+    color: 'rgba(255,255,255,0.8)',
   },
   listContent: {
     padding: 16,
+    paddingBottom: 20,
   },
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   userInfo: {
     flex: 1,
@@ -327,7 +361,6 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#121213',
   },
   userDetails: {
     marginLeft: 12,
@@ -336,22 +369,18 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
   },
   userUsername: {
     fontSize: 14,
-    color: '#5c5f63',
     marginTop: 2,
   },
   blockedDate: {
     fontSize: 12,
-    color: '#5c5f63',
     marginTop: 2,
   },
   unblockButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EF4444',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -370,23 +399,26 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#000',
     marginTop: 16,
   },
   emptyText: {
     fontSize: 14,
-    color: '#9CA3AF',
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 40,
+    lineHeight: 20,
   },
   unblockAllButton: {
-    backgroundColor: '#EF4444',
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 20,
     borderRadius: 12,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   unblockAllText: {
     color: '#FFFFFF',

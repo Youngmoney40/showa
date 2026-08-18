@@ -26,8 +26,8 @@ const VerificationCodeScreen = ({ route }) => {
   // Get all possible params
   const emailId = route.params?.emailID;
   const phoneNumberID = route.params?.phoneNumberID;
-  const contactID = route.params?.contactID; // Can be email or phone
-  const contactType = route.params?.contactType || 'email'; // 'email' or 'phone'
+  const contactID = route.params?.contactID; 
+  const contactType = route.params?.contactType || 'email'; 
   const purpose = route.params?.purpose || 'login';
 
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -164,7 +164,7 @@ const VerificationCodeScreen = ({ route }) => {
     console.log('Verify response:', response.status, response.data);
     
     if (response.status === 200) {
-      // Navigate to registration with verified contact info
+      
       navigation.replace('EmailRegister', {
         verifiedEmail: contactType === 'email' ? contactID : emailId,
         verifiedPhone: contactType === 'phone' ? contactID : phoneNumberID,

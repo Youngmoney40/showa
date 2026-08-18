@@ -165,7 +165,7 @@ const EmptyState = memo(({ search, colors }) => (
 const ChatScreen = ({ navigation }) => {
   const { colors, theme, isDark } = useTheme(); 
   
-  // State management
+  // State managem
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [channels, setChannels] = useState([]);
@@ -756,7 +756,7 @@ const ChatScreen = ({ navigation }) => {
           <TextInput
             placeholder="Search channels..."
             placeholderTextColor={colors.textTertiary}
-            style={[styles.searchInput, { color: colors.text }]}
+            style={[styles.searchInput, { color: '#000000' }]}
             value={search}
             onChangeText={setSearch}
             clearButtonMode="while-editing"

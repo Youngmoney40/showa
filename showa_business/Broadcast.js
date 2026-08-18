@@ -1,519 +1,9 @@
-// import React, { useState, useEffect } from 'react';
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   TouchableOpacity,
-//   SafeAreaView,
-//   FlatList,
-//   Image,
-//   TextInput,
-//   Modal,
-//   ActivityIndicator,
-//   Animated,
-//   Easing,
-// } from 'react-native';
-// import Icon from 'react-native-vector-icons/Ionicons';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-// import axios from 'axios';
-// import { launchImageLibrary } from 'react-native-image-picker';
-// import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
-// import LottieView from 'lottie-react-native';
-
-// export default function BroadcastScreen({ navigation }) {
-//   const [userData, setUserData] = useState([]);
-//   const [selectedUsers, setSelectedUsers] = useState([]);
-//   const [showUserModal, setShowUserModal] = useState(false);
-//   const [showMessageModal, setShowMessageModal] = useState(false);
-//   const [showProcessingModal, setShowProcessingModal] = useState(false);
-//   const [showSuccessModal, setShowSuccessModal] = useState(false);
-//   const [message, setMessage] = useState('');
-//   const [image, setImage] = useState(null);
-
-//   // Animation for success modal
-//   const [successAnim] = useState(new Animated.Value(0));
-
-//   const broadcasts = [
-//     {
-//       id: '1',
-//       title: 'Launch Announcement',
-//       description: 'Our new feature goes live today!',
-//       timestamp: 'Today',
-//     },
-//     {
-//       id: '2',
-//       title: 'Weekly Update',
-//       description: 'Here’s everything you need to know this week.',
-//       timestamp: 'Yesterday',
-//     },
-//   ];
-
-//   const fetchUserData = async () => {
-//     try {
-//       const token = await AsyncStorage.getItem('userToken');
-//       const response = await axios.get(`${API_ROUTE}/get-users/`, {
-//         headers: {
-//           'Content-Type': 'application/json',
-//           Authorization: `Bearer ${token}`,
-//         },
-//       });
-//       if (response.status === 200 || response.status === 201) {
-//         setUserData(response.data);
-//       } else {
-//         console.error('Failed to fetch users:', response.status);
-//       }
-//     } catch (error) {
-//       console.log('Error fetching users:', error.message);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchUserData();
-//   }, []);
-
-//   const toggleSelectUser = (id) => {
-//     if (selectedUsers.includes(id)) {
-//       setSelectedUsers(selectedUsers.filter((uid) => uid !== id));
-//     } else {
-//       setSelectedUsers([...selectedUsers, id]);
-//     }
-//   };
-
-//   const openImagePicker = () => {
-//     launchImageLibrary({}, (response) => {
-//       if (response.assets && response.assets.length > 0) {
-//         setImage(response.assets[0]);
-//       }
-//     });
-//   };
-// const sendBroadcastMessages = async () => {
-//   setShowProcessingModal(true);
-  
-//   try {
-//     // Get the user token
-//     const token = await AsyncStorage.getItem('userToken');
-//     if (!token) {
-//       throw new Error('No authentication token found');
-//     }
-
-//     // Prepare the message data
-//     const messageData = {
-//       content: message,
-//       chat_type: 'single', // Since we're sending individual messages
-//       account_mode: 'business',
-//     };
-
-//     // If there's an image, prepare it for upload
-//     if (image) {
-//       messageData.image = {
-//         uri: image.uri,
-//         type: image.type,
-//         name: image.fileName || 'image.jpg',
-//       };
-//     }
-
-//     // Send to each selected user one by one
-//     for (const userId of selectedUsers) {
-//       try {
-//         const formData = new FormData();
-        
-//         // Add all fields to formData
-//         Object.keys(messageData).forEach(key => {
-//           if (key === 'image') {
-//             formData.append('image', messageData.image);
-//           } else {
-//             formData.append(key, messageData[key]);
-//           }
-//         });
-        
-//         // Add the receiver ID for this message
-//         formData.append('receiver', userId);
-
-//         // Send the message
-//         const response = await axios.post(`${API_ROUTE}/api/chat/`, formData, {
-//           headers: {
-//             'Authorization': `Bearer ${token}`,
-//             'Content-Type': 'multipart/form-data',
-//           },
-//         });
-
-//         console.log(`Message sent to user ${userId}:`, response.data);
-//       } catch (error) {
-//         console.error(`Error sending to user ${userId}:`, error.message);
-//         // Continue with next user even if one fails
-//       }
-//     }
-
-//     // Show success and reset form
-//     setShowProcessingModal(false);
-//     navigation.navigate('BroadcastSuccess');
-//     setSelectedUsers([]);
-//     setMessage('');
-//     setImage(null);
-//   } catch (error) {
-//     console.error('Broadcast error:', error.message);
-//     setShowProcessingModal(false);
-//     alert('Failed to send broadcast: ' + error.message);
-//   }
-// };
-
-// const handleBroadcastNow = () => {
-//   setShowMessageModal(false);
-//   sendBroadcastMessages();
-// };
-
-//   // const handleBroadcastNow = () => {
-//   //   setShowMessageModal(false);
-//   //   setShowProcessingModal(true);
-
-//   //   setTimeout(() => {
-//   //     setShowProcessingModal(false);
-//   //     // setShowSuccessModal(true);
-//   //     navigation.navigate('BroadcastSuccess')
-//   //     // Reset and start animation
-//   //     successAnim.setValue(0);
-//   //     Animated.timing(successAnim, {
-//   //       toValue: 1,
-//   //       duration: 400,
-//   //       easing: Easing.out(Easing.ease),
-//   //       useNativeDriver: true,
-//   //     }).start();
-
-//   //     setSelectedUsers([]);
-//   //     setMessage('');
-//   //     setImage(null);
-//   //   }, 2000);
-//   // };
-
-//   return (
-//     <SafeAreaView style={styles.container}>
-//       {/* Navbar */}
-//       <View style={styles.navbar}>
-//         <TouchableOpacity onPress={() => navigation.goBack()}>
-//           <Icon name="arrow-back" size={24} color="#fff" />
-//         </TouchableOpacity>
-//         <Text style={styles.title}>Broadcast</Text>
-//         <View style={{ width: 24 }} />
-//       </View>
-
-//       {/* Broadcast History */}
-//       <Text style={[styles.sectionTitle,{padding:0}]}> </Text>
-// <Text style={{ fontSize: 14, color: '#666',paddingHorizontal:20, marginBottom: 10 }}>
-//   Broadcasts let you send a message to multiple contacts at once.  
-//   Recipients will get it as a private chat and won’t see each other.  
-//   Perfect for announcements, updates, or promotions.
-// </Text>
-
-
-//       {/* Floating Button ==============================================*/}
-//       <TouchableOpacity
-//         style={styles.floatingButton}
-//         onPress={() => setShowUserModal(true)}
-//       >
-//         <Text style={{ color: '#fff', fontWeight: '600' }}>Start New Broadcast</Text>
-//       </TouchableOpacity>
-
-//       {/* Select Users Modal =============================*/}
-//       <Modal visible={showUserModal} animationType="slide" transparent>
-//         <View style={styles.modalContainer}>
-//           <View style={styles.modalBoxLarge}>
-//             <View style={styles.modalHeader}>
-//               <Text style={styles.modalTitle}>Select Contacts</Text>
-//               <TouchableOpacity onPress={() => setShowUserModal(false)}>
-//                 <Icon name="close" size={24} color="#333" />
-//               </TouchableOpacity>
-//             </View>
-//             <FlatList
-//               data={userData}
-//               keyExtractor={(item) => item.id.toString()}
-//               renderItem={({ item }) => {
-//                 const isSelected = selectedUsers.includes(item.id);
-//                 return (
-//                   <TouchableOpacity
-//                     style={styles.userItem}
-//                     onPress={() => toggleSelectUser(item.id)}
-//                   >
-//                     <Image
-//                       source={
-//                         item.profile_picture
-//                           ? { uri: `${API_ROUTE_IMAGE}${item.profile_picture}` }
-//                           : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-//                       }
-//                       style={styles.avatar}
-//                     />
-//                     <Text style={styles.userName}>{item.name}</Text>
-//                     {isSelected && (
-//                       <Icon name="checkmark-circle" size={24} color="#0d64dd" />
-//                     )}
-//                   </TouchableOpacity>
-//                 );
-//               }}
-//               contentContainerStyle={{ paddingBottom: 20 }}
-//             />
-//             <TouchableOpacity
-//               style={[
-//                 styles.broadcastButton,
-//                 { opacity: selectedUsers.length === 0 ? 0.5 : 1 },
-//               ]}
-//               onPress={() => {
-//                 if (selectedUsers.length > 0) {
-//                   setShowUserModal(false);
-//                   setShowMessageModal(true);
-//                 }
-//               }}
-//             >
-//               <Text style={styles.broadcastButtonText}>Next</Text>
-//             </TouchableOpacity>
-//           </View>
-//         </View>
-//       </Modal>
-
-//       {/* Message Compose Modal =======================================*/}
-//       <Modal visible={showMessageModal} animationType="slide" transparent>
-//         <View style={styles.modalContainer}>
-//           <View style={styles.modalBox}>
-//             <View style={styles.modalHeader}>
-//               <Text style={styles.modalTitle}>Compose Broadcast</Text>
-//               <TouchableOpacity onPress={() => setShowMessageModal(false)}>
-//                 <Icon name="close" size={24} color="#333" />
-//               </TouchableOpacity>
-//             </View>
-//             <TextInput
-//               placeholder="Type your message"
-//               style={styles.input}
-//               value={message}
-//               placeholderTextColor='#333'
-//               onChangeText={setMessage}
-//               multiline
-//             />
-//             <TouchableOpacity style={styles.imagePicker} onPress={openImagePicker}>
-//               <Icon name="image" size={20} color="#0d64dd" />
-//               <Text style={styles.imagePickerText}>Pick Image</Text>
-//               {image && (
-//                 <Image
-//                   source={{ uri: image.uri }}
-//                   style={{ width: 50, height: 50, borderRadius: 6, marginLeft: 10 }}
-//                 />
-//               )}
-//             </TouchableOpacity>
-//             <TouchableOpacity
-//               style={styles.broadcastButton}
-//               onPress={handleBroadcastNow}
-//             >
-//               <Text style={styles.broadcastButtonText}>Broadcast Now</Text>
-//             </TouchableOpacity>
-//           </View>
-//         </View>
-//       </Modal>
-
-//       {/* Loading Modal */}
-//       <Modal visible={showProcessingModal} transparent animationType="fade">
-//         <View style={styles.centeredModalContainer}>
-//           <View style={styles.smallModalBox}>
-//             <ActivityIndicator size="large" color="#0d64dd" />
-//             <Text style={styles.modalMessageText}>Sending broadcast...</Text>
-//           </View>
-//         </View>
-//       </Modal>
-
-//       {/* Animated Success Modal */}
-//       <Modal visible={showSuccessModal} transparent animationType="none">
-//   <View style={styles.centeredModalContainer}>
-//     <Animated.View
-//       style={[
-//         styles.smallModalBox,
-//         {
-//           opacity: successAnim,
-//           transform: [
-//             {
-//               translateY: successAnim.interpolate({
-//                 inputRange: [0, 1],
-//                 outputRange: [50, 0], // slide up
-//               }),
-//             },
-//           ],
-//         },
-//       ]}
-//     >
-//       <Icon name="checkmark-circle" size={50} color="#0d64dd" />
-//       <Text style={styles.modalTitle}>Success!</Text>
-//       <Text style={styles.modalMessageText}>
-//         Your broadcast message has been sent successfully to all selected recipients.
-//       </Text>
-//       <Text style={styles.modalAdditionalText}>
-//         You can view the broadcast details in your sent messages. 
-//         Recipients will receive notifications shortly.
-//       </Text>
-//       <TouchableOpacity
-//       onPress={()=>{
-//         setShowSuccessModal(false)
-//         navigation.navigate('BusinessHome')
-//       }}
-//         //onPress={() => }
-//         style={[styles.broadcastButton, { marginTop: 16 }]}
-//       >
-//         <Text style={styles.broadcastButtonText}>Got it, thanks!</Text>
-//       </TouchableOpacity>
-//     </Animated.View>
-//   </View>
-// </Modal>
-//     </SafeAreaView>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1, backgroundColor: '#f9f9f9' },
-//   navbar: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     backgroundColor: '#0d64dd',
-//     height: 60,
-//     paddingHorizontal: 16,
-//     justifyContent: 'space-between',
-//   },
-//   title: { color: '#fff', fontSize: 20, fontWeight: '600' },
-//   sectionTitle: {
-//     fontSize: 16,
-//     fontWeight: '600',
-//     marginTop: 16,
-//     marginBottom: 8,
-//     marginLeft: 16,
-//     color: '#333',
-//   },
-//   centeredModalContainer: {
-//     flex: 1,
-//     backgroundColor: 'rgba(0,0,0,0.4)',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   smallModalBox: {
-//     width: 260,
-//     backgroundColor: '#fff',
-//     borderRadius: 12,
-//     padding: 20,
-//     alignItems: 'center',
-//   },
-//   modalMessageText: {
-//     marginTop: 12,
-//     fontSize: 16,
-//     fontWeight: '500',
-//     color: '#333',
-//     textAlign: 'center',
-//   },
-//   broadcastItem: {
-//     backgroundColor: '#fff',
-//     borderRadius: 8,
-//     padding: 12,
-//     marginBottom: 10,
-//     shadowColor: '#000',
-//     shadowOpacity: 0.05,
-//     shadowOffset: { width: 0, height: 2 },
-//     elevation: 2,
-//   },
-//   itemHeader: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//   },
-//   broadcastTitle: { fontSize: 16, fontWeight: '600', color: '#333' },
-//   timestamp: { fontSize: 12, color: '#777' },
-//   broadcastDescription: { marginTop: 4, fontSize: 14, color: '#555' },
-//   emptyText: {
-//     textAlign: 'center',
-//     color: '#777',
-//     marginTop: 20,
-//     fontSize: 15,
-//   },
-//   floatingButton: {
-//     position: 'absolute',
-//     right: 20,
-//     bottom: 30,
-//     backgroundColor: '#0d64dd',
-//     paddingHorizontal: 16,
-//     height: 50,
-//     borderRadius: 25,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     elevation: 4,
-//   },
-//   modalContainer: {
-//     flex: 1,
-//     backgroundColor: '#00000066',
-//     justifyContent: 'flex-end',
-//   },
-//   modalBox: {
-//     backgroundColor: '#fff',
-//     padding: 20,
-//     borderTopRightRadius: 20,
-//     borderTopLeftRadius: 20,
-//   },
-//   modalBoxLarge: {
-//     maxHeight: '85%',
-//     backgroundColor: '#fff',
-//     padding: 20,
-//     borderTopRightRadius: 20,
-//     borderTopLeftRadius: 20,
-//   },
-//   modalHeader: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//   },
-//   modalTitle: { fontSize: 18, fontWeight: '600' },
-//   input: {
-//     borderColor: '#ddd',
-//     borderWidth: 1,
-//     padding: 12,
-//     borderRadius: 8,
-//     height: 100,
-//     color:'#333',
-//     textAlignVertical: 'top',
-//     marginVertical: 12,
-//   },
-//   imagePicker: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginBottom: 16,
-//   },
-//   imagePickerText: {
-//     marginLeft: 6,
-//     color: '#0d64dd',
-//     fontWeight: '500',
-//   },
-//   broadcastButton: {
-//     backgroundColor: '#0d64dd',
-//     padding: 12,
-//     borderRadius: 8,
-//     alignItems: 'center',
-//   },
-//   broadcastButtonText: {
-//     color: '#fff',
-//     fontWeight: '600',
-//     fontSize: 16,
-//   },
-//   userItem: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     paddingVertical: 10,
-//     borderBottomColor: '#eee',
-//     borderBottomWidth: 1,
-//   },
-//   avatar: {
-//     width: 48,
-//     height: 48,
-//     borderRadius: 24,
-//     marginRight: 12,
-//     backgroundColor: '#e0e0e0',
-//   },
-//   userName: { flex: 1, fontSize: 16, color: '#333' },
-// });
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   FlatList,
   Image,
   TextInput,
@@ -522,18 +12,83 @@ import {
   Animated,
   Easing,
   ScrollView,
-  Dimensions
+  Dimensions,
+  StatusBar,
+  Platform,
+  ImageBackground,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
 import LottieView from 'lottie-react-native';
+import { useTheme } from '../src/context/ThemeContext';
+import LinearGradient from 'react-native-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
+// Carousel Data with Online Images
+const CAROUSEL_ITEMS = [
+  {
+    id: '1',
+    title: '📢 Reach Everyone Instantly',
+    description: 'Send announcements to multiple contacts at once. Each recipient gets a private message.',
+    icon: 'megaphone',
+    color: '#4F46E5',
+    image: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&h=400&fit=crop',
+  },
+  {
+    id: '2',
+    title: 'Personalize Your Message',
+    description: 'Add text, images, or both. Make your broadcast engaging and professional.',
+    icon: 'create',
+    color: '#7C3AED',
+    image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=400&fit=crop',
+  },
+  {
+    id: '3',
+    title: 'Track Delivery Status',
+    description: 'Monitor who received your broadcast with real-time delivery tracking.',
+    icon: 'checkmark-circle',
+    color: '#059669',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop',
+  },
+  {
+    id: '4',
+    title: 'Secure & Private',
+    description: 'Your broadcasts are encrypted and sent directly to recipients\' inboxes.',
+    icon: 'shield',
+    color: '#2563EB',
+    image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&h=400&fit=crop',
+  },
+];
+
+// Feature Cards
+const FEATURES = [
+  {
+    id: 'f1',
+    title: '📱 Mobile Friendly',
+    description: 'Send broadcasts from anywhere, anytime.',
+    image: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=300&fit=crop',
+  },
+  {
+    id: 'f2',
+    title: '⚡ Real-time Delivery',
+    description: 'Messages are delivered instantly to all recipients.',
+    image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=300&fit=crop',
+  },
+  {
+    id: 'f3',
+    title: '📊 Analytics',
+    description: 'Track engagement and delivery statistics.',
+    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop',
+  },
+];
+
 export default function BroadcastScreen({ navigation }) {
+  const { colors, isDark } = useTheme();
   const [userData, setUserData] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [showUserModal, setShowUserModal] = useState(false);
@@ -543,9 +98,12 @@ export default function BroadcastScreen({ navigation }) {
   const [image, setImage] = useState(null);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [failedRecipients, setFailedRecipients] = useState([]);
+  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
 
   // Animation for progress
   const progressAnim = useState(new Animated.Value(0))[0];
+  const carouselScrollRef = useRef(null);
+  const carouselInterval = useRef(null);
 
   const fetchUserData = async () => {
     try {
@@ -568,6 +126,19 @@ export default function BroadcastScreen({ navigation }) {
 
   useEffect(() => {
     fetchUserData();
+    
+    // Auto-play carousel
+    carouselInterval.current = setInterval(() => {
+      setCurrentCarouselIndex((prev) => 
+        prev === CAROUSEL_ITEMS.length - 1 ? 0 : prev + 1
+      );
+    }, 4000);
+
+    return () => {
+      if (carouselInterval.current) {
+        clearInterval(carouselInterval.current);
+      }
+    };
   }, []);
 
   const toggleSelectUser = (id) => {
@@ -679,13 +250,84 @@ export default function BroadcastScreen({ navigation }) {
     return progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
   };
 
+  const renderCarouselItem = ({ item, index }) => {
+    const isActive = index === currentCarouselIndex;
+    return (
+      <View style={styles.carouselCard}>
+        <ImageBackground
+          source={{ uri: item.image }}
+          style={styles.carouselImageBackground}
+          imageStyle={styles.carouselImageStyle}
+        >
+          <LinearGradient
+            colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.6)']}
+            style={styles.carouselGradient}
+          >
+            <View style={styles.carouselContent}>
+              <View style={[styles.carouselIconContainer, { backgroundColor: item.color + '30' }]}>
+                <Icon name={item.icon} size={32} color="#fff" />
+              </View>
+              <Text style={styles.carouselTitle}>
+                {item.title}
+              </Text>
+              <Text style={styles.carouselDescription}>
+                {item.description}
+              </Text>
+              <View style={styles.carouselDots}>
+                {CAROUSEL_ITEMS.map((_, dotIndex) => (
+                  <View
+                    key={dotIndex}
+                    style={[
+                      styles.carouselDot,
+                      {
+                        backgroundColor: dotIndex === currentCarouselIndex
+                          ? '#fff'
+                          : 'rgba(255,255,255,0.4)',
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            </View>
+          </LinearGradient>
+        </ImageBackground>
+      </View>
+    );
+  };
+
+  const renderFeatureCard = ({ item }) => (
+    <View style={[styles.featureCard, { 
+      backgroundColor: colors.card,
+      shadowColor: isDark ? 'transparent' : '#000',
+    }]}>
+      <Image
+        source={{ uri: item.image }}
+        style={styles.featureImage}
+        resizeMode="cover"
+      />
+      <LinearGradient
+        colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.5)']}
+        style={styles.featureGradient}
+      />
+      <View style={styles.featureContent}>
+        <Text style={[styles.featureTitle, { color: colors.text }]}>
+          {item.title}
+        </Text>
+        <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>
+          {item.description}
+        </Text>
+      </View>
+    </View>
+  );
+
   const renderRecipientItem = ({ item }) => {
     const isSelected = selectedUsers.includes(item.id);
     return (
       <TouchableOpacity
         style={[
           styles.recipientItem,
-          isSelected && styles.selectedRecipient
+          isSelected && [styles.selectedRecipient, { backgroundColor: colors.primary + '15' }],
+          { borderBottomColor: colors.border }
         ]}
         onPress={() => toggleSelectUser(item.id)}
       >
@@ -695,59 +337,121 @@ export default function BroadcastScreen({ navigation }) {
               ? { uri: `${API_ROUTE_IMAGE}${item.profile_picture}` }
               : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
           }
-          style={styles.recipientAvatar}
+          style={[styles.recipientAvatar, { backgroundColor: colors.backgroundSecondary }]}
         />
         <View style={styles.recipientInfo}>
-          <Text style={styles.recipientName}>{item.name}</Text>
-          <Text style={styles.recipientMeta}>{item.business_name || 'Business'}</Text>
+          <Text style={[styles.recipientName, { color: colors.text }]}>{item.name}</Text>
+          <Text style={[styles.recipientMeta, { color: colors.textSecondary }]}>{item.business_name || 'Business'}</Text>
         </View>
         {isSelected ? (
           <View style={styles.selectedCheck}>
-            <Icon name="checkmark-circle" size={24} color="#0d64dd" />
+            <Icon name="checkmark-circle" size={24} color={colors.primary} />
           </View>
         ) : (
-          <View style={styles.unselectedCheck} />
+          <View style={[styles.unselectedCheck, { borderColor: colors.border }]} />
         )}
       </TouchableOpacity>
     );
   };
 
+  const styles = createStyles(colors, isDark);
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={Platform.OS === 'android' ? 'light-content' : 'light-content'}
+        backgroundColor={colors.primary}
+      />
+      
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+      <View style={[styles.header, { backgroundColor: colors.primary }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Broadcast</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: 40 }} />
       </View>
 
       {/* Content */}
-      <ScrollView contentContainerStyle={styles.contentContainer}>
-        <View style={styles.introCard}>
-          <View style={styles.introIcon}>
-            <Icon name="megaphone" size={24} color="#0d64dd" />
+      <ScrollView 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Carousel Section */}
+        <View style={styles.carouselWrapper}>
+          <FlatList
+            ref={carouselScrollRef}
+            data={CAROUSEL_ITEMS}
+            keyExtractor={(item) => item.id}
+            renderItem={renderCarouselItem}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            scrollEnabled={true}
+            onMomentumScrollEnd={(event) => {
+              const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+              setCurrentCarouselIndex(newIndex);
+            }}
+            getItemLayout={(data, index) => ({
+              length: width,
+              offset: width * index,
+              index,
+            })}
+          />
+        </View>
+
+        {/* Feature Cards */}
+        <View style={styles.featuresSection}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Why Use Broadcast?
+          </Text>
+          <FlatList
+            data={FEATURES}
+            keyExtractor={(item) => item.id}
+            renderItem={renderFeatureCard}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.featuresList}
+            snapToInterval={width * 0.7 + 12}
+            decelerationRate="fast"
+          />
+        </View>
+
+        <View style={[styles.introCard, { 
+          backgroundColor: colors.card,
+          shadowColor: isDark ? 'transparent' : '#000',
+        }]}>
+          <View style={[styles.introIcon, { backgroundColor: colors.primary + '15' }]}>
+            <Icon name="megaphone" size={24} color={colors.primary} />
           </View>
-          <Text style={styles.introText}>
+          <Text style={[styles.introText, { color: colors.textSecondary }]}>
             Broadcast messages allow you to send announcements to multiple contacts at once.
             Each recipient will receive the message as a private message.
           </Text>
         </View>
 
         <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{selectedUsers.length}</Text>
-            <Text style={styles.statLabel}>Selected</Text>
+          <View style={[styles.statCard, { 
+            backgroundColor: colors.card,
+            shadowColor: isDark ? 'transparent' : '#000',
+          }]}>
+            <Text style={[styles.statNumber, { color: colors.primary }]}>{selectedUsers.length}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Selected</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{userData.length}</Text>
-            <Text style={styles.statLabel}>Total Contacts</Text>
+          <View style={[styles.statCard, { 
+            backgroundColor: colors.card,
+            shadowColor: isDark ? 'transparent' : '#000',
+          }]}>
+            <Text style={[styles.statNumber, { color: colors.primary }]}>{userData.length}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total Contacts</Text>
           </View>
         </View>
 
         <TouchableOpacity
-          style={styles.newBroadcastButton}
+          style={[styles.newBroadcastButton, { 
+            backgroundColor: colors.primary,
+            shadowColor: colors.primary,
+          }]}
           onPress={() => setShowUserModal(true)}
         >
           <Icon name="add" size={24} color="#fff" />
@@ -757,21 +461,21 @@ export default function BroadcastScreen({ navigation }) {
 
       {/* Select Users Modal */}
       <Modal visible={showUserModal} animationType="slide" transparent>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Recipients</Text>
+        <View style={[styles.modalContainer, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Recipients</Text>
               <TouchableOpacity onPress={() => setShowUserModal(false)}>
-                <Icon name="close" size={24} color="#333" />
+                <Icon name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
             
-            <View style={styles.searchContainer}>
-              <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
+            <View style={[styles.searchContainer, { backgroundColor: colors.backgroundSecondary }]}>
+              <Icon name="search" size={20} color={colors.textTertiary} style={styles.searchIcon} />
               <TextInput
                 placeholder="Search contacts..."
-                placeholderTextColor="#999"
-                style={styles.searchInput}
+                placeholderTextColor={colors.textTertiary}
+                style={[styles.searchInput, { color: colors.text }]}
               />
             </View>
 
@@ -782,20 +486,21 @@ export default function BroadcastScreen({ navigation }) {
               contentContainerStyle={styles.recipientList}
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                  <Icon name="people" size={48} color="#ddd" />
-                  <Text style={styles.emptyText}>No contacts available</Text>
+                  <Icon name="people" size={48} color={colors.textTertiary} />
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No contacts available</Text>
                 </View>
               }
             />
 
-            <View style={styles.modalFooter}>
-              <Text style={styles.selectedCount}>
+            <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
+              <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
                 {selectedUsers.length} {selectedUsers.length === 1 ? 'recipient' : 'recipients'} selected
               </Text>
               <TouchableOpacity
                 style={[
                   styles.nextButton,
-                  selectedUsers.length === 0 && styles.disabledButton
+                  selectedUsers.length === 0 && [styles.disabledButton, { backgroundColor: colors.border }],
+                  { backgroundColor: colors.primary }
                 ]}
                 disabled={selectedUsers.length === 0}
                 onPress={() => {
@@ -813,25 +518,28 @@ export default function BroadcastScreen({ navigation }) {
 
       {/* Message Compose Modal */}
       <Modal visible={showMessageModal} animationType="slide" transparent>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Compose Message</Text>
+        <View style={[styles.modalContainer, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Compose Message</Text>
               <TouchableOpacity onPress={() => setShowMessageModal(false)}>
-                <Icon name="close" size={24} color="#333" />
+                <Icon name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.recipientPreview}>
-              <Text style={styles.recipientPreviewText}>
+            <View style={[styles.recipientPreview, { backgroundColor: colors.primary + '15' }]}>
+              <Text style={[styles.recipientPreviewText, { color: colors.primary }]}>
                 Sending to {selectedUsers.length} {selectedUsers.length === 1 ? 'person' : 'people'}
               </Text>
             </View>
 
             <TextInput
               placeholder="Type your broadcast message..."
-              placeholderTextColor="#999"
-              style={styles.messageInput}
+              placeholderTextColor={colors.textTertiary}
+              style={[styles.messageInput, { 
+                backgroundColor: colors.backgroundSecondary,
+                color: colors.text
+              }]}
               value={message}
               onChangeText={setMessage}
               multiline
@@ -845,7 +553,7 @@ export default function BroadcastScreen({ navigation }) {
                   resizeMode="cover"
                 />
                 <TouchableOpacity 
-                  style={styles.removeImageButton}
+                  style={[styles.removeImageButton, { backgroundColor: 'rgba(0,0,0,0.6)' }]}
                   onPress={() => setImage(null)}
                 >
                   <Icon name="close" size={18} color="#fff" />
@@ -855,18 +563,19 @@ export default function BroadcastScreen({ navigation }) {
 
             <View style={styles.attachmentButtons}>
               <TouchableOpacity 
-                style={styles.attachmentButton}
+                style={[styles.attachmentButton, { backgroundColor: colors.backgroundSecondary }]}
                 onPress={openImagePicker}
               >
-                <Icon name="image" size={20} color="#0d64dd" />
-                <Text style={styles.attachmentButtonText}>Add Image</Text>
+                <Icon name="image" size={20} color={colors.primary} />
+                <Text style={[styles.attachmentButtonText, { color: colors.primary }]}>Add Image</Text>
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity
               style={[
                 styles.sendButton,
-                (message.trim().length === 0 && !image) && styles.disabledButton
+                (message.trim().length === 0 && !image) && [styles.disabledButton, { backgroundColor: colors.border }],
+                { backgroundColor: colors.primary }
               ]}
               disabled={message.trim().length === 0 && !image}
               onPress={handleBroadcastNow}
@@ -879,20 +588,21 @@ export default function BroadcastScreen({ navigation }) {
 
       {/* Processing Modal */}
       <Modal visible={showProcessingModal} transparent animationType="fade">
-        <View style={styles.processingModalContainer}>
-          <View style={styles.processingModalContent}>
+        <View style={[styles.processingModalContainer, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+          <View style={[styles.processingModalContent, { backgroundColor: colors.card }]}>
             <View style={styles.progressHeader}>
-              <Text style={styles.progressTitle}>Sending Broadcast</Text>
-              <Text style={styles.progressSubtitle}>
+              <Text style={[styles.progressTitle, { color: colors.text }]}>Sending Broadcast</Text>
+              <Text style={[styles.progressSubtitle, { color: colors.textSecondary }]}>
                 {progress.current} of {progress.total} sent
               </Text>
             </View>
 
-            <View style={styles.progressBarContainer}>
+            <View style={[styles.progressBarContainer, { backgroundColor: colors.backgroundSecondary }]}>
               <Animated.View 
                 style={[
                   styles.progressBar,
                   {
+                    backgroundColor: colors.primary,
                     width: progressAnim.interpolate({
                       inputRange: [0, 1],
                       outputRange: ['0%', '100%']
@@ -902,22 +612,22 @@ export default function BroadcastScreen({ navigation }) {
               />
             </View>
 
-            <Text style={styles.progressPercentage}>
+            <Text style={[styles.progressPercentage, { color: colors.primary }]}>
               {getProgressPercentage()}%
             </Text>
 
-            <ActivityIndicator size="large" color="#0d64dd" style={styles.progressSpinner} />
+            <ActivityIndicator size="large" color={colors.primary} style={styles.progressSpinner} />
 
             {failedRecipients.length > 0 && (
-              <View style={styles.failedContainer}>
-                <Text style={styles.failedTitle}>
+              <View style={[styles.failedContainer, { borderTopColor: colors.border }]}>
+                <Text style={[styles.failedTitle, { color: colors.error || '#ff4444' }]}>
                   {failedRecipients.length} {failedRecipients.length === 1 ? 'message' : 'messages'} failed to send
                 </Text>
                 <ScrollView style={styles.failedList}>
                   {failedRecipients.map((recipient, index) => (
                     <View key={index} style={styles.failedItem}>
-                      <Text style={styles.failedName}>{recipient.name}</Text>
-                      <Text style={styles.failedError}>{recipient.error}</Text>
+                      <Text style={[styles.failedName, { color: colors.text }]}>{recipient.name}</Text>
+                      <Text style={[styles.failedError, { color: colors.error || '#ff4444' }]}>{recipient.error}</Text>
                     </View>
                   ))}
                 </ScrollView>
@@ -930,42 +640,174 @@ export default function BroadcastScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors, isDark) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: '#0d64dd',
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 14,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    zIndex: 10,
+  },
+  backButton: {
+    padding: 5,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     color: '#fff',
     fontSize: 20,
     fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
   },
   contentContainer: {
     padding: 16,
     paddingBottom: 80,
   },
+  carouselWrapper: {
+    marginBottom: 20,
+    marginHorizontal: -16,
+  },
+  carouselCard: {
+    width: width - 32,
+    height: 220,
+    borderRadius: 16,
+    marginHorizontal: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  carouselImageBackground: {
+    width: '100%',
+    height: '100%',
+  },
+  carouselImageStyle: {
+    borderRadius: 16,
+  },
+  carouselGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  carouselContent: {
+    alignItems: 'center',
+  },
+  carouselIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  carouselTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 6,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  carouselDescription: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 16,
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  carouselDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  carouselDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  featuresSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  featuresList: {
+    paddingRight: 16,
+  },
+  featureCard: {
+    width: width * 0.7,
+    borderRadius: 12,
+    marginRight: 12,
+    overflow: 'hidden',
+    height: 160,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  featureImage: {
+    width: '100%',
+    height: '100%',
+  },
+  featureGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+  },
+  featureContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 14,
+  },
+  featureTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  featureDescription: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
   introCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   introIcon: {
-    backgroundColor: '#e6f0ff',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -976,7 +818,6 @@ const styles = StyleSheet.create({
   introText: {
     flex: 1,
     fontSize: 14,
-    color: '#666',
     lineHeight: 20,
   },
   statsContainer: {
@@ -985,12 +826,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   statCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     width: '48%',
     alignItems: 'center',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -999,21 +838,17 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#0d64dd',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 14,
-    color: '#666',
   },
   newBroadcastButton: {
-    backgroundColor: '#0d64dd',
     borderRadius: 8,
     padding: 16,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#0d64dd',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -1027,11 +862,9 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: height * 0.85,
@@ -1043,17 +876,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     margin: 16,
     paddingHorizontal: 12,
@@ -1064,7 +894,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 40,
-    color: '#333',
   },
   recipientList: {
     paddingHorizontal: 16,
@@ -1074,29 +903,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
   },
-  selectedRecipient: {
-    backgroundColor: '#f0f7ff',
-  },
+  selectedRecipient: {},
   recipientAvatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
     marginRight: 12,
-    backgroundColor: '#e0e0e0',
   },
   recipientInfo: {
     flex: 1,
   },
   recipientName: {
     fontSize: 16,
-    color: '#333',
     fontWeight: '500',
   },
   recipientMeta: {
     fontSize: 12,
-    color: '#999',
     marginTop: 2,
   },
   selectedCheck: {
@@ -1108,7 +931,6 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
   },
   modalFooter: {
     flexDirection: 'row',
@@ -1116,14 +938,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
   },
   selectedCount: {
     fontSize: 14,
-    color: '#666',
   },
   nextButton: {
-    backgroundColor: '#0d64dd',
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -1140,7 +959,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   recipientPreview: {
-    backgroundColor: '#f0f7ff',
     padding: 12,
     marginHorizontal: 16,
     borderRadius: 8,
@@ -1148,18 +966,15 @@ const styles = StyleSheet.create({
   },
   recipientPreviewText: {
     fontSize: 14,
-    color: '#0d64dd',
     fontWeight: '500',
   },
   messageInput: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 16,
     minHeight: 120,
     marginHorizontal: 16,
     marginBottom: 16,
     fontSize: 16,
-    color: '#333',
     textAlignVertical: 'top',
   },
   imagePreviewContainer: {
@@ -1177,7 +992,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0,0,0,0.6)',
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -1193,18 +1007,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     marginRight: 8,
   },
   attachmentButtonText: {
     fontSize: 14,
-    color: '#0d64dd',
     marginLeft: 8,
     fontWeight: '500',
   },
   sendButton: {
-    backgroundColor: '#0d64dd',
     borderRadius: 8,
     padding: 16,
     marginHorizontal: 16,
@@ -1217,12 +1028,10 @@ const styles = StyleSheet.create({
   },
   processingModalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   processingModalContent: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     width: width * 0.85,
     padding: 20,
@@ -1234,29 +1043,24 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 4,
   },
   progressSubtitle: {
     fontSize: 14,
-    color: '#666',
   },
   progressBarContainer: {
     height: 6,
-    backgroundColor: '#f0f0f0',
     borderRadius: 3,
     marginBottom: 8,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#0d64dd',
   },
   progressPercentage: {
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',
-    color: '#0d64dd',
     marginBottom: 16,
   },
   progressSpinner: {
@@ -1265,12 +1069,10 @@ const styles = StyleSheet.create({
   failedContainer: {
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
     paddingTop: 16,
   },
   failedTitle: {
     fontSize: 14,
-    color: '#ff4444',
     fontWeight: '500',
     marginBottom: 8,
   },
@@ -1282,12 +1084,10 @@ const styles = StyleSheet.create({
   },
   failedName: {
     fontSize: 14,
-    color: '#333',
     fontWeight: '500',
   },
   failedError: {
     fontSize: 12,
-    color: '#ff4444',
   },
   emptyContainer: {
     alignItems: 'center',
@@ -1295,7 +1095,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
     marginTop: 16,
   },
 });

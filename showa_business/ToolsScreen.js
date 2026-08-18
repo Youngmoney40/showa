@@ -140,7 +140,7 @@ export default function ToolsScreen() {
               </TouchableOpacity>
               <View style={styles.headerTextContainer}>
                 <Text style={styles.headerTitle}>Tools</Text>
-                <Text style={styles.subtitle}>Performance over the last 7 days</Text>
+                
               </View>
             </View>
           </View>
@@ -167,17 +167,12 @@ export default function ToolsScreen() {
                 style={styles.avatar}
               />
               <View style={styles.cardTextContainer}>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>Draft Ad</Text>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>Create Ad</Text>
                 <Text style={[styles.cardDesc, { color: colors.textSecondary }]}>
-                  We've saved your ad progress so you can finish creating it.
+                  Promote your products and services to reach more customers.
                 </Text>
               </View>
-              <TouchableOpacity 
-                style={styles.closeButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Icon name="close" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
+              
             </View>
             <TouchableOpacity
               style={[styles.cardButton, { 
@@ -188,7 +183,7 @@ export default function ToolsScreen() {
               onPress={() => navigation.navigate('Advertise')}
               activeOpacity={0.8}
             >
-              <Text style={styles.cardButtonText}>Continue creating ad</Text>
+              <Text style={styles.cardButtonText}>Get Started</Text>
               <Icon name="arrow-right" size={18} color="#fff" style={styles.buttonIcon} />
             </TouchableOpacity>
           </View>

@@ -1,4 +1,6 @@
 
+
+
 // import React, { useState, useEffect, useRef } from 'react';
 // import {
 //   View,
@@ -44,6 +46,18 @@
 // const CACHE_TIMESTAMP_KEY = '@cache_timestamp';
 // const CACHE_EXPIRY_HOURS = 24;
 // const LIVE_STREAMS_KEY = '@live_streams';
+// const VIEWED_STATUSES_KEY = '@viewed_statuses'; // New key to store viewed statuses
+
+// // ==================== ID NORMALIZATION HELPER ====================
+// const normalizeId = (value) => {
+//   if (value === null || value === undefined) return null;
+//   if (typeof value === 'object') {
+//     const inner = value.id ?? value.user_id ?? value._id ?? value.phone ?? value;
+//     if (inner === value) return null;
+//     return normalizeId(inner);
+//   }
+//   return String(value);
+// };
 
 // const StatusSection = ({ 
 //   onStatusPress, 
@@ -90,6 +104,9 @@
 //   const [replyMessage, setReplyMessage] = useState('');
 //   const [showReplyModal, setShowReplyModal] = useState(false);
 //   const [loadingViewers, setLoadingViewers] = useState(false);
+  
+//   // Store viewed statuses locally to persist across refreshes
+//   const [viewedStatusIds, setViewedStatusIds] = useState(new Set());
 
 //   // Animation for live pulse
 //   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -105,32 +122,80 @@
 
 //   const styles = createStyles(colors, isDark, insets_safe, customStyles);
 
-//   // Mark status as viewed when displayed in the modal
-// useEffect(() => {
-//   if (modalVisible && selectedUserStatuses[currentStatusIndex]) {
-//     const status = selectedUserStatuses[currentStatusIndex];
-//     const isMyStatus = status.user?.phone === currentUserPhone || status.user === currentUserPhone;
-
-//     if (!isMyStatus && status.id) {
-//       trackStatusView(status.id);
-
-//       // Optimistically mark this user's group as viewed so the ring/order updates immediately
-//       setGroupedStatuses(prev =>
-//         prev.map(group => {
-//           const groupUserId = group.user?.id || group.user;
-//           const statusUserId = status.user?.id || status.user;
-//           if (groupUserId === statusUserId) {
-//             const viewers = Array.isArray(group.viewers) ? group.viewers : [];
-//             if (currentUserId && !viewers.includes(currentUserId)) {
-//               return { ...group, viewers: [...viewers, currentUserId] };
-//             }
-//           }
-//           return group;
-//         })
-//       );
+//   // ==================== VIEWED STATUSES PERSISTENCE ====================
+//   const saveViewedStatuses = (statusIds) => {
+//     try {
+//       const data = Array.from(statusIds);
+//       mmkv.set(VIEWED_STATUSES_KEY, JSON.stringify(data));
+//     } catch (error) {
+//       console.error('Error saving viewed statuses:', error);
 //     }
-//   }
-// }, [modalVisible, currentStatusIndex, selectedUserStatuses]);
+//   };
+
+//   const loadViewedStatuses = () => {
+//     try {
+//       const data = mmkv.getString(VIEWED_STATUSES_KEY);
+//       if (data) {
+//         const parsed = JSON.parse(data);
+//         return new Set(parsed);
+//       }
+//     } catch (error) {
+//       console.error('Error loading viewed statuses:', error);
+//     }
+//     return new Set();
+//   };
+
+//   // Determines whether a given status/story "user" reference belongs to the logged-in user
+//   const isMyStatusGroup = (user) => {
+//     return (
+//       normalizeId(user?.phone) === normalizeId(currentUserPhone) ||
+//       normalizeId(user) === normalizeId(currentUserPhone) ||
+//       normalizeId(user?.id) === normalizeId(currentUserId) ||
+//       normalizeId(user) === normalizeId(currentUserId)
+//     );
+//   };
+
+//   // ==================== UPDATED: Mark as viewed without auto-tracking ====================
+//   const markGroupAsViewed = (statusUser) => {
+//     const statusUserId = normalizeId(statusUser);
+//     if (!statusUserId || !currentUserId) return;
+
+//     // Store the viewed status in the Set
+//     setViewedStatusIds(prev => {
+//       const newSet = new Set(prev);
+//       newSet.add(statusUserId);
+//       saveViewedStatuses(newSet);
+//       return newSet;
+//     });
+
+//     // Also update the grouped statuses for immediate UI update
+//     setGroupedStatuses(prev =>
+//       prev.map(group => {
+//         const groupUserId = normalizeId(group.user);
+//         if (groupUserId !== statusUserId) return group;
+
+//         const viewers = Array.isArray(group.viewers) ? group.viewers : [];
+//         const alreadyViewed = viewers.some(v => normalizeId(v) === normalizeId(currentUserId));
+//         if (alreadyViewed) return group;
+
+//         return { ...group, viewers: [...viewers, currentUserId] };
+//       })
+//     );
+//   };
+
+//   // ==================== UPDATED: Check if group is viewed ====================
+//   const isGroupViewed = (group) => {
+//     // First check the viewed statuses Set (persistent)
+//     const groupUserId = normalizeId(group.user);
+//     if (viewedStatusIds.has(groupUserId)) {
+//       return true;
+//     }
+
+//     // Fallback to checking viewers array
+//     if (!Array.isArray(group.viewers) || currentUserId == null) return false;
+//     const target = normalizeId(currentUserId);
+//     return group.viewers.some(v => normalizeId(v) === target);
+//   };
 
 //   // Pulse animation for live badge
 //   useEffect(() => {
@@ -446,249 +511,242 @@
 
 //   const QUICK_REACTIONS = ['❤️', '👍', '😂', '😮', '😢'];
 
-// const sendChatMessage = async (content) => {
-//   if (!currentReplyStatus) {
-//     showSnackbar('Status not found', 'error');
-//     return { ok: false };
-//   }
-
-//   try {
-//     const token = await AsyncStorage.getItem('userToken');
-//     if (!token) {
-//       showSnackbar('Please login to reply', 'error');
+//   const sendChatMessage = async (content) => {
+//     if (!currentReplyStatus) {
+//       showSnackbar('Status not found', 'error');
 //       return { ok: false };
 //     }
 
-//     let receiverId = null;
-//     if (currentReplyStatus.user) {
-//       if (typeof currentReplyStatus.user === 'object') {
-//         receiverId = currentReplyStatus.user.id || currentReplyStatus.user.user_id;
-//       } else {
-//         receiverId = currentReplyStatus.user;
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       if (!token) {
+//         showSnackbar('Please login to reply', 'error');
+//         return { ok: false };
 //       }
-//     }
-//     if (!receiverId) {
-//       receiverId = currentReplyStatus.user_id || currentReplyStatus.userId;
-//     }
-//     if (!receiverId) {
-//       showSnackbar('User not found', 'error');
-//       return { ok: false };
-//     }
 
-//     const statusOwner = currentReplyStatus.user?.name ||
-//                         currentReplyStatus.user?.username ||
-//                         currentReplyStatus.username ||
-//                         'User';
-
-//     const statusImageUrl = getImageUrl(currentReplyStatus.media || currentReplyStatus.image);
-
-//     // Send to both personal and business modes
-//     const modes = ['personal', 'business'];
-//     let successCount = 0;
-//     let failedCount = 0;
-//     let lastError = null;
-
-//     for (const mode of modes) {
-//       try {
-//         const formData = new FormData();
-
-//         let messageContent = content;
-//         messageContent += `\n\n📸 Status Reply to ${statusOwner}`;
-//         if (currentReplyStatus.text) {
-//           messageContent += `\n📝 Status: "${currentReplyStatus.text.substring(0, 100)}"`;
-//         }
-//         formData.append('content', messageContent);
-
-//         if (statusImageUrl) {
-//           try {
-//             const fileName = statusImageUrl.split('/').pop() || 'status_image.jpg';
-//             formData.append('image', {
-//               uri: statusImageUrl,
-//               type: 'image/jpeg',
-//               name: fileName,
-//             });
-//           } catch (imageError) {
-//             console.error('Error attaching image:', imageError);
-//           }
-//         }
-
-//         formData.append('chat_type', 'single');
-//         formData.append('account_mode', mode);
-//         formData.append('receiver', receiverId.toString());
-
-//         console.log(`📤 Sending to ${mode} mode...`);
-
-//         const response = await axios.post(
-//           `${API_ROUTE}/api/chat/`,
-//           formData,
-//           {
-//             headers: {
-//               Authorization: `Bearer ${token}`,
-//               'Content-Type': 'multipart/form-data',
-//             },
-//             timeout: 30000,
-//           }
-//         );
-
-//         const ok = response.status === 200 || response.status === 201;
-//         if (ok) {
-//           successCount++;
-//           console.log(`✅ ${mode} mode sent successfully`);
+//       let receiverId = null;
+//       if (currentReplyStatus.user) {
+//         if (typeof currentReplyStatus.user === 'object') {
+//           receiverId = currentReplyStatus.user.id || currentReplyStatus.user.user_id;
 //         } else {
-//           failedCount++;
-//           console.log(`❌ ${mode} mode failed`);
+//           receiverId = currentReplyStatus.user;
 //         }
-//       } catch (error) {
-//         failedCount++;
-//         lastError = error;
-//         console.error(`❌ Error sending to ${mode} mode:`, {
-//           status: error.response?.status,
-//           data: error.response?.data,
-//           message: error.message
-//         });
 //       }
-//     }
+//       if (!receiverId) {
+//         receiverId = currentReplyStatus.user_id || currentReplyStatus.userId;
+//       }
+//       if (!receiverId) {
+//         showSnackbar('User not found', 'error');
+//         return { ok: false };
+//       }
 
-//     console.log(`📊 Summary: ${successCount} successful, ${failedCount} failed`);
+//       const statusOwner = currentReplyStatus.user?.name ||
+//                           currentReplyStatus.user?.username ||
+//                           currentReplyStatus.username ||
+//                           'User';
 
-//     // Return success if at least one mode succeeded
-//     if (successCount > 0) {
-//       return { ok: true, receiverId, statusOwner, successCount, failedCount };
-//     } else {
-//       // All failed
+//       const statusImageUrl = getImageUrl(currentReplyStatus.media || currentReplyStatus.image);
+
+//       // Send to both personal and business modes
+//       const modes = ['personal', 'business'];
+//       let successCount = 0;
+//       let failedCount = 0;
+//       let lastError = null;
+
+//       for (const mode of modes) {
+//         try {
+//           const formData = new FormData();
+
+//           let messageContent = content;
+//           messageContent += `\n\n📸 Status Reply to ${statusOwner}`;
+//           if (currentReplyStatus.text) {
+//             messageContent += `\n📝 Status: "${currentReplyStatus.text.substring(0, 100)}"`;
+//           }
+//           formData.append('content', messageContent);
+
+//           if (statusImageUrl) {
+//             try {
+//               const fileName = statusImageUrl.split('/').pop() || 'status_image.jpg';
+//               formData.append('image', {
+//                 uri: statusImageUrl,
+//                 type: 'image/jpeg',
+//                 name: fileName,
+//               });
+//             } catch (imageError) {
+//               console.error('Error attaching image:', imageError);
+//             }
+//           }
+
+//           formData.append('chat_type', 'single');
+//           formData.append('account_mode', mode);
+//           formData.append('receiver', receiverId.toString());
+
+//           console.log(`📤 Sending to ${mode} mode...`);
+
+//           const response = await axios.post(
+//             `${API_ROUTE}/api/chat/`,
+//             formData,
+//             {
+//               headers: {
+//                 Authorization: `Bearer ${token}`,
+//                 'Content-Type': 'multipart/form-data',
+//               },
+//               timeout: 30000,
+//             }
+//           );
+
+//           const ok = response.status === 200 || response.status === 201;
+//           if (ok) {
+//             successCount++;
+//             console.log(`✅ ${mode} mode sent successfully`);
+//           } else {
+//             failedCount++;
+//             console.log(`❌ ${mode} mode failed`);
+//           }
+//         } catch (error) {
+//           failedCount++;
+//           lastError = error;
+//           console.error(`❌ Error sending to ${mode} mode:`, {
+//             status: error.response?.status,
+//             data: error.response?.data,
+//             message: error.message
+//           });
+//         }
+//       }
+
+//       console.log(`📊 Summary: ${successCount} successful, ${failedCount} failed`);
+
+//       if (successCount > 0) {
+//         return { ok: true, receiverId, statusOwner, successCount, failedCount };
+//       } else {
+//         let errorMessage = 'Failed to send message';
+//         if (lastError?.response?.status === 401) {
+//           errorMessage = 'Session expired. Please login again.';
+//         } else if (lastError?.response?.status === 400) {
+//           errorMessage = lastError?.response?.data?.error || 'Invalid request';
+//         } else if (lastError?.response?.data?.detail) {
+//           errorMessage = lastError.response.data.detail;
+//         } else if (lastError?.message?.includes('Network Error')) {
+//           errorMessage = 'Network error. Please check your connection.';
+//         }
+
+//         showSnackbar(errorMessage, 'error');
+//         return { ok: false };
+//       }
+//     } catch (error) {
+//       console.error('❌ Error sending chat message:', {
+//         status: error.response?.status,
+//         data: error.response?.data,
+//         message: error.message
+//       });
+
 //       let errorMessage = 'Failed to send message';
-//       if (lastError?.response?.status === 401) {
+//       if (error.response?.status === 401) {
 //         errorMessage = 'Session expired. Please login again.';
-//       } else if (lastError?.response?.status === 400) {
-//         errorMessage = lastError?.response?.data?.error || 'Invalid request';
-//       } else if (lastError?.response?.data?.detail) {
-//         errorMessage = lastError.response.data.detail;
-//       } else if (lastError?.message?.includes('Network Error')) {
+//       } else if (error.response?.status === 400) {
+//         errorMessage = error.response?.data?.error || 'Invalid request';
+//       } else if (error.response?.data?.detail) {
+//         errorMessage = error.response.data.detail;
+//       } else if (error.message?.includes('Network Error')) {
 //         errorMessage = 'Network error. Please check your connection.';
 //       }
 
 //       showSnackbar(errorMessage, 'error');
 //       return { ok: false };
 //     }
-//   } catch (error) {
-//     console.error('❌ Error sending chat message:', {
-//       status: error.response?.status,
-//       data: error.response?.data,
-//       message: error.message
-//     });
+//   };
 
-//     let errorMessage = 'Failed to send message';
-//     if (error.response?.status === 401) {
-//       errorMessage = 'Session expired. Please login again.';
-//     } else if (error.response?.status === 400) {
-//       errorMessage = error.response?.data?.error || 'Invalid request';
-//     } else if (error.response?.data?.detail) {
-//       errorMessage = error.response.data.detail;
-//     } else if (error.message?.includes('Network Error')) {
-//       errorMessage = 'Network error. Please check your connection.';
+//   const sendStatusReply = async () => {
+//     if (!replyMessage.trim()) {
+//       showSnackbar('Please enter a message', 'error');
+//       return;
+//     }
+//     if (!currentReplyStatus) {
+//       showSnackbar('Status not found', 'error');
+//       return;
 //     }
 
-//     showSnackbar(errorMessage, 'error');
-//     return { ok: false };
-//   }
-// };
+//     setSendingReply(true);
+//     const result = await sendChatMessage(replyMessage.trim());
+//     setSendingReply(false);
 
-// const sendStatusReply = async () => {
-//   if (!replyMessage.trim()) {
-//     showSnackbar('Please enter a message', 'error');
-//     return;
-//   }
-//   if (!currentReplyStatus) {
-//     showSnackbar('Status not found', 'error');
-//     return;
-//   }
+//     if (result.ok) {
+//       if (result.successCount === 2) {
+//         showSnackbar('✅ Reply sent to both Personal & Business!', 'success');
+//       } else if (result.successCount === 1) {
+//         showSnackbar(`⚠️ Sent to ${result.successCount} of 2 modes`, 'info');
+//       } else {
+//         showSnackbar('✅ Reply sent successfully!', 'success');
+//       }
+      
+//       const ownerForNav = result.statusOwner;
+//       const receiverForNav = result.receiverId;
+//       const profileImageForNav = currentReplyStatus?.user?.profile_picture || '';
 
-//   setSendingReply(true);
-//   const result = await sendChatMessage(replyMessage.trim());
-//   setSendingReply(false);
+//       setReplyMessage('');
+//       setShowReplyModal(false);
+//       setCurrentReplyStatus(null);
 
-//   if (result.ok) {
-//     // Show success message with mode counts
-//     if (result.successCount === 2) {
-//       showSnackbar('✅ Reply sent to both Personal & Business!', 'success');
-//     } else if (result.successCount === 1) {
-//       showSnackbar(`⚠️ Sent to ${result.successCount} of 2 modes`, 'info');
-//     } else {
-//       showSnackbar('✅ Reply sent successfully!', 'success');
-//     }
-    
-//     const ownerForNav = result.statusOwner;
-//     const receiverForNav = result.receiverId;
-//     const profileImageForNav = currentReplyStatus?.user?.profile_picture || '';
-
-//     setReplyMessage('');
-//     setShowReplyModal(false);
-//     setCurrentReplyStatus(null);
-
-//     Alert.alert(
-//       'Message Sent!',
-//       `Your reply has been sent to ${ownerForNav} in ${result.successCount} of 2 modes.`,
-//       [
-//         { text: 'Continue', style: 'cancel' },
-//         {
-//           text: 'Okay',
-//           onPress: () => {
-//             setModalVisible(false);
-//             // navigation.navigate('PrivateChat', {
-//             //   chatType: 'single',
-//             //   receiverId: receiverForNav,
-//             //   name: ownerForNav,
-//             //   profile_image: profileImageForNav,
-//             // });
+//       Alert.alert(
+//         'Message Sent!',
+//         `Your reply has been sent to ${ownerForNav} in ${result.successCount} of 2 modes.`,
+//         [
+//           { text: 'Continue', style: 'cancel' },
+//           {
+//             text: 'Okay',
+//             onPress: () => {
+//               setModalVisible(false);
+//             }
 //           }
-//         }
-//       ]
-//     );
-
-//     await fetchStatus();
-//   }
-// };
-// const sendQuickReaction = async (emoji) => {
-//   if (!currentReplyStatus || sendingReply) return;
-
-//   setSendingReply(true);
-//   const result = await sendChatMessage(emoji);
-//   setSendingReply(false);
-
-//   if (result.ok) {
-//     setReplyMessage('');
-//     setShowReplyModal(false);
-//     setCurrentReplyStatus(null);
-    
-//     if (result.successCount === 2) {
-//       Alert.alert(
-//         'Reaction sent!',
-//         `${emoji} sent successfully!`,
-//         [{ text: 'OK' }]
+//         ]
 //       );
-//     } else if (result.successCount === 1) {
-//       Alert.alert(
-//         'Partial Success',
-//         `${emoji} sent to ${result.successCount} of 2 modes. One mode failed.`,
-//         [{ text: 'OK' }]
-//       );
+
+//       await fetchStatus();
+//     }
+//   };
+
+//   const sendQuickReaction = async (emoji) => {
+//     if (!currentReplyStatus || sendingReply) return;
+
+//     setSendingReply(true);
+//     const result = await sendChatMessage(emoji);
+//     setSendingReply(false);
+
+//     if (result.ok) {
+//       setReplyMessage('');
+//       setShowReplyModal(false);
+//       setCurrentReplyStatus(null);
+      
+//       if (result.successCount === 2) {
+//         Alert.alert(
+//           'Reaction sent!',
+//           `${emoji} sent successfully!`,
+//           [{ text: 'OK' }]
+//         );
+//       } else if (result.successCount === 1) {
+//         Alert.alert(
+//           'Partial Success',
+//           `${emoji} sent to ${result.successCount} of 2 modes. One mode failed.`,
+//           [{ text: 'OK' }]
+//         );
+//       } else {
+//         Alert.alert(
+//           'Success!',
+//           `${emoji} sent successfully!`,
+//           [{ text: 'OK' }]
+//         );
+//       }
+      
+//       await fetchStatus();
 //     } else {
 //       Alert.alert(
-//         'Success!',
-//         `${emoji} sent successfully!`,
+//         'Error',
+//         'Failed to send reaction. Please try again.',
 //         [{ text: 'OK' }]
 //       );
 //     }
-    
-//     await fetchStatus();
-//   } else {
-//     Alert.alert(
-//       'Error',
-//       'Failed to send reaction. Please try again.',
-//       [{ text: 'OK' }]
-//     );
-//   }
-// };
+//   };
+
 //   const addReaction = async (statusId, reactionType) => {
 //     try {
 //       const token = await AsyncStorage.getItem('userToken');
@@ -716,13 +774,13 @@
 //         }))
 //       );
       
-//      Alert.alert(
+//       Alert.alert(
 //         'Reaction Added',
 //         `You reacted with ${reactionType}`, 
 //         [
 //             { text: 'OK', onPress: () => console.log('OK Pressed') }
 //         ]
-//         );
+//       );
 //       setReactionModalVisible(false);
 //     } catch (error) {
 //       console.error('Error adding reaction:', error);
@@ -786,10 +844,32 @@
 //     }
 //   };
 
+//   // ==================== UPDATED: openImageModal with move to end ====================
 //   const openImageModal = (userStatuses) => {
 //     setSelectedUserStatuses(userStatuses.statuses);
 //     setCurrentStatusIndex(0);
 //     setModalVisible(true);
+
+//     const isMyStatus = isMyStatusGroup(userStatuses.user);
+    
+//     // Only mark as viewed and move to end if it's not the user's own status
+//     if (!isMyStatus) {
+//       markGroupAsViewed(userStatuses.user);
+      
+//       // Move this group to the end of the list
+//       setGroupedStatuses(prev => {
+//         const updated = [...prev];
+//         const groupIndex = updated.findIndex(g => 
+//           normalizeId(g.user) === normalizeId(userStatuses.user)
+//         );
+//         if (groupIndex > -1) {
+//           const [movedGroup] = updated.splice(groupIndex, 1);
+//           updated.push(movedGroup);
+//         }
+//         return updated;
+//       });
+//     }
+
 //     if (onStatusPress) {
 //       onStatusPress(userStatuses);
 //     }
@@ -856,7 +936,26 @@
 //       }
       
 //       const statuses = await fetchStatus();
-//       setGroupedStatuses(statuses);
+      
+//       // Apply viewed statuses from persistent storage
+//       const viewedSet = loadViewedStatuses();
+//       setViewedStatusIds(viewedSet);
+      
+//       // Update viewers array based on viewed statuses
+//       const updatedStatuses = statuses.map(group => {
+//         const groupUserId = normalizeId(group.user);
+//         if (viewedSet.has(groupUserId)) {
+//           // If marked as viewed, ensure current user is in viewers
+//           const viewers = Array.isArray(group.viewers) ? group.viewers : [];
+//           const alreadyViewed = viewers.some(v => normalizeId(v) === normalizeId(currentUserId));
+//           if (!alreadyViewed && currentUserId) {
+//             return { ...group, viewers: [...viewers, currentUserId] };
+//           }
+//         }
+//         return group;
+//       });
+      
+//       setGroupedStatuses(updatedStatuses);
       
 //       if (statuses && statuses.length > 0) {
 //         preloadAllStatusImages(statuses);
@@ -882,9 +981,27 @@
 //       }
       
 //       const statuses = await fetchStatus();
+      
+//       // Apply viewed statuses from persistent storage
+//       const viewedSet = loadViewedStatuses();
+//       setViewedStatusIds(viewedSet);
+      
+//       // Update viewers array based on viewed statuses
+//       const updatedStatuses = statuses.map(group => {
+//         const groupUserId = normalizeId(group.user);
+//         if (viewedSet.has(groupUserId)) {
+//           const viewers = Array.isArray(group.viewers) ? group.viewers : [];
+//           const alreadyViewed = viewers.some(v => normalizeId(v) === normalizeId(currentUserId));
+//           if (!alreadyViewed && currentUserId) {
+//             return { ...group, viewers: [...viewers, currentUserId] };
+//           }
+//         }
+//         return group;
+//       });
+      
 //       setGroupedStatuses((prev) => {
-//         if (JSON.stringify(prev) !== JSON.stringify(statuses)) {
-//           return statuses;
+//         if (JSON.stringify(prev) !== JSON.stringify(updatedStatuses)) {
+//           return updatedStatuses;
 //         }
 //         return prev;
 //       });
@@ -902,6 +1019,10 @@
 
 //   useEffect(() => {
 //     if (isFocused) {
+//       // Load viewed statuses from persistent storage on mount
+//       const viewedSet = loadViewedStatuses();
+//       setViewedStatusIds(viewedSet);
+      
 //       (async () => {
 //         const hasCache = await loadCachedDataMMKV();
 //         if (!hasCache) {
@@ -1008,136 +1129,131 @@
 //     );
 //   };
 
-//   // Instagram-style story circle with border
-//  const renderStoryCircle = (userStatus, isLive = false) => {
-//   // const isMyStatus = userStatus.user?.phone === currentUserPhone || userStatus.user === currentUserPhone;
-//   // const imageUrl = getImageUrl(userStatus.statuses?.[0]?.media || userStatus.image || userStatus.broadcaster_image);
-//   // const name = isMyStatus ? 'My Story' : (userStatus.user?.name || userStatus.broadcaster_name || userStatus.user || 'User');
-//   // const hasUnseen = !isMyStatus && !isLive;
+//   // ==================== UPDATED: renderStoryCircle ====================
+//   const renderStoryCircle = (userStatus, isLive = false) => {
+//     const isMyStatus = isMyStatusGroup(userStatus.user);
 
-// // const isMyStatus = userStatus.user?.phone === currentUserPhone || userStatus.user === currentUserPhone;
-// // const imageUrl = getImageUrl(userStatus.statuses?.[0]?.media || userStatus.image || userStatus.broadcaster_image);
-// // const name = isMyStatus ? 'My Story' : (userStatus.user?.name || userStatus.broadcaster_name || userStatus.user || 'User');
+//     const imageUrl = getImageUrl(userStatus.statuses?.[0]?.media || userStatus.image || userStatus.broadcaster_image);
+//     const name = isMyStatus ? 'My Story' : (userStatus.user?.name || userStatus.broadcaster_name || userStatus.user || 'User');
 
-// // const isViewed =
-// //   !isMyStatus &&
-// //   !isLive &&
-// //   Array.isArray(userStatus.viewers) &&
-// //   currentUserId &&
-// //   userStatus.viewers.includes(currentUserId);
+//     // Check if viewed using the persistent Set
+//     const isViewed = !isLive && viewedStatusIds.has(normalizeId(userStatus.user));
 
-// // const hasUnseen = !isMyStatus && !isLive && !isViewed;
+//     // Ring color logic:
+//     // - Live: Red (pulsing)
+//     // - My Story: Red
+//     // - Viewed by me: Gray
+//     // - Unviewed (default): Blue
+//     const ringColorStyle = isLive
+//       ? styles.storyRingLive
+//       : isMyStatus
+//       ? styles.storyRingMine
+//       : isViewed
+//       ? styles.storyRingViewed
+//       : styles.storyRingUnseen;
 
-// const isMyStatus = userStatus.user?.phone === currentUserPhone || userStatus.user === currentUserPhone;
-// const imageUrl = getImageUrl(userStatus.statuses?.[0]?.media || userStatus.image || userStatus.broadcaster_image);
-// const name = isMyStatus ? 'My Story' : (userStatus.user?.name || userStatus.broadcaster_name || userStatus.user || 'User');
-
-// // Normalize viewers to strings so number/string id mismatches don't break the check
-// const viewerIds = Array.isArray(userStatus.viewers)
-//   ? userStatus.viewers.map(v => String(typeof v === 'object' ? (v.id || v.user_id || v) : v))
-//   : [];
-
-// const isViewed =
-//   !isMyStatus &&
-//   !isLive &&
-//   currentUserId != null &&
-//   viewerIds.includes(String(currentUserId));
-
-// // Default to "unseen" (blue) unless we can positively confirm it was viewed
-// const hasUnseen = !isMyStatus && !isLive && !isViewed;
-  
-//   return (
-//     <TouchableOpacity 
-//       style={styles.storyWrapper} 
-//       onPress={() => isLive ? handleLivePress(userStatus) : openImageModal(userStatus)}
-//       activeOpacity={0.8}
-//     >
-//       <View style={styles.storyContainer}>
-//         <View style={[
-//           // styles.storyRing,
-//           // isLive ? styles.storyRingLive : styles.storyRingStatus,
-//           // hasUnseen && styles.storyRingUnseen,
-//           // styles.storyRing,
-//           // isLive ? styles.storyRingLive : styles.storyRingStatus,
-//           // hasUnseen && styles.storyRingUnseen,
-//           // isViewed && styles.storyRingViewed,
-//           styles.storyRing,
-//   isLive ? styles.storyRingLive : styles.storyRingStatus,
-//   hasUnseen && styles.storyRingUnseen,
-//   isViewed && styles.storyRingViewed,
-//         ]}>
-//           <Image
-//             source={
-//               imageUrl
-//                 ? { uri: imageUrl }
-//                 : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-//             }
-//             style={styles.storyImage}
-//           />
-          
-//           {/* Add Status Badge */}
-//           {isMyStatus && (
-//             <TouchableOpacity 
-//               style={styles.addStatusBadge}
-//               onPress={(e) => {
-//                 e.stopPropagation();
-//                 if (onAddStatusPress) {
-//                   onAddStatusPress();
-//                 } else {
-//                   setAddStatusModalVisible(true);
-//                 }
-//               }}
-//               activeOpacity={0.9}
-//             >
-//               <View style={styles.addStatusBadgeInner}>
-//                 <Icon name="add" size={20} color="#fff" />
+//     return (
+//       <TouchableOpacity 
+//         style={styles.storyWrapper} 
+//         onPress={() => {
+//           // If not my status and not live, mark as viewed and move to end
+//           if (!isMyStatus && !isLive) {
+//             markGroupAsViewed(userStatus.user);
+            
+//             // Move this group to the end of the list
+//             setGroupedStatuses(prev => {
+//               const updated = [...prev];
+//               const groupIndex = updated.findIndex(g => 
+//                 normalizeId(g.user) === normalizeId(userStatus.user)
+//               );
+//               if (groupIndex > -1) {
+//                 const [movedGroup] = updated.splice(groupIndex, 1);
+//                 updated.push(movedGroup);
+//               }
+//               return updated;
+//             });
+//           }
+//           isLive ? handleLivePress(userStatus) : openImageModal(userStatus);
+//         }}
+//         activeOpacity={0.8}
+//       >
+//         <View style={styles.storyContainer}>
+//           <View style={[
+//             styles.storyRing,
+//             ringColorStyle,
+//           ]}>
+//             <Image
+//               source={
+//                 imageUrl
+//                   ? { uri: imageUrl }
+//                   : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+//               }
+//               style={styles.storyImage}
+//             />
+            
+//             {/* Add Status Badge */}
+//             {isMyStatus && (
+//               <TouchableOpacity 
+//                 style={styles.addStatusBadge}
+//                 onPress={(e) => {
+//                   e.stopPropagation();
+//                   if (onAddStatusPress) {
+//                     onAddStatusPress();
+//                   } else {
+//                     setAddStatusModalVisible(true);
+//                   }
+//                 }}
+//                 activeOpacity={0.9}
+//               >
+//                 <View style={styles.addStatusBadgeInner}>
+//                   <Icon name="add" size={20} color="#fff" />
+//                 </View>
+//               </TouchableOpacity>
+//             )}
+            
+//             {isLive && (
+//               <View style={styles.liveBadgeContainer}>
+//                 <Animated.View 
+//                   style={[
+//                     styles.liveBadgePulse,
+//                     {
+//                       transform: [{ scale: pulseAnim }],
+//                     }
+//                   ]} 
+//                 />
+//                 <Text style={styles.liveBadgeText}>LIVE</Text>
 //               </View>
-//             </TouchableOpacity>
-//           )}
-          
-//           {isLive && (
-//             <View style={styles.liveBadgeContainer}>
+//             )}
+            
+//             {isLive && (
 //               <Animated.View 
 //                 style={[
-//                   styles.liveBadgePulse,
+//                   styles.liveGlowRing,
 //                   {
+//                     opacity: pulseAnim.interpolate({
+//                       inputRange: [1, 1.3],
+//                       outputRange: [0.3, 0.8],
+//                     }),
 //                     transform: [{ scale: pulseAnim }],
 //                   }
 //                 ]} 
 //               />
-//               <Text style={styles.liveBadgeText}>LIVE</Text>
-//             </View>
-//           )}
+//             )}
+//           </View>
+          
+//           <Text style={styles.storyName} numberOfLines={1}>
+//             {name}
+//           </Text>
           
 //           {isLive && (
-//             <Animated.View 
-//               style={[
-//                 styles.liveGlowRing,
-//                 {
-//                   opacity: pulseAnim.interpolate({
-//                     inputRange: [1, 1.3],
-//                     outputRange: [0.3, 0.8],
-//                   }),
-//                   transform: [{ scale: pulseAnim }],
-//                 }
-//               ]} 
-//             />
+//             <View style={styles.liveLabelContainer}>
+//               <Text style={styles.liveLabelText}>● LIVE</Text>
+//             </View>
 //           )}
 //         </View>
-        
-//         <Text style={styles.storyName} numberOfLines={1}>
-//           {name}
-//         </Text>
-        
-//         {isLive && (
-//           <View style={styles.liveLabelContainer}>
-//             <Text style={styles.liveLabelText}>● LIVE</Text>
-//           </View>
-//         )}
-//       </View>
-//     </TouchableOpacity>
-//   );
-// };
+//       </TouchableOpacity>
+//     );
+//   };
 
 //   // Handle live press
 //   const handleLivePress = (stream) => {
@@ -1172,7 +1288,7 @@
 //     return renderStoryCircle(liveData, true);
 //   };
 
-//   // ==================== renderStatusItem with Close Button ====================
+//   // ==================== renderStatusItem ====================
 //   const renderStatusItem = ({ item, index }) => {
 //     const isMyStatus = item.user?.phone === currentUserPhone || item.user === currentUserPhone;
     
@@ -1224,7 +1340,7 @@
 //               <Text style={styles.statusViewerTime}>{formatTime(item.created_at)}</Text>
 //             </View>
           
-//             {/* ==================== CLOSE BUTTON ==================== */}
+//             {/* Close Button */}
 //             <View style={styles.headerButton}>
 //               <TouchableOpacity 
 //                 onPress={() => {
@@ -1503,46 +1619,32 @@
 //   const myStatus = groupedStatuses.find(
 //     (status) => status.user?.phone === currentUserPhone || status.user === currentUserPhone
 //   );
-//   // const otherStatuses = groupedStatuses.filter(
-//   //   (status) => status.user?.phone !== currentUserPhone && status.user !== currentUserPhone
-//   // );
-
-//   // const combinedUpdates = [
-//   //   ...liveStreams.map(stream => ({ ...stream, type: 'live' })),
-//   //   ...otherStatuses.map(status => ({ ...status, type: 'status' }))
-//   // ].sort((a, b) => {
-//   //   const timeA = new Date(a.created_at || a.started_at);
-//   //   const timeB = new Date(b.created_at || b.started_at);
-//   //   return timeB - timeA;
-//   // });
 
 //   const otherStatuses = groupedStatuses.filter(
-//   (status) => status.user?.phone !== currentUserPhone && status.user !== currentUserPhone
-// );
+//     (status) => status.user?.phone !== currentUserPhone && status.user !== currentUserPhone
+//   );
 
-// const isGroupViewed = (group) =>
-//   Array.isArray(group.viewers) && currentUserId && group.viewers.includes(currentUserId);
+//   const sortByTimeDesc = (a, b) => {
+//     const timeA = new Date(a.created_at || a.started_at);
+//     const timeB = new Date(b.created_at || b.started_at);
+//     return timeB - timeA;
+//   };
 
-// const sortByTimeDesc = (a, b) => {
-//   const timeA = new Date(a.created_at || a.started_at);
-//   const timeB = new Date(b.created_at || b.started_at);
-//   return timeB - timeA;
-// };
+//   const liveItems = liveStreams.map(stream => ({ ...stream, type: 'live' })).sort(sortByTimeDesc);
 
-// const liveItems = liveStreams.map(stream => ({ ...stream, type: 'live' })).sort(sortByTimeDesc);
+//   // Get unviewed and viewed statuses using the persistent Set
+//   const unviewedStatuses = otherStatuses
+//     .filter(status => !viewedStatusIds.has(normalizeId(status.user)))
+//     .map(status => ({ ...status, type: 'status' }))
+//     .sort(sortByTimeDesc);
 
-// const unviewedStatuses = otherStatuses
-//   .filter(status => !isGroupViewed(status))
-//   .map(status => ({ ...status, type: 'status' }))
-//   .sort(sortByTimeDesc);
+//   const viewedStatuses = otherStatuses
+//     .filter(status => viewedStatusIds.has(normalizeId(status.user)))
+//     .map(status => ({ ...status, type: 'status' }))
+//     .sort(sortByTimeDesc);
 
-// const viewedStatuses = otherStatuses
-//   .filter(status => isGroupViewed(status))
-//   .map(status => ({ ...status, type: 'status' }))
-//   .sort(sortByTimeDesc);
-
-// // Live first, then unviewed (new) statuses, then already-viewed statuses at the very end
-// const combinedUpdates = [...liveItems, ...unviewedStatuses, ...viewedStatuses];
+//   // Combine: Live first, then unviewed (blue), then viewed (gray)
+//   const combinedUpdates = [...liveItems, ...unviewedStatuses, ...viewedStatuses];
 
 //   const displayUpdates = maxItems ? combinedUpdates.slice(0, maxItems) : combinedUpdates;
 
@@ -1603,19 +1705,11 @@
 //           <Text style={[styles.sectionTitle, { fontWeight: '600', fontSize: 20 }]}>{title}</Text>
 //         )}
         
-//         {/* ==================== HORIZONTAL SCROLL WITH MULTIPLE ITEMS ==================== */}
+//         {/* Horizontal Scroll with Multiple Items */}
 //         <ScrollView
 //           horizontal
 //           showsHorizontalScrollIndicator={false}
 //           contentContainerStyle={styles.horizontalScrollContainer}
-//           refreshControl={
-//             <RefreshControl
-//               refreshing={refreshing}
-//               onRefresh={onRefresh}
-//               colors={[colors.primary]}
-//               tintColor={colors.primary}
-//             />
-//           }
 //         >
 //           {/* My Status */}
 //           {myStatus && (
@@ -1632,19 +1726,10 @@
 //                 : renderStatusPreview(item)}
 //             </View>
 //           ))}
-          
-//           {/* Empty state */}
-//           {/* {!myStatus && displayUpdates.length === 0 && (
-//             <View style={styles.emptyStoriesContainer}>
-//               <Text style={[styles.emptyStoriesText, { color: colors.textSecondary }]}>
-//                 No stories available
-//               </Text>
-//             </View>
-//           )} */}
 //         </ScrollView>
 //       </View>
 
-//       {/* ==================== STATUS VIEWER MODAL WITH CLOSE BUTTON ==================== */}
+//       {/* Status Viewer Modal with Close Button */}
 //       <Modal 
 //         visible={modalVisible} 
 //         transparent={true} 
@@ -1775,7 +1860,7 @@
 //           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
 //         >
 //           <SafeAreaView style={{ flex: 1, marginTop: Platform.OS === 'ios' ? 0 : 20 }}>
-//             {/* ==================== HEADER WITH CLOSE BUTTON ==================== */}
+//             {/* Header with Close Button */}
 //             <View style={styles.addStatusHeaderContainer}>
 //               <TouchableOpacity 
 //                 onPress={() => {
@@ -1816,8 +1901,6 @@
 //               />
               
 //               <View style={styles.addStatusButtonRow}>
-               
-                
 //                 <TouchableOpacity
 //                   onPress={handlePostStatus}
 //                   disabled={!image || postingStatus}
@@ -1876,7 +1959,6 @@
 //     marginLeft: 16,
 //     marginBottom: 10,
 //   },
-//   // ==================== HORIZONTAL SCROLL WITH MULTIPLE ITEMS ====================
 //   horizontalScrollContainer: {
 //     paddingHorizontal: 12,
 //     paddingVertical: 10,
@@ -1888,7 +1970,6 @@
 //     alignItems: 'center',
 //     marginHorizontal: 3,
 //   },
-//   // ==================== STORY WRAPPER ====================
 //   storyWrapper: {
 //     alignItems: 'center',
 //   },
@@ -1896,26 +1977,25 @@
 //     alignItems: 'center',
 //     width: 80,
 //   },
-//   // ==================== STORY RING ====================
 //   storyRing: {
-//     width: 88, // Increased from 74
-//     height: 88, // Increased from 74
-//     borderRadius: 44, // Increased from 37
-//     padding: 4, // Increased from 3
+//     width: 88,
+//     height: 88,
+//     borderRadius: 44,
+//     padding: 4,
 //     justifyContent: 'center',
 //     alignItems: 'center',
 //     position: 'relative',
 //   },
 //   storyRingViewed: {
-//   borderWidth: 3,
-//   borderColor: '#C7C7CC', // gray
-//   shadowOpacity: 0,
-//   elevation: 0,
-// },
-//   storyRingStatus: {
-//     borderWidth: 3, // Increased from 2.5
-//     borderColor: '#FF6B6B',
-//     shadowColor: '#FF6B6B',
+//     borderWidth: 2.5,
+//     borderColor: '#C7C7CC',
+//     shadowOpacity: 0,
+//     elevation: 0,
+//   },
+//   storyRingMine: {
+//     borderWidth: 3,
+//     borderColor: '#FF3B30',
+//     shadowColor: '#FF3B30',
 //     shadowOffset: { width: 0, height: 0 },
 //     shadowOpacity: 0.3,
 //     shadowRadius: 4,
@@ -1939,16 +2019,14 @@
 //     shadowRadius: 4,
 //     elevation: 4,
 //   },
-//   // ==================== STORY IMAGE ====================
-//  storyImage: {
-//     width: 80, // Increased from 68
-//     height: 80, // Increased from 68
-//     borderRadius: 40, // Increased from 34
-//     borderWidth: 2.5, // Increased from 2
+//   storyImage: {
+//     width: 80,
+//     height: 80,
+//     borderRadius: 40,
+//     borderWidth: 2.5,
 //     borderColor: '#fff',
 //     backgroundColor: '#e0e0e0',
 //   },
-//   // ==================== ADD STATUS BADGE ====================
 //   addStatusBadge: {
 //     position: 'absolute',
 //     bottom: 2,
@@ -1965,14 +2043,13 @@
 //     elevation: 5,
 //   },
 //   addStatusBadgeInner: {
-//     width: 28, // Increased from 22
-//     height: 28, // Increased from 22
-//     borderRadius: 14, // Increased from 11
+//     width: 28,
+//     height: 28,
+//     borderRadius: 14,
 //     justifyContent: 'center',
 //     alignItems: 'center',
 //     backgroundColor: '#405DE6',
 //   },
-//   // ==================== STORY NAME ====================
 //   storyName: {
 //     fontSize: 12,
 //     color: colors.text,
@@ -1981,8 +2058,7 @@
 //     fontFamily: 'SourceSansPro-Regular',
 //     maxWidth: 80,
 //   },
-//   // ==================== LIVE BADGE ====================
-//  liveBadgeContainer: {
+//   liveBadgeContainer: {
 //     position: 'absolute',
 //     bottom: -2,
 //     alignSelf: 'center',
@@ -1990,9 +2066,9 @@
 //     alignItems: 'center',
 //     justifyContent: 'center',
 //     backgroundColor: '#FF3B30',
-//     paddingHorizontal: 10, // Increased from 6
-//     paddingVertical: 3, // Increased from 2
-//     borderRadius: 12, // Increased from 8
+//     paddingHorizontal: 10,
+//     paddingVertical: 3,
+//     borderRadius: 12,
 //     borderWidth: 2.5,
 //     borderColor: '#fff',
 //     shadowColor: '#FF3B30',
@@ -2003,9 +2079,9 @@
 //     zIndex: 10,
 //   },
 //   liveBadgePulse: {
-//     width: 7, // Increased from 5
-//     height: 7, // Increased from 5
-//     borderRadius: 3.5, // Increased from 2.5
+//     width: 7,
+//     height: 7,
+//     borderRadius: 3.5,
 //     backgroundColor: '#fff',
 //     marginRight: 4,
 //   },
@@ -2018,8 +2094,8 @@
 //   },
 //   liveGlowRing: {
 //     position: 'absolute',
-//     width: 96, // Increased from 82
-//     height: 96, //
+//     width: 96,
+//     height: 96,
 //     borderRadius: 41,
 //     borderWidth: 2,
 //     borderColor: '#FF3B30',
@@ -2041,7 +2117,6 @@
 //     fontSize: 14,
 //     textAlign: 'center',
 //   },
-//   // ==================== ADD STATUS HEADER ====================
 //   addStatusHeaderContainer: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
@@ -2127,7 +2202,6 @@
 //   postButtonTextDisabled: {
 //     color: colors.textTertiary,
 //   },
-//   // ==================== STATUS VIEWER STYLES ====================
 //   imageModal: {
 //     flex: 1,
 //     backgroundColor: '#000',
@@ -2154,24 +2228,16 @@
 //     right: 0,
 //     bottom: 0,
 //   },
-//   // statusViewerHeader: {
-//   //   flexDirection: 'row',
-//   //   alignItems: 'center',
-//   //   paddingHorizontal: 16,
-//   //   paddingTop: Platform.OS === 'ios' ? 60 : 40,
-//   //   backgroundColor: 'rgba(0,0,0,0.3)',
-//   //   paddingBottom: 10,
-//   // },
 //   statusViewerHeader: {
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   paddingHorizontal: 16,
-//   paddingTop: Platform.OS === 'ios' ? 60 : 40,
-//   backgroundColor: 'rgba(0,0,0,0.3)',
-//   paddingBottom: 10,
-//   zIndex: 200,
-//   elevation: 200,
-// },
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     paddingHorizontal: 16,
+//     paddingTop: Platform.OS === 'ios' ? 60 : 40,
+//     backgroundColor: 'rgba(0,0,0,0.3)',
+//     paddingBottom: 10,
+//     zIndex: 200,
+//     elevation: 200,
+//   },
 //   statusViewerAvatar: {
 //     width: 40,
 //     height: 40,
@@ -2198,20 +2264,14 @@
 //     fontFamily: 'SourceSansPro-Regular',
 //     marginTop: 2,
 //   },
-//   // headerButton: {
-//   //   padding: 8,
-//   //   marginLeft: 8,
-//   //   flexDirection: 'row',
-//   //   alignItems: 'center',
-//   // },
 //   headerButton: {
-//   padding: 8,
-//   marginLeft: 8,
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   zIndex: 201,
-//   elevation: 201,
-// },
+//     padding: 8,
+//     marginLeft: 8,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     zIndex: 201,
+//     elevation: 201,
+//   },
 //   captionContainer: {
 //     position: 'absolute',
 //     top: '20%',
@@ -2268,26 +2328,17 @@
 //   rightArrow: {
 //     right: 10,
 //   },
-//   // bottomActionsContainer: {
-//   //   position: 'absolute',
-//   //   bottom: 90,
-//   //   alignSelf: 'center',
-//   //   flexDirection: 'row',
-//   //   alignItems: 'center',
-//   //   justifyContent: 'center',
-//   //   gap: 12,
-//   // },
 //   bottomActionsContainer: {
-//   position: 'absolute',
-//   bottom: 90,
-//   alignSelf: 'center',
-//   flexDirection: 'row',
-//   alignItems: 'center',
-//   justifyContent: 'center',
-//   gap: 12,
-//   zIndex: 200,
-//   elevation: 200,
-// },
+//     position: 'absolute',
+//     bottom: 90,
+//     alignSelf: 'center',
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     gap: 12,
+//     zIndex: 200,
+//     elevation: 200,
+//   },
 //   viewersButton: {
 //     backgroundColor: 'rgba(255,255,255,0.2)',
 //     paddingHorizontal: 18,
@@ -2356,7 +2407,6 @@
 //   rightTapArea: {
 //     right: 0,
 //   },
-//   // ==================== DELETE MODAL ====================
 //   deleteModalOverlay: {
 //     flex: 1,
 //     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -2435,7 +2485,6 @@
 //     fontSize: 16,
 //     fontWeight: '600',
 //   },
-//   // ==================== VIEWERS MODAL ====================
 //   modalContainer: {
 //     flex: 1,
 //     backgroundColor: colors.background,
@@ -2493,7 +2542,6 @@
 //     color: colors.textSecondary,
 //     textAlign: 'center',
 //   },
-//   // ==================== REACTION MODAL ====================
 //   reactionsModalOverlay: {
 //     flex: 1,
 //     backgroundColor: colors.overlay,
@@ -2548,7 +2596,6 @@
 //     fontSize: 12,
 //     color: colors.textTertiary,
 //   },
-//   // ==================== COMMENTS MODAL ====================
 //   commentsModalContainer: {
 //     flex: 1,
 //     backgroundColor: colors.background,
@@ -2601,7 +2648,6 @@
 //     color: colors.textTertiary,
 //     marginTop: 4,
 //   },
-//   // ==================== REPLY MODAL ====================
 //   replyModalOverlay: {
 //     flex: 1,
 //     justifyContent: 'flex-end',
@@ -2715,7 +2761,6 @@
 //     fontSize: 16,
 //     fontWeight: '600',
 //   },
-//   // ==================== SNACKBAR ====================
 //   snackbarContainer: {
 //     position: 'absolute',
 //     top: Platform.OS === 'ios' ? 60 : 40,
@@ -2758,7 +2803,6 @@
 // });
 
 // export default StatusSection;
-
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -2805,15 +2849,14 @@ const STATUS_STORAGE_KEY = '@status_data';
 const CACHE_TIMESTAMP_KEY = '@cache_timestamp';
 const CACHE_EXPIRY_HOURS = 24;
 const LIVE_STREAMS_KEY = '@live_streams';
+const VIEWED_STATUSES_KEY = '@viewed_statuses'; // New key to store viewed statuses
 
 // ==================== ID NORMALIZATION HELPER ====================
-// Ensures user-id comparisons work regardless of whether an id shows up
-// as a number, a string, or an object like { id } / { user_id } / { _id }.
 const normalizeId = (value) => {
   if (value === null || value === undefined) return null;
   if (typeof value === 'object') {
     const inner = value.id ?? value.user_id ?? value._id ?? value.phone ?? value;
-    if (inner === value) return null; // avoid infinite loop on weird objects
+    if (inner === value) return null;
     return normalizeId(inner);
   }
   return String(value);
@@ -2864,6 +2907,9 @@ const StatusSection = ({
   const [replyMessage, setReplyMessage] = useState('');
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [loadingViewers, setLoadingViewers] = useState(false);
+  
+  // Store viewed statuses locally to persist across refreshes
+  const [viewedStatusIds, setViewedStatusIds] = useState(new Set());
 
   // Animation for live pulse
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -2879,42 +2925,105 @@ const StatusSection = ({
 
   const styles = createStyles(colors, isDark, insets_safe, customStyles);
 
-  // Mark status as viewed when displayed in the modal
-  useEffect(() => {
-    if (modalVisible && selectedUserStatuses[currentStatusIndex]) {
-      const status = selectedUserStatuses[currentStatusIndex];
-      const isMyStatus =
-        normalizeId(status.user) === normalizeId(currentUserPhone) ||
-        normalizeId(status.user?.phone) === normalizeId(currentUserPhone) ||
-        normalizeId(status.user) === normalizeId(currentUserId) ||
-        normalizeId(status.user?.id) === normalizeId(currentUserId);
-
-      if (!isMyStatus && status.id) {
-        trackStatusView(status.id);
-        markGroupAsViewed(status.user);
-      }
+  // ==================== VIEWED STATUSES PERSISTENCE ====================
+  const saveViewedStatuses = (statusIds) => {
+    try {
+      const data = Array.from(statusIds);
+      mmkv.set(VIEWED_STATUSES_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error('Error saving viewed statuses:', error);
     }
-  }, [modalVisible, currentStatusIndex, selectedUserStatuses]);
+  };
 
-  // Optimistically mark a user's status group as viewed by the current user.
-  // This is what drives the WhatsApp-style reorder: blue ring + front of the
-  // row while unseen, gray ring + end of the row once seen.
-  const markGroupAsViewed = (statusUser) => {
-    const statusUserId = normalizeId(statusUser);
-    if (!statusUserId || !currentUserId) return;
+  const loadViewedStatuses = () => {
+    try {
+      const data = mmkv.getString(VIEWED_STATUSES_KEY);
+      if (data) {
+        const parsed = JSON.parse(data);
+        return new Set(parsed);
+      }
+    } catch (error) {
+      console.error('Error loading viewed statuses:', error);
+    }
+    return new Set();
+  };
 
+  // Determines whether a given status/story "user" reference belongs to the logged-in user
+  const isMyStatusGroup = (user) => {
+    return (
+      normalizeId(user?.phone) === normalizeId(currentUserPhone) ||
+      normalizeId(user) === normalizeId(currentUserPhone) ||
+      normalizeId(user?.id) === normalizeId(currentUserId) ||
+      normalizeId(user) === normalizeId(currentUserId)
+    );
+  };
+
+  // ==================== UPDATED: Mark specific status as viewed ====================
+  const markStatusAsViewed = (statusUserId, statusId) => {
+    if (!statusUserId || !currentUserId || !statusId) return;
+
+    // Store viewed status with both user and status ID
+    const viewedKey = `${statusUserId}_${statusId}`;
+    setViewedStatusIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(viewedKey);
+      saveViewedStatuses(newSet);
+      return newSet;
+    });
+
+    // Update the specific status in groupedStatuses
     setGroupedStatuses(prev =>
       prev.map(group => {
         const groupUserId = normalizeId(group.user);
         if (groupUserId !== statusUserId) return group;
 
-        const viewers = Array.isArray(group.viewers) ? group.viewers : [];
-        const alreadyViewed = viewers.some(v => normalizeId(v) === normalizeId(currentUserId));
-        if (alreadyViewed) return group;
+        // Update the specific status
+        const updatedStatuses = group.statuses.map(status => {
+          if (status.id !== statusId) return status;
+          
+          const viewers = Array.isArray(status.viewers) ? status.viewers : [];
+          const alreadyViewed = viewers.some(v => normalizeId(v) === normalizeId(currentUserId));
+          if (alreadyViewed) return status;
 
-        return { ...group, viewers: [...viewers, currentUserId] };
+          return {
+            ...status,
+            viewers: [...viewers, currentUserId],
+            viewers_count: (status.viewers_count || 0) + 1
+          };
+        });
+
+        return { ...group, statuses: updatedStatuses };
       })
     );
+  };
+
+  // ==================== UPDATED: Mark all statuses in a group as viewed ====================
+  const markGroupAsViewed = (statusUser) => {
+    const statusUserId = normalizeId(statusUser);
+    if (!statusUserId || !currentUserId) return;
+
+    // Find the group
+    const group = groupedStatuses.find(g => normalizeId(g.user) === statusUserId);
+    if (!group || !group.statuses) return;
+
+    // Mark each status as viewed
+    group.statuses.forEach(status => {
+      markStatusAsViewed(statusUserId, status.id);
+    });
+  };
+
+  // ==================== UPDATED: Check if specific status is viewed ====================
+  const isStatusViewed = (statusUserId, statusId) => {
+    if (!statusUserId || !statusId) return false;
+    const viewedKey = `${statusUserId}_${statusId}`;
+    return viewedStatusIds.has(viewedKey);
+  };
+
+  // ==================== UPDATED: Check if group has any unviewed statuses ====================
+  const isGroupFullyViewed = (group) => {
+    if (!group || !group.statuses) return false;
+    const statusUserId = normalizeId(group.user);
+    return group.statuses.every(status => isStatusViewed(statusUserId, status.id));
   };
 
   // Pulse animation for live badge
@@ -3062,6 +3171,7 @@ const StatusSection = ({
     }
   };
 
+  // ==================== UPDATED: groupStatusesByUser with per-status viewers ====================
   const groupStatusesByUser = (statuses) => {
     const grouped = {};
     statuses.forEach((status) => {
@@ -3071,13 +3181,19 @@ const StatusSection = ({
           user: status.user || { id: status.user, phone: status.user, name: `User ${status.user}` },
           statuses: [],
           latestTime: new Date(status.created_at),
+          // Keep these for backward compatibility
           viewers_count: status.viewers_count,
           viewers: Array.isArray(status.viewers) ? status.viewers : [],
           status_type: status.status_type,
           reactions: status.reactions || [],
         };
       }
-      grouped[userKey].statuses.push(status);
+      // Store viewers per status
+      grouped[userKey].statuses.push({
+        ...status,
+        viewers_count: status.viewers_count || 0,
+        viewers: Array.isArray(status.viewers) ? status.viewers : [],
+      });
       const currentTime = new Date(status.created_at);
       if (currentTime > grouped[userKey].latestTime) {
         grouped[userKey].latestTime = currentTime;
@@ -3231,249 +3347,242 @@ const StatusSection = ({
 
   const QUICK_REACTIONS = ['❤️', '👍', '😂', '😮', '😢'];
 
-const sendChatMessage = async (content) => {
-  if (!currentReplyStatus) {
-    showSnackbar('Status not found', 'error');
-    return { ok: false };
-  }
-
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    if (!token) {
-      showSnackbar('Please login to reply', 'error');
+  const sendChatMessage = async (content) => {
+    if (!currentReplyStatus) {
+      showSnackbar('Status not found', 'error');
       return { ok: false };
     }
 
-    let receiverId = null;
-    if (currentReplyStatus.user) {
-      if (typeof currentReplyStatus.user === 'object') {
-        receiverId = currentReplyStatus.user.id || currentReplyStatus.user.user_id;
-      } else {
-        receiverId = currentReplyStatus.user;
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        showSnackbar('Please login to reply', 'error');
+        return { ok: false };
       }
-    }
-    if (!receiverId) {
-      receiverId = currentReplyStatus.user_id || currentReplyStatus.userId;
-    }
-    if (!receiverId) {
-      showSnackbar('User not found', 'error');
-      return { ok: false };
-    }
 
-    const statusOwner = currentReplyStatus.user?.name ||
-                        currentReplyStatus.user?.username ||
-                        currentReplyStatus.username ||
-                        'User';
-
-    const statusImageUrl = getImageUrl(currentReplyStatus.media || currentReplyStatus.image);
-
-    // Send to both personal and business modes
-    const modes = ['personal', 'business'];
-    let successCount = 0;
-    let failedCount = 0;
-    let lastError = null;
-
-    for (const mode of modes) {
-      try {
-        const formData = new FormData();
-
-        let messageContent = content;
-        messageContent += `\n\n📸 Status Reply to ${statusOwner}`;
-        if (currentReplyStatus.text) {
-          messageContent += `\n📝 Status: "${currentReplyStatus.text.substring(0, 100)}"`;
-        }
-        formData.append('content', messageContent);
-
-        if (statusImageUrl) {
-          try {
-            const fileName = statusImageUrl.split('/').pop() || 'status_image.jpg';
-            formData.append('image', {
-              uri: statusImageUrl,
-              type: 'image/jpeg',
-              name: fileName,
-            });
-          } catch (imageError) {
-            console.error('Error attaching image:', imageError);
-          }
-        }
-
-        formData.append('chat_type', 'single');
-        formData.append('account_mode', mode);
-        formData.append('receiver', receiverId.toString());
-
-        console.log(`📤 Sending to ${mode} mode...`);
-
-        const response = await axios.post(
-          `${API_ROUTE}/api/chat/`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data',
-            },
-            timeout: 30000,
-          }
-        );
-
-        const ok = response.status === 200 || response.status === 201;
-        if (ok) {
-          successCount++;
-          console.log(`✅ ${mode} mode sent successfully`);
+      let receiverId = null;
+      if (currentReplyStatus.user) {
+        if (typeof currentReplyStatus.user === 'object') {
+          receiverId = currentReplyStatus.user.id || currentReplyStatus.user.user_id;
         } else {
-          failedCount++;
-          console.log(`❌ ${mode} mode failed`);
+          receiverId = currentReplyStatus.user;
         }
-      } catch (error) {
-        failedCount++;
-        lastError = error;
-        console.error(`❌ Error sending to ${mode} mode:`, {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
       }
-    }
+      if (!receiverId) {
+        receiverId = currentReplyStatus.user_id || currentReplyStatus.userId;
+      }
+      if (!receiverId) {
+        showSnackbar('User not found', 'error');
+        return { ok: false };
+      }
 
-    console.log(`📊 Summary: ${successCount} successful, ${failedCount} failed`);
+      const statusOwner = currentReplyStatus.user?.name ||
+                          currentReplyStatus.user?.username ||
+                          currentReplyStatus.username ||
+                          'User';
 
-    // Return success if at least one mode succeeded
-    if (successCount > 0) {
-      return { ok: true, receiverId, statusOwner, successCount, failedCount };
-    } else {
-      // All failed
+      const statusImageUrl = getImageUrl(currentReplyStatus.media || currentReplyStatus.image);
+
+      // Send to both personal and business modes
+      const modes = ['personal', 'business'];
+      let successCount = 0;
+      let failedCount = 0;
+      let lastError = null;
+
+      for (const mode of modes) {
+        try {
+          const formData = new FormData();
+
+          let messageContent = content;
+          messageContent += `\n\n📸 Status Reply to ${statusOwner}`;
+          if (currentReplyStatus.text) {
+            messageContent += `\n📝 Status: "${currentReplyStatus.text.substring(0, 100)}"`;
+          }
+          formData.append('content', messageContent);
+
+          if (statusImageUrl) {
+            try {
+              const fileName = statusImageUrl.split('/').pop() || 'status_image.jpg';
+              formData.append('image', {
+                uri: statusImageUrl,
+                type: 'image/jpeg',
+                name: fileName,
+              });
+            } catch (imageError) {
+              console.error('Error attaching image:', imageError);
+            }
+          }
+
+          formData.append('chat_type', 'single');
+          formData.append('account_mode', mode);
+          formData.append('receiver', receiverId.toString());
+
+          console.log(`📤 Sending to ${mode} mode...`);
+
+          const response = await axios.post(
+            `${API_ROUTE}/api/chat/`,
+            formData,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data',
+              },
+              timeout: 30000,
+            }
+          );
+
+          const ok = response.status === 200 || response.status === 201;
+          if (ok) {
+            successCount++;
+            console.log(`✅ ${mode} mode sent successfully`);
+          } else {
+            failedCount++;
+            console.log(`❌ ${mode} mode failed`);
+          }
+        } catch (error) {
+          failedCount++;
+          lastError = error;
+          console.error(`❌ Error sending to ${mode} mode:`, {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+          });
+        }
+      }
+
+      console.log(`📊 Summary: ${successCount} successful, ${failedCount} failed`);
+
+      if (successCount > 0) {
+        return { ok: true, receiverId, statusOwner, successCount, failedCount };
+      } else {
+        let errorMessage = 'Failed to send message';
+        if (lastError?.response?.status === 401) {
+          errorMessage = 'Session expired. Please login again.';
+        } else if (lastError?.response?.status === 400) {
+          errorMessage = lastError?.response?.data?.error || 'Invalid request';
+        } else if (lastError?.response?.data?.detail) {
+          errorMessage = lastError.response.data.detail;
+        } else if (lastError?.message?.includes('Network Error')) {
+          errorMessage = 'Network error. Please check your connection.';
+        }
+
+        showSnackbar(errorMessage, 'error');
+        return { ok: false };
+      }
+    } catch (error) {
+      console.error('❌ Error sending chat message:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+
       let errorMessage = 'Failed to send message';
-      if (lastError?.response?.status === 401) {
+      if (error.response?.status === 401) {
         errorMessage = 'Session expired. Please login again.';
-      } else if (lastError?.response?.status === 400) {
-        errorMessage = lastError?.response?.data?.error || 'Invalid request';
-      } else if (lastError?.response?.data?.detail) {
-        errorMessage = lastError.response.data.detail;
-      } else if (lastError?.message?.includes('Network Error')) {
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response?.data?.error || 'Invalid request';
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message?.includes('Network Error')) {
         errorMessage = 'Network error. Please check your connection.';
       }
 
       showSnackbar(errorMessage, 'error');
       return { ok: false };
     }
-  } catch (error) {
-    console.error('❌ Error sending chat message:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
-    });
+  };
 
-    let errorMessage = 'Failed to send message';
-    if (error.response?.status === 401) {
-      errorMessage = 'Session expired. Please login again.';
-    } else if (error.response?.status === 400) {
-      errorMessage = error.response?.data?.error || 'Invalid request';
-    } else if (error.response?.data?.detail) {
-      errorMessage = error.response.data.detail;
-    } else if (error.message?.includes('Network Error')) {
-      errorMessage = 'Network error. Please check your connection.';
+  const sendStatusReply = async () => {
+    if (!replyMessage.trim()) {
+      showSnackbar('Please enter a message', 'error');
+      return;
+    }
+    if (!currentReplyStatus) {
+      showSnackbar('Status not found', 'error');
+      return;
     }
 
-    showSnackbar(errorMessage, 'error');
-    return { ok: false };
-  }
-};
+    setSendingReply(true);
+    const result = await sendChatMessage(replyMessage.trim());
+    setSendingReply(false);
 
-const sendStatusReply = async () => {
-  if (!replyMessage.trim()) {
-    showSnackbar('Please enter a message', 'error');
-    return;
-  }
-  if (!currentReplyStatus) {
-    showSnackbar('Status not found', 'error');
-    return;
-  }
+    if (result.ok) {
+      if (result.successCount === 2) {
+        showSnackbar('✅ Reply sent to both Personal & Business!', 'success');
+      } else if (result.successCount === 1) {
+        showSnackbar(`⚠️ Sent to ${result.successCount} of 2 modes`, 'info');
+      } else {
+        showSnackbar('✅ Reply sent successfully!', 'success');
+      }
+      
+      const ownerForNav = result.statusOwner;
+      const receiverForNav = result.receiverId;
+      const profileImageForNav = currentReplyStatus?.user?.profile_picture || '';
 
-  setSendingReply(true);
-  const result = await sendChatMessage(replyMessage.trim());
-  setSendingReply(false);
+      setReplyMessage('');
+      setShowReplyModal(false);
+      setCurrentReplyStatus(null);
 
-  if (result.ok) {
-    // Show success message with mode counts
-    if (result.successCount === 2) {
-      showSnackbar('✅ Reply sent to both Personal & Business!', 'success');
-    } else if (result.successCount === 1) {
-      showSnackbar(`⚠️ Sent to ${result.successCount} of 2 modes`, 'info');
-    } else {
-      showSnackbar('✅ Reply sent successfully!', 'success');
-    }
-    
-    const ownerForNav = result.statusOwner;
-    const receiverForNav = result.receiverId;
-    const profileImageForNav = currentReplyStatus?.user?.profile_picture || '';
-
-    setReplyMessage('');
-    setShowReplyModal(false);
-    setCurrentReplyStatus(null);
-
-    Alert.alert(
-      'Message Sent!',
-      `Your reply has been sent to ${ownerForNav} in ${result.successCount} of 2 modes.`,
-      [
-        { text: 'Continue', style: 'cancel' },
-        {
-          text: 'Okay',
-          onPress: () => {
-            setModalVisible(false);
-            // navigation.navigate('PrivateChat', {
-            //   chatType: 'single',
-            //   receiverId: receiverForNav,
-            //   name: ownerForNav,
-            //   profile_image: profileImageForNav,
-            // });
+      Alert.alert(
+        'Message Sent!',
+        `Your reply has been sent to ${ownerForNav} in ${result.successCount} of 2 modes.`,
+        [
+          { text: 'Continue', style: 'cancel' },
+          {
+            text: 'Okay',
+            onPress: () => {
+              setModalVisible(false);
+            }
           }
-        }
-      ]
-    );
-
-    await fetchStatus();
-  }
-};
-const sendQuickReaction = async (emoji) => {
-  if (!currentReplyStatus || sendingReply) return;
-
-  setSendingReply(true);
-  const result = await sendChatMessage(emoji);
-  setSendingReply(false);
-
-  if (result.ok) {
-    setReplyMessage('');
-    setShowReplyModal(false);
-    setCurrentReplyStatus(null);
-    
-    if (result.successCount === 2) {
-      Alert.alert(
-        'Reaction sent!',
-        `${emoji} sent successfully!`,
-        [{ text: 'OK' }]
+        ]
       );
-    } else if (result.successCount === 1) {
-      Alert.alert(
-        'Partial Success',
-        `${emoji} sent to ${result.successCount} of 2 modes. One mode failed.`,
-        [{ text: 'OK' }]
-      );
+
+      await fetchStatus();
+    }
+  };
+
+  const sendQuickReaction = async (emoji) => {
+    if (!currentReplyStatus || sendingReply) return;
+
+    setSendingReply(true);
+    const result = await sendChatMessage(emoji);
+    setSendingReply(false);
+
+    if (result.ok) {
+      setReplyMessage('');
+      setShowReplyModal(false);
+      setCurrentReplyStatus(null);
+      
+      if (result.successCount === 2) {
+        Alert.alert(
+          'Reaction sent!',
+          `${emoji} sent successfully!`,
+          [{ text: 'OK' }]
+        );
+      } else if (result.successCount === 1) {
+        Alert.alert(
+          'Partial Success',
+          `${emoji} sent to ${result.successCount} of 2 modes. One mode failed.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Success!',
+          `${emoji} sent successfully!`,
+          [{ text: 'OK' }]
+        );
+      }
+      
+      await fetchStatus();
     } else {
       Alert.alert(
-        'Success!',
-        `${emoji} sent successfully!`,
+        'Error',
+        'Failed to send reaction. Please try again.',
         [{ text: 'OK' }]
       );
     }
-    
-    await fetchStatus();
-  } else {
-    Alert.alert(
-      'Error',
-      'Failed to send reaction. Please try again.',
-      [{ text: 'OK' }]
-    );
-  }
-};
+  };
+
   const addReaction = async (statusId, reactionType) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
@@ -3501,13 +3610,13 @@ const sendQuickReaction = async (emoji) => {
         }))
       );
       
-     Alert.alert(
+      Alert.alert(
         'Reaction Added',
         `You reacted with ${reactionType}`, 
         [
             { text: 'OK', onPress: () => console.log('OK Pressed') }
         ]
-        );
+      );
       setReactionModalVisible(false);
     } catch (error) {
       console.error('Error adding reaction:', error);
@@ -3571,19 +3680,34 @@ const sendQuickReaction = async (emoji) => {
     }
   };
 
+  // ==================== UPDATED: openImageModal with per-status viewing ====================
   const openImageModal = (userStatuses) => {
+    const isMyStatus = isMyStatusGroup(userStatuses.user);
+    
+    // Mark ALL statuses in this user's group as viewed (if not my own)
+    if (!isMyStatus && userStatuses.statuses) {
+      userStatuses.statuses.forEach(status => {
+        markStatusAsViewed(normalizeId(userStatuses.user), status.id);
+      });
+    }
+    
     setSelectedUserStatuses(userStatuses.statuses);
     setCurrentStatusIndex(0);
     setModalVisible(true);
-
-    // Optimistically mark this group as viewed right away so the ring
-    // color / row order updates the instant the user taps, instead of
-    // waiting on the view-tracking effect / network call.
-    const isMyStatus =
-      normalizeId(userStatuses.user) === normalizeId(currentUserPhone) ||
-      normalizeId(userStatuses.user) === normalizeId(currentUserId);
+    
+    // Move this group to the end of the list if not my own
     if (!isMyStatus) {
-      markGroupAsViewed(userStatuses.user);
+      setGroupedStatuses(prev => {
+        const updated = [...prev];
+        const groupIndex = updated.findIndex(g => 
+          normalizeId(g.user) === normalizeId(userStatuses.user)
+        );
+        if (groupIndex > -1) {
+          const [movedGroup] = updated.splice(groupIndex, 1);
+          updated.push(movedGroup);
+        }
+        return updated;
+      });
     }
 
     if (onStatusPress) {
@@ -3652,7 +3776,29 @@ const sendQuickReaction = async (emoji) => {
       }
       
       const statuses = await fetchStatus();
-      setGroupedStatuses(statuses);
+      
+      // Apply viewed statuses from persistent storage
+      const viewedSet = loadViewedStatuses();
+      setViewedStatusIds(viewedSet);
+      
+      // Update viewers array based on viewed statuses
+      const updatedStatuses = statuses.map(group => {
+        const groupUserId = normalizeId(group.user);
+        const updatedStatuses = group.statuses.map(status => {
+          const viewedKey = `${groupUserId}_${status.id}`;
+          if (viewedSet.has(viewedKey)) {
+            const viewers = Array.isArray(status.viewers) ? status.viewers : [];
+            const alreadyViewed = viewers.some(v => normalizeId(v) === normalizeId(currentUserId));
+            if (!alreadyViewed && currentUserId) {
+              return { ...status, viewers: [...viewers, currentUserId], viewers_count: (status.viewers_count || 0) + 1 };
+            }
+          }
+          return status;
+        });
+        return { ...group, statuses: updatedStatuses };
+      });
+      
+      setGroupedStatuses(updatedStatuses);
       
       if (statuses && statuses.length > 0) {
         preloadAllStatusImages(statuses);
@@ -3678,9 +3824,31 @@ const sendQuickReaction = async (emoji) => {
       }
       
       const statuses = await fetchStatus();
+      
+      // Apply viewed statuses from persistent storage
+      const viewedSet = loadViewedStatuses();
+      setViewedStatusIds(viewedSet);
+      
+      // Update viewers array based on viewed statuses
+      const updatedStatuses = statuses.map(group => {
+        const groupUserId = normalizeId(group.user);
+        const updatedStatuses = group.statuses.map(status => {
+          const viewedKey = `${groupUserId}_${status.id}`;
+          if (viewedSet.has(viewedKey)) {
+            const viewers = Array.isArray(status.viewers) ? status.viewers : [];
+            const alreadyViewed = viewers.some(v => normalizeId(v) === normalizeId(currentUserId));
+            if (!alreadyViewed && currentUserId) {
+              return { ...status, viewers: [...viewers, currentUserId], viewers_count: (status.viewers_count || 0) + 1 };
+            }
+          }
+          return status;
+        });
+        return { ...group, statuses: updatedStatuses };
+      });
+      
       setGroupedStatuses((prev) => {
-        if (JSON.stringify(prev) !== JSON.stringify(statuses)) {
-          return statuses;
+        if (JSON.stringify(prev) !== JSON.stringify(updatedStatuses)) {
+          return updatedStatuses;
         }
         return prev;
       });
@@ -3698,6 +3866,10 @@ const sendQuickReaction = async (emoji) => {
 
   useEffect(() => {
     if (isFocused) {
+      // Load viewed statuses from persistent storage on mount
+      const viewedSet = loadViewedStatuses();
+      setViewedStatusIds(viewedSet);
+      
       (async () => {
         const hasCache = await loadCachedDataMMKV();
         if (!hasCache) {
@@ -3743,21 +3915,26 @@ const sendQuickReaction = async (emoji) => {
     }
   };
 
+  // ==================== UPDATED: handleViewersPress for specific status ====================
   const handleViewersPress = async (item) => {
     if (loadingViewers) return;
     
     try {
       setLoadingViewers(true);
-      console.log('👁️ Viewers data:', item.viewers);
+      
+      // Use the current status's viewers
+      const viewers = Array.isArray(item.viewers) ? item.viewers : [];
+      
+      console.log('👁️ Viewers for status:', item.id, viewers);
       console.log('👁️ Viewers count:', item.viewers_count);
       
-      if (!item.viewers || item.viewers.length === 0) {
+      if (!viewers || viewers.length === 0) {
         Alert.alert('No Viewers', 'No one has viewed this status yet.');
         setLoadingViewers(false);
         return;
       }
       
-      const viewerPromises = item.viewers.map(async (viewerId) => {
+      const viewerPromises = viewers.map(async (viewerId) => {
         const userData = await fetchUserDetails(viewerId);
         return {
           ...userData,
@@ -3791,11 +3968,11 @@ const sendQuickReaction = async (emoji) => {
           style={styles.viewerAvatar}
         />
         <View style={styles.viewerInfo}>
-          <Text style={[styles.viewerName, { color: '#000' }]}>
+          <Text style={[styles.viewerName, {}]}>
             {userData.name || userData.username || userData.phone || 'Unknown User'}
           </Text>
           {item.viewed_at && (
-            <Text style={[styles.viewerTime, { color: '#000' }]}>
+            <Text style={[styles.viewerTime, {  }]}>
               Seen {formatTime(item.viewed_at)}
             </Text>
           )}
@@ -3804,43 +3981,58 @@ const sendQuickReaction = async (emoji) => {
     );
   };
 
-  // Instagram/WhatsApp-style story circle with border
+  // ==================== UPDATED: renderStoryCircle with per-status viewing ====================
   const renderStoryCircle = (userStatus, isLive = false) => {
-    const isMyStatus =
-      normalizeId(userStatus.user?.phone) === normalizeId(currentUserPhone) ||
-      normalizeId(userStatus.user) === normalizeId(currentUserPhone) ||
-      normalizeId(userStatus.user?.id) === normalizeId(currentUserId) ||
-      normalizeId(userStatus.user) === normalizeId(currentUserId);
+    const isMyStatus = isMyStatusGroup(userStatus.user);
 
     const imageUrl = getImageUrl(userStatus.statuses?.[0]?.media || userStatus.image || userStatus.broadcaster_image);
     const name = isMyStatus ? 'My Story' : (userStatus.user?.name || userStatus.broadcaster_name || userStatus.user || 'User');
 
-    // Normalize viewers so number/string/object id mismatches don't break the check
-    const viewerIds = Array.isArray(userStatus.viewers)
-      ? userStatus.viewers.map(v => normalizeId(v))
-      : [];
+    // Check if all statuses in this group are viewed
+    const isFullyViewed = !isLive && !isMyStatus && isGroupFullyViewed(userStatus);
 
-    const isViewed =
-      !isMyStatus &&
-      !isLive &&
-      currentUserId != null &&
-      viewerIds.includes(normalizeId(currentUserId));
-
-    // Default to "unseen" (blue) unless we can positively confirm it was viewed
-    const hasUnseen = !isMyStatus && !isLive && !isViewed;
+    // Ring color logic:
+    // - Live: Red (pulsing)
+    // - My Story: Red
+    // - Fully Viewed by me: Gray
+    // - Unviewed (default): Blue
+    const ringColorStyle = isLive
+      ? styles.storyRingLive
+      : isMyStatus
+      ? styles.storyRingMine
+      : isFullyViewed
+      ? styles.storyRingViewed
+      : styles.storyRingUnseen;
 
     return (
       <TouchableOpacity 
         style={styles.storyWrapper} 
-        onPress={() => isLive ? handleLivePress(userStatus) : openImageModal(userStatus)}
+        onPress={() => {
+          // If not my status and not live, mark all as viewed and move to end
+          if (!isMyStatus && !isLive) {
+            markGroupAsViewed(userStatus.user);
+            
+            // Move this group to the end of the list
+            setGroupedStatuses(prev => {
+              const updated = [...prev];
+              const groupIndex = updated.findIndex(g => 
+                normalizeId(g.user) === normalizeId(userStatus.user)
+              );
+              if (groupIndex > -1) {
+                const [movedGroup] = updated.splice(groupIndex, 1);
+                updated.push(movedGroup);
+              }
+              return updated;
+            });
+          }
+          isLive ? handleLivePress(userStatus) : openImageModal(userStatus);
+        }}
         activeOpacity={0.8}
       >
         <View style={styles.storyContainer}>
           <View style={[
             styles.storyRing,
-            isLive ? styles.storyRingLive : styles.storyRingStatus,
-            hasUnseen && styles.storyRingUnseen,
-            isViewed && styles.storyRingViewed,
+            ringColorStyle,
           ]}>
             <Image
               source={
@@ -3948,7 +4140,7 @@ const sendQuickReaction = async (emoji) => {
     return renderStoryCircle(liveData, true);
   };
 
-  // ==================== renderStatusItem with Close Button ====================
+  // ==================== UPDATED: renderStatusItem with per-status viewers ====================
   const renderStatusItem = ({ item, index }) => {
     const isMyStatus = item.user?.phone === currentUserPhone || item.user === currentUserPhone;
     
@@ -4000,7 +4192,7 @@ const sendQuickReaction = async (emoji) => {
               <Text style={styles.statusViewerTime}>{formatTime(item.created_at)}</Text>
             </View>
           
-            {/* ==================== CLOSE BUTTON ==================== */}
+            {/* Close Button */}
             <View style={styles.headerButton}>
               <TouchableOpacity 
                 onPress={() => {
@@ -4284,14 +4476,6 @@ const sendQuickReaction = async (emoji) => {
     (status) => status.user?.phone !== currentUserPhone && status.user !== currentUserPhone
   );
 
-  // A group counts as "viewed" once the current user's id appears in its
-  // viewers array (normalized so id-type mismatches don't break this).
-  const isGroupViewed = (group) => {
-    if (!Array.isArray(group.viewers) || currentUserId == null) return false;
-    const target = normalizeId(currentUserId);
-    return group.viewers.some(v => normalizeId(v) === target);
-  };
-
   const sortByTimeDesc = (a, b) => {
     const timeA = new Date(a.created_at || a.started_at);
     const timeB = new Date(b.created_at || b.started_at);
@@ -4300,18 +4484,18 @@ const sendQuickReaction = async (emoji) => {
 
   const liveItems = liveStreams.map(stream => ({ ...stream, type: 'live' })).sort(sortByTimeDesc);
 
+  // Get unviewed and viewed statuses using the persistent Set
   const unviewedStatuses = otherStatuses
-    .filter(status => !isGroupViewed(status))
+    .filter(status => !isGroupFullyViewed(status))
     .map(status => ({ ...status, type: 'status' }))
     .sort(sortByTimeDesc);
 
   const viewedStatuses = otherStatuses
-    .filter(status => isGroupViewed(status))
+    .filter(status => isGroupFullyViewed(status))
     .map(status => ({ ...status, type: 'status' }))
     .sort(sortByTimeDesc);
 
-  // Live first, then unviewed (blue ring, new) statuses, then already-viewed
-  // (gray ring) statuses pushed to the very end — same as WhatsApp.
+  // Combine: Live first, then unviewed (blue), then viewed (gray)
   const combinedUpdates = [...liveItems, ...unviewedStatuses, ...viewedStatuses];
 
   const displayUpdates = maxItems ? combinedUpdates.slice(0, maxItems) : combinedUpdates;
@@ -4373,19 +4557,11 @@ const sendQuickReaction = async (emoji) => {
           <Text style={[styles.sectionTitle, { fontWeight: '600', fontSize: 20 }]}>{title}</Text>
         )}
         
-        {/* ==================== HORIZONTAL SCROLL WITH MULTIPLE ITEMS ==================== */}
+        {/* Horizontal Scroll with Multiple Items */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.horizontalScrollContainer}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[colors.primary]}
-              tintColor={colors.primary}
-            />
-          }
         >
           {/* My Status */}
           {myStatus && (
@@ -4405,7 +4581,7 @@ const sendQuickReaction = async (emoji) => {
         </ScrollView>
       </View>
 
-      {/* ==================== STATUS VIEWER MODAL WITH CLOSE BUTTON ==================== */}
+      {/* Status Viewer Modal with Close Button */}
       <Modal 
         visible={modalVisible} 
         transparent={true} 
@@ -4536,7 +4712,7 @@ const sendQuickReaction = async (emoji) => {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
           <SafeAreaView style={{ flex: 1, marginTop: Platform.OS === 'ios' ? 0 : 20 }}>
-            {/* ==================== HEADER WITH CLOSE BUTTON ==================== */}
+            {/* Header with Close Button */}
             <View style={styles.addStatusHeaderContainer}>
               <TouchableOpacity 
                 onPress={() => {
@@ -4577,8 +4753,6 @@ const sendQuickReaction = async (emoji) => {
               />
               
               <View style={styles.addStatusButtonRow}>
-               
-                
                 <TouchableOpacity
                   onPress={handlePostStatus}
                   disabled={!image || postingStatus}
@@ -4637,7 +4811,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     marginLeft: 16,
     marginBottom: 10,
   },
-  // ==================== HORIZONTAL SCROLL WITH MULTIPLE ITEMS ====================
   horizontalScrollContainer: {
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -4649,7 +4822,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     alignItems: 'center',
     marginHorizontal: 3,
   },
-  // ==================== STORY WRAPPER ====================
   storyWrapper: {
     alignItems: 'center',
   },
@@ -4657,7 +4829,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     alignItems: 'center',
     width: 80,
   },
-  // ==================== STORY RING ====================
   storyRing: {
     width: 88,
     height: 88,
@@ -4668,15 +4839,15 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     position: 'relative',
   },
   storyRingViewed: {
-    borderWidth: 3,
-    borderColor: '#C7C7CC', // gray - matches WhatsApp's "seen" ring
+    borderWidth: 2.5,
+    borderColor: '#C7C7CC',
     shadowOpacity: 0,
     elevation: 0,
   },
-  storyRingStatus: {
+  storyRingMine: {
     borderWidth: 3,
-    borderColor: '#FF6B6B',
-    shadowColor: '#FF6B6B',
+    borderColor: '#FF3B30',
+    shadowColor: '#FF3B30',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -4693,15 +4864,14 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
   },
   storyRingUnseen: {
     borderWidth: 2.5,
-    borderColor: '#405DE6', // blue - matches WhatsApp's "unseen" ring
+    borderColor: '#405DE6',
     shadowColor: '#405DE6',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
   },
-  // ==================== STORY IMAGE ====================
- storyImage: {
+  storyImage: {
     width: 80,
     height: 80,
     borderRadius: 40,
@@ -4709,7 +4879,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     borderColor: '#fff',
     backgroundColor: '#e0e0e0',
   },
-  // ==================== ADD STATUS BADGE ====================
   addStatusBadge: {
     position: 'absolute',
     bottom: 2,
@@ -4733,7 +4902,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     alignItems: 'center',
     backgroundColor: '#405DE6',
   },
-  // ==================== STORY NAME ====================
   storyName: {
     fontSize: 12,
     color: colors.text,
@@ -4742,8 +4910,7 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     fontFamily: 'SourceSansPro-Regular',
     maxWidth: 80,
   },
-  // ==================== LIVE BADGE ====================
- liveBadgeContainer: {
+  liveBadgeContainer: {
     position: 'absolute',
     bottom: -2,
     alignSelf: 'center',
@@ -4802,7 +4969,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     fontSize: 14,
     textAlign: 'center',
   },
-  // ==================== ADD STATUS HEADER ====================
   addStatusHeaderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -4888,7 +5054,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
   postButtonTextDisabled: {
     color: colors.textTertiary,
   },
-  // ==================== STATUS VIEWER STYLES ====================
   imageModal: {
     flex: 1,
     backgroundColor: '#000',
@@ -5094,7 +5259,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
   rightTapArea: {
     right: 0,
   },
-  // ==================== DELETE MODAL ====================
   deleteModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -5173,7 +5337,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     fontSize: 16,
     fontWeight: '600',
   },
-  // ==================== VIEWERS MODAL ====================
   modalContainer: {
     flex: 1,
     backgroundColor: colors.background,
@@ -5217,7 +5380,7 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
   },
   viewerTime: {
     fontSize: 12,
-    color: colors.textSecondary,
+    color: colors.textTertiary,
     marginTop: 4,
   },
   emptyContainer: {
@@ -5231,7 +5394,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     color: colors.textSecondary,
     textAlign: 'center',
   },
-  // ==================== REACTION MODAL ====================
   reactionsModalOverlay: {
     flex: 1,
     backgroundColor: colors.overlay,
@@ -5286,7 +5448,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     fontSize: 12,
     color: colors.textTertiary,
   },
-  // ==================== COMMENTS MODAL ====================
   commentsModalContainer: {
     flex: 1,
     backgroundColor: colors.background,
@@ -5339,7 +5500,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     color: colors.textTertiary,
     marginTop: 4,
   },
-  // ==================== REPLY MODAL ====================
   replyModalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -5453,7 +5613,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
     fontSize: 16,
     fontWeight: '600',
   },
-  // ==================== SNACKBAR ====================
   snackbarContainer: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 60 : 40,
@@ -5496,3 +5655,6 @@ const createStyles = (colors, isDark, insets, customStyles = {}) => StyleSheet.c
 });
 
 export default StatusSection;
+
+
+

@@ -3257,6 +3257,2162 @@
 //   },
 // });
 
+//
+// WORKING WEBSOCKET ==================================================
+//
+
+
+// import React, { useEffect, useRef, useState, useCallback } from "react";
+// import {
+//   View,
+//   Text,
+//   StyleSheet,
+//   Alert,
+//   PermissionsAndroid,
+//   Platform,
+//   TouchableOpacity,
+//   Modal,
+//   StatusBar,
+//   ImageBackground,
+//   NativeModules,
+//   DeviceEventEmitter,
+//   PanResponder,
+//   Dimensions,
+// } from "react-native";
+// import {
+//   RTCPeerConnection,
+//   RTCIceCandidate,
+//   RTCSessionDescription,
+//   mediaDevices,
+//   RTCView,
+ 
+// } from "react-native-webrtc";
+// import { SafeAreaView } from "react-native-safe-area-context";
+// import { encode as btoa } from "base-64";
+// import LinearGradient from "react-native-linear-gradient";
+// import Icon from "react-native-vector-icons/MaterialIcons";
+// import { Image } from "react-native-animatable";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { API_ROUTE_IMAGE } from "../api_routing/api";
+// import InCallManager from "react-native-incall-manager";
+// import CallKeepService from '../src/services/CallKeepService';
+// import { useBackHandler } from '../src/hooks/useBackHandler';
+
+// const SIGNALING_SERVER = "wss://api.showapp.ng";
+
+// export default function VideoCallScreen({ navigation, route }) {
+//     useBackHandler(navigation, 'BroadcastHome');
+//   const {
+//     profile_image,
+//     name,
+//     incomingOffer,
+//     isIncomingCall,
+//     targetUserId,
+//     isInitiator,
+//     autoAnswerOnOffer,
+//   } = route.params || {};
+
+//   // ─── Refs ────────────────────────────────────────────────────
+//   const ws = useRef(null);
+//   const pc = useRef(null);
+//   const localStream = useRef(null);
+//   const remoteStream = useRef(null);
+//   const queuedRemoteCandidates = useRef([]);
+//   const rtcConfig = useRef({ iceServers: [] }).current;
+//   const isCallerRef = useRef(false);
+//   const currentCallIdRef = useRef(null);
+//   const callTimerRef = useRef(null);
+//   const hasInitialOfferRef = useRef(false);
+//   const isCleaningUpRef = useRef(false);
+//   const isCallActiveRef = useRef(true);
+//   const autoAnswerOnOfferRef = useRef(autoAnswerOnOffer || false);
+
+//   // Refs for CallKeep stable callbacks
+//   const endCallRef = useRef(null);
+//   const acceptCallWithCallKeepRef = useRef(null);
+//   const startCallWithCallKeepRef = useRef(null);
+
+//   // ─── State ───────────────────────────────────────────────────
+//   const [wsConnected, setWsConnected] = useState(false);
+//   const [webrtcReady, setWebrtcReady] = useState(false);
+//   const [localURL, setLocalURL] = useState(null);
+//   const [remoteURL, setRemoteURL] = useState(null);
+//   const [showIncomingModal, setShowIncomingModal] = useState(false);
+//   const [incomingSDP, setIncomingSDP] = useState(null);
+//   const [callDuration, setCallDuration] = useState(0);
+//   const [isCameraFront, setIsCameraFront] = useState(true);
+//   const [isMuted, setIsMuted] = useState(false);
+//   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
+//   const [currentCallId, setCurrentCallId] = useState(null);
+//   const [isRinging, setIsRinging] = useState(false);
+//   const [callAccepted, setCallAccepted] = useState(false);
+//   const [callStarted, setCallStarted] = useState(false);
+
+//   const updateCallId = (id) => {
+//     currentCallIdRef.current = id;
+//     setCurrentCallId(id);
+//   };
+
+//   /////// this is only for ui draging the video stream 
+//   const pipPosition = useRef({ x: Dimensions.get('window').width - 116, y: Platform.OS === 'ios' ? 100 : 70 });
+//   const [pipVisible, setPipVisible] = useState(true);
+//   const [pipPositionState, setPipPositionState] = useState({ 
+//     x: Dimensions.get('window').width - 116, 
+//     y: Platform.OS === 'ios' ? 100 : 70 
+//   });
+
+//   // Handle PiP drag
+//   const handlePipDrag = (event, gestureState) => {
+//     const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+//     const pipWidth = 100;
+//     const pipHeight = 140;
+    
+//     let newX = pipPosition.current.x + gestureState.dx;
+//     let newY = pipPosition.current.y + gestureState.dy;
+    
+//     newX = Math.max(0, Math.min(newX, screenWidth - pipWidth));
+//     newY = Math.max(50, Math.min(newY, screenHeight - pipHeight - 150));
+    
+//     setPipPositionState({ x: newX, y: newY });
+//   };
+
+//   const handlePipDragEnd = () => {
+//     pipPosition.current = { x: pipPositionState.x, y: pipPositionState.y };
+//   };
+
+//   // Create PanResponder for PiP
+//   const pipPanResponder = useRef(
+//     PanResponder.create({
+//       onStartShouldSetPanResponder: () => true,
+//       onMoveShouldSetPanResponder: (_, gestureState) => {
+//         return Math.abs(gestureState.dx) > 2 || Math.abs(gestureState.dy) > 2;
+//       },
+//       onPanResponderGrant: () => {},
+//       onPanResponderMove: (event, gestureState) => {
+//         handlePipDrag(event, gestureState);
+//       },
+//       onPanResponderRelease: () => {
+//         handlePipDragEnd();
+//       },
+//     })
+//   ).current;
+
+//   const togglePipVisibility = () => {
+//     setPipVisible(!pipVisible);
+//   };
+
+//   //// draging end==========================
+
+//   // ─── Audio helpers ───────────────────────────────────────────
+//   const startAudioSession = () => {
+//     InCallManager.start({ media: 'video' });
+//     InCallManager.setSpeakerphoneOn(true); // video calls default to speaker
+//   };
+
+//   const startRinging = () => {
+//     setIsRinging(true);
+//     InCallManager.startRingtone();
+//   };
+
+//   const stopRinging = () => {
+//     setIsRinging(false);
+//     InCallManager.stopRingtone();
+//   };
+
+//   // ─── CallKeep callbacks (useCallback for stability) ──────────
+//   const acceptCallWithCallKeep = useCallback(async () => {
+//     console.log('[CallKeep] Accepting video call...');
+//     stopRinging();
+//     isCallerRef.current = false;
+//     const offer = incomingSDP || incomingOffer;
+//     if (!offer?.sdp) {
+//       console.error('[CallKeep] No valid offer to accept');
+//       return;
+//     }
+//     await handleIncomingCall(offer);
+//     if (currentCallIdRef.current) {
+//       await CallKeepService.setCallConnected(currentCallIdRef.current);
+//     }
+//   }, [incomingSDP, incomingOffer]);
+
+//   const startCallWithCallKeep = useCallback(async (phoneNumber, callUUID) => {
+//     console.log('[CallKeep] Starting video call with:', phoneNumber, callUUID);
+//     isCallerRef.current = true;
+//     startAudioSession();
+//     await createAndSendInitialOffer();
+//     if (callUUID) {
+//       await CallKeepService.setCallConnected(callUUID);
+//     }
+//   }, []);
+
+//   // Keep refs updated
+//   useEffect(() => { endCallRef.current = endCall; });
+//   useEffect(() => { acceptCallWithCallKeepRef.current = acceptCallWithCallKeep; }, [acceptCallWithCallKeep]);
+//   useEffect(() => { startCallWithCallKeepRef.current = startCallWithCallKeep; }, [startCallWithCallKeep]);
+
+//   // ─── CallKeep listeners ──────────────────────────────────────
+//   useEffect(() => {
+//     let mounted = true;
+
+//     const setupCallKeepListeners = async () => {
+//       const initialized = await CallKeepService.initialize();
+//       if (!mounted || !initialized) return;
+
+//       console.log('[CallKeep] Registering video call listeners...');
+
+//       const onAnswerCall = (payload) => {
+//         console.log('[CallKeep] answerCall:', payload);
+//         if (!mounted) return;
+//         if (typeof acceptCallWithCallKeepRef.current === 'function') {
+//           acceptCallWithCallKeepRef.current();
+//         }
+//       };
+
+//       const onEndCall = (payload) => {
+//         console.log('[CallKeep] endCall:', payload);
+//         if (!mounted) return;
+//         if (typeof endCallRef.current === 'function') {
+//           endCallRef.current(true);
+//         }
+//       };
+
+//       const onStartCall = (payload) => {
+//         console.log('[CallKeep] startCall:', payload);
+//         if (!mounted) return;
+//         const { handle, callUUID } = payload || {};
+//         if (!handle) return;
+//         if (typeof startCallWithCallKeepRef.current === 'function') {
+//           startCallWithCallKeepRef.current(handle, callUUID);
+//         }
+//       };
+
+//       const onDidActivateAudio = () => {
+//         if (!mounted) return;
+//         InCallManager.start({ media: 'video' });
+//         InCallManager.setSpeakerphoneOn(true);
+//       };
+
+//       const onDidDeactivateAudio = () => {
+//         if (!mounted) return;
+//         InCallManager.stop();
+//       };
+
+//       // Validate all handlers before registering
+//       const handlers = { onAnswerCall, onEndCall, onStartCall, onDidActivateAudio, onDidDeactivateAudio };
+//       const allValid = Object.entries(handlers).every(([key, fn]) => {
+//         if (typeof fn !== 'function') {
+//           console.error(`[CallKeep] Handler ${key} is not a function`);
+//           return false;
+//         }
+//         return true;
+//       });
+
+//       if (!allValid) return;
+
+//       CallKeepService.addEventListener('answerCall', onAnswerCall);
+//       CallKeepService.addEventListener('endCall', onEndCall);
+//       CallKeepService.addEventListener('startCall', onStartCall);
+//       CallKeepService.addEventListener('didActivateAudioSession', onDidActivateAudio);
+//       CallKeepService.addEventListener('didDeactivateAudioSession', onDidDeactivateAudio);
+
+//       console.log('[CallKeep] Video call listeners registered ✅');
+//     };
+
+//     const timer = setTimeout(() => setupCallKeepListeners(), 100);
+
+//     return () => {
+//       mounted = false;
+//       clearTimeout(timer);
+//       CallKeepService.removeAllListeners();
+//     };
+//   }, []);
+
+//   // ─── Notification / DeviceEventEmitter listener ──────────────
+//   useEffect(() => {
+//     const subscription = DeviceEventEmitter.addListener(
+//       'incomingCallFromNotification',
+//       (callData) => {
+//         console.log('[VideoCall] Incoming call from notification:', callData);
+//         // Stop foreground service
+//         try { NativeModules.CallModule?.stopCallService(); } catch {}
+
+//         if (callData.autoAccept) {
+//           // Already on this screen — set autoAnswer flag
+//           autoAnswerOnOfferRef.current = true;
+//         }
+//       }
+//     );
+
+//     return () => subscription.remove();
+//   }, []);
+
+//   // ─── Audio / screen lifecycle ────────────────────────────────
+//   useEffect(() => {
+//     global.__onCallScreen = true;
+//     return () => {
+//       global.__onCallScreen = false;
+//       InCallManager.stopRingtone();
+//       InCallManager.stop({ busytone: '_BUNDLE_' });
+//     };
+//   }, []);
+
+//   useEffect(() => {
+//     InCallManager.stopRingtone();
+//     InCallManager.start({ media: 'video' });
+//     InCallManager.setSpeakerphoneOn(true);
+//     return () => {
+//       InCallManager.stop();
+//       InCallManager.stopRingtone();
+//     };
+//   }, []);
+
+//   useEffect(() => {
+//     InCallManager.setKeepScreenOn(true);
+//     return () => {
+//       InCallManager.stop();
+//       InCallManager.setKeepScreenOn(false);
+//       stopRinging();
+//     };
+//   }, []);
+
+//   useEffect(() => {
+//     if (showIncomingModal) {
+//       startRinging();
+//     } else {
+//       stopRinging();
+//     }
+//     return () => stopRinging();
+//   }, [showIncomingModal]);
+
+//   // ─── Permissions ─────────────────────────────────────────────
+//   const requestPermissions = async () => {
+//     if (Platform.OS === "android") {
+//       try {
+//         const grants = await PermissionsAndroid.requestMultiple([
+//           PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+//           PermissionsAndroid.PERMISSIONS.CAMERA,
+//         ]);
+//         return (
+//           grants[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] ===
+//             PermissionsAndroid.RESULTS.GRANTED &&
+//           grants[PermissionsAndroid.PERMISSIONS.CAMERA] ===
+//             PermissionsAndroid.RESULTS.GRANTED
+//         );
+//       } catch (err) {
+//         console.warn(err);
+//         return false;
+//       }
+//     }
+//     return true;
+//   };
+
+//   // ─── ICE servers ─────────────────────────────────────────────
+//   const getIceServers = async () => {
+//     try {
+//       console.log("[Xirsys] Fetching ICE servers...");
+//       const res = await fetch("https://global.xirsys.net/_turn/Showa", {
+//         method: "PUT",
+//         headers: {
+//           Authorization: "Basic " + btoa("essential:95aca53e-7c66-11f0-acf8-4662eff0c0a9"),
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({ format: "urls" }),
+//       });
+//       const data = await res.json();
+//       let iceServers = [];
+//       if (data?.v?.iceServers) {
+//         const server = data.v.iceServers;
+//         const urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+//         iceServers = [{ urls, username: server.username, credential: server.credential }];
+//       }
+//       if (!iceServers.length) throw new Error("No ICE servers");
+//       iceServers.push({ urls: "stun:stun.l.google.com:19302" });
+//       rtcConfig.iceServers = iceServers;
+//       console.log("✅ [ICE CONFIG READY]");
+//     } catch (err) {
+//       console.error("❌ [Xirsys Failed]:", err);
+//       rtcConfig.iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+//     }
+//     rtcConfig.iceTransportPolicy = "all";
+//   };
+
+//   // ─── Peer connection ─────────────────────────────────────────
+//   // const ensurePeerConnection = async () => {
+//   //   if (pc.current) return;
+//   //   if (!rtcConfig.iceServers.length) await getIceServers();
+
+//   //   pc.current = new RTCPeerConnection(rtcConfig);
+//   //   console.log("[WebRTC] RTCPeerConnection created");
+
+//   //   pc.current.onnegotiationneeded = () => {
+//   //     console.log("[WebRTC] onnegotiationneeded, signalingState:", pc.current?.signalingState);
+//   //   };
+
+//   //   pc.current.onicecandidate = (evt) => {
+//   //     if (evt.candidate) {
+//   //       const cand = evt.candidate.candidate;
+//   //       if (cand.includes("typ relay")) console.log("🟢 [TURN WORKING]", cand);
+//   //       else if (cand.includes("typ srflx")) console.log("🟡 [STUN WORKING]", cand);
+//   //       sendMessage({ type: "candidate", candidate: evt.candidate });
+//   //     } else {
+//   //       console.log("[ICE] Gathering finished");
+//   //     }
+//   //   };
+
+//   //   pc.current.ontrack = (evt) => {
+//   //     console.log("========= TRACK RECEIVED =========");
+
+//   //   console.log("Track Kind:", evt.track.kind);
+
+//   //   console.log(
+//   //       "Tracks in stream:",
+//   //       evt.streams[0].getTracks().map(t => ({
+//   //           kind: t.kind,
+//   //           enabled: t.enabled,
+//   //           readyState: t.readyState
+//   //       }))
+//   //   );
+//   //     console.log("[WebRTC] Track received:", evt.track?.kind);
+//   //     if (evt.streams && evt.streams[0]) {
+//   //       remoteStream.current = evt.streams[0];
+//   //       try { setRemoteURL(remoteStream.current.toURL()); 
+//   //         console.log(remoteStream.current.toURL());
+//   //         console.log("remote_stream url:", remoteStream.current.toURL());
+//   //       } catch {}
+//   //       setWebrtcReady(true);
+//   //       setCallAccepted(true);
+//   //       InCallManager.start({ media: 'video' });
+//   //       InCallManager.setSpeakerphoneOn(true);
+//   //     }
+//   //   };
+
+//   //   pc.current.onconnectionstatechange = async () => {
+//   //     if (!pc.current) return;
+//   //     const state = pc.current.connectionState;
+//   //     console.log("[WebRTC] connectionState =>", state);
+
+//   //     if (state === "connected") {
+//   //       console.log("VIDEO CALL CONNECTED");
+//   //       try {
+//   //         const stats = await pc.current.getStats();
+//   //         stats.forEach((report) => {
+//   //           if (report.type === "candidate-pair" && report.state === "succeeded") {
+//   //             const local = stats.get(report.localCandidateId);
+//   //             const remote = stats.get(report.remoteCandidateId);
+//   //             if (local?.candidateType === "relay" || remote?.candidateType === "relay") {
+//   //               console.log("🟢 USING TURN (Xirsys)");
+//   //             } else if (local?.candidateType === "srflx") {
+//   //               console.log("🟡 USING STUN");
+//   //             } else {
+//   //               console.log("⚪ USING LOCAL");
+//   //             }
+//   //           }
+//   //         });
+//   //       } catch (err) {
+//   //         console.warn("[WebRTC] getStats failed:", err);
+//   //       }
+//   //     }
+
+//   //     if (state === "failed") {
+//   //       console.warn("VIDEO CONNECTION FAILED");
+//   //       saveCallToHistory({
+//   //         contact: { name, profileImage: profile_image, userId: targetUserId },
+//   //         direction: isInitiator ? 'outgoing' : 'incoming',
+//   //         isVideoCall: true,
+//   //         status: 'failed',
+//   //         duration: callDuration,
+//   //       });
+//   //     }
+//   //   };
+
+//   //   pc.current.oniceconnectionstatechange = () => {
+//   //     if (!pc.current) return;
+//   //     console.log("[WebRTC] iceConnectionState =>", pc.current.iceConnectionState);
+//   //   };
+//   // };
+
+//   const ensurePeerConnection = async () => {
+//   if (pc.current) return;
+//   if (!rtcConfig.iceServers.length) await getIceServers();
+
+//   pc.current = new RTCPeerConnection(rtcConfig);
+//   console.log("[WebRTC] RTCPeerConnection created");
+
+//   // --- Negotiation ---
+//   pc.current.onnegotiationneeded = () => {
+//     console.log("[WebRTC] onnegotiationneeded, signalingState:", pc.current?.signalingState);
+//   };
+
+//   // --- ICE Candidates ---
+//   pc.current.onicecandidate = (evt) => {
+//     if (evt.candidate) {
+//       const cand = evt.candidate.candidate;
+//       if (cand.includes("typ relay")) console.log("🟢 [TURN WORKING]", cand);
+//       else if (cand.includes("typ srflx")) console.log("🟡 [STUN WORKING]", cand);
+//       sendMessage({ type: "candidate", candidate: evt.candidate });
+//     } else {
+//       console.log("[ICE] Gathering finished");
+//     }
+//   };
+
+//   // --- TRACK RECEIVED (THIS IS THE ONE YOU NEED) ---
+//   pc.current.ontrack = (evt) => {
+//     console.log("========= TRACK RECEIVED =========");
+//     console.log("Track Kind:", evt.track.kind);
+//     console.log("Track enabled:", evt.track.enabled);
+//     console.log("Track readyState:", evt.track.readyState);
+    
+//     if (evt.streams && evt.streams[0]) {
+//       remoteStream.current = evt.streams[0];
+      
+//       const tracks = evt.streams[0].getTracks();
+//       console.log(`Received stream with ${tracks.length} tracks:`, 
+//         tracks.map(t => ({ kind: t.kind, enabled: t.enabled }))
+//       );
+      
+//       try { 
+//         const url = remoteStream.current.toURL();
+//         setRemoteURL(url); 
+//         console.log("remote_stream url:", url);
+//       } catch (e) {
+//         console.error("Error getting remote URL:", e);
+//       }
+      
+//       setWebrtcReady(true);
+//       setCallAccepted(true);
+//       InCallManager.start({ media: 'video' });
+//       InCallManager.setSpeakerphoneOn(true);
+//     } else {
+//       console.warn("[WebRTC] Track received but no stream!");
+//     }
+//   };
+
+//   // --- Connection State ---
+//   pc.current.onconnectionstatechange = async () => {
+//     if (!pc.current) return;
+//     const state = pc.current.connectionState;
+//     console.log("[WebRTC] connectionState =>", state);
+
+//     if (state === "connected") {
+//       console.log("VIDEO CALL CONNECTED");
+//       try {
+//         const stats = await pc.current.getStats();
+//         stats.forEach((report) => {
+//           if (report.type === "candidate-pair" && report.state === "succeeded") {
+//             const local = stats.get(report.localCandidateId);
+//             const remote = stats.get(report.remoteCandidateId);
+//             if (local?.candidateType === "relay" || remote?.candidateType === "relay") {
+//               console.log("🟢 USING TURN (Xirsys)");
+//             } else if (local?.candidateType === "srflx") {
+//               console.log("🟡 USING STUN");
+//             } else {
+//               console.log("⚪ USING LOCAL");
+//             }
+//           }
+//         });
+//       } catch (err) {
+//         console.warn("[WebRTC] getStats failed:", err);
+//       }
+//     }
+
+//     if (state === "failed") {
+//       console.warn("VIDEO CONNECTION FAILED");
+//       saveCallToHistory({
+//         contact: { name, profileImage: profile_image, userId: targetUserId },
+//         direction: isInitiator ? 'outgoing' : 'incoming',
+//         isVideoCall: true,
+//         status: 'failed',
+//         duration: callDuration,
+//       });
+//     }
+//   };
+
+//   // --- ICE State ---
+//   pc.current.oniceconnectionstatechange = () => {
+//     if (!pc.current) return;
+//     console.log("[WebRTC] iceConnectionState =>", pc.current.iceConnectionState);
+//   };
+// };
+
+//  const ensureLocalStreamAndAttach = async () => {
+//   if (!localStream.current) {
+//     const hasPermission = await requestPermissions();
+//     if (!hasPermission) {
+//       Alert.alert("Permission denied", "Cannot access camera or microphone.");
+//       return false;
+//     }
+//     try {
+//       const s = await mediaDevices.getUserMedia({
+//         audio: true,
+//         video: { 
+//           facingMode: isCameraFront ? "user" : "environment",
+//           frameRate: 30,
+//         },
+//       });
+      
+//       // ✅ Ensure video track is enabled
+//       const videoTrack = s.getVideoTracks()[0];
+//       if (videoTrack) {
+//         videoTrack.enabled = true;
+//         console.log("[Local] Video track enabled:", videoTrack.enabled);
+//       }
+      
+//       localStream.current = s;
+//       try { setLocalURL(s.toURL()); } catch {}
+//     } catch (e) {
+//       Alert.alert("Error", "Failed to get camera/mic: " + e.message);
+//       return false;
+//     }
+//   }
+  
+//   // ✅ Re-enable video track if it's disabled
+//   if (localStream.current) {
+//     const videoTrack = localStream.current.getVideoTracks()[0];
+//     if (videoTrack && !videoTrack.enabled) {
+//       videoTrack.enabled = true;
+//       console.log("[Local] Re-enabled video track");
+//     }
+//   }
+  
+//   // Only attach if we have a peer connection
+//   if (pc.current && localStream.current) {
+//     const existingTracks = pc.current.getSenders().map((s) => s.track);
+//     localStream.current.getTracks().forEach((track) => {
+//       if (!existingTracks.includes(track)) {
+//         pc.current.addTrack(track, localStream.current);
+//         console.log(`[Local] Attached ${track.kind} track to peer connection`);
+//       }
+//     });
+//   }
+//   return true;
+// };
+
+//   // const ensureLocalStreamAndAttach = async () => {
+//   //   if (!localStream.current) {
+//   //     const hasPermission = await requestPermissions();
+//   //     if (!hasPermission) {
+//   //       Alert.alert("Permission denied", "Cannot access camera or microphone.");
+//   //       return false;
+//   //     }
+//   //     try {
+//   //       const s = await mediaDevices.getUserMedia({
+//   //         audio: true,
+//   //         video: { facingMode: isCameraFront ? "user" : "environment" },
+//   //       });
+//   //       localStream.current = s;
+//   //       try { setLocalURL(s.toURL()); } catch {}
+//   //     } catch (e) {
+//   //       Alert.alert("Error", "Failed to get camera/mic: " + e.message);
+//   //       return false;
+//   //     }
+//   //   }
+//   //   if (pc.current) {
+//   //     const existingTracks = pc.current.getSenders().map((s) => s.track);
+//   //     localStream.current.getTracks().forEach((track) => {
+//   //       if (!existingTracks.includes(track)) {
+//   //         pc.current.addTrack(track, localStream.current);
+//   //       }
+//   //     });
+//   //   }
+//   //   return true;
+//   // };
+
+//   const drainQueuedCandidates = async () => {
+//     if (!pc.current) return;
+//     while (queuedRemoteCandidates.current.length > 0) {
+//       const c = queuedRemoteCandidates.current.shift();
+//       try {
+//         await pc.current.addIceCandidate(new RTCIceCandidate(c));
+//       } catch (err) {
+//         console.warn("[WebRTC] addIceCandidate error:", err?.message);
+//       }
+//     }
+//   };
+
+//   const cleanupPeerConnection = () => {
+//     console.log("[Cleanup] Closing video peer connection");
+//     isCleaningUpRef.current = true;
+//     isCallActiveRef.current = false;
+//     setCallAccepted(false);
+//     setCallStarted(false);
+
+//     try {
+//       if (pc.current) {
+//         pc.current.onicecandidate = null;
+//         pc.current.ontrack = null;
+//         pc.current.onnegotiationneeded = null;
+//         pc.current.onconnectionstatechange = null;
+//         pc.current.oniceconnectionstatechange = null;
+//         pc.current.close();
+//       }
+//     } catch (e) {}
+//     pc.current = null;
+
+//     try {
+//       if (localStream.current) {
+//         localStream.current.getTracks().forEach((t) => t.stop());
+//       }
+//     } catch (e) {}
+//     localStream.current = null;
+//     remoteStream.current = null;
+//     queuedRemoteCandidates.current = [];
+//     hasInitialOfferRef.current = false;
+
+//     try { InCallManager.stop(); } catch {}
+
+//     setLocalURL(null);
+//     setRemoteURL(null);
+//     setWebrtcReady(false);
+//     setIsCameraFront(true);
+//     setIsMuted(false);
+//     setIsSpeakerOn(false);
+//     isCleaningUpRef.current = false;
+//   };
+
+//   // ─── Signaling ───────────────────────────────────────────────
+//   const sendMessage = (msg) => {
+//     if (ws.current?.readyState === WebSocket.OPEN) {
+//       console.log("[WS] Sending:", msg.type);
+//       ws.current.send(JSON.stringify(msg));
+//     } else {
+//       console.warn("[WS] Cannot send, state:", ws.current?.readyState);
+//     }
+//   };
+
+//   const connectSignaling = async () => {
+//     const token = await AsyncStorage.getItem("userToken");
+//     const userDataRaw = await AsyncStorage.getItem("userData");
+//     const userData = userDataRaw ? JSON.parse(userDataRaw) : null;
+//     const currentUserId = userData?.id;
+
+//     let roomId;
+//     if (isInitiator && targetUserId) {
+//       roomId = `user-${targetUserId}`;
+//     } else if (autoAnswerOnOffer && targetUserId) {
+//       // Accepted from notification — connect to OUR room to receive offer
+//       roomId = `user-${currentUserId}`;
+//       console.log('[AutoAnswer] Connecting to our room:', roomId);
+//     } else if (currentUserId) {
+//       roomId = `user-${currentUserId}`;
+//     } else {
+//       roomId = "unknown";
+//     }
+
+//     console.log("[WebSocket] Connecting to room:", roomId);
+
+//     if (ws.current) {
+//       try {
+//         ws.current.onopen = null;
+//         ws.current.onmessage = null;
+//         ws.current.onclose = null;
+//         ws.current.onerror = null;
+//         ws.current.close();
+//       } catch {}
+//       ws.current = null;
+//     }
+
+//     const url = `${SIGNALING_SERVER}/ws/call/${roomId}/?token=${token || ""}`;
+//     ws.current = new WebSocket(url);
+
+//     ws.current.onopen = async () => {
+//       console.log("[WebSocket] Connected to", roomId);
+//       setWsConnected(true);
+
+//       await ensurePeerConnection();
+//       await ensureLocalStreamAndAttach();
+
+//       if (isInitiator && targetUserId) {
+//         isCallerRef.current = true;
+//         setCallStarted(true);
+//         startAudioSession();
+//         await createAndSendInitialOffer();
+//       }
+
+//       // Normal incoming (not from notification)
+//       if (!isInitiator && isIncomingCall && incomingOffer && !autoAnswerOnOffer) {
+//         await handleIncomingCall(incomingOffer);
+//       }
+//       // autoAnswerOnOffer: wait for offer via WebSocket
+//     };
+
+//     ws.current.onmessage = async (evt) => {
+//       let data;
+//       try { data = JSON.parse(evt.data); } catch { return; }
+
+//       console.log("[WS] Received:", data?.type, "isRenegotiation:", data?.isRenegotiation);
+
+//       // Drop messages after call ended
+//       if (!isCallActiveRef.current && data?.type !== "call-ended") {
+//         console.warn("[WS] Ignoring after call ended:", data?.type);
+//         return;
+//       }
+
+//       // ── Echo filtering ──────────────────────────────────────
+//       // Ignore our own offer echoed back
+//       if (data.type === 'offer' && !data.isRenegotiation && isCallerRef.current) {
+//         console.warn('[WS] Ignoring own offer echo — we are the caller');
+//         return;
+//       }
+//       // Ignore answer if we are the callee
+//       if (data.type === 'answer' && !isCallerRef.current && !data.isRenegotiation) {
+//         console.warn('[WS] Ignoring answer — we are the callee');
+//         return;
+//       }
+//       // ────────────────────────────────────────────────────────
+
+//       switch (data.type) {
+
+//         case "offer": {
+//           if (data.isRenegotiation) {
+//             try {
+//               await ensurePeerConnection();
+//               await ensureLocalStreamAndAttach();
+//             } catch (err) {
+//               console.error("[WebRTC] Renegotiation prep failed:", err);
+//               return;
+//             }
+//             await handleRenegotiationOffer(data.offer);
+//             break;
+//           }
+
+//           // Regular initial offer
+//           if (isCallerRef.current) break;
+
+//           const offerData = data.offer;
+//           if (!offerData?.sdp) {
+//             console.error("[WS] Offer missing SDP");
+//             break;
+//           }
+
+//           console.log("[WS] Valid video offer, SDP length:", offerData.sdp.length);
+
+//           if (autoAnswerOnOfferRef.current) {
+//             // User already accepted from notification — answer immediately
+//             console.log('[AutoAnswer] Auto-answering video offer');
+//             autoAnswerOnOfferRef.current = false;
+//             isCallerRef.current = false;
+//             startAudioSession();
+//             await handleIncomingCall(offerData);
+//             if (currentCallIdRef.current) {
+//               await CallKeepService.setCallConnected(currentCallIdRef.current);
+//             }
+//           } else {
+//             // Normal flow — show modal + CallKeep UI
+//             const incomingCallId = `call_${Date.now()}`;
+//             updateCallId(incomingCallId);
+//             setIncomingSDP(offerData);
+
+//             await CallKeepService.displayIncomingCall({
+//               callId: incomingCallId,
+//               callerName: offerData.callerInfo?.name || name || 'Unknown',
+//               callerId: offerData.callerId || targetUserId || '',
+//               isVideo: true,
+//               roomId: offerData.roomId || '',
+//             });
+
+//             setShowIncomingModal(true);
+//           }
+//           break;
+//         }
+
+//         case "answer": {
+//           if (!isCallerRef.current || !pc.current) break;
+//           setCallAccepted(true);
+//           if (pc.current.signalingState === "have-local-offer") {
+//             try {
+//               await pc.current.setRemoteDescription(
+//                 new RTCSessionDescription(data.answer)
+//               );
+//               await drainQueuedCandidates();
+//             } catch (e) {
+//               console.error("[WebRTC] setRemoteDescription(answer) failed:", e?.message);
+//             }
+//           }
+//           break;
+//         }
+
+//         case "candidate": {
+//           if (!pc.current) break;
+//           if (!pc.current.remoteDescription) {
+//             queuedRemoteCandidates.current.push(data.candidate);
+//           } else {
+//             try {
+//               await pc.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+//             } catch (e) {
+//               console.warn("[WebRTC] addIceCandidate error:", e?.message);
+//             }
+//           }
+//           break;
+//         }
+
+//         case "call-ended": {
+//           Alert.alert("Call Ended", "Your call partner has disconnected");
+//           endCall(false);
+//           break;
+//         }
+
+//         case "call-rejected": {
+//           Alert.alert("Call Rejected", "The recipient declined your call");
+//           await saveCallToHistory({
+//             contact: { name, profileImage: profile_image, userId: targetUserId },
+//             direction: 'outgoing',
+//             isVideoCall: true,
+//             status: 'rejected',
+//             duration: 0,
+//           });
+//           endCall(false);
+//           break;
+//         }
+
+//         case "call-missed": {
+//           if (!isInitiator) {
+//             await saveCallToHistory({
+//               contact: { name, profileImage: profile_image, userId: targetUserId },
+//               direction: 'incoming',
+//               isVideoCall: true,
+//               status: 'missed',
+//               duration: 0,
+//             });
+//           }
+//           break;
+//         }
+
+//         default:
+//           break;
+//       }
+//     };
+
+//     ws.current.onclose = () => {
+//       setWsConnected(false);
+//       if (!isCleaningUpRef.current) cleanupPeerConnection();
+//     };
+
+//     ws.current.onerror = (err) => {
+//       console.error("[WebSocket] Error:", err?.message);
+//     };
+//   };
+
+//   // ─── Renegotiation ───────────────────────────────────────────
+//   const handleRenegotiationOffer = async (offer) => {
+//     try {
+//       if (!pc.current) {
+//         await ensurePeerConnection();
+//         await ensureLocalStreamAndAttach();
+//       }
+//       if (!pc.current || pc.current.signalingState === "closed") return;
+
+//       console.log("[WebRTC] Renegotiation, signalingState:", pc.current.signalingState);
+//       await pc.current.setRemoteDescription(new RTCSessionDescription(offer));
+//       await drainQueuedCandidates();
+
+//       const answer = await pc.current.createAnswer();
+//       await pc.current.setLocalDescription(answer);
+
+//       sendMessage({ type: "answer", answer, isVideoCall: true, isRenegotiation: true });
+//       console.log("[WebRTC] Renegotiation answer sent");
+//     } catch (error) {
+//       console.error("[WebRTC] Renegotiation failed:", error);
+//     }
+//   };
+
+//   // ─── Call history ─────────────────────────────────────────────
+//   const saveCallToHistory = async (callDetails) => {
+//     try {
+//       const existingHistory = await AsyncStorage.getItem('callHistory');
+//       const history = existingHistory ? JSON.parse(existingHistory) : [];
+//       const newCall = {
+//         id: Date.now().toString(),
+//         timestamp: Date.now(),
+//         contact: {
+//           name: callDetails.contact.name,
+//           profileImage: callDetails.contact.profileImage,
+//           userId: callDetails.contact.userId,
+//         },
+//         direction: callDetails.direction,
+//         isVideoCall: true,
+//         status: callDetails.status,
+//         duration: callDetails.duration || 0,
+//       };
+//       history.unshift(newCall);
+//       await AsyncStorage.setItem('callHistory', JSON.stringify(history.slice(0, 100)));
+//       console.log('[CallHistory] Saved:', callDetails.status);
+//     } catch (error) {
+//       console.error('[CallHistory] Error:', error);
+//     }
+//   };
+
+//   // ─── Offer / answer ───────────────────────────────────────────
+//   const createAndSendInitialOffer = async () => {
+//     if (hasInitialOfferRef.current) return;
+
+//     console.log("[VideoCall] Creating initial offer...");
+//     await ensurePeerConnection();
+//     const ok = await ensureLocalStreamAndAttach();
+//     if (!ok || !pc.current) return;
+
+//     try {
+//       const userDataRaw = await AsyncStorage.getItem("userData");
+//       const userData = userDataRaw ? JSON.parse(userDataRaw) : {};
+//       const currentUserId = userData?.id;
+
+//       if (!currentUserId) {
+//         console.error("[VideoCall] No current user ID");
+//         return;
+//       }
+
+//       const callerInfo = {
+//         profileImage: userData.profile_picture || userData.profile_image || "",
+//         name: userData.name || "Caller",
+//       };
+
+//       const offer = await pc.current.createOffer();
+//       await pc.current.setLocalDescription(offer);
+
+//       console.log("[VideoCall] Offer SDP length:", offer.sdp?.length);
+
+//       sendMessage({
+//         type: "new_call",
+//         receiver_id: targetUserId,
+//         sender_id: currentUserId,
+//         caller_name: callerInfo.name,
+//         call_type: "video",
+//         room_id: `call_${currentUserId}_${targetUserId}`,
+//         offer: {
+//           type: offer.type,
+//           sdp: offer.sdp,
+//           targetUserId,
+//           callerId: currentUserId,
+//           callerInfo,
+//           isVideoCall: true,
+//         },
+//       });
+
+//       hasInitialOfferRef.current = true;
+//       console.log("[VideoCall] Initial offer sent ✅");
+//     } catch (e) {
+//       console.error("[VideoCall] createOffer failed:", e?.message);
+//     }
+//   };
+
+// //  const handleIncomingCall = async (offer) => {
+// //   try {
+// //     console.log("[Incoming] Starting...");
+
+// //     if (!currentCallIdRef.current) {                       //  only create if not already set
+// //       const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
+// //       updateCallId(newCallId);
+// //     }
+    
+// //     const newCallId = `call_${Date.now()}_${offer.callerId || 'unknown'}`;
+// //     updateCallId(newCallId);
+
+// //     if (!offer?.sdp) {
+// //       console.error("[VideoCall] Missing SDP in offer");
+// //       Alert.alert("Error", "Invalid video call offer.");
+// //       rejectCall();
+// //       return;
+// //     }
+
+// //     await ensurePeerConnection();
+// //     const ok = await ensureLocalStreamAndAttach();
+// //     if (!ok || !pc.current) {
+// //       rejectCall();
+// //       return;
+// //     }
+
+// //     // Add tracks
+// //     if (pc.current && localStream.current) {
+// //       const existingTracks = pc.current.getSenders().map((s) => s.track);
+// //       localStream.current.getTracks().forEach((track) => {
+// //         if (!existingTracks.includes(track)) {
+// //           pc.current.addTrack(track, localStream.current);
+// //         }
+// //       });
+// //     }
+
+// //     // ✅ Set remote description
+// //     await pc.current.setRemoteDescription(
+// //       new RTCSessionDescription({ 
+// //         type: offer.type || 'offer', 
+// //         sdp: offer.sdp 
+// //       })
+// //     );
+    
+// //     await drainQueuedCandidates();
+
+// //     // Create answer
+// //     const answer = await pc.current.createAnswer();
+// //     await pc.current.setLocalDescription(answer);
+
+// //     console.log("========= ANSWER SDP =========");
+// // console.log(answer.sdp);
+
+// //     console.log("========= BEFORE CREATE ANSWER =========");
+
+// // console.log(
+// //     "Local video tracks:",
+// //     localStream.current.getVideoTracks().length
+// // );
+
+// // console.log(
+// //     "Local audio tracks:",
+// //     localStream.current.getAudioTracks().length
+// // );
+
+// // console.log(
+// //     "Peer senders:",
+// //     pc.current.getSenders().map(sender => ({
+// //         kind: sender.track?.kind,
+// //         enabled: sender.track?.enabled,
+// //         readyState: sender.track?.readyState
+// //     }))
+// // );
+
+// //     // Send answer
+// //     sendMessage({
+// //       type: "answer",
+// //       answer: { type: answer.type, sdp: answer.sdp },
+// //       isVideoCall: true,
+// //     });
+
+// //     // Wait for ontrack to fire
+// //     console.log("[Incoming] Waiting for remote tracks...");
+    
+// //     const trackTimeout = setTimeout(() => {
+// //       if (!remoteStream.current) {
+// //         console.warn("[Incoming] No remote tracks received after 5 seconds!");
+       
+// //         const receivers = pc.current?.getReceivers();
+// //         if (receivers && receivers.length > 0) {
+// //           console.log("[Incoming] Found receivers:", receivers.length);
+// //           receivers.forEach(r => {
+// //             console.log("[Incoming] Receiver track:", r.track?.kind);
+// //           });
+// //         }
+// //       }
+// //     }, 5000);
+
+// //     setWebrtcReady(true);
+// //     setCallAccepted(true);
+// //     setShowIncomingModal(false);
+// //     setIncomingSDP(null);
+
+// //     try { NativeModules.CallModule?.stopCallService(); } catch {}
+
+// //     console.log("[VideoCall] Incoming call accepted");
+    
+// //     // Clear timeout
+// //     return () => clearTimeout(trackTimeout);
+    
+// //   } catch (error) {
+// //     console.error("[VideoCall] handleIncomingCall error:", error?.message);
+// //     Alert.alert("Error", "Failed to accept video call: " + (error?.message || "Unknown"));
+// //     rejectCall();
+// //   }
+// // };
+
+// const handleIncomingCall = async (offer) => {
+//   try {
+//     console.log("[Incoming] Starting...");
+
+//     if (!currentCallIdRef.current) {
+//       const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
+//       updateCallId(newCallId);
+//     }
+
+//     if (!offer?.sdp) {
+//       console.error("[VideoCall] Missing SDP in offer");
+//       Alert.alert("Error", "Invalid video call offer.");
+//       rejectCall();
+//       return;
+//     }
+
+//     // ✅ STEP 1: Ensure peer connection is created
+//     await ensurePeerConnection();
+    
+//     // ✅ STEP 2: Ensure local stream is created
+//     const ok = await ensureLocalStreamAndAttach();
+//     if (!ok || !pc.current) {
+//       rejectCall();
+//       return;
+//     }
+
+//     // ✅ STEP 3: Add tracks to peer connection BEFORE setting remote description
+//     if (pc.current && localStream.current) {
+//       const existingSenders = pc.current.getSenders();
+//       const existingTrackIds = new Set(existingSenders.map(s => s.track?.id).filter(Boolean));
+      
+//       // Clear existing senders to avoid duplication
+//       existingSenders.forEach(sender => {
+//         pc.current.removeTrack(sender);
+//       });
+      
+//       // Add all tracks fresh
+//       localStream.current.getTracks().forEach((track) => {
+//         console.log(`[Incoming] Adding track: ${track.kind}`);
+//         pc.current.addTrack(track, localStream.current);
+//       });
+//     }
+
+//     // ✅ STEP 4: Set remote description
+//     await pc.current.setRemoteDescription(
+//       new RTCSessionDescription({ 
+//         type: offer.type || 'offer', 
+//         sdp: offer.sdp 
+//       })
+//     );
+    
+//     await drainQueuedCandidates();
+
+//     // ✅ STEP 5: Create answer with explicit video/audio options
+//     const answer = await pc.current.createAnswer({
+//       offerToReceiveAudio: true,
+//       offerToReceiveVideo: true,
+//     });
+    
+//     await pc.current.setLocalDescription(answer);
+
+//     // Debug logging
+//     console.log("========= ANSWER SDP =========");
+//     console.log(answer.sdp);
+//     console.log("Local video tracks:", localStream.current.getVideoTracks().length);
+//     console.log("Local audio tracks:", localStream.current.getAudioTracks().length);
+//     console.log("Peer senders:", pc.current.getSenders().map(sender => ({
+//       kind: sender.track?.kind,
+//       enabled: sender.track?.enabled,
+//       readyState: sender.track?.readyState
+//     })));
+
+//     // ✅ STEP 6: Send answer
+//     sendMessage({
+//       type: "answer",
+//       answer: { type: answer.type, sdp: answer.sdp },
+//       isVideoCall: true,
+//     });
+
+//     setWebrtcReady(true);
+//     setCallAccepted(true);
+//     setShowIncomingModal(false);
+//     setIncomingSDP(null);
+
+//     // Stop foreground service notification
+//     try { NativeModules.CallModule?.stopCallService(); } catch {}
+
+//     console.log("[VideoCall] Incoming call accepted");
+    
+//   } catch (error) {
+//     console.error("[VideoCall] handleIncomingCall error:", error?.message);
+//     Alert.alert("Error", "Failed to accept video call: " + (error?.message || "Unknown"));
+//     rejectCall();
+//   }
+// };
+
+
+//   // ─── Lifecycle ────────────────────────────────────────────────
+//   useEffect(() => {
+//     connectSignaling();
+//     return () => { endCall(false); };
+//   }, []);
+
+//   useEffect(() => {
+//     if (webrtcReady && callAccepted) {
+//       const startTime = Date.now();
+//       callTimerRef.current = setInterval(() => {
+//         setCallDuration(Math.floor((Date.now() - startTime) / 1000));
+//       }, 1000);
+//     } else {
+//       if (callTimerRef.current) {
+//         clearInterval(callTimerRef.current);
+//         callTimerRef.current = null;
+//         setCallDuration(0);
+//       }
+//     }
+//     return () => { if (callTimerRef.current) clearInterval(callTimerRef.current); };
+//   }, [webrtcReady, callAccepted]);
+
+//   // ─── Call actions ─────────────────────────────────────────────
+//   const acceptCall = async () => {
+//     stopRinging();
+//     isCallerRef.current = false;
+//     const offer = incomingSDP;
+//     if (!offer?.sdp) {
+//       Alert.alert("Error", "Invalid video call offer.");
+//       return;
+//     }
+//     startAudioSession();
+//     await handleIncomingCall(offer);
+//   };
+
+//   const startCall = async () => {
+//     isCallerRef.current = true;
+//     setCallStarted(true);
+//     const newCallId = `call_${Date.now()}_${targetUserId}`;
+//     updateCallId(newCallId);
+//     startAudioSession();
+//     await ensureLocalStreamAndAttach();
+//     await createAndSendInitialOffer();
+//   };
+
+//   const endCall = useCallback(async (notify = true) => {
+//   console.log("[VideoCall] Ending call...");
+  
+//   // ─── 1. IMMEDIATE STOP ───
+//   // Stop ringing immediately
+//   try { InCallManager.stopRingtone(); } catch (e) {}
+  
+//   // Mark call as inactive immediately
+//   isCallActiveRef.current = false;
+
+//   // ─── 2. IMMEDIATE STATE RESET ───
+//   // Reset all UI state immediately
+//   setWebrtcReady(false);
+//   setLocalURL(null);
+//   setRemoteURL(null);
+//   setCallDuration(0);
+//   setCurrentCallId(null);
+//   setShowIncomingModal(false);
+//   setIncomingSDP(null);
+
+//   // ─── 3. NAVIGATE INSTANTLY ───
+//   // Use setTimeout(0) for immediate navigation in next tick
+//   setTimeout(() => {
+//     try {
+//       if (navigation.canGoBack()) {
+//         navigation.goBack();
+//       } else {
+//         navigation.navigate("PHome");
+//       }
+//     } catch (e) {
+//       navigation.navigate("PHome");
+//     }
+//   }, 0);
+
+//   // ─── 4. BACKGROUND CLEANUP (non-blocking) ───
+//   const cid = currentCallIdRef.current || currentCallId;
+  
+//   // Use setTimeout with 0 to defer all cleanup
+//   setTimeout(() => {
+//     // End CallKeep call
+//     if (cid) {
+//       try { 
+//         CallKeepService.endCall(cid).catch(() => {}); 
+//       } catch (e) {}
+//     }
+
+//     // Stop foreground service
+//     try { 
+//       NativeModules.CallModule?.stopCallService(); 
+//     } catch (e) {}
+
+//     // Notify other party
+//     if (notify && ws.current?.readyState === WebSocket.OPEN) {
+//       try { 
+//         ws.current.send(JSON.stringify({ type: "call-ended" })); 
+//       } catch (e) {}
+//     }
+
+//     // Close WebSocket
+//     try {
+//       if (ws.current) {
+//         ws.current.onopen = null;
+//         ws.current.onmessage = null;
+//         ws.current.onclose = null;
+//         ws.current.onerror = null;
+//         ws.current.close();
+//         ws.current = null;
+//       }
+//     } catch (e) {}
+
+//     // Stop audio
+//     try {
+//       InCallManager.stop();
+//     } catch (e) {}
+
+//     // Cleanup peer connection
+//     try {
+//       cleanupPeerConnection();
+//     } catch (e) {}
+
+//     console.log("[VideoCall] Cleanup complete");
+//   }, 0);
+
+//   // ─── 5. SAVE HISTORY (async, no await) ───
+//   const callDetails = {
+//     contact: {
+//       name: name || 'Unknown',
+//       profileImage: profile_image || '',
+//       userId: targetUserId || 'unknown',
+//     },
+//     direction: isInitiator ? 'outgoing' : 'incoming',
+//     isVideoCall: true,
+//     status: webrtcReady ? 'ended' : 'missed',
+//     duration: callDuration || 0,
+//   };
+
+//   // Fire and forget save
+//   saveCallToHistory(callDetails).catch(() => {});
+
+// }, [navigation, isInitiator, name, profile_image, targetUserId, webrtcReady, callDuration, currentCallId]);
+
+
+
+//   const rejectCall = async () => {
+//     stopRinging();
+//     sendMessage({ type: "call-rejected" });
+//     await saveCallToHistory({
+//       contact: { name, profileImage: profile_image, userId: targetUserId },
+//       direction: 'incoming',
+//       isVideoCall: true,
+//       status: 'rejected',
+//       duration: 0,
+//     });
+//     setShowIncomingModal(false);
+//     setIncomingSDP(null);
+//     navigation.goBack();
+//   };
+
+//   const switchCamera = async () => {
+//     if (!localStream.current) return;
+//     const videoTrack = localStream.current.getVideoTracks()[0];
+//     if (videoTrack) {
+//       videoTrack._switchCamera();
+//       setIsCameraFront(!isCameraFront);
+//     }
+//   };
+
+//   const toggleMute = () => {
+//     if (localStream.current) {
+//       const audioTrack = localStream.current.getAudioTracks()[0];
+//       if (audioTrack) {
+//         audioTrack.enabled = !audioTrack.enabled;
+//         setIsMuted(!audioTrack.enabled);
+//       }
+//     }
+//   };
+
+//   const toggleSpeaker = () => {
+//     const newState = !isSpeakerOn;
+//     InCallManager.setSpeakerphoneOn(newState);
+//     setIsSpeakerOn(newState);
+//   };
+
+//   const formatTime = (seconds) => {
+//     const mins = Math.floor(seconds / 60);
+//     const secs = seconds % 60;
+//     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+//   };
+
+//   // ─── UI ───────────────────────────────────────────────────────
+
+//   return (
+  
+//     <SafeAreaView style={styles.container}>
+//       <StatusBar barStyle="light-content" />
+
+//       {(webrtcReady && callAccepted) ? (
+//         <View style={styles.callScreen}>
+//           {/* Video Call Interface */}
+//           {remoteURL ? (
+//             <View style={styles.videoContainer}>
+//               {/* Remote Video - Full Screen */}
+//               <>
+//                {console.log("RTCView rendering with:", remoteURL)}
+//               <RTCView 
+//                 streamURL={remoteURL} 
+//                 style={styles.remoteVideo} 
+//                 objectFit="cover" 
+//               />
+//               </>
+
+//               {/* Draggable Local Video PiP========= */}
+//               {localURL && pipVisible && (
+//                 <View
+//                   style={[
+//                     styles.localVideoWrapper,
+//                     {
+//                       left: pipPositionState.x,
+//                       top: pipPositionState.y,
+//                     }
+//                   ]}
+//                   {...pipPanResponder.panHandlers}
+//                 >
+//                   <View style={styles.pipContainer}>
+//                     <RTCView 
+//                       streamURL={localURL} 
+//                       style={styles.localVideoStream} 
+//                       objectFit="cover" 
+//                       mirror={isCameraFront}
+//                     />
+                    
+//                     {/* Close button */}
+//                     <TouchableOpacity 
+//                       style={styles.pipCloseButton}
+//                       onPress={togglePipVisibility}
+//                       activeOpacity={0.7}
+//                     >
+//                       <Icon name="close" size={16} color="white" />
+//                     </TouchableOpacity>
+
+//                     {/* Switch camera button on PiP */}
+//                     <TouchableOpacity 
+//                       style={styles.pipSwitchButton}
+//                       onPress={switchCamera}
+//                       activeOpacity={0.7}
+//                     >
+//                       <Icon name="flip-camera-ios" size={16} color="white" />
+//                     </TouchableOpacity>
+//                   </View>
+//                 </View>
+//               )}
+
+//               {/* Show PiP again button when hidden */}
+//               {!pipVisible && localURL && (
+//                 <TouchableOpacity 
+//                   style={styles.showPipButton}
+//                   onPress={togglePipVisibility}
+//                   activeOpacity={0.7}
+//                 >
+//                   <Icon name="videocam" size={20} color="white" />
+//                 </TouchableOpacity>
+//               )}
+
+//               {/* Top Bar with Call Info */}
+//               <View style={styles.topBar}>
+//                 <View style={styles.topBarContent}>
+//                   <Text style={styles.callerNameText} numberOfLines={1}>
+//                     {name || 'Unknown'}
+//                   </Text>
+//                   <Text style={styles.callDurationText}>
+//                     {formatTime(callDuration)}
+//                   </Text>
+//                 </View>
+//               </View>
+
+//               {/* Bottom Controls  */}
+//               <View style={styles.bottomControls}>
+//                 <View style={styles.controlsRow}>
+//                   {/* Mute Button */}
+//                   <TouchableOpacity 
+//                     style={styles.controlBtn} 
+//                     onPress={toggleMute}
+//                     activeOpacity={0.6}
+//                   >
+//                     <Icon 
+//                       name={isMuted ? "mic-off" : "mic"} 
+//                       size={22} 
+//                       color="white" 
+//                     />
+//                   </TouchableOpacity>
+
+//                   {/* Speaker Button */}
+//                   <TouchableOpacity 
+//                     style={styles.controlBtn} 
+//                     onPress={toggleSpeaker}
+//                     activeOpacity={0.6}
+//                   >
+//                     <Icon 
+//                       name={isSpeakerOn ? "volume-up" : "volume-off"} 
+//                       size={22} 
+//                       color="white" 
+//                     />
+//                   </TouchableOpacity>
+
+//                   {/* Video Toggle */}
+//                   <TouchableOpacity 
+//                     style={styles.controlBtn} 
+//                     onPress={togglePipVisibility}
+//                     activeOpacity={0.6}
+//                   >
+//                     <Icon 
+//                       name={pipVisible ? "videocam" : "videocam-off"} 
+//                       size={22} 
+//                       color="white" 
+//                     />
+//                   </TouchableOpacity>
+
+//                   {/* Switch Camera */}
+//                   <TouchableOpacity 
+//                     style={styles.controlBtn} 
+//                     onPress={switchCamera}
+//                     activeOpacity={0.6}
+//                   >
+//                     <Icon name="flip-camera-ios" size={22} color="white" />
+//                   </TouchableOpacity>
+
+//                   {/* End Call */}
+//                   <TouchableOpacity 
+//                     style={styles.endCallBtn} 
+//                     onPress={() => endCall(true)}
+//                     activeOpacity={0.6}
+//                   >
+//                     <Icon name="call-end" size={26} color="white" />
+//                   </TouchableOpacity>
+//                 </View>
+//               </View>
+//             </View>
+//           ) : (
+//             /* Loading/Avatar view when remote video not available */
+//             <View style={styles.loadingContainer}>
+//               <View style={styles.avatarContainer}>
+//                 <View style={styles.avatar}>
+//                   <Image
+//                     source={{ uri: `${profile_image}` }}
+//                     // source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
+//                     style={styles.avatarImage}
+//                     resizeMode="cover"
+//                   />
+//                 </View>
+//                 <Text style={styles.callerName}>{name}</Text>
+//                 <Text style={styles.callTypeText}>
+//                   Connecting Video • {formatTime(callDuration)}
+//                 </Text>
+//               </View>
+//             </View>
+//           )}
+//         </View>
+//       ) : (
+//         /* Connecting Screen */
+//         <View style={styles.connectingScreen}>
+//           <View style={styles.connectingContent}>
+//             {/* Avatar */}
+//             <View style={styles.connectingAvatarContainer}>
+//               <Image
+//                 source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
+//                 style={styles.connectingAvatar}
+//                 resizeMode="cover"
+//               />
+//             </View>
+
+//             {/* Name */}
+//             <Text style={styles.connectingName}>{name || 'Unknown'}</Text>
+
+//             {/* Status */}
+//             <View style={styles.connectingStatusRow}>
+//               <Text style={styles.connectingStatusText}>
+//                 {wsConnected
+//                   ? (isInitiator
+//                       ? (callAccepted ? "Connecting..." : "Processing please wait...")
+//                       : autoAnswerOnOffer
+//                         ? "Connecting to video call..."
+//                         : "Incoming video call...")
+//                   : "Connecting..."}
+//               </Text>
+//             </View>
+
+//             {/* Cancel Button */}
+//             {isInitiator && (
+//               <TouchableOpacity 
+//                 style={styles.connectingEndBtn} 
+//                 onPress={() => endCall(true)}
+//                 activeOpacity={0.6}
+//               >
+//                 <View style={styles.connectingEndIcon}>
+//                   <Icon name="call-end" size={26} color="white" />
+//                 </View>
+//                 <Text style={styles.connectingEndText}>Cancel</Text>
+//               </TouchableOpacity>
+//             )}
+//           </View>
+//         </View>
+//       )}
+
+//       {/* Incoming call modal */}
+//       {!isInitiator && (
+//         <Modal
+//           visible={showIncomingModal}
+//           transparent
+//           animationType="fade"
+//           onRequestClose={rejectCall}
+//         >
+//           <View style={styles.modalOverlay}>
+//             <View style={styles.modalContainer}>
+//               <View style={styles.modalContent}>
+//                 <Text style={styles.incomingCallText}>Incoming Video Call</Text>
+//                 <View style={styles.callerInfo}>
+//                   <View style={styles.modalAvatar}>
+//                     <Image
+//                       source={{ uri: `${profile_image}` }}
+//                       // source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
+//                       style={styles.modalAvatarImage}
+//                       resizeMode="cover"
+//                     />
+//                   </View>
+//                   <Text style={styles.modalCallerName}>{name}</Text>
+//                   <Text style={styles.modalCallType}>Video Call</Text>
+//                 </View>
+//                 <View style={styles.modalButtons}>
+//                   <TouchableOpacity style={styles.rejectButton} onPress={rejectCall}>
+//                     <View style={styles.rejectButtonInner}>
+//                       <Icon name="call-end" size={30} color="white" />
+//                     </View>
+//                     <Text style={styles.buttonText}>Decline</Text>
+//                   </TouchableOpacity>
+//                   <TouchableOpacity style={styles.acceptButton} onPress={acceptCall}>
+//                     <View style={styles.acceptButtonInner}>
+//                       <Icon name="videocam" size={30} color="white" />
+//                     </View>
+//                     <Text style={styles.buttonText}>Accept</Text>
+//                   </TouchableOpacity>
+//                 </View>
+//               </View>
+//             </View>
+//           </View>
+//         </Modal>
+//       )}
+//     </SafeAreaView>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   container: { flex: 1 },
+//   callScreen: { flex: 1, justifyContent: 'space-between', padding: 20 },
+//   videoContainer: { flex: 1, width: '100%', position: 'relative' },
+//   callInfoOverlay: {
+//     position: 'absolute',
+//     top: 5,
+//     left: 0,
+//     right: 0,
+//     alignItems: 'center',
+//     backgroundColor: 'rgba(0,0,0,0.7)',
+//     padding: 10,
+//     zIndex: 100,
+//     borderBottomLeftRadius: 5,
+//     borderBottomRightRadius: 5,
+//   },
+//   callScreen: {
+//     flex: 1,
+//     backgroundColor: '#000',
+//   },
+//   videoContainer: {
+//     flex: 1,
+//     backgroundColor: '#000',
+//   },
+//   // remoteVideo: {
+//   //   position: 'absolute',
+//   //   top: 0,
+//   //   left: 0,
+//   //   bottom: 0,
+//   //   right: 0,
+//   // },
+  
+//   // Draggable PiP
+//   localVideoWrapper: {
+//     position: 'absolute',
+//     zIndex: 10,
+//     elevation: 8,
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowOpacity: 0.3,
+//     shadowRadius: 6,
+//   },
+//   pipContainer: {
+//     width: 100,
+//     height: 140,
+//     borderRadius: 10,
+//     overflow: 'hidden',
+//     backgroundColor: '#2a2a2a',
+//     borderWidth: 1.5,
+//     borderColor: 'rgba(255, 255, 255, 0.3)',
+//   },
+//   localVideoStream: {
+//     width: '100%',
+//     height: '100%',
+//   },
+//   pipCloseButton: {
+//     position: 'absolute',
+//     top: 4,
+//     right: 4,
+//     width: 24,
+//     height: 24,
+//     borderRadius: 12,
+//     backgroundColor: 'rgba(0, 0, 0, 0.7)',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     borderWidth: 1,
+//     borderColor: 'rgba(255, 255, 255, 0.3)',
+//   },
+//   pipSwitchButton: {
+//     position: 'absolute',
+//     bottom: 4,
+//     right: 4,
+//     width: 24,
+//     height: 24,
+//     borderRadius: 12,
+//     backgroundColor: 'rgba(0, 0, 0, 0.7)',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     borderWidth: 1,
+//     borderColor: 'rgba(255, 255, 255, 0.3)',
+//   },
+//   showPipButton: {
+//     position: 'absolute',
+//     top: Platform.OS === 'ios' ? 110 : 80,
+//     right: 16,
+//     width: 40,
+//     height: 40,
+//     borderRadius: 20,
+//     backgroundColor: 'rgba(255, 255, 255, 0.2)',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     zIndex: 10,
+//     borderWidth: 1,
+//     borderColor: 'rgba(255, 255, 255, 0.3)',
+//   },
+  
+//   // Top Bar
+//   topBar: {
+//     position: 'absolute',
+//     top: 0,
+//     left: 0,
+//     right: 0,
+//     paddingTop: Platform.OS === 'ios' ? 50 : 30,
+//     paddingBottom: 15,
+//     paddingHorizontal: 16,
+//     zIndex: 5,
+//   },
+//   topBarContent: {
+//     alignItems: 'center',
+//   },
+//   callerNameText: {
+//     fontSize: 17,
+//     fontWeight: '600',
+//     color: 'white',
+//     textAlign: 'center',
+//     marginBottom: 3,
+//   },
+//   callDurationText: {
+//     fontSize: 13,
+//     color: 'rgba(255, 255, 255, 0.8)',
+//     textAlign: 'center',
+//   },
+  
+//   // Bottom Controls
+//   bottomControls: {
+//     position: 'absolute',
+//     bottom: 0,
+//     left: 0,
+//     right: 0,
+//     paddingBottom: Platform.OS === 'ios' ? 35 : 25,
+//     paddingTop: 15,
+//     paddingHorizontal: 16,
+//     zIndex: 5,
+//   },
+//   controlsRow: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-around',
+//     alignItems: 'center',
+//     paddingHorizontal: 10,
+//   },
+//   controlBtn: {
+//     width: 44,
+//     height: 44,
+//     borderRadius: 22,
+//     backgroundColor: 'rgba(255, 255, 255, 0.2)',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   endCallBtn: {
+//     width: 52,
+//     height: 52,
+//     borderRadius: 26,
+//     backgroundColor: '#E53935',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     transform: [{ rotate: '135deg' }],
+//     elevation: 3,
+//     shadowColor: '#E53935',
+//     shadowOffset: { width: 0, height: 1 },
+//     shadowOpacity: 0.3,
+//     shadowRadius: 3,
+//   },
+  
+//   // Loading Container
+//   loadingContainer: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     backgroundColor: '#1a1a2e',
+//   },
+  
+//   // Connecting Screen
+//   connectingScreen: {
+//     flex: 1,
+//     backgroundColor: '#000',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   connectingContent: {
+//     alignItems: 'center',
+//     width: '100%',
+//     paddingHorizontal: 20,
+//   },
+//   connectingAvatarContainer: {
+//     marginBottom: 25,
+//   },
+//   connectingAvatar: {
+//     width: 110,
+//     height: 110,
+//     borderRadius: 55,
+//     borderWidth: 1,
+//     borderColor: 'rgba(255, 255, 255, 0.1)',
+//   },
+//   connectingName: {
+//     fontSize: 22,
+//     fontWeight: '600',
+//     color: 'white',
+//     marginBottom: 10,
+//   },
+//   connectingStatusRow: {
+//     alignItems: 'center',
+//     marginBottom: 45,
+//   },
+//   connectingStatusText: {
+//     fontSize: 15,
+//     color: 'rgba(255, 255, 255, 0.6)',
+//   },
+//   connectingEndBtn: {
+//     alignItems: 'center',
+//   },
+//   connectingEndIcon: {
+//     width: 65,
+//     height: 65,
+//     borderRadius: 32.5,
+//     backgroundColor: '#E53935',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginBottom: 8,
+//     transform: [{ rotate: '135deg' }],
+//   },
+//   connectingEndText: {
+//     color: 'rgba(255, 255, 255, 0.6)',
+//     fontSize: 13,
+//   },
+
+//   // Modal styles
+//   modalOverlay: {
+//     flex: 1,
+//     backgroundColor: 'rgba(0,0,0,0.8)',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   modalContainer: {
+//     width: '90%',
+//     borderRadius: 20,
+//     overflow: 'hidden',
+//     backgroundColor: '#1a1a2e',
+//   },
+//   modalContent: {
+//     padding: 30,
+//     alignItems: 'center',
+//   },
+//   incomingCallText: {
+//     fontSize: 22,
+//     color: 'white',
+//     fontWeight: 'bold',
+//     marginBottom: 20,
+//   },
+//   callerInfo: {
+//     alignItems: 'center',
+//     marginBottom: 40,
+//   },
+//   modalAvatar: {
+//     width: 100,
+//     height: 100,
+//     borderRadius: 50,
+//     backgroundColor: '#4a5568',
+//     marginBottom: 15,
+//     borderWidth: 3,
+//     borderColor: 'rgba(255,255,255,0.2)',
+//     overflow: 'hidden',
+//   },
+//   modalAvatarImage: {
+//     width: '100%',
+//     height: '100%',
+//     borderRadius: 50,
+//   },
+//   modalCallerName: {
+//     fontSize: 22,
+//     color: 'white',
+//     fontWeight: 'bold',
+//     marginBottom: 5,
+//   },
+//   modalCallType: {
+//     fontSize: 16,
+//     color: '#a0aec0',
+//   },
+//   modalButtons: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-around',
+//     width: '100%',
+//   },
+//   rejectButton: {
+//     alignItems: 'center',
+//   },
+//   acceptButton: {
+//     alignItems: 'center',
+//   },
+//   rejectButtonInner: {
+//     width: 70,
+//     height: 70,
+//     borderRadius: 35,
+//     backgroundColor: '#e53e3e',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginBottom: 8,
+//   },
+//   acceptButtonInner: {
+//     width: 70,
+//     height: 70,
+//     borderRadius: 35,
+//     backgroundColor: '#38a169',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginBottom: 8,
+//   },
+//   buttonText: {
+//     color: 'white',
+//     fontSize: 14,
+//     fontWeight: '500',
+//   },
+  
+//   // Keep existing styles
+//   avatarContainer: {
+//     alignItems: 'center',
+//     marginVertical: 30,
+//     flex: 1,
+//     justifyContent: 'center',
+//   },
+//   avatar: {
+//     width: 150,
+//     height: 150,
+//     borderRadius: 75,
+//     backgroundColor: '#4a5568',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     borderWidth: 3,
+//     borderColor: 'rgba(255,255,255,0.2)',
+//     overflow: 'hidden',
+//   },
+//   avatarImage: {
+//     width: '100%',
+//     height: '100%',
+//     borderRadius: 75,
+//   },
+//   callerName: {
+//     fontSize: 20,
+//     fontWeight: 'bold',
+//     color: 'white',
+//     marginTop: 20,
+//     marginBottom: 8,
+//   },
+//   callTypeText: {
+//     fontSize: 16,
+//     color: 'rgba(255,255,255,0.9)',
+//   },
+//   avatarContainer: { alignItems: 'center', marginVertical: 30, flex: 1 },
+//   avatar: {
+//     width: 150,
+//     height: 150,
+//     borderRadius: 75,
+//     backgroundColor: '#4a5568',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     borderWidth: 3,
+//     borderColor: 'rgba(255,255,255,0.2)',
+//   },
+//   avatarImage: { width: '100%', height: '100%', borderRadius: 75 },
+  
+//   remoteVideo: { flex: 1, width: '100%', backgroundColor: '#000', zIndex: 1 },
+//   localVideo: {
+//     position: 'absolute',
+//     bottom: 120,
+//     right: 20,
+//     width: 120,
+//     height: 160,
+//     borderRadius: 10,
+//     borderWidth: 2,
+//     borderColor: 'white',
+//     backgroundColor: '#000',
+//     zIndex: 50,
+//   },
+//   voiceCallInfo: { alignItems: 'center', marginTop: 1, padding: 20, borderRadius: 15 },
+//   callerName: {
+//     fontSize: 18,
+//     fontWeight: 'bold',
+//     color: 'white',
+//     marginBottom: 8,
+//     textShadowColor: 'rgba(0,0,0,0.75)',
+//     textShadowOffset: { width: 1, height: 1 },
+//     textShadowRadius: 3,
+//   },
+//   callTypeText: {
+//     fontSize: 16,
+//     color: 'rgba(255,255,255,0.9)',
+//     textShadowColor: 'rgba(0,0,0,0.75)',
+//     textShadowOffset: { width: 1, height: 1 },
+//     textShadowRadius: 2,
+//   },
+//   callControls: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-around',
+//     marginBottom: 40,
+//     zIndex: 100,
+//   },
+//   controlButton: { alignItems: 'center' },
+//   controlIcon: {
+//     width: 60,
+//     height: 60,
+//     borderRadius: 30,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginBottom: 8,
+//   },
+//   controlText: { color: 'white', fontSize: 14 },
+//   modalOverlay: {
+//     flex: 1,
+//     backgroundColor: 'rgba(0,0,0,0.8)',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   modalContainer: { width: '90%', borderRadius: 20, overflow: 'hidden' },
+//   modalContent: { padding: 30, alignItems: 'center' },
+//   incomingCallText: { fontSize: 24, color: 'white', fontWeight: 'bold', marginBottom: 20 },
+//   callerInfo: { alignItems: 'center', marginBottom: 40 },
+//   modalAvatar: {
+//     width: 100,
+//     height: 100,
+//     borderRadius: 50,
+//     backgroundColor: '#4a5568',
+//     marginBottom: 15,
+//     borderWidth: 3,
+//     borderColor: 'rgba(255,255,255,0.2)',
+//   },
+//   modalAvatarImage: { width: '100%', height: '100%', borderRadius: 50 },
+//   modalCallerName: { fontSize: 22, color: 'white', fontWeight: 'bold', marginBottom: 5 },
+//   modalCallType: { fontSize: 16, color: '#a0aec0' },
+//   modalButtons: { flexDirection: 'row', justifyContent: 'space-around', width: '100%' },
+//   rejectButton: { alignItems: 'center' },
+//   acceptButton: { alignItems: 'center' },
+//   rejectButtonInner: {
+//     width: 70,
+//     height: 70,
+//     borderRadius: 35,
+//     backgroundColor: '#e53e3e',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginBottom: 8,
+//   },
+//   acceptButtonInner: {
+//     width: 70,
+//     height: 70,
+//     borderRadius: 35,
+//     backgroundColor: '#38a169',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginBottom: 8,
+//   },
+//   buttonText: { color: 'white', fontSize: 14, fontWeight: '500' },
+// });
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
@@ -3274,6 +5430,7 @@ import {
   DeviceEventEmitter,
   PanResponder,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import {
   RTCPeerConnection,
@@ -3295,6 +5452,10 @@ import CallKeepService from '../src/services/CallKeepService';
 import { useBackHandler } from '../src/hooks/useBackHandler';
 
 const SIGNALING_SERVER = "wss://api.showapp.ng";
+
+// How long we'll wait for the actual remote video track to arrive after a
+// call is accepted / answered before nudging the user that something's wrong.
+const REMOTE_TRACK_TIMEOUT_MS = 20000;
 
 export default function VideoCallScreen({ navigation, route }) {
     useBackHandler(navigation, 'BroadcastHome');
@@ -3322,6 +5483,18 @@ export default function VideoCallScreen({ navigation, route }) {
   const isCleaningUpRef = useRef(false);
   const isCallActiveRef = useRef(true);
   const autoAnswerOnOfferRef = useRef(autoAnswerOnOffer || false);
+
+  // Cached ICE-server fetch — kicked off as early as possible (on mount) so
+  // that by the time the user actually taps Accept, ensurePeerConnection()
+  // doesn't have to wait on a network round trip.
+  const iceServersPromiseRef = useRef(null);
+
+  // Guards against double-tapping Accept while the async handshake is
+  // still setting up, and lets us show a "connecting" state instantly.
+  const acceptInProgressRef = useRef(false);
+
+  // Timeout that watches for the remote track never arriving after accept/answer.
+  const connectTimeoutRef = useRef(null);
 
   // Refs for CallKeep stable callbacks
   const endCallRef = useRef(null);
@@ -3418,6 +5591,7 @@ export default function VideoCallScreen({ navigation, route }) {
   // ─── CallKeep callbacks (useCallback for stability) ──────────
   const acceptCallWithCallKeep = useCallback(async () => {
     console.log('[CallKeep] Accepting video call...');
+    if (acceptInProgressRef.current) return;
     stopRinging();
     isCallerRef.current = false;
     const offer = incomingSDP || incomingOffer;
@@ -3580,6 +5754,16 @@ export default function VideoCallScreen({ navigation, route }) {
     return () => stopRinging();
   }, [showIncomingModal]);
 
+  // Prefetch ICE servers the moment the screen mounts — for an incoming call
+  // this happens while the phone is still ringing, so by the time the user
+  // taps Accept the servers are (almost always) already cached and
+  // ensurePeerConnection() resolves instantly instead of waiting on a
+  // network round trip to Xirsys.
+  useEffect(() => {
+    prefetchIceServers();
+    return () => clearConnectTimeout();
+  }, []);
+
   // ─── Permissions ─────────────────────────────────────────────
   const requestPermissions = async () => {
     if (Platform.OS === "android") {
@@ -3632,104 +5816,44 @@ export default function VideoCallScreen({ navigation, route }) {
     rtcConfig.iceTransportPolicy = "all";
   };
 
+  // Wraps getIceServers() in a cached, shared promise so it only ever runs
+  // once per screen instance, no matter how many places call it.
+  const prefetchIceServers = () => {
+    if (!iceServersPromiseRef.current) {
+      iceServersPromiseRef.current = getIceServers();
+    }
+    return iceServersPromiseRef.current;
+  };
+
+  // ─── Connect timeout helpers ───────────────────────────────────
+  const clearConnectTimeout = () => {
+    if (connectTimeoutRef.current) {
+      clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = null;
+    }
+  };
+
+  const startConnectTimeout = () => {
+    clearConnectTimeout();
+    connectTimeoutRef.current = setTimeout(() => {
+      if (!isCallActiveRef.current) return;
+      if (remoteStream.current) return; // already connected, nothing to do
+
+      Alert.alert(
+        "Connection Problem",
+        "We're having trouble connecting this call. Check your internet connection.",
+        [
+          { text: "Keep Waiting", style: "cancel", onPress: () => startConnectTimeout() },
+          { text: "End Call", style: "destructive", onPress: () => endCall(true) },
+        ]
+      );
+    }, REMOTE_TRACK_TIMEOUT_MS);
+  };
+
   // ─── Peer connection ─────────────────────────────────────────
-  // const ensurePeerConnection = async () => {
-  //   if (pc.current) return;
-  //   if (!rtcConfig.iceServers.length) await getIceServers();
-
-  //   pc.current = new RTCPeerConnection(rtcConfig);
-  //   console.log("[WebRTC] RTCPeerConnection created");
-
-  //   pc.current.onnegotiationneeded = () => {
-  //     console.log("[WebRTC] onnegotiationneeded, signalingState:", pc.current?.signalingState);
-  //   };
-
-  //   pc.current.onicecandidate = (evt) => {
-  //     if (evt.candidate) {
-  //       const cand = evt.candidate.candidate;
-  //       if (cand.includes("typ relay")) console.log("🟢 [TURN WORKING]", cand);
-  //       else if (cand.includes("typ srflx")) console.log("🟡 [STUN WORKING]", cand);
-  //       sendMessage({ type: "candidate", candidate: evt.candidate });
-  //     } else {
-  //       console.log("[ICE] Gathering finished");
-  //     }
-  //   };
-
-  //   pc.current.ontrack = (evt) => {
-  //     console.log("========= TRACK RECEIVED =========");
-
-  //   console.log("Track Kind:", evt.track.kind);
-
-  //   console.log(
-  //       "Tracks in stream:",
-  //       evt.streams[0].getTracks().map(t => ({
-  //           kind: t.kind,
-  //           enabled: t.enabled,
-  //           readyState: t.readyState
-  //       }))
-  //   );
-  //     console.log("[WebRTC] Track received:", evt.track?.kind);
-  //     if (evt.streams && evt.streams[0]) {
-  //       remoteStream.current = evt.streams[0];
-  //       try { setRemoteURL(remoteStream.current.toURL()); 
-  //         console.log(remoteStream.current.toURL());
-  //         console.log("remote_stream url:", remoteStream.current.toURL());
-  //       } catch {}
-  //       setWebrtcReady(true);
-  //       setCallAccepted(true);
-  //       InCallManager.start({ media: 'video' });
-  //       InCallManager.setSpeakerphoneOn(true);
-  //     }
-  //   };
-
-  //   pc.current.onconnectionstatechange = async () => {
-  //     if (!pc.current) return;
-  //     const state = pc.current.connectionState;
-  //     console.log("[WebRTC] connectionState =>", state);
-
-  //     if (state === "connected") {
-  //       console.log("VIDEO CALL CONNECTED");
-  //       try {
-  //         const stats = await pc.current.getStats();
-  //         stats.forEach((report) => {
-  //           if (report.type === "candidate-pair" && report.state === "succeeded") {
-  //             const local = stats.get(report.localCandidateId);
-  //             const remote = stats.get(report.remoteCandidateId);
-  //             if (local?.candidateType === "relay" || remote?.candidateType === "relay") {
-  //               console.log("🟢 USING TURN (Xirsys)");
-  //             } else if (local?.candidateType === "srflx") {
-  //               console.log("🟡 USING STUN");
-  //             } else {
-  //               console.log("⚪ USING LOCAL");
-  //             }
-  //           }
-  //         });
-  //       } catch (err) {
-  //         console.warn("[WebRTC] getStats failed:", err);
-  //       }
-  //     }
-
-  //     if (state === "failed") {
-  //       console.warn("VIDEO CONNECTION FAILED");
-  //       saveCallToHistory({
-  //         contact: { name, profileImage: profile_image, userId: targetUserId },
-  //         direction: isInitiator ? 'outgoing' : 'incoming',
-  //         isVideoCall: true,
-  //         status: 'failed',
-  //         duration: callDuration,
-  //       });
-  //     }
-  //   };
-
-  //   pc.current.oniceconnectionstatechange = () => {
-  //     if (!pc.current) return;
-  //     console.log("[WebRTC] iceConnectionState =>", pc.current.iceConnectionState);
-  //   };
-  // };
-
   const ensurePeerConnection = async () => {
   if (pc.current) return;
-  if (!rtcConfig.iceServers.length) await getIceServers();
+  await prefetchIceServers();
 
   pc.current = new RTCPeerConnection(rtcConfig);
   console.log("[WebRTC] RTCPeerConnection created");
@@ -3774,8 +5898,12 @@ export default function VideoCallScreen({ navigation, route }) {
         console.error("Error getting remote URL:", e);
       }
       
+      // The remote track has actually arrived — this is the ONLY place
+      // that should flip webrtcReady, so the UI truly reflects "video is
+      // showing" rather than "we sent an answer and hoped for the best".
       setWebrtcReady(true);
       setCallAccepted(true);
+      clearConnectTimeout();
       InCallManager.start({ media: 'video' });
       InCallManager.setSpeakerphoneOn(true);
     } else {
@@ -3830,8 +5958,19 @@ export default function VideoCallScreen({ navigation, route }) {
   };
 };
 
- const ensureLocalStreamAndAttach = async () => {
-  if (!localStream.current) {
+  // Just gets camera/mic permission + the local MediaStream. Doesn't touch
+  // the peer connection at all, so it can run in parallel with
+  // ensurePeerConnection() instead of waiting behind it.
+  const getLocalStream = async () => {
+    if (localStream.current) {
+      const videoTrack = localStream.current.getVideoTracks()[0];
+      if (videoTrack && !videoTrack.enabled) {
+        videoTrack.enabled = true;
+        console.log("[Local] Re-enabled video track");
+      }
+      return true;
+    }
+
     const hasPermission = await requestPermissions();
     if (!hasPermission) {
       Alert.alert("Permission denied", "Cannot access camera or microphone.");
@@ -3840,38 +5979,31 @@ export default function VideoCallScreen({ navigation, route }) {
     try {
       const s = await mediaDevices.getUserMedia({
         audio: true,
-        video: { 
+        video: {
           facingMode: isCameraFront ? "user" : "environment",
           frameRate: 30,
         },
       });
-      
-      // ✅ Ensure video track is enabled
+
       const videoTrack = s.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = true;
         console.log("[Local] Video track enabled:", videoTrack.enabled);
       }
-      
+
       localStream.current = s;
       try { setLocalURL(s.toURL()); } catch {}
+      return true;
     } catch (e) {
       Alert.alert("Error", "Failed to get camera/mic: " + e.message);
       return false;
     }
-  }
-  
-  // ✅ Re-enable video track if it's disabled
-  if (localStream.current) {
-    const videoTrack = localStream.current.getVideoTracks()[0];
-    if (videoTrack && !videoTrack.enabled) {
-      videoTrack.enabled = true;
-      console.log("[Local] Re-enabled video track");
-    }
-  }
-  
-  // Only attach if we have a peer connection
-  if (pc.current && localStream.current) {
+  };
+
+  // Attaches whatever is in localStream.current onto pc.current. Safe to
+  // call multiple times — skips tracks that are already attached.
+  const attachLocalTracksToPeer = () => {
+    if (!pc.current || !localStream.current) return;
     const existingTracks = pc.current.getSenders().map((s) => s.track);
     localStream.current.getTracks().forEach((track) => {
       if (!existingTracks.includes(track)) {
@@ -3879,39 +6011,31 @@ export default function VideoCallScreen({ navigation, route }) {
         console.log(`[Local] Attached ${track.kind} track to peer connection`);
       }
     });
-  }
-  return true;
-};
+  };
 
-  // const ensureLocalStreamAndAttach = async () => {
-  //   if (!localStream.current) {
-  //     const hasPermission = await requestPermissions();
-  //     if (!hasPermission) {
-  //       Alert.alert("Permission denied", "Cannot access camera or microphone.");
-  //       return false;
-  //     }
-  //     try {
-  //       const s = await mediaDevices.getUserMedia({
-  //         audio: true,
-  //         video: { facingMode: isCameraFront ? "user" : "environment" },
-  //       });
-  //       localStream.current = s;
-  //       try { setLocalURL(s.toURL()); } catch {}
-  //     } catch (e) {
-  //       Alert.alert("Error", "Failed to get camera/mic: " + e.message);
-  //       return false;
-  //     }
-  //   }
-  //   if (pc.current) {
-  //     const existingTracks = pc.current.getSenders().map((s) => s.track);
-  //     localStream.current.getTracks().forEach((track) => {
-  //       if (!existingTracks.includes(track)) {
-  //         pc.current.addTrack(track, localStream.current);
-  //       }
-  //     });
-  //   }
-  //   return true;
-  // };
+  // Combined convenience helper kept for call sites that don't need the
+  // parallelized version.
+  const ensureLocalStreamAndAttach = async () => {
+    const ok = await getLocalStream();
+    if (ok) attachLocalTracksToPeer();
+    return ok;
+  };
+
+  // The optimized prep step: peer connection creation (ICE servers, usually
+  // already cached) and camera/mic acquisition happen at the same time
+  // instead of one after another, then tracks are attached once both are
+  // ready. This is what shaves the noticeable delay off of "tap Accept" →
+  // "video appears".
+  const prepareConnectionAndMedia = async () => {
+    const [, mediaOk] = await Promise.all([
+      ensurePeerConnection(),
+      getLocalStream(),
+    ]);
+    if (mediaOk && pc.current) {
+      attachLocalTracksToPeer();
+    }
+    return !!(mediaOk && pc.current);
+  };
 
   const drainQueuedCandidates = async () => {
     if (!pc.current) return;
@@ -3929,6 +6053,7 @@ export default function VideoCallScreen({ navigation, route }) {
     console.log("[Cleanup] Closing video peer connection");
     isCleaningUpRef.current = true;
     isCallActiveRef.current = false;
+    clearConnectTimeout();
     setCallAccepted(false);
     setCallStarted(false);
 
@@ -3953,6 +6078,7 @@ export default function VideoCallScreen({ navigation, route }) {
     remoteStream.current = null;
     queuedRemoteCandidates.current = [];
     hasInitialOfferRef.current = false;
+    acceptInProgressRef.current = false;
 
     try { InCallManager.stop(); } catch {}
 
@@ -4014,8 +6140,10 @@ export default function VideoCallScreen({ navigation, route }) {
       console.log("[WebSocket] Connected to", roomId);
       setWsConnected(true);
 
-      await ensurePeerConnection();
-      await ensureLocalStreamAndAttach();
+      // Prep peer connection + camera/mic in parallel ahead of time so
+      // whichever signaling message arrives next (offer/answer) can be
+      // handled with zero setup latency.
+      await prepareConnectionAndMedia();
 
       if (isInitiator && targetUserId) {
         isCallerRef.current = true;
@@ -4120,6 +6248,9 @@ export default function VideoCallScreen({ navigation, route }) {
                 new RTCSessionDescription(data.answer)
               );
               await drainQueuedCandidates();
+              // Caller now waits for the actual media track — guard against
+              // the far side never sending it (bad network, dead peer, etc).
+              startConnectTimeout();
             } catch (e) {
               console.error("[WebRTC] setRemoteDescription(answer) failed:", e?.message);
             }
@@ -4242,8 +6373,7 @@ export default function VideoCallScreen({ navigation, route }) {
     if (hasInitialOfferRef.current) return;
 
     console.log("[VideoCall] Creating initial offer...");
-    await ensurePeerConnection();
-    const ok = await ensureLocalStreamAndAttach();
+    const ok = await prepareConnectionAndMedia();
     if (!ok || !pc.current) return;
 
     try {
@@ -4290,124 +6420,10 @@ export default function VideoCallScreen({ navigation, route }) {
     }
   };
 
-//  const handleIncomingCall = async (offer) => {
-//   try {
-//     console.log("[Incoming] Starting...");
-
-//     if (!currentCallIdRef.current) {                       //  only create if not already set
-//       const newCallId = `call_${Date.now()}_${offer?.callerId || 'unknown'}`;
-//       updateCallId(newCallId);
-//     }
-    
-//     const newCallId = `call_${Date.now()}_${offer.callerId || 'unknown'}`;
-//     updateCallId(newCallId);
-
-//     if (!offer?.sdp) {
-//       console.error("[VideoCall] Missing SDP in offer");
-//       Alert.alert("Error", "Invalid video call offer.");
-//       rejectCall();
-//       return;
-//     }
-
-//     await ensurePeerConnection();
-//     const ok = await ensureLocalStreamAndAttach();
-//     if (!ok || !pc.current) {
-//       rejectCall();
-//       return;
-//     }
-
-//     // Add tracks
-//     if (pc.current && localStream.current) {
-//       const existingTracks = pc.current.getSenders().map((s) => s.track);
-//       localStream.current.getTracks().forEach((track) => {
-//         if (!existingTracks.includes(track)) {
-//           pc.current.addTrack(track, localStream.current);
-//         }
-//       });
-//     }
-
-//     // ✅ Set remote description
-//     await pc.current.setRemoteDescription(
-//       new RTCSessionDescription({ 
-//         type: offer.type || 'offer', 
-//         sdp: offer.sdp 
-//       })
-//     );
-    
-//     await drainQueuedCandidates();
-
-//     // Create answer
-//     const answer = await pc.current.createAnswer();
-//     await pc.current.setLocalDescription(answer);
-
-//     console.log("========= ANSWER SDP =========");
-// console.log(answer.sdp);
-
-//     console.log("========= BEFORE CREATE ANSWER =========");
-
-// console.log(
-//     "Local video tracks:",
-//     localStream.current.getVideoTracks().length
-// );
-
-// console.log(
-//     "Local audio tracks:",
-//     localStream.current.getAudioTracks().length
-// );
-
-// console.log(
-//     "Peer senders:",
-//     pc.current.getSenders().map(sender => ({
-//         kind: sender.track?.kind,
-//         enabled: sender.track?.enabled,
-//         readyState: sender.track?.readyState
-//     }))
-// );
-
-//     // Send answer
-//     sendMessage({
-//       type: "answer",
-//       answer: { type: answer.type, sdp: answer.sdp },
-//       isVideoCall: true,
-//     });
-
-//     // Wait for ontrack to fire
-//     console.log("[Incoming] Waiting for remote tracks...");
-    
-//     const trackTimeout = setTimeout(() => {
-//       if (!remoteStream.current) {
-//         console.warn("[Incoming] No remote tracks received after 5 seconds!");
-       
-//         const receivers = pc.current?.getReceivers();
-//         if (receivers && receivers.length > 0) {
-//           console.log("[Incoming] Found receivers:", receivers.length);
-//           receivers.forEach(r => {
-//             console.log("[Incoming] Receiver track:", r.track?.kind);
-//           });
-//         }
-//       }
-//     }, 5000);
-
-//     setWebrtcReady(true);
-//     setCallAccepted(true);
-//     setShowIncomingModal(false);
-//     setIncomingSDP(null);
-
-//     try { NativeModules.CallModule?.stopCallService(); } catch {}
-
-//     console.log("[VideoCall] Incoming call accepted");
-    
-//     // Clear timeout
-//     return () => clearTimeout(trackTimeout);
-    
-//   } catch (error) {
-//     console.error("[VideoCall] handleIncomingCall error:", error?.message);
-//     Alert.alert("Error", "Failed to accept video call: " + (error?.message || "Unknown"));
-//     rejectCall();
-//   }
-// };
-
 const handleIncomingCall = async (offer) => {
+  if (acceptInProgressRef.current) return;
+  acceptInProgressRef.current = true;
+
   try {
     console.log("[Incoming] Starting...");
 
@@ -4419,38 +6435,30 @@ const handleIncomingCall = async (offer) => {
     if (!offer?.sdp) {
       console.error("[VideoCall] Missing SDP in offer");
       Alert.alert("Error", "Invalid video call offer.");
+      acceptInProgressRef.current = false;
       rejectCall();
       return;
     }
 
-    // ✅ STEP 1: Ensure peer connection is created
-    await ensurePeerConnection();
-    
-    // ✅ STEP 2: Ensure local stream is created
-    const ok = await ensureLocalStreamAndAttach();
+    // ✅ STEP 0: Flip the UI over to the "connecting" state immediately —
+    // don't leave the Accept/Decline modal sitting on screen while the
+    // WebRTC handshake runs in the background. The user sees a spinner
+    // and "Please wait, connecting..." right away.
+    setShowIncomingModal(false);
+    setIncomingSDP(null);
+    setCallAccepted(true);
+    try { NativeModules.CallModule?.stopCallService(); } catch {}
+
+    // ✅ STEP 1 + 2: Peer connection creation and camera/mic acquisition
+    // happen in parallel instead of one after another.
+    const ok = await prepareConnectionAndMedia();
     if (!ok || !pc.current) {
+      acceptInProgressRef.current = false;
       rejectCall();
       return;
     }
 
-    // ✅ STEP 3: Add tracks to peer connection BEFORE setting remote description
-    if (pc.current && localStream.current) {
-      const existingSenders = pc.current.getSenders();
-      const existingTrackIds = new Set(existingSenders.map(s => s.track?.id).filter(Boolean));
-      
-      // Clear existing senders to avoid duplication
-      existingSenders.forEach(sender => {
-        pc.current.removeTrack(sender);
-      });
-      
-      // Add all tracks fresh
-      localStream.current.getTracks().forEach((track) => {
-        console.log(`[Incoming] Adding track: ${track.kind}`);
-        pc.current.addTrack(track, localStream.current);
-      });
-    }
-
-    // ✅ STEP 4: Set remote description
+    // ✅ STEP 3: Set remote description
     await pc.current.setRemoteDescription(
       new RTCSessionDescription({ 
         type: offer.type || 'offer', 
@@ -4460,7 +6468,7 @@ const handleIncomingCall = async (offer) => {
     
     await drainQueuedCandidates();
 
-    // ✅ STEP 5: Create answer with explicit video/audio options
+    // ✅ STEP 4: Create answer with explicit video/audio options
     const answer = await pc.current.createAnswer({
       offerToReceiveAudio: true,
       offerToReceiveVideo: true,
@@ -4469,8 +6477,6 @@ const handleIncomingCall = async (offer) => {
     await pc.current.setLocalDescription(answer);
 
     // Debug logging
-    console.log("========= ANSWER SDP =========");
-    console.log(answer.sdp);
     console.log("Local video tracks:", localStream.current.getVideoTracks().length);
     console.log("Local audio tracks:", localStream.current.getAudioTracks().length);
     console.log("Peer senders:", pc.current.getSenders().map(sender => ({
@@ -4479,27 +6485,26 @@ const handleIncomingCall = async (offer) => {
       readyState: sender.track?.readyState
     })));
 
-    // ✅ STEP 6: Send answer
+    // ✅ STEP 5: Send answer
     sendMessage({
       type: "answer",
       answer: { type: answer.type, sdp: answer.sdp },
       isVideoCall: true,
     });
 
-    setWebrtcReady(true);
-    setCallAccepted(true);
-    setShowIncomingModal(false);
-    setIncomingSDP(null);
+    // Note: webrtcReady is intentionally NOT set here — it's only set once
+    // pc.current.ontrack actually fires with the remote media. Until then
+    // the connecting screen shows a spinner + "Please wait, connecting...".
+    startConnectTimeout();
 
-    // Stop foreground service notification
-    try { NativeModules.CallModule?.stopCallService(); } catch {}
-
-    console.log("[VideoCall] Incoming call accepted");
+    console.log("[VideoCall] Answer sent, waiting for remote track...");
     
   } catch (error) {
     console.error("[VideoCall] handleIncomingCall error:", error?.message);
     Alert.alert("Error", "Failed to accept video call: " + (error?.message || "Unknown"));
     rejectCall();
+  } finally {
+    acceptInProgressRef.current = false;
   }
 };
 
@@ -4528,6 +6533,7 @@ const handleIncomingCall = async (offer) => {
 
   // ─── Call actions ─────────────────────────────────────────────
   const acceptCall = async () => {
+    if (acceptInProgressRef.current) return;
     stopRinging();
     isCallerRef.current = false;
     const offer = incomingSDP;
@@ -4545,7 +6551,6 @@ const handleIncomingCall = async (offer) => {
     const newCallId = `call_${Date.now()}_${targetUserId}`;
     updateCallId(newCallId);
     startAudioSession();
-    await ensureLocalStreamAndAttach();
     await createAndSendInitialOffer();
   };
 
@@ -4558,6 +6563,7 @@ const handleIncomingCall = async (offer) => {
   
   // Mark call as inactive immediately
   isCallActiveRef.current = false;
+  clearConnectTimeout();
 
   // ─── 2. IMMEDIATE STATE RESET ───
   // Reset all UI state immediately
@@ -4697,6 +6703,19 @@ const handleIncomingCall = async (offer) => {
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
+
+  // Text shown on the pre-video "connecting" screen.
+  const getConnectingStatusText = () => {
+    if (!wsConnected) return "Connecting...";
+    if (callAccepted) return "Please wait, connecting...";
+    if (isInitiator) return "Calling...";
+    if (autoAnswerOnOffer) return "Connecting to video call...";
+    return "Incoming video call...";
+  };
+
+  // Show a spinner once we're actively negotiating media (either side),
+  // as opposed to just ringing/dialing.
+  const showConnectingSpinner = wsConnected && callAccepted && !webrtcReady;
 
   // ─── UI ───────────────────────────────────────────────────────
 
@@ -4847,18 +6866,19 @@ const handleIncomingCall = async (offer) => {
               </View>
             </View>
           ) : (
-            /* Loading/Avatar view when remote video not available */
+            /* Loading/Avatar fallback — only hit if webrtcReady got set
+               without remoteURL yet being available (edge case safety net) */
             <View style={styles.loadingContainer}>
               <View style={styles.avatarContainer}>
                 <View style={styles.avatar}>
                   <Image
                     source={{ uri: `${profile_image}` }}
-                    // source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
                     style={styles.avatarImage}
                     resizeMode="cover"
                   />
                 </View>
                 <Text style={styles.callerName}>{name}</Text>
+                <ActivityIndicator size="small" color="#fff" style={{ marginTop: 10 }} />
                 <Text style={styles.callTypeText}>
                   Connecting Video • {formatTime(callDuration)}
                 </Text>
@@ -4867,7 +6887,10 @@ const handleIncomingCall = async (offer) => {
           )}
         </View>
       ) : (
-        /* Connecting Screen */
+        /* Connecting Screen — shown from mount until the remote video
+           track has actually arrived. Once accepted/answered, this shows
+           a spinner + "Please wait, connecting..." instead of the old
+           ambiguous "Incoming video call..." text lingering on screen. */
         <View style={styles.connectingScreen}>
           <View style={styles.connectingContent}>
             {/* Avatar */}
@@ -4884,19 +6907,22 @@ const handleIncomingCall = async (offer) => {
 
             {/* Status */}
             <View style={styles.connectingStatusRow}>
+              {showConnectingSpinner && (
+                <ActivityIndicator
+                  size="small"
+                  color="rgba(255,255,255,0.8)"
+                  style={{ marginBottom: 10 }}
+                />
+              )}
               <Text style={styles.connectingStatusText}>
-                {wsConnected
-                  ? (isInitiator
-                      ? (callAccepted ? "Connecting..." : "Processing please wait...")
-                      : autoAnswerOnOffer
-                        ? "Connecting to video call..."
-                        : "Incoming video call...")
-                  : "Connecting..."}
+                {getConnectingStatusText()}
               </Text>
             </View>
 
-            {/* Cancel Button */}
-            {isInitiator && (
+            {/* Cancel / End Button — available any time we're not showing
+                the Accept/Decline modal, so either side can bail out of a
+                stuck connection. */}
+            {!showIncomingModal && (
               <TouchableOpacity 
                 style={styles.connectingEndBtn} 
                 onPress={() => endCall(true)}
@@ -4928,7 +6954,6 @@ const handleIncomingCall = async (offer) => {
                   <View style={styles.modalAvatar}>
                     <Image
                       source={{ uri: `${profile_image}` }}
-                      // source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` }}
                       style={styles.modalAvatarImage}
                       resizeMode="cover"
                     />
@@ -4983,13 +7008,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-  // remoteVideo: {
-  //   position: 'absolute',
-  //   top: 0,
-  //   left: 0,
-  //   bottom: 0,
-  //   right: 0,
-  // },
   
   // Draggable PiP
   localVideoWrapper: {
@@ -5305,18 +7323,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'rgba(255,255,255,0.9)',
   },
-  avatarContainer: { alignItems: 'center', marginVertical: 30, flex: 1 },
-  avatar: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: '#4a5568',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  avatarImage: { width: '100%', height: '100%', borderRadius: 75 },
   
   remoteVideo: { flex: 1, width: '100%', backgroundColor: '#000', zIndex: 1 },
   localVideo: {
@@ -5332,22 +7338,6 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
   voiceCallInfo: { alignItems: 'center', marginTop: 1, padding: 20, borderRadius: 15 },
-  callerName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 8,
-    textShadowColor: 'rgba(0,0,0,0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  callTypeText: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.9)',
-    textShadowColor: 'rgba(0,0,0,0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
   callControls: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -5364,49 +7354,5 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   controlText: { color: 'white', fontSize: 14 },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: { width: '90%', borderRadius: 20, overflow: 'hidden' },
-  modalContent: { padding: 30, alignItems: 'center' },
-  incomingCallText: { fontSize: 24, color: 'white', fontWeight: 'bold', marginBottom: 20 },
-  callerInfo: { alignItems: 'center', marginBottom: 40 },
-  modalAvatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#4a5568',
-    marginBottom: 15,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  modalAvatarImage: { width: '100%', height: '100%', borderRadius: 50 },
-  modalCallerName: { fontSize: 22, color: 'white', fontWeight: 'bold', marginBottom: 5 },
-  modalCallType: { fontSize: 16, color: '#a0aec0' },
-  modalButtons: { flexDirection: 'row', justifyContent: 'space-around', width: '100%' },
-  rejectButton: { alignItems: 'center' },
-  acceptButton: { alignItems: 'center' },
-  rejectButtonInner: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#e53e3e',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  acceptButtonInner: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#38a169',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  buttonText: { color: 'white', fontSize: 14, fontWeight: '500' },
 });
 

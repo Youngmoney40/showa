@@ -1,5 +1,4 @@
 
-
 // import React, { useState, useEffect } from 'react';
 // import {
 //   View,
@@ -112,6 +111,73 @@
 //   { code: 'PG', name: 'Papua New Guinea', flag: '🇵🇬' },
 // ];
 
+// // States / provinces / regions grouped by country code.
+// // Add more country codes here to enable the auto state-popup for them.
+// // Any country NOT listed here will simply skip the state step.
+// const statesByCountry = {
+//   US: [
+//     'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado',
+//     'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho',
+//     'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana',
+//     'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',
+//     'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada',
+//     'New Hampshire', 'New Jersey', 'New Mexico', 'New York',
+//     'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon',
+//     'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
+//     'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington',
+//     'West Virginia', 'Wisconsin', 'Wyoming', 'District of Columbia',
+//   ],
+//   CA: [
+//     'Alberta', 'British Columbia', 'Manitoba', 'New Brunswick',
+//     'Newfoundland and Labrador', 'Northwest Territories', 'Nova Scotia',
+//     'Nunavut', 'Ontario', 'Prince Edward Island', 'Quebec',
+//     'Saskatchewan', 'Yukon',
+//   ],
+//   NG: [
+//     'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa',
+//     'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti',
+//     'Enugu', 'FCT - Abuja', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano',
+//     'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger',
+//     'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto',
+//     'Taraba', 'Yobe', 'Zamfara',
+//   ],
+//   GH: [
+//     'Ahafo', 'Ashanti', 'Bono', 'Bono East', 'Central', 'Eastern',
+//     'Greater Accra', 'North East', 'Northern', 'Oti', 'Savannah',
+//     'Upper East', 'Upper West', 'Volta', 'Western', 'Western North',
+//   ],
+//   ZA: [
+//     'Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo',
+//     'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape',
+//   ],
+//   KE: [
+//     'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Uasin Gishu', 'Kiambu',
+//     'Machakos', 'Kajiado', 'Kilifi', 'Meru',
+//   ],
+//   AU: [
+//     'Australian Capital Territory', 'New South Wales', 'Northern Territory',
+//     'Queensland', 'South Australia', 'Tasmania', 'Victoria',
+//     'Western Australia',
+//   ],
+//   GB: ['England', 'Scotland', 'Wales', 'Northern Ireland'],
+//   IN: [
+//     'Andhra Pradesh', 'Bihar', 'Delhi', 'Gujarat', 'Karnataka', 'Kerala',
+//     'Madhya Pradesh', 'Maharashtra', 'Punjab', 'Rajasthan', 'Tamil Nadu',
+//     'Telangana', 'Uttar Pradesh', 'West Bengal',
+//   ],
+//   DE: [
+//     'Baden-Württemberg', 'Bavaria', 'Berlin', 'Brandenburg', 'Bremen',
+//     'Hamburg', 'Hesse', 'Lower Saxony', 'Mecklenburg-Vorpommern',
+//     'North Rhine-Westphalia', 'Rhineland-Palatinate', 'Saarland',
+//     'Saxony', 'Saxony-Anhalt', 'Schleswig-Holstein', 'Thuringia',
+//   ],
+//   BR: [
+//     'São Paulo', 'Rio de Janeiro', 'Minas Gerais', 'Bahia', 'Paraná',
+//     'Rio Grande do Sul', 'Pernambuco', 'Ceará', 'Santa Catarina',
+//     'Goiás',
+//   ],
+// };
+
 // export default function CreateListingScreen({ navigation }) {
 //   const [title, setTitle] = useState('');
 //   const [price, setPrice] = useState('');
@@ -119,18 +185,27 @@
 //   const [location, setLocation] = useState('');
 //   const [city, setCity] = useState('');
 //   const [country, setCountry] = useState(null);
+//   const [selectedState, setSelectedState] = useState(null);
 //   const [selectedCategory, setSelectedCategory] = useState(null);
 //   const [categories, setCategories] = useState([]);
 //   const [images, setImages] = useState([]);
 //   const [loading, setLoading] = useState(false);
 //   const [modalVisible, setModalVisible] = useState(false);
 //   const [countryModalVisible, setCountryModalVisible] = useState(false);
+//   const [stateModalVisible, setStateModalVisible] = useState(false);
 //   const [loadingCategories, setLoadingCategories] = useState(true);
 //   const [searchQuery, setSearchQuery] = useState('');
+//   const [stateSearchQuery, setStateSearchQuery] = useState('');
 
 //   // Filter countries based on search
-//   const filteredCountries = countries.filter(country => 
+//   const filteredCountries = countries.filter(country =>
 //     country.name.toLowerCase().includes(searchQuery.toLowerCase())
+//   );
+
+//   // States available for the currently selected country (if any)
+//   const availableStates = country ? (statesByCountry[country.code] || []) : [];
+//   const filteredStates = availableStates.filter(state =>
+//     state.toLowerCase().includes(stateSearchQuery.toLowerCase())
 //   );
 
 //   // Fetch categories on mount
@@ -143,14 +218,14 @@
 //     try {
 //       const token = await AsyncStorage.getItem('userToken');
 //       console.log('Fetching categories from:', `${API_ROUTE}/listing-categories/`);
-      
+
 //       const response = await axios.get(`${API_ROUTE}/listing-categories/`, {
 //         headers: { 'Authorization': `Bearer ${token}` }
 //       });
-      
+
 //       console.log('Categories response:', response.data);
-      
-      
+
+
 //       if (response.data.success) {
 //         setCategories(response.data.categories);
 //       } else if (Array.isArray(response.data)) {
@@ -158,7 +233,7 @@
 //       } else if (response.data.categories) {
 //         setCategories(response.data.categories);
 //       }
-      
+
 //     } catch (error) {
 //       console.error('Error fetching categories:', error);
 //       Alert.alert(
@@ -192,6 +267,27 @@
 //     setImages(newImages);
 //   };
 
+  
+//   const handleSelectCountry = (item) => {
+//     setCountry(item);
+//     setSelectedState(null); // reset any previously picked state
+//     setCountryModalVisible(false);
+//     setSearchQuery('');
+
+//     const states = statesByCountry[item.code] || [];
+//     if (states.length > 0) {
+//       setStateSearchQuery('');
+      
+//       setTimeout(() => setStateModalVisible(true), 250);
+//     }
+//   };
+
+//   const handleSelectState = (stateName) => {
+//     setSelectedState(stateName);
+//     setStateModalVisible(false);
+//     setStateSearchQuery('');
+//   };
+
 //   const uploadListing = async () => {
 //     if (!title.trim() || !price.trim() || !description.trim() || images.length === 0) {
 //       Alert.alert('Missing Information', 'Please fill in all fields and add at least one image.');
@@ -218,11 +314,18 @@
 //     formData.append('title', title.trim());
 //     formData.append('price', parseFloat(price).toFixed(2));
 //     formData.append('description', description.trim());
+
+//     const combinedCountry = selectedState
+//       ? `${selectedState} ${country.name}`
+//       : country.name;
+
     
-//     // Combine city and country for full location
-//     const fullLocation = city.trim() ? `${city.trim()}, ${country.name}` : country.name;
+//     const fullLocation = city.trim()
+//       ? `${city.trim()}, ${combinedCountry}`
+//       : combinedCountry;
+
 //     formData.append('location', fullLocation);
-//     formData.append('country', country.code);
+//     formData.append('country', combinedCountry);
 //     formData.append('city', city.trim());
 //     formData.append('category', selectedCategory.id);
 
@@ -249,7 +352,7 @@
 //         [
 //           {
 //             text: 'View Listings',
-//             onPress: () => navigation.goBack(),
+//             onPress: () => navigation.navigate('MarketPlace'),
 //           },
 //           {
 //             text: 'Create Another',
@@ -259,6 +362,7 @@
 //               setDescription('');
 //               setCity('');
 //               setCountry(null);
+//               setSelectedState(null);
 //               setLocation('');
 //               setSelectedCategory(null);
 //               setImages([]);
@@ -308,11 +412,7 @@
 //         styles.countryItem,
 //         country?.code === item.code && styles.countryItemSelected
 //       ]}
-//       onPress={() => {
-//         setCountry(item);
-//         setCountryModalVisible(false);
-//         setSearchQuery('');
-//       }}
+//       onPress={() => handleSelectCountry(item)}
 //     >
 //       <View style={styles.countryItemContent}>
 //         <Text style={styles.countryFlag}>{item.flag}</Text>
@@ -329,6 +429,28 @@
 //     </TouchableOpacity>
 //   );
 
+//   const renderStateItem = ({ item }) => (
+//     <TouchableOpacity
+//       style={[
+//         styles.countryItem,
+//         selectedState === item && styles.countryItemSelected
+//       ]}
+//       onPress={() => handleSelectState(item)}
+//     >
+//       <View style={styles.countryItemContent}>
+//         <Text style={[
+//           styles.countryName,
+//           selectedState === item && styles.countryNameSelected
+//         ]}>
+//           {item}
+//         </Text>
+//       </View>
+//       {selectedState === item && (
+//         <Icon name="check" size={20} color={Colors.primary || '#007AFF'} />
+//       )}
+//     </TouchableOpacity>
+//   );
+
 //   return (
 //     <SafeAreaView style={styles.safeArea}>
 //       <KeyboardAvoidingView
@@ -336,14 +458,14 @@
 //         style={styles.container}
 //         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
 //       >
-//         <ScrollView 
+//         <ScrollView
 //           style={styles.scrollView}
 //           showsVerticalScrollIndicator={false}
 //           contentContainerStyle={styles.scrollContent}
 //         >
 //           {/* Header */}
 //           <View style={styles.header}>
-//             <TouchableOpacity 
+//             <TouchableOpacity
 //               style={styles.backButton}
 //               onPress={() => navigation.goBack()}
 //             >
@@ -406,7 +528,7 @@
 //                   </>
 //                 )}
 //               </TouchableOpacity>
-              
+
 //               {/* Show selected category info */}
 //               {selectedCategory && (
 //                 <View style={styles.selectedCategoryInfo}>
@@ -420,7 +542,7 @@
 //               )}
 //             </View>
 
-//             {/* Country Selection */}
+//             {/* Country + State Selection (single field) */}
 //             <View style={styles.inputContainer}>
 //               <Text style={styles.label}>Country</Text>
 //               <TouchableOpacity
@@ -430,13 +552,22 @@
 //                 {country ? (
 //                   <View style={styles.countryDisplay}>
 //                     <Text style={styles.selectedCountryFlag}>{country.flag}</Text>
-//                     <Text style={styles.selectedCountryName}>{country.name}</Text>
+//                     <Text style={styles.selectedCountryName} numberOfLines={1}>
+//                       {country.name}{selectedState ? `, ${selectedState}` : ''}
+//                     </Text>
 //                   </View>
 //                 ) : (
 //                   <Text style={styles.countryPlaceholder}>Select your country</Text>
 //                 )}
 //                 <Icon name="chevron-down" size={20} color="#999" />
 //               </TouchableOpacity>
+//               {country && availableStates.length > 0 && !selectedState && (
+//                 <TouchableOpacity onPress={() => setStateModalVisible(true)}>
+//                   <Text style={styles.statePrompt}>
+//                     Tap to choose a state/province for {country.name}
+//                   </Text>
+//                 </TouchableOpacity>
+//               )}
 //             </View>
 
 //             {/* City/Location */}
@@ -469,7 +600,7 @@
 //               </View>
 //               {country && city && (
 //                 <Text style={styles.locationPreview}>
-//                   📍 {location ? `${location}, ` : ''}{city}, {country.name}
+//                   📍 {location ? `${location}, ` : ''}{city}, {selectedState ? `${selectedState} ` : ''}{country.name}
 //                 </Text>
 //               )}
 //             </View>
@@ -494,7 +625,7 @@
 //               <Text style={styles.label}>
 //                 Photos <Text style={styles.imageCount}>({images.length}/5)</Text>
 //               </Text>
-              
+
 //               <TouchableOpacity
 //                 style={styles.imagePickerButton}
 //                 onPress={pickImages}
@@ -513,8 +644,8 @@
 
 //               {/* Image Thumbnails */}
 //               {images.length > 0 && (
-//                 <ScrollView 
-//                   horizontal 
+//                 <ScrollView
+//                   horizontal
 //                   showsHorizontalScrollIndicator={false}
 //                   style={styles.imageScroll}
 //                   contentContainerStyle={styles.imageScrollContent}
@@ -548,7 +679,7 @@
 //             <TouchableOpacity
 //               style={[
 //                 styles.createButton,
-//                 (!title || !price || !description || images.length === 0 || !selectedCategory || !country) && 
+//                 (!title || !price || !description || images.length === 0 || !selectedCategory || !country) &&
 //                 styles.createButtonDisabled
 //               ]}
 //               onPress={uploadListing}
@@ -588,7 +719,7 @@
 //                 <Icon name="x" size={24} color="#333" />
 //               </TouchableOpacity>
 //             </View>
-            
+
 //             {loadingCategories ? (
 //               <View style={styles.modalLoading}>
 //                 <ActivityIndicator size="large" color={Colors.primary || '#007AFF'} />
@@ -606,7 +737,7 @@
 //               <View style={styles.emptyContainer}>
 //                 <Icon name="folder" size={50} color="#ccc" />
 //                 <Text style={styles.emptyText}>No categories available</Text>
-//                 <TouchableOpacity 
+//                 <TouchableOpacity
 //                   style={styles.retryButton}
 //                   onPress={fetchCategories}
 //                 >
@@ -656,7 +787,7 @@
 //                 </TouchableOpacity>
 //               )}
 //             </View>
-            
+
 //             <FlatList
 //               data={filteredCountries}
 //               keyExtractor={(item) => item.code}
@@ -667,6 +798,65 @@
 //                 <View style={styles.emptyContainer}>
 //                   <Icon name="search" size={50} color="#ccc" />
 //                   <Text style={styles.emptyText}>No countries found</Text>
+//                 </View>
+//               }
+//             />
+//           </View>
+//         </View>
+//       </Modal>
+
+//       {/* State Selection Modal - opens automatically right after a country
+//           with known states/provinces is picked */}
+//       <Modal
+//         visible={stateModalVisible}
+//         animationType="slide"
+//         transparent={true}
+//         onRequestClose={() => {
+//           setStateModalVisible(false);
+//           setStateSearchQuery('');
+//         }}
+//       >
+//         <View style={styles.modalOverlay}>
+//           <View style={styles.modalContent}>
+//             <View style={styles.modalHeader}>
+//               <Text style={styles.modalTitle}>
+//                 Select State {country ? `(${country.name})` : ''}
+//               </Text>
+//               <TouchableOpacity onPress={() => {
+//                 setStateModalVisible(false);
+//                 setStateSearchQuery('');
+//               }}>
+//                 <Icon name="x" size={24} color="#333" />
+//               </TouchableOpacity>
+//             </View>
+
+//             {/* Search Input */}
+//             <View style={styles.searchContainer}>
+//               <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
+//               <TextInput
+//                 style={styles.searchInput}
+//                 placeholder="Search states..."
+//                 placeholderTextColor="#999"
+//                 value={stateSearchQuery}
+//                 onChangeText={setStateSearchQuery}
+//               />
+//               {stateSearchQuery.length > 0 && (
+//                 <TouchableOpacity onPress={() => setStateSearchQuery('')}>
+//                   <Icon name="x" size={20} color="#999" />
+//                 </TouchableOpacity>
+//               )}
+//             </View>
+
+//             <FlatList
+//               data={filteredStates}
+//               keyExtractor={(item) => item}
+//               renderItem={renderStateItem}
+//               showsVerticalScrollIndicator={false}
+//               contentContainerStyle={styles.countryList}
+//               ListEmptyComponent={
+//                 <View style={styles.emptyContainer}>
+//                   <Icon name="search" size={50} color="#ccc" />
+//                   <Text style={styles.emptyText}>No states found</Text>
 //                 </View>
 //               }
 //             />
@@ -1028,10 +1218,16 @@
 //     fontSize: 16,
 //     color: '#333',
 //     fontWeight: '500',
+//     flexShrink: 1,
 //   },
 //   countryPlaceholder: {
 //     color: '#999',
 //     fontSize: 16,
+//   },
+//   statePrompt: {
+//     marginTop: 8,
+//     fontSize: 13,
+//     color: Colors.primary || '#007AFF',
 //   },
 //   locationPreview: {
 //     marginTop: 8,
@@ -1107,16 +1303,18 @@ import {
   StyleSheet,
   Modal,
   FlatList,
+  StatusBar,
 } from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Feather';
 import Icon2 from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
-import Colors from '../theme/colors';
-import { API_ROUTE } from '../api_routing/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../src/context/ThemeContext';
+import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
 
+// Countries and states data (keeping the same)
 const countries = [
   { code: 'US', name: 'United States', flag: '🇺🇸' },
   { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
@@ -1204,9 +1402,7 @@ const countries = [
   { code: 'PG', name: 'Papua New Guinea', flag: '🇵🇬' },
 ];
 
-// States / provinces / regions grouped by country code.
-// Add more country codes here to enable the auto state-popup for them.
-// Any country NOT listed here will simply skip the state step.
+// States data (keeping the same)
 const statesByCountry = {
   US: [
     'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado',
@@ -1272,6 +1468,8 @@ const statesByCountry = {
 };
 
 export default function CreateListingScreen({ navigation }) {
+  const { colors, isDark } = useTheme();
+  
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
@@ -1295,7 +1493,7 @@ export default function CreateListingScreen({ navigation }) {
     country.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // States available for the currently selected country (if any)
+  // States available for the currently selected country
   const availableStates = country ? (statesByCountry[country.code] || []) : [];
   const filteredStates = availableStates.filter(state =>
     state.toLowerCase().includes(stateSearchQuery.toLowerCase())
@@ -1317,7 +1515,6 @@ export default function CreateListingScreen({ navigation }) {
       });
 
       console.log('Categories response:', response.data);
-
 
       if (response.data.success) {
         setCategories(response.data.categories);
@@ -1360,17 +1557,15 @@ export default function CreateListingScreen({ navigation }) {
     setImages(newImages);
   };
 
-  
   const handleSelectCountry = (item) => {
     setCountry(item);
-    setSelectedState(null); // reset any previously picked state
+    setSelectedState(null);
     setCountryModalVisible(false);
     setSearchQuery('');
 
     const states = statesByCountry[item.code] || [];
     if (states.length > 0) {
       setStateSearchQuery('');
-      
       setTimeout(() => setStateModalVisible(true), 250);
     }
   };
@@ -1412,7 +1607,6 @@ export default function CreateListingScreen({ navigation }) {
       ? `${selectedState} ${country.name}`
       : country.name;
 
-    
     const fullLocation = city.trim()
       ? `${city.trim()}, ${combinedCountry}`
       : combinedCountry;
@@ -1471,11 +1665,14 @@ export default function CreateListingScreen({ navigation }) {
     }
   };
 
+  const styles = createStyles(colors, isDark);
+
   const renderCategoryItem = ({ item }) => (
     <TouchableOpacity
       style={[
         styles.categoryItem,
-        selectedCategory?.id === item.id && styles.categoryItemSelected
+        selectedCategory?.id === item.id && styles.categoryItemSelected,
+        { borderBottomColor: colors.border }
       ]}
       onPress={() => {
         setSelectedCategory(item);
@@ -1494,7 +1691,7 @@ export default function CreateListingScreen({ navigation }) {
         </Text>
       </View>
       {selectedCategory?.id === item.id && (
-        <Icon name="check" size={20} color={Colors.primary || '#007AFF'} />
+        <Icon name="check" size={20} color={colors.primary} />
       )}
     </TouchableOpacity>
   );
@@ -1503,7 +1700,8 @@ export default function CreateListingScreen({ navigation }) {
     <TouchableOpacity
       style={[
         styles.countryItem,
-        country?.code === item.code && styles.countryItemSelected
+        country?.code === item.code && styles.countryItemSelected,
+        { borderBottomColor: colors.border }
       ]}
       onPress={() => handleSelectCountry(item)}
     >
@@ -1517,7 +1715,7 @@ export default function CreateListingScreen({ navigation }) {
         </Text>
       </View>
       {country?.code === item.code && (
-        <Icon name="check" size={20} color={Colors.primary || '#007AFF'} />
+        <Icon name="check" size={20} color={colors.primary} />
       )}
     </TouchableOpacity>
   );
@@ -1526,7 +1724,8 @@ export default function CreateListingScreen({ navigation }) {
     <TouchableOpacity
       style={[
         styles.countryItem,
-        selectedState === item && styles.countryItemSelected
+        selectedState === item && styles.countryItemSelected,
+        { borderBottomColor: colors.border }
       ]}
       onPress={() => handleSelectState(item)}
     >
@@ -1539,16 +1738,21 @@ export default function CreateListingScreen({ navigation }) {
         </Text>
       </View>
       {selectedState === item && (
-        <Icon name="check" size={20} color={Colors.primary || '#007AFF'} />
+        <Icon name="check" size={20} color={colors.primary} />
       )}
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
+      
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background }]}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView
@@ -1557,12 +1761,15 @@ export default function CreateListingScreen({ navigation }) {
           contentContainerStyle={styles.scrollContent}
         >
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { 
+            backgroundColor: colors.primary,
+            borderBottomColor: colors.border 
+          }]}>
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <Icon name="arrow-left" size={24} color={Colors.text || '#333'} />
+              <Icon name="arrow-left" size={24} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Create Listing</Text>
             <View style={{ width: 40 }} />
@@ -1572,11 +1779,15 @@ export default function CreateListingScreen({ navigation }) {
           <View style={styles.formContainer}>
             {/* Title */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Title</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Title</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { 
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.text
+                }]}
                 placeholder="What are you selling?"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.textTertiary}
                 value={title}
                 onChangeText={setTitle}
                 maxLength={100}
@@ -1585,13 +1796,16 @@ export default function CreateListingScreen({ navigation }) {
 
             {/* Price */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Price</Text>
-              <View style={styles.priceContainer}>
-                <Text style={styles.currencySymbol}>$</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Price</Text>
+              <View style={[styles.priceContainer, { 
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              }]}>
+                <Text style={[styles.currencySymbol, { color: colors.text }]}>$</Text>
                 <TextInput
-                  style={[styles.input, styles.priceInput]}
+                  style={[styles.priceInput, { color: colors.text }]}
                   placeholder="0.00"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={colors.textTertiary}
                   value={price}
                   onChangeText={setPrice}
                   keyboardType="decimal-pad"
@@ -1601,62 +1815,76 @@ export default function CreateListingScreen({ navigation }) {
 
             {/* Category */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Category</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Category</Text>
               <TouchableOpacity
-                style={styles.categorySelector}
+                style={[styles.categorySelector, { 
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                }]}
                 onPress={() => setModalVisible(true)}
                 disabled={loadingCategories}
               >
                 {loadingCategories ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color={Colors.primary || '#007AFF'} />
-                    <Text style={styles.loadingText}>Loading categories...</Text>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+                      Loading categories...
+                    </Text>
                   </View>
                 ) : (
                   <>
-                    <Text style={selectedCategory ? styles.categorySelectedText : styles.categoryPlaceholder}>
+                    <Text style={selectedCategory ? 
+                      [styles.categorySelectedText, { color: colors.text }] : 
+                      [styles.categoryPlaceholder, { color: colors.textTertiary }]
+                    }>
                       {selectedCategory ? selectedCategory.name : 'Select a category'}
                     </Text>
-                    <Icon name="chevron-down" size={20} color="#999" />
+                    <Icon name="chevron-down" size={20} color={colors.textTertiary} />
                   </>
                 )}
               </TouchableOpacity>
 
-              {/* Show selected category info */}
               {selectedCategory && (
-                <View style={styles.selectedCategoryInfo}>
+                <View style={[styles.selectedCategoryInfo, { 
+                  backgroundColor: isDark ? colors.surfaceSecondary : '#f0f8ff' 
+                }]}>
                   {selectedCategory.icon && (
                     <Text style={styles.selectedCategoryIcon}>{selectedCategory.icon}</Text>
                   )}
-                  <Text style={styles.selectedCategoryName}>
+                  <Text style={[styles.selectedCategoryName, { color: colors.primary }]}>
                     Selected: {selectedCategory.name}
                   </Text>
                 </View>
               )}
             </View>
 
-            {/* Country + State Selection (single field) */}
+            {/* Country */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Country</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Country</Text>
               <TouchableOpacity
-                style={styles.countrySelector}
+                style={[styles.countrySelector, { 
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                }]}
                 onPress={() => setCountryModalVisible(true)}
               >
                 {country ? (
                   <View style={styles.countryDisplay}>
                     <Text style={styles.selectedCountryFlag}>{country.flag}</Text>
-                    <Text style={styles.selectedCountryName} numberOfLines={1}>
+                    <Text style={[styles.selectedCountryName, { color: colors.text }]} numberOfLines={1}>
                       {country.name}{selectedState ? `, ${selectedState}` : ''}
                     </Text>
                   </View>
                 ) : (
-                  <Text style={styles.countryPlaceholder}>Select your country</Text>
+                  <Text style={[styles.countryPlaceholder, { color: colors.textTertiary }]}>
+                    Select your country
+                  </Text>
                 )}
-                <Icon name="chevron-down" size={20} color="#999" />
+                <Icon name="chevron-down" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
               {country && availableStates.length > 0 && !selectedState && (
                 <TouchableOpacity onPress={() => setStateModalVisible(true)}>
-                  <Text style={styles.statePrompt}>
+                  <Text style={[styles.statePrompt, { color: colors.primary }]}>
                     Tap to choose a state/province for {country.name}
                   </Text>
                 </TouchableOpacity>
@@ -1665,13 +1893,16 @@ export default function CreateListingScreen({ navigation }) {
 
             {/* City/Location */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>City / Area</Text>
-              <View style={styles.locationContainer}>
-                <Icon2 name="location-city" size={20} color="#999" style={styles.locationIcon} />
+              <Text style={[styles.label, { color: colors.text }]}>City / Area</Text>
+              <View style={[styles.locationContainer, { 
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              }]}>
+                <Icon2 name="location-city" size={20} color={colors.textTertiary} style={styles.locationIcon} />
                 <TextInput
-                  style={[styles.input, styles.locationInput]}
+                  style={[styles.locationInput, { color: colors.text }]}
                   placeholder="Enter your city or area"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={colors.textTertiary}
                   value={city}
                   onChangeText={setCity}
                 />
@@ -1680,31 +1911,38 @@ export default function CreateListingScreen({ navigation }) {
 
             {/* Full Address (Optional) */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Full Address (Optional)</Text>
-              <View style={styles.locationContainer}>
-                <Icon name="map-pin" size={20} color="#999" style={styles.locationIcon} />
+              <Text style={[styles.label, { color: colors.text }]}>Full Address (Optional)</Text>
+              <View style={[styles.locationContainer, { 
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              }]}>
+                <Icon name="map-pin" size={20} color={colors.textTertiary} style={styles.locationIcon} />
                 <TextInput
-                  style={[styles.input, styles.locationInput]}
+                  style={[styles.locationInput, { color: colors.text }]}
                   placeholder="Street address, building, etc."
-                  placeholderTextColor="#999"
+                  placeholderTextColor={colors.textTertiary}
                   value={location}
                   onChangeText={setLocation}
                 />
               </View>
               {country && city && (
-                <Text style={styles.locationPreview}>
-                  📍 {location ? `${location}, ` : ''}{city}, {selectedState ? `${selectedState} ` : ''}{country.name}
+                <Text style={[styles.locationPreview, { color: colors.primary }]}>
+                  {location ? `${location}, ` : ''}{city}, {selectedState ? `${selectedState} ` : ''}{country.name}
                 </Text>
               )}
             </View>
 
             {/* Description */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Description</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Description</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { 
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.text
+                }]}
                 placeholder="Describe your item..."
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.textTertiary}
                 value={description}
                 onChangeText={setDescription}
                 multiline
@@ -1715,27 +1953,29 @@ export default function CreateListingScreen({ navigation }) {
 
             {/* Images */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>
-                Photos <Text style={styles.imageCount}>({images.length}/5)</Text>
+              <Text style={[styles.label, { color: colors.text }]}>
+                Photos <Text style={[styles.imageCount, { color: colors.primary }]}>({images.length}/5)</Text>
               </Text>
 
               <TouchableOpacity
-                style={styles.imagePickerButton}
+                style={[styles.imagePickerButton, { 
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                }]}
                 onPress={pickImages}
                 disabled={images.length >= 5}
               >
                 <View style={styles.imagePickerContent}>
-                  <Icon name="image" size={24} color={Colors.primary || '#007AFF'} />
-                  <Text style={styles.imagePickerText}>
+                  <Icon name="image" size={24} color={colors.primary} />
+                  <Text style={[styles.imagePickerText, { color: colors.primary }]}>
                     {images.length === 0 ? 'Add Photos' : 'Add More Photos'}
                   </Text>
-                  <Text style={styles.imagePickerSubtext}>
+                  <Text style={[styles.imagePickerSubtext, { color: colors.textTertiary }]}>
                     Tap to select from gallery
                   </Text>
                 </View>
               </TouchableOpacity>
 
-              {/* Image Thumbnails */}
               {images.length > 0 && (
                 <ScrollView
                   horizontal
@@ -1750,7 +1990,7 @@ export default function CreateListingScreen({ navigation }) {
                         style={styles.imageThumbnail}
                       />
                       <TouchableOpacity
-                        style={styles.removeButton}
+                        style={[styles.removeButton, { backgroundColor: colors.error || '#ff3b30' }]}
                         onPress={() => removeImage(index)}
                       >
                         <Icon name="x" size={16} color="#fff" />
@@ -1759,21 +1999,26 @@ export default function CreateListingScreen({ navigation }) {
                   ))}
                   {images.length < 5 && (
                     <TouchableOpacity
-                      style={styles.addMoreButton}
+                      style={[styles.addMoreButton, { 
+                        borderColor: colors.border,
+                        backgroundColor: colors.backgroundSecondary,
+                      }]}
                       onPress={pickImages}
                     >
-                      <Icon name="plus" size={24} color={Colors.primary || '#007AFF'} />
+                      <Icon name="plus" size={24} color={colors.primary} />
                     </TouchableOpacity>
                   )}
                 </ScrollView>
               )}
             </View>
 
+            {/* Create Button */}
             <TouchableOpacity
               style={[
                 styles.createButton,
+                { backgroundColor: colors.primary },
                 (!title || !price || !description || images.length === 0 || !selectedCategory || !country) &&
-                styles.createButtonDisabled
+                [styles.createButtonDisabled, { backgroundColor: colors.border }]
               ]}
               onPress={uploadListing}
               disabled={loading || !title || !price || !description || images.length === 0 || !selectedCategory || !country}
@@ -1788,8 +2033,7 @@ export default function CreateListingScreen({ navigation }) {
               )}
             </TouchableOpacity>
 
-            {/* Help Text */}
-            <Text style={styles.helpText}>
+            <Text style={[styles.helpText, { color: colors.textTertiary }]}>
               Make sure your photos are clear and your description is detailed for best results.
               Adding your location helps buyers find your items faster!
             </Text>
@@ -1804,19 +2048,21 @@ export default function CreateListingScreen({ navigation }) {
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Category</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Category</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Icon name="x" size={24} color="#333" />
+                <Icon name="x" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             {loadingCategories ? (
               <View style={styles.modalLoading}>
-                <ActivityIndicator size="large" color={Colors.primary || '#007AFF'} />
-                <Text style={styles.modalLoadingText}>Loading categories...</Text>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[styles.modalLoadingText, { color: colors.textSecondary }]}>
+                  Loading categories...
+                </Text>
               </View>
             ) : categories.length > 0 ? (
               <FlatList
@@ -1828,10 +2074,12 @@ export default function CreateListingScreen({ navigation }) {
               />
             ) : (
               <View style={styles.emptyContainer}>
-                <Icon name="folder" size={50} color="#ccc" />
-                <Text style={styles.emptyText}>No categories available</Text>
+                <Icon name="folder" size={50} color={colors.textTertiary} />
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  No categories available
+                </Text>
                 <TouchableOpacity
-                  style={styles.retryButton}
+                  style={[styles.retryButton, { backgroundColor: colors.primary }]}
                   onPress={fetchCategories}
                 >
                   <Text style={styles.retryButtonText}>Retry</Text>
@@ -1852,31 +2100,33 @@ export default function CreateListingScreen({ navigation }) {
           setSearchQuery('');
         }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Country</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Country</Text>
               <TouchableOpacity onPress={() => {
                 setCountryModalVisible(false);
                 setSearchQuery('');
               }}>
-                <Icon name="x" size={24} color="#333" />
+                <Icon name="x" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            {/* Search Input */}
-            <View style={styles.searchContainer}>
-              <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
+            <View style={[styles.searchContainer, { 
+              backgroundColor: colors.backgroundSecondary,
+              borderBottomColor: colors.border 
+            }]}>
+              <Icon name="search" size={20} color={colors.textTertiary} style={styles.searchIcon} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search countries..."
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.textTertiary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Icon name="x" size={20} color="#999" />
+                  <Icon name="x" size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -1889,8 +2139,10 @@ export default function CreateListingScreen({ navigation }) {
               contentContainerStyle={styles.countryList}
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                  <Icon name="search" size={50} color="#ccc" />
-                  <Text style={styles.emptyText}>No countries found</Text>
+                  <Icon name="search" size={50} color={colors.textTertiary} />
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                    No countries found
+                  </Text>
                 </View>
               }
             />
@@ -1898,8 +2150,7 @@ export default function CreateListingScreen({ navigation }) {
         </View>
       </Modal>
 
-      {/* State Selection Modal - opens automatically right after a country
-          with known states/provinces is picked */}
+      {/* State Selection Modal */}
       <Modal
         visible={stateModalVisible}
         animationType="slide"
@@ -1909,33 +2160,35 @@ export default function CreateListingScreen({ navigation }) {
           setStateSearchQuery('');
         }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
                 Select State {country ? `(${country.name})` : ''}
               </Text>
               <TouchableOpacity onPress={() => {
                 setStateModalVisible(false);
                 setStateSearchQuery('');
               }}>
-                <Icon name="x" size={24} color="#333" />
+                <Icon name="x" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            {/* Search Input */}
-            <View style={styles.searchContainer}>
-              <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
+            <View style={[styles.searchContainer, { 
+              backgroundColor: colors.backgroundSecondary,
+              borderBottomColor: colors.border 
+            }]}>
+              <Icon name="search" size={20} color={colors.textTertiary} style={styles.searchIcon} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search states..."
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.textTertiary}
                 value={stateSearchQuery}
                 onChangeText={setStateSearchQuery}
               />
               {stateSearchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setStateSearchQuery('')}>
-                  <Icon name="x" size={20} color="#999" />
+                  <Icon name="x" size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -1948,8 +2201,10 @@ export default function CreateListingScreen({ navigation }) {
               contentContainerStyle={styles.countryList}
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                  <Icon name="search" size={50} color="#ccc" />
-                  <Text style={styles.emptyText}>No states found</Text>
+                  <Icon name="search" size={50} color={colors.textTertiary} />
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                    No states found
+                  </Text>
                 </View>
               }
             />
@@ -1959,10 +2214,10 @@ export default function CreateListingScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-const styles = StyleSheet.create({
+
+const createStyles = (colors, isDark) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   container: {
     flex: 1,
@@ -1979,9 +2234,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#eaeaea',
   },
   backButton: {
     padding: 8,
@@ -1989,7 +2242,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#fff',
   },
   formContainer: {
     padding: 20,
@@ -2000,36 +2253,34 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#333',
   },
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
   },
   currencySymbol: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginRight: 12,
   },
   priceInput: {
     flex: 1,
+    paddingVertical: 14,
+    fontSize: 16,
   },
   categorySelector: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -2045,15 +2296,12 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginLeft: 10,
-    color: '#999',
     fontSize: 14,
   },
   categoryPlaceholder: {
-    color: '#999',
     fontSize: 16,
   },
   categorySelectedText: {
-    color: '#333',
     fontSize: 16,
     fontWeight: '500',
   },
@@ -2062,7 +2310,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
     padding: 10,
-    backgroundColor: '#f0f8ff',
     borderRadius: 8,
   },
   selectedCategoryIcon: {
@@ -2070,16 +2317,14 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   selectedCategoryName: {
-    color: Colors.primary || '#007AFF',
     fontSize: 14,
     fontWeight: '500',
+    color: '#0d64dd',
   },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 12,
   },
   locationIcon: {
@@ -2088,6 +2333,8 @@ const styles = StyleSheet.create({
   locationInput: {
     flex: 1,
     borderWidth: 0,
+    paddingVertical: 14,
+    fontSize: 16,
   },
   textArea: {
     height: 120,
@@ -2095,13 +2342,10 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   imageCount: {
-    color: Colors.primary || '#007AFF',
     fontWeight: '500',
   },
   imagePickerButton: {
-    backgroundColor: '#fff',
     borderWidth: 2,
-    borderColor: '#e0e0e0',
     borderStyle: 'dashed',
     borderRadius: 12,
     padding: 24,
@@ -2114,13 +2358,11 @@ const styles = StyleSheet.create({
   imagePickerText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.primary || '#007AFF',
     marginTop: 8,
     marginBottom: 4,
   },
   imagePickerSubtext: {
     fontSize: 14,
-    color: '#999',
   },
   imageScroll: {
     marginTop: 16,
@@ -2141,7 +2383,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: '#ff3b30',
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -2154,22 +2395,18 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
     borderStyle: 'dashed',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8f9fa',
   },
   createButton: {
-    backgroundColor: Colors.primary || '#007AFF',
     borderRadius: 12,
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
-    shadowColor: Colors.primary || '#007AFF',
     shadowOffset: {
       width: 0,
       height: 4,
@@ -2179,7 +2416,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   createButtonDisabled: {
-    backgroundColor: '#ccc',
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -2193,18 +2429,15 @@ const styles = StyleSheet.create({
   },
   helpText: {
     fontSize: 13,
-    color: '#999',
     textAlign: 'center',
     marginTop: 16,
     lineHeight: 18,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     minHeight: '50%',
@@ -2216,12 +2449,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eaeaea',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
   },
   modalLoading: {
     padding: 40,
@@ -2229,7 +2460,6 @@ const styles = StyleSheet.create({
   },
   modalLoadingText: {
     marginTop: 10,
-    color: '#999',
     fontSize: 14,
   },
   categoryList: {
@@ -2242,10 +2472,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   categoryItemSelected: {
-    backgroundColor: '#f0f8ff',
+    backgroundColor: 'rgba(13, 100, 221, 0.08)',
   },
   categoryItemContent: {
     flexDirection: 'row',
@@ -2258,12 +2487,12 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 16,
-    color: '#333',
     flex: 1,
+    color: colors.text,
   },
   categoryNameSelected: {
-    color: Colors.primary || '#007AFF',
     fontWeight: '500',
+    color: '#0d64dd',
   },
   emptyContainer: {
     padding: 40,
@@ -2271,14 +2500,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: 10,
-    color: '#999',
     fontSize: 16,
   },
   retryButton: {
     marginTop: 20,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: Colors.primary || '#007AFF',
     borderRadius: 8,
   },
   retryButtonText: {
@@ -2287,9 +2514,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   countrySelector: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -2309,23 +2534,20 @@ const styles = StyleSheet.create({
   },
   selectedCountryName: {
     fontSize: 16,
-    color: '#333',
     fontWeight: '500',
     flexShrink: 1,
+    
   },
   countryPlaceholder: {
-    color: '#999',
     fontSize: 16,
   },
   statePrompt: {
     marginTop: 8,
     fontSize: 13,
-    color: Colors.primary || '#007AFF',
   },
   locationPreview: {
     marginTop: 8,
     fontSize: 13,
-    color: Colors.primary || '#007AFF',
     fontStyle: 'italic',
   },
   searchContainer: {
@@ -2334,8 +2556,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eaeaea',
-    backgroundColor: '#f8f9fa',
   },
   searchIcon: {
     marginRight: 10,
@@ -2343,7 +2563,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
     paddingVertical: 8,
   },
   countryList: {
@@ -2356,10 +2575,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   countryItemSelected: {
-    backgroundColor: '#f0f8ff',
+    backgroundColor: 'rgba(13, 100, 221, 0.08)',
   },
   countryItemContent: {
     flexDirection: 'row',
@@ -2372,11 +2590,10 @@ const styles = StyleSheet.create({
   },
   countryName: {
     fontSize: 16,
-    color: '#333',
     flex: 1,
+    color: colors.text,
   },
   countryNameSelected: {
-    color: Colors.primary || '#007AFF',
     fontWeight: '500',
   },
 });

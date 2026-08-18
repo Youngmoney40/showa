@@ -601,13 +601,13 @@ export default function EmailLoginScreen({ navigation }) {
             </View>
 
             {/* Forgot Password - Repositioned to the right */}
-            {/* <TouchableOpacity 
+            <TouchableOpacity 
               onPress={navigateToForgotPassword} 
               style={styles.forgotButton}
               accessibilityLabel="Forgot password"
             >
               <Text style={styles.forgotText}>Forgot Password?</Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
 
             {/* Sign In Button */}
             <TouchableOpacity
