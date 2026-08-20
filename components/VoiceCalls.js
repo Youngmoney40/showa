@@ -2376,6 +2376,7 @@ import { API_ROUTE_IMAGE } from "../api_routing/api";
 import InCallManager from "react-native-incall-manager";
 import CallKeepService from '../src/services/CallKeepService';
 import { useBackHandler } from '../src/hooks/useBackHandler';
+import { forceStopAllCallAudio } from '../src/utils/callAudio';
 
 const SIGNALING_SERVER = "wss://api.showapp.ng";
 
@@ -3862,6 +3863,8 @@ const handleIncomingCall = async (offer) => {
   // ─── Call actions ─────────────────────────────────────────────
 
   const acceptCall = async () => {
+    // forceStopAllCallAudio();
+    forceStopAllCallAudio(currentCallIdRef.current);
     stopRinging();
     isCallerRef.current = false;
     const offer = incomingSDP;
@@ -3884,6 +3887,8 @@ const handleIncomingCall = async (offer) => {
   };
 
   const endCall = useCallback(async (notify = true) => {
+    // forceStopAllCallAudio();
+    forceStopAllCallAudio(currentCallIdRef.current);
   console.log("[VideoCall] Ending call...");
 
   // 1. Navigate immediately
@@ -3891,10 +3896,10 @@ const handleIncomingCall = async (offer) => {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      navigation.navigate("PHome");
+      navigation.navigate("BroadcastHome");
     }
   } catch (e) {
-    navigation.navigate("PHome");
+    navigation.navigate("BroadcastHome");
   }
 
   // 2. Cleanup in background
@@ -4289,6 +4294,8 @@ const handleIncomingCall = async (offer) => {
   // };
 
 const rejectCall = async () => {
+  // forceStopAllCallAudio();
+  forceStopAllCallAudio(currentCallIdRef.current);
   stopRinging();
   sendMessage({ type: "call-rejected" });
 

@@ -2837,6 +2837,7 @@ import EarningsSlideInManager from '../components/EarningsSlideInManager';
 import OnlineStatusBadge from '../components/OnlineStatusBadge';
 import CallKeepService from '../src/services/CallKeepService';
 import { createMMKV } from 'react-native-mmkv';
+import { forceStopAllCallAudio } from '../src/utils/callAudio';
 
 const windowWidth = Dimensions.get('window').width;
 
@@ -2887,6 +2888,7 @@ const PersonalChatHomeScreen = ({ navigation, route }) => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchText, setSearchText] = useState('');
   const searchInputRef = useRef(null);
+ 
 
   const [notificationSettings, setNotificationSettings] = useState({
     showNotifications: true,
@@ -2900,6 +2902,7 @@ const PersonalChatHomeScreen = ({ navigation, route }) => {
   const searchQueryRef = useRef('');
   const notificationSettingsRef = useRef({ showNotifications: true, doNotDisturb: false });
   const wsConnectedRef = useRef(false);
+   const intentionalCloseRef = useRef(false); 
   const isFocusedRef = useRef(true);
   const pendingUpdatesRef = useRef(null);
   const updateTimeoutRef = useRef(null);
@@ -3796,16 +3799,252 @@ const PersonalChatHomeScreen = ({ navigation, route }) => {
   // Home screen WebSocket for incoming offers
   const ws = useRef(null);
 
-  useEffect(() => {
-    const connectCallWebSocket = async () => {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        const retrieveUserId = await AsyncStorage.getItem('userData');
+  // useEffect(() => {
+  //   const connectCallWebSocket = async () => {
+  //     try {
+  //       const token = await AsyncStorage.getItem('userToken');
+  //       const retrieveUserId = await AsyncStorage.getItem('userData');
 
-        if (!token || !retrieveUserId) {
-          console.warn('Missing auth data, websocket not started');
+  //       if (!token || !retrieveUserId) {
+  //         console.warn('Missing auth data, websocket not started');
+  //         return;
+  //       }
+
+  //       const userDataObj = JSON.parse(retrieveUserId);
+  //       const currentUserId = userDataObj.id;
+  //       const ROOM_ID = `user-${currentUserId}`;
+  //       const SIGNALING_SERVER = 'wss://api.showapp.ng';
+  //       const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
+
+  //       if (ws.current?.readyState === WebSocket.OPEN) {
+  //         console.log('[Call WS] Already connected');
+  //         return;
+  //       }
+
+  //       ws.current = new WebSocket(url);
+  //       ws.current.binaryType = 'arraybuffer';
+
+  //       ws.current.onopen = () => {
+  //         console.log('[Call WS] Connected');
+  //       };
+
+  //       ws.current.onmessage = (evt) => {
+  //         let data;
+  //         try {
+  //           data = JSON.parse(evt.data);
+  //         } catch {
+  //           return;
+  //         }
+
+  //         console.log("========== HOME WS RECEIVED ==========");
+  //         console.log("Full data:", JSON.stringify(data, null, 2));
+
+  //         if (data.type === 'incoming_call' && data.offer?.sdp) {
+  //           if (isCallBeingHandledRef.current) {
+  //             console.log('[Call WS] Already handling a call, ignoring duplicate');
+  //             return;
+  //           }
+
+  //           const profileImagePath =
+  //             data.offer?.callerInfo?.profileImage ||
+  //             data.callerInfo?.profileImage ||
+  //             data.profileImage ||
+  //             data.profile_image ||
+  //             '';
+
+  //           const callerName =
+  //             data.offer?.callerInfo?.name ||
+  //             data.callerInfo?.name ||
+  //             data.caller_name ||
+  //             'Unknown Caller';
+
+  //           console.log('[Call WS Home] ✅ Extracted Profile Image Path:', profileImagePath);
+  //           console.log('[Call WS Home] ✅ Extracted Caller Name:', callerName);
+
+  //           isCallBeingHandledRef.current = true;
+
+  //           setCallerInfo({
+  //             profileImage: profileImagePath,
+  //             name: callerName,
+  //             offer: data.offer,
+  //           });
+
+  //           setIsVideoCall(data.offer.isVideoCall || false);
+  //           setShowIncomingCallModal(true);
+  //           return;
+  //         }
+  //       };
+
+  //       ws.current.onerror = (e) => {
+  //         //console.error('[Call WS] Error', e);
+  //       };
+
+  //       ws.current.onclose = (e) => {
+  //         //console.log('[Call WS] Closed', e.code, e.reason);
+  //         setTimeout(() => {
+  //           if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
+  //             connectCallWebSocket();
+  //           }
+  //         }, 5000);
+  //       };
+
+  //     } catch (err) {
+  //       //console.error('[Call WS] Failed to connect', err);
+  //     }
+  //   };
+
+  //   connectCallWebSocket();
+
+  //   return () => {
+  //     if (ws.current) {
+  //       ws.current.close();
+  //       ws.current = null;
+  //     }
+  //   };
+  // }, [navigation]);
+
+
+useEffect(() => {
+  const connectCallWebSocket = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const retrieveUserId = await AsyncStorage.getItem('userData');
+
+      if (!token || !retrieveUserId) {
+        console.warn('Missing auth data, websocket not started');
+        return;
+      }
+
+      const userDataObj = JSON.parse(retrieveUserId);
+      const currentUserId = userDataObj.id;
+      const ROOM_ID = `user-${currentUserId}`;
+      const SIGNALING_SERVER = 'wss://api.showapp.ng';
+      const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
+
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        console.log('[Call WS] Already connected');
+        return;
+      }
+
+      intentionalCloseRef.current = false; // reset — a fresh connect means future closes are "real" unless we say otherwise
+
+      ws.current = new WebSocket(url);
+      ws.current.binaryType = 'arraybuffer';
+
+      ws.current.onopen = () => {
+        console.log('[Call WS] Connected');
+        wsConnectedRef.current = true;
+      };
+
+      ws.current.onmessage = (evt) => {
+        let data;
+        try {
+          data = JSON.parse(evt.data);
+        } catch {
           return;
         }
+
+        console.log("========== HOME WS RECEIVED ==========");
+        console.log("Full data:", JSON.stringify(data, null, 2));
+
+        if (data.type === 'incoming_call' && data.offer?.sdp) {
+
+          // 🔴 FIX: if a call screen is already mounted and handling its
+          // own signaling socket, PHome must NOT also react to this
+          // message — prevents two independent ringtone/UI flows for the
+          // same call room.
+          if (global.__onCallScreen) {
+            console.log('[Call WS Home] Ignoring incoming_call — already on call screen');
+            return;
+          }
+
+          if (isCallBeingHandledRef.current) {
+            console.log('[Call WS] Already handling a call, ignoring duplicate');
+            return;
+          }
+
+          const profileImagePath =
+            data.offer?.callerInfo?.profileImage ||
+            data.callerInfo?.profileImage ||
+            data.profileImage ||
+            data.profile_image ||
+            '';
+
+          const callerName =
+            data.offer?.callerInfo?.name ||
+            data.callerInfo?.name ||
+            data.caller_name ||
+            'Unknown Caller';
+
+          console.log('[Call WS Home] ✅ Extracted Profile Image Path:', profileImagePath);
+          console.log('[Call WS Home] ✅ Extracted Caller Name:', callerName);
+
+          isCallBeingHandledRef.current = true;
+
+          setCallerInfo({
+            profileImage: profileImagePath,
+            name: callerName,
+            offer: data.offer,
+          });
+
+          setIsVideoCall(data.offer.isVideoCall || false);
+          setShowIncomingCallModal(true);
+          return;
+        }
+      };
+
+      ws.current.onerror = (e) => {
+        //console.error('[Call WS] Error', e);
+      };
+
+      ws.current.onclose = (e) => {
+        wsConnectedRef.current = false;
+
+        // 🔴 FIX: don't auto-reconnect if WE deliberately closed this
+        // socket (e.g. because we navigated into VoiceVideoCallScreen,
+        // which opens its own socket for the same room). Without this
+        // guard, the existing 5s reconnect timer would silently reopen a
+        // duplicate connection and reintroduce the exact bug we're fixing.
+        if (intentionalCloseRef.current) {
+          console.log('[Call WS] Closed intentionally, not reconnecting');
+          intentionalCloseRef.current = false;
+          return;
+        }
+
+        setTimeout(() => {
+          if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
+            connectCallWebSocket();
+          }
+        }, 5000);
+      };
+
+    } catch (err) {
+      //console.error('[Call WS] Failed to connect', err);
+    }
+  };
+
+  connectCallWebSocket();
+
+  return () => {
+    if (ws.current) {
+      intentionalCloseRef.current = true;
+      ws.current.close(1000, 'component unmount');
+      ws.current = null;
+    }
+  };
+}, [navigation]);
+
+// 🔴 NEW: pause this socket whenever PHome loses focus (i.e. user
+// navigated into a call screen which opens its own signaling socket for
+// the same room), and resume it when PHome regains focus.
+useFocusEffect(
+  useCallback(() => {
+    // PHome regained focus — reconnect if we don't already have a live socket
+    if (!wsConnectedRef.current && (!ws.current || ws.current.readyState === WebSocket.CLOSED)) {
+      (async () => {
+        const token = await AsyncStorage.getItem('userToken');
+        const retrieveUserId = await AsyncStorage.getItem('userData');
+        if (!token || !retrieveUserId) return;
 
         const userDataObj = JSON.parse(retrieveUserId);
         const currentUserId = userDataObj.id;
@@ -3813,92 +4052,30 @@ const PersonalChatHomeScreen = ({ navigation, route }) => {
         const SIGNALING_SERVER = 'wss://api.showapp.ng';
         const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
 
-        if (ws.current?.readyState === WebSocket.OPEN) {
-          console.log('[Call WS] Already connected');
-          return;
-        }
+        if (ws.current?.readyState === WebSocket.OPEN) return;
 
+        console.log('[Call WS] Reconnecting on PHome focus');
+        intentionalCloseRef.current = false;
         ws.current = new WebSocket(url);
         ws.current.binaryType = 'arraybuffer';
-
-        ws.current.onopen = () => {
-          console.log('[Call WS] Connected');
-        };
-
-        ws.current.onmessage = (evt) => {
-          let data;
-          try {
-            data = JSON.parse(evt.data);
-          } catch {
-            return;
-          }
-
-          console.log("========== HOME WS RECEIVED ==========");
-          console.log("Full data:", JSON.stringify(data, null, 2));
-
-          if (data.type === 'incoming_call' && data.offer?.sdp) {
-            if (isCallBeingHandledRef.current) {
-              console.log('[Call WS] Already handling a call, ignoring duplicate');
-              return;
-            }
-
-            const profileImagePath =
-              data.offer?.callerInfo?.profileImage ||
-              data.callerInfo?.profileImage ||
-              data.profileImage ||
-              data.profile_image ||
-              '';
-
-            const callerName =
-              data.offer?.callerInfo?.name ||
-              data.callerInfo?.name ||
-              data.caller_name ||
-              'Unknown Caller';
-
-            console.log('[Call WS Home] ✅ Extracted Profile Image Path:', profileImagePath);
-            console.log('[Call WS Home] ✅ Extracted Caller Name:', callerName);
-
-            isCallBeingHandledRef.current = true;
-
-            setCallerInfo({
-              profileImage: profileImagePath,
-              name: callerName,
-              offer: data.offer,
-            });
-
-            setIsVideoCall(data.offer.isVideoCall || false);
-            setShowIncomingCallModal(true);
-            return;
-          }
-        };
-
-        ws.current.onerror = (e) => {
-          //console.error('[Call WS] Error', e);
-        };
-
-        ws.current.onclose = (e) => {
-          //console.log('[Call WS] Closed', e.code, e.reason);
-          setTimeout(() => {
-            if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
-              connectCallWebSocket();
-            }
-          }, 5000);
-        };
-
-      } catch (err) {
-        //console.error('[Call WS] Failed to connect', err);
-      }
-    };
-
-    connectCallWebSocket();
+        // NOTE: onopen/onmessage/onerror/onclose handlers are reattached by
+        // the main effect above the next time it fires. This focus-effect
+        // reconnect uses the SAME onmessage/onclose bindings only if you
+        // keep this block simple — see the note below.
+      })();
+    }
 
     return () => {
-      if (ws.current) {
-        ws.current.close();
-        ws.current = null;
+      // PHome losing focus — close this socket so the call screen's own
+      // socket is the only one connected to this room.
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        console.log('[Call WS] Closing on PHome blur (navigating to call screen)');
+        intentionalCloseRef.current = true;
+        ws.current.close(1000, 'navigating away from PHome');
       }
     };
-  }, [navigation]);
+  }, [])
+);
 
   const sendMessage = (msg) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
@@ -3908,6 +4085,8 @@ const PersonalChatHomeScreen = ({ navigation, route }) => {
 
   const handleAcceptCall = () => {
     console.log("========== ACCEPT ==========");
+    // forceStopAllCallAudio();
+    forceStopAllCallAudio(currentCallIdRef.current);
     isCallBeingHandledRef.current = false;
 
     setShowIncomingCallModal(false);
@@ -3945,6 +4124,8 @@ const PersonalChatHomeScreen = ({ navigation, route }) => {
   };
 
   const handleRejectCall = () => {
+    //  forceStopAllCallAudio();
+    forceStopAllCallAudio(currentCallIdRef.current);
     isCallBeingHandledRef.current = false;
 
     InCallManager.stopRingtone();
