@@ -222,7 +222,7 @@ const MyServicePostsScreen = ({ navigation }) => {
 
   const styles = createStyles(colors, isDark);
 
-  // Render loading state
+  // Render loading state gtg
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.container, styles.centerContent]}>

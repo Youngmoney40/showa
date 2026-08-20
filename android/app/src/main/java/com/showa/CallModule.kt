@@ -9,17 +9,17 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.WritableNativeMap
-import com.facebook.react.module.annotations.ReactModule  
+import com.facebook.react.module.annotations.ReactModule
 
-@ReactModule(name = CallModule.NAME)  // ← ADD THIS
+@ReactModule(name = CallModule.NAME)
 class CallModule(private val reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     companion object {
-        const val NAME = "CallModule"  // ← ADD THIS
+        const val NAME = "CallModule"
     }
 
-    override fun getName(): String = NAME  // ← CHANGE TO USE CONSTANT
+    override fun getName(): String = NAME
 
     @ReactMethod
     fun startCallService(
@@ -29,27 +29,44 @@ class CallModule(private val reactContext: ReactApplicationContext) :
         callType: String,
         callerId: String
     ) {
-        val intent = Intent(reactContext, CallForegroundService::class.java).apply {
-            action = CallForegroundService.ACTION_START
-            putExtra("callerName", callerName)
-            putExtra("callId", callId)
-            putExtra("roomId", roomId)
-            putExtra("callType", callType)
-            putExtra("callerId", callerId)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            reactContext.startForegroundService(intent)
-        } else {
-            reactContext.startService(intent)
+        try {
+            val intent = Intent(reactContext, CallForegroundService::class.java).apply {
+                action = CallForegroundService.ACTION_START
+                putExtra("callerName", callerName)
+                putExtra("callId", callId)
+                putExtra("roomId", roomId)
+                putExtra("callType", callType)
+                putExtra("callerId", callerId)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                reactContext.startForegroundService(intent)
+            } else {
+                reactContext.startService(intent)
+            }
+        } catch (e: Exception) {
+            // Nothing to clean up if we couldn't even start it.
         }
     }
 
     @ReactMethod
     fun stopCallService() {
-        val intent = Intent(reactContext, CallForegroundService::class.java).apply {
-            action = CallForegroundService.ACTION_STOP
+        // 🔴 CRITICAL FIX: previously a bare startService() call with no
+        // native error handling. If it ever threw, the JS-side try/catch
+        // swallowed it and the INSISTENT notification sound + vibration
+        // would loop with no way left to stop them. Now every failure path
+        // falls through to a direct notification cancel as a last resort.
+        try {
+            val intent = Intent(reactContext, CallForegroundService::class.java).apply {
+                action = CallForegroundService.ACTION_STOP
+            }
+            reactContext.startService(intent)
+        } catch (e: Exception) {
+            try {
+                val nm = reactContext.getSystemService(Context.NOTIFICATION_SERVICE)
+                        as? NotificationManager
+                nm?.cancel(CallForegroundService.NOTIFICATION_ID)
+            } catch (e2: Exception) {}
         }
-        reactContext.startService(intent)
     }
 
     @ReactMethod

@@ -2446,28 +2446,28 @@ function AppContent() {
   }, []);
 
   // ── Video prefetch ────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
+  // useEffect(() => {
+  //   if (!userId) return;
+  //   let cancelled = false;
 
-    (async () => {
-      try {
-        await videoBackgroundfetch.init(userId);
-        if (!cancelled) {
-          const cached = await videoBackgroundfetch.getCachedVideos();
-          console.log("Cached videos:", cached?.length || 0);
-        }
-      } catch (err) {
-        console.error("videoBackgroundfetch init (non-fatal):", err);
-      }
-    })();
+  //   (async () => {
+  //     try {
+  //       await videoBackgroundfetch.init(userId);
+  //       if (!cancelled) {
+  //         const cached = await videoBackgroundfetch.getCachedVideos();
+  //         console.log("Cached videos:", cached?.length || 0);
+  //       }
+  //     } catch (err) {
+  //       console.error("videoBackgroundfetch init (non-fatal):", err);
+  //     }
+  //   })();
 
-    return () => {
-      cancelled = true;
-      if (backgroundTimerRef.current) clearTimeout(backgroundTimerRef.current);
-      stopBackgroundServices();
-    };
-  }, [userId]);
+  //   return () => {
+  //     cancelled = true;
+  //     if (backgroundTimerRef.current) clearTimeout(backgroundTimerRef.current);
+  //     stopBackgroundServices();
+  //   };fff
+  // }, [userId]);
 
   useDeepLinkHandler();
 

@@ -13,17 +13,18 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 
 class CallForegroundService : Service() {
 
     private var vibrator: Vibrator? = null
 
     companion object {
-        const val CHANNEL_ID    = "showa_call_channel"
-        const val ACTION_START  = "START_CALL"
-        const val ACTION_STOP   = "STOP_CALL"
-        const val ACTION_ACCEPT = "ACCEPT_CALL"
-        const val ACTION_DECLINE = "DECLINE_CALL"
+        const val CHANNEL_ID      = "showa_call_channel"
+        const val ACTION_START    = "START_CALL"
+        const val ACTION_STOP     = "STOP_CALL"
+        const val ACTION_ACCEPT   = "ACCEPT_CALL"
+        const val ACTION_DECLINE  = "DECLINE_CALL"
         const val NOTIFICATION_ID = 1001
     }
 
@@ -44,14 +45,64 @@ class CallForegroundService : Service() {
                 showCallNotification(callerName, callId, roomId, callType, callerId)
                 startVibration()
             }
-            ACTION_STOP, ACTION_ACCEPT, ACTION_DECLINE -> {
-                stopVibration()
-                stopForeground(STOP_FOREGROUND_REMOVE)
+
+            // 🔴 NEW: Accept is now handled by the service FIRST, so the
+            // ringtone/vibration die instantly — before we ever hand off
+            // to MainActivity / the RN bridge.
+            ACTION_ACCEPT -> {
+                silenceCall()
+
+                val callerName = intent.getStringExtra("callerName") ?: "Unknown"
+                val callId     = intent.getStringExtra("callId") ?: ""
+                val roomId     = intent.getStringExtra("roomId") ?: ""
+                val callType   = intent.getStringExtra("callType") ?: "audio"
+                val callerId   = intent.getStringExtra("callerId") ?: ""
+
+                try {
+                    val launchIntent = Intent(this, MainActivity::class.java).apply {
+                        action = ACTION_ACCEPT
+                        putExtra("callerName", callerName)
+                        putExtra("callId", callId)
+                        putExtra("roomId", roomId)
+                        putExtra("callType", callType)
+                        putExtra("callerId", callerId)
+                        addFlags(
+                            Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        )
+                    }
+                    startActivity(launchIntent)
+                } catch (e: Exception) {
+                    // Call is already silenced above even if this fails.
+                }
+
+                stopSelf()
+            }
+
+            ACTION_STOP, ACTION_DECLINE -> {
+                silenceCall()
                 stopSelf()
             }
         }
 
         return START_NOT_STICKY
+    }
+
+    /**
+     * Stops vibration AND force-removes the notification (including its
+     * looping FLAG_INSISTENT sound). Idempotent — safe to call repeatedly
+     * from any of the accept/decline/stop paths.
+     */
+    private fun silenceCall() {
+        try { stopVibration() } catch (e: Exception) {}
+        try { stopForeground(STOP_FOREGROUND_REMOVE) } catch (e: Exception) {}
+
+        // Belt-and-braces: some OEM battery managers don't reliably clear an
+        // INSISTENT notification via stopForeground() alone.
+        try {
+            NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID)
+        } catch (e: Exception) {}
     }
 
     private fun showCallNotification(
@@ -72,7 +123,6 @@ class CallForegroundService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT
         }
 
-        // Full-screen intent — shows over lock screen
         val fullScreenIntent = Intent(this, IncomingCallActivity::class.java).apply {
             action = ACTION_START
             putExtra("callerName", callerName)
@@ -90,21 +140,20 @@ class CallForegroundService : Service() {
             this, 0, fullScreenIntent, pendingFlags
         )
 
-        // Accept — opens MainActivity directly
-        val acceptIntent = Intent(this, MainActivity::class.java).apply {
+        // 🔧 CHANGED: was PendingIntent.getActivity(MainActivity) — now
+        // targets the service so we can silence audio before launching UI.
+        val acceptIntent = Intent(this, CallForegroundService::class.java).apply {
             action = ACTION_ACCEPT
             putExtra("callerName", callerName)
             putExtra("callId", callId)
             putExtra("roomId", roomId)
             putExtra("callType", callType)
             putExtra("callerId", callerId)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
-        val acceptPending = PendingIntent.getActivity(
+        val acceptPending = PendingIntent.getService(
             this, 1, acceptIntent, pendingFlags
         )
 
-        // Decline — stops this service
         val declineIntent = Intent(this, CallForegroundService::class.java).apply {
             action = ACTION_DECLINE
             putExtra("callId", callId)
@@ -122,13 +171,12 @@ class CallForegroundService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setAutoCancel(false)
-            .setTimeoutAfter(60000) // auto dismiss after 60s
-            .setFullScreenIntent(fullScreenPending, true) // KEY: shows over lock screen
+            .setTimeoutAfter(60000)
+            .setFullScreenIntent(fullScreenPending, true)
             .addAction(android.R.drawable.ic_menu_call, "Accept", acceptPending)
             .addAction(android.R.drawable.ic_delete, "Decline", declinePending)
             .build()
 
-        // FLAG_INSISTENT makes notification sound repeat
         notification.flags = notification.flags or Notification.FLAG_INSISTENT
 
         startForeground(NOTIFICATION_ID, notification)
@@ -137,12 +185,12 @@ class CallForegroundService : Service() {
     private fun startVibration() {
         val pattern = longArrayOf(0, 1000, 1000)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vm = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
-            vibrator = vm?.defaultVibrator
+            vm?.defaultVibrator
         } else {
             @Suppress("DEPRECATION")
-            vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
         }
 
         vibrator?.let {
@@ -168,7 +216,7 @@ class CallForegroundService : Service() {
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Showa incoming call notifications"
-                enableVibration(false) // handled manually
+                enableVibration(false)
                 setBypassDnd(true)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
                 setShowBadge(true)
@@ -181,7 +229,7 @@ class CallForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        stopVibration()
+        silenceCall()
         super.onDestroy()
     }
 }

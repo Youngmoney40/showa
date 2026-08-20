@@ -179,7 +179,9 @@ export default class Signaling {
 
       this.ws.onopen = () => {
         clearTimeout(connectionTimeout);
-        console.log("[Signaling] ✅ Connected to signaling server");
+        console.log("[Signaling] Connected to signaling server");
+        
+
         this.isOpen = true;
         this.reconnectAttempts = 0;
         
