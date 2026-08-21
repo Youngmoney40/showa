@@ -1637,6 +1637,7 @@ const NotificationsScreen = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={displayData.length === 0 && !loading && styles.emptyList}
         />
+        <View style={{marginBottom:50}}></View>
       </View>
     </SafeAreaView>
   );
@@ -1727,6 +1728,7 @@ const createStyles = (colors, isDark) => StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
+    marginBottom:20
   },
   unreadNotification: {},
   notificationContent: {

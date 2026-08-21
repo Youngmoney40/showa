@@ -4344,12 +4344,12 @@ const rejectCall = async () => {
     const videoTrack = localStream.current.getVideoTracks()[0];
     if (videoTrack) {
       videoTrack._switchCamera();
-      setIsCameraFront(!isCameraFront);
+      setIsCameraFront(!isCameraFront);  
     }
   };
 
   const switchToVideoCall = async () => {
-    console.log('[SWITCHING TO VIDEO INITIALIZE]')
+    console.log('[SWITCHING TO VIDEO INITIALIZE].....')
     if (!webrtcReady || !pc.current) return;
     try {
       const hasPermission = await requestPermissions();

@@ -1,3 +1,5 @@
+
+
 // import React, { useState, useEffect } from 'react';
 // import { 
 //   View, Text, StyleSheet, ScrollView, 
@@ -11,10 +13,9 @@
 // import LinearGradient from 'react-native-linear-gradient';
 // import { API_ROUTE } from '../../api_routing/api';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
-
+// import { useTheme } from '../../src/context/ThemeContext';
 
 // const { width } = Dimensions.get('window');
-// const BRAND_COLOR = '#0d64dd';
 
 // const createApiService = () => {
 //   const baseURL = `${API_ROUTE}`;
@@ -82,6 +83,7 @@
 // const api = createApiService();
 
 // const WalletDashboard = ({ navigation }) => {
+//   const { colors, isDark } = useTheme();
 //   const [loading, setLoading] = useState(true);
 //   const [refreshing, setRefreshing] = useState(false);
 //   const [wallet, setWallet] = useState(null);
@@ -185,8 +187,8 @@
 //     }
 //   };
 
-//   const getTransactionColor = (coins) => {
-//     return coins > 0 ? '#4CAF50' : '#F44336';
+//   const getTransactionColor = (coins, isDark) => {
+//     return coins > 0 ? '#4CAF50' : isDark ? '#EF5350' : '#F44336';
 //   };
 
 //   const getTransactionTitle = (actionType) => {
@@ -237,63 +239,22 @@
 //     return descriptions[actionType] || 'Activity reward';
 //   };
 
-//   const CustomProgressBar = ({ progress, color, height = 6, style }) => {
+//   const CustomProgressBar = ({ progress, color, height = 6, style, isDark, colors }) => {
 //     return (
-//       <View style={[styles.customProgressBarContainer, { height }, style]}>
+//       <View style={[
+//         styles.customProgressBarContainer, 
+//         { height, backgroundColor: isDark ? colors.backgroundSecondary : '#e0e0e0' }, 
+//         style
+//       ]}>
 //         <View 
 //           style={[
 //             styles.customProgressBarFill, 
 //             { 
 //               width: `${Math.min(Math.max(progress * 100, 0), 100)}%`,
-//               backgroundColor: color || BRAND_COLOR
+//               backgroundColor: color || colors.primary
 //             }
 //           ]} 
 //         />
-//       </View>
-//     );
-//   };
-
-//   const CustomChart = ({ data, title, color = BRAND_COLOR }) => {
-//     if (!data || data.length === 0) return null;
-    
-//     const maxValue = Math.max(...data.map(item => parseFloat(item.usd_earned || item.total_usd_earned || 0)));
-//     const chartHeight = 100;
-    
-//     return (
-//       <View style={styles.customChartContainer}>
-//         {title && <Text style={styles.chartSubtitle}>{title}</Text>}
-//         <View style={styles.customChart}>
-//           {data.slice(0, 6).reverse().map((item, index) => {
-//             const value = parseFloat(item.usd_earned || item.total_usd_earned || 0);
-//             const height = maxValue > 0 ? (value / maxValue) * chartHeight : 0;
-//             return (
-//               <View key={index} style={styles.barContainer}>
-//                 <View style={styles.barBackground}>
-//                   <View 
-//                     style={[
-//                       styles.barFill, 
-//                       { 
-//                         height: Math.max(height, 4),
-//                         backgroundColor: color
-//                       }
-//                     ]} 
-//                   />
-//                 </View>
-//                 <Text style={styles.barLabel}>
-//                   {item.month_name ? item.month_name.slice(0, 3) : 
-//                    `${item.month || 'M'}/${(item.year || 'YY').toString().slice(-2)}`}
-//                 </Text>
-//               </View>
-//             );
-//           })}
-//         </View>
-//         <View style={styles.chartAxis}>
-//           <View style={styles.yAxis}>
-//             <Text style={styles.axisText}>{formatCurrency(maxValue)}</Text>
-//             <Text style={styles.axisText}>{formatCurrency(maxValue/2)}</Text>
-//             <Text style={styles.axisText}>$0</Text>
-//           </View>
-//         </View>
 //       </View>
 //     );
 //   };
@@ -303,58 +264,55 @@
 //     setModalVisible(true);
 //   };
 
- 
-
-//   // if (!wallet && !loading) {
-//   //   return (
-//   //     <View style={styles.errorContainer}>
-//   //       <Icon2 name="wallet" size={60} color={BRAND_COLOR} />
-//   //       <Text style={styles.errorText}>Unable to load wallet data</Text>
-//   //       <Text style={styles.errorSubtext}>Please check your connection and try again</Text>
-//   //       <TouchableOpacity style={styles.retryButton} onPress={fetchWalletData}>
-//   //         <Text style={styles.retryButtonText}>Retry</Text>
-//   //       </TouchableOpacity>
-//   //     </View>
-//   //   );
-//   // }
+//   if (loading) {
+//     return (
+//       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+//         <ActivityIndicator size="large" color={colors.primary} />
+//         <Text style={[styles.loadingText, { color: colors.text }]}>Loading wallet...</Text>
+//       </View>
+//     );
+//   }
 
 //   return (
-//     <SafeAreaView style={styles.container}>
+//     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
 //       <StatusBar
-//                     barStyle={Platform.OS === 'android'? 'light-content':'dark-content'}
-//                     translucent={Platform.OS === 'android'}
-//                     backgroundColor={Platform.OS === 'android' ? '#0750b5' : undefined}
-//                   />
+//         barStyle={isDark ? 'light-content' : 'dark-content'}
+//         translucent={Platform.OS === 'android'}
+//         backgroundColor={Platform.OS === 'android' ? colors.primaryDark || colors.primary : undefined}
+//       />
 //       <ScrollView 
 //         showsVerticalScrollIndicator={false}
 //         refreshControl={
 //           <RefreshControl 
 //             refreshing={refreshing} 
 //             onRefresh={onRefresh}
-//             colors={[BRAND_COLOR]}
-//             tintColor={BRAND_COLOR}
+//             colors={[colors.primary]}
+//             tintColor={colors.primary}
+//             style={{ backgroundColor: colors.background }}
 //           />
 //         }
 //       >
 //         {/* Header */}
 //         <LinearGradient
-//           colors={['#fff', '#fff']}
-//           style={styles.header}
+//           colors={[colors.card, colors.card]}
+//           style={[styles.header, { 
+//             shadowColor: isDark ? '#000' : '#000',
+//             shadowOpacity: isDark ? 0.3 : 0.25,
+//           }]}
 //         >
 //           <TouchableOpacity 
 //             style={styles.backButton}
 //             onPress={() => navigation.goBack()}
 //           >
-//             <Icon name="arrow-back" size={24} color="#333" />
+//             <Icon name="arrow-back" size={24} color={colors.text} />
 //           </TouchableOpacity>
-//           <Text style={styles.headerTitle}>My Wallet</Text>
+//           <Text style={[styles.headerTitle, { color: colors.text }]}>My Wallet</Text>
 //           <TouchableOpacity 
 //             style={styles.backButton}
 //             onPress={() => navigation.navigate('EarningDashbord')}
 //           >
-//             <Icon name="trending-up" size={24} color="#333" />
+//             <Icon name="trending-up" size={24} color={colors.text} />
 //           </TouchableOpacity>
-          
 //         </LinearGradient>
 
 //         {/* Balance Overview */}
@@ -365,7 +323,7 @@
 //           ]}
 //         >
 //           <LinearGradient
-//             colors={['#104ce4ff', '#0d48ddff']}
+//             colors={isDark ? [colors.primaryDark || colors.primary, colors.primary] : ['#104ce4ff', '#0d48ddff']}
 //             style={styles.gradientCard}
 //             start={{ x: 0, y: 0 }}
 //             end={{ x: 1, y: 1 }}
@@ -391,7 +349,7 @@
 //                 </Text>
 //               </View>
               
-//               <View style={styles.balanceDivider} />
+//               <View style={[styles.balanceDivider, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
               
 //               <View style={styles.balanceItem}>
 //                 <Text style={styles.balanceLabel}>Pending</Text>
@@ -400,7 +358,7 @@
 //                 </Text>
 //               </View>
               
-//               <View style={styles.balanceDivider} />
+//               <View style={[styles.balanceDivider, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
               
 //               <View style={styles.balanceItem}>
 //                 <Text style={styles.balanceLabel}>Exchange Rate</Text>
@@ -412,23 +370,23 @@
             
 //             <View style={styles.balanceActions}>
 //               <TouchableOpacity 
-//                 style={[styles.actionButton, styles.withdrawButton]}
+//                 style={[styles.actionButton, styles.withdrawButton, { borderColor: 'rgba(255,255,255,0.3)' }]}
 //                 onPress={() => navigation.navigate('WithdrawEarning')}
-//                // disabled={(wallet?.usd_available || 0) < 1}
 //               >
 //                 <Icon name="arrow-upward" size={20} color="#fff" />
-//                 <Text style={styles.actionButtonText}>
-//                   {/* {(wallet?.usd_available || 0) >= 1 ? 'Withdraw' : `Min: ${formatCurrency(1)}`} */}
+//                 <Text style={[styles.actionButtonText, {color:'#fff'}]}>
 //                   Withdraw
 //                 </Text>
 //               </TouchableOpacity>
               
 //               <TouchableOpacity 
-//                 style={[styles.actionButton, styles.earnButton]}
+//                 style={[styles.actionButton, styles.earnButton, { backgroundColor: isDark ? colors.card : '#fffffdff' }]}
 //                 onPress={() => navigation.navigate('EarningDashbord')}
 //               >
-//                 <Icon name="trending-up" size={20} color="#000" />
-//                 <Text style={[styles.actionButtonText,{color:'#000',fontWeight:'900'}]}>Earn More</Text>
+//                 <Icon name="trending-up" size={20} color={isDark ? colors.text : '#000'} />
+//                 <Text style={[styles.actionButtonText, { color: isDark ? colors.text : '#000', fontWeight: '900' }]}>
+//                   Earn
+//                 </Text>
 //               </TouchableOpacity>
 //             </View>
 //           </LinearGradient>
@@ -436,59 +394,59 @@
 
 //         {/* Quick Stats */}
 //         <View style={styles.statsContainer}>
-//           <View style={styles.statCard}>
-//             <View style={[styles.statIcon, { backgroundColor: '#4CAF5020' }]}>
+//           <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+//             <View style={[styles.statIcon, { backgroundColor: isDark ? '#4CAF5030' : '#4CAF5020' }]}>
 //               <Icon name="today" size={24} color="#4CAF50" />
 //             </View>
-//             <Text style={styles.statValue}>
+//             <Text style={[styles.statValue, { color: colors.text }]}>
 //               {formatCurrency(analytics?.current_month?.usd_earned || 0)}
 //             </Text>
-//             <Text style={styles.statLabel}>This Month</Text>
+//             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>This Month</Text>
 //           </View>
           
-//           <View style={styles.statCard}>
-//             <View style={[styles.statIcon, { backgroundColor: '#FF980020' }]}>
+//           <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+//             <View style={[styles.statIcon, { backgroundColor: isDark ? '#FF980030' : '#FF980020' }]}>
 //               <Icon2 name="fire" size={24} color="#FF9800" />
 //             </View>
-//             <Text style={styles.statValue}>{wallet?.streak_count || 0}</Text>
-//             <Text style={styles.statLabel}>Day Streak</Text>
+//             <Text style={[styles.statValue, { color: colors.text }]}>{wallet?.streak_count || 0}</Text>
+//             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Day Streak</Text>
 //           </View>
           
-//           <View style={styles.statCard}>
-//             <View style={[styles.statIcon, { backgroundColor: '#2196F320' }]}>
+//           <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+//             <View style={[styles.statIcon, { backgroundColor: isDark ? '#2196F330' : '#2196F320' }]}>
 //               <Icon name="people" size={24} color="#2196F3" />
 //             </View>
-//             <Text style={styles.statValue}>{wallet?.total_referrals || 0}</Text>
-//             <Text style={styles.statLabel}>Referrals</Text>
+//             <Text style={[styles.statValue, { color: colors.text }]}>{wallet?.total_referrals || 0}</Text>
+//             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Referrals</Text>
 //           </View>
           
-//           <View style={styles.statCard}>
-//             <View style={[styles.statIcon, { backgroundColor: '#9C27B020' }]}>
+//           <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+//             <View style={[styles.statIcon, { backgroundColor: isDark ? '#9C27B030' : '#9C27B020' }]}>
 //               <Icon name="star" size={24} color="#9C27B0" />
 //             </View>
-//             <Text style={styles.statValue}>
+//             <Text style={[styles.statValue, { color: colors.text }]}>
 //               {formatNumber(analytics?.lifetime_stats?.total_tasks_completed || 0)}
 //             </Text>
-//             <Text style={styles.statLabel}>Tasks Done</Text>
+//             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Tasks Done</Text>
 //           </View>
 //         </View>
 
 //         {/* Recent Transactions */}
-//         <View style={styles.transactionsContainer}>
+//         <View style={[styles.transactionsContainer, { backgroundColor: colors.card }]}>
 //           <View style={styles.transactionsHeader}>
-//             <Text style={styles.sectionTitle}>Recent Earnings</Text>
+//             <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Earnings</Text>
 //             <TouchableOpacity onPress={() => navigation.navigate('TransactionHistory')}>
-//               <Text style={styles.viewAllText}>View All</Text>
+//               <Text style={[styles.viewAllText, { color: colors.primary }]}>View All</Text>
 //             </TouchableOpacity>
 //           </View>
           
 //           {recentTransactions.length === 0 ? (
 //             <View style={styles.emptyTransactions}>
-//               <Icon2 name="receipt" size={50} color="#ddd" />
-//               <Text style={styles.emptyText}>No transactions yet</Text>
-//               <Text style={styles.emptySubtext}>Start earning to see transactions here</Text>
+//               <Icon2 name="receipt" size={50} color={colors.textSecondary} />
+//               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No transactions yet</Text>
+//               <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start earning to see transactions here</Text>
 //               <TouchableOpacity 
-//                 style={styles.earnNowButton}
+//                 style={[styles.earnNowButton, { backgroundColor: colors.primary }]}
 //                 onPress={() => navigation.navigate('EarningDashbord')}
 //               >
 //                 <Text style={styles.earnNowText}>Start Earning</Text>
@@ -498,27 +456,27 @@
 //             recentTransactions.map((transaction, index) => (
 //               <TouchableOpacity 
 //                 key={transaction.id || index}
-//                 style={styles.transactionItem}
+//                 style={[styles.transactionItem, { borderBottomColor: colors.border }]}
 //                 onPress={() => handleTransactionPress(transaction)}
 //               >
 //                 <View style={styles.transactionIconContainer}>
 //                   <View style={[
 //                     styles.transactionIcon,
-//                     { backgroundColor: getTransactionColor(transaction.coins) + '20' }
+//                     { backgroundColor: getTransactionColor(transaction.coins, isDark) + (isDark ? '30' : '20') }
 //                   ]}>
 //                     <Icon 
 //                       name={getTransactionIcon(transaction.action_type)} 
 //                       size={20} 
-//                       color={getTransactionColor(transaction.coins)} 
+//                       color={getTransactionColor(transaction.coins, isDark)} 
 //                     />
 //                   </View>
 //                 </View>
                 
 //                 <View style={styles.transactionInfo}>
-//                   <Text style={styles.transactionTitle}>
+//                   <Text style={[styles.transactionTitle, { color: colors.text }]}>
 //                     {getTransactionTitle(transaction.action_type)}
 //                   </Text>
-//                   <Text style={styles.transactionTime}>
+//                   <Text style={[styles.transactionTime, { color: colors.textSecondary }]}>
 //                     {new Date(transaction.created_at).toLocaleDateString('en-US', {
 //                       month: 'short',
 //                       day: 'numeric',
@@ -531,11 +489,11 @@
 //                 <View style={styles.transactionAmount}>
 //                   <Text style={[
 //                     styles.amountText,
-//                     { color: getTransactionColor(transaction.coins) }
+//                     { color: getTransactionColor(transaction.coins, isDark) }
 //                   ]}>
 //                     {transaction.coins > 0 ? '+' : ''}{transaction.coins}
 //                   </Text>
-//                   <Text style={styles.usdAmount}>
+//                   <Text style={[styles.usdAmount, { color: colors.textSecondary }]}>
 //                     {formatCurrency(Math.abs(transaction.coins) * (wallet?.exchange_rate || 0.01))}
 //                   </Text>
 //                 </View>
@@ -546,22 +504,22 @@
 
 //         {/* Milestones Progress */}
 //         {analytics?.milestones?.length > 0 && (
-//           <View style={styles.milestonesContainer}>
+//           <View style={[styles.milestonesContainer, { backgroundColor: colors.card }]}>
 //             <View style={styles.milestonesHeader}>
-//               <Text style={styles.sectionTitle}>Milestones Progress</Text>
+//               <Text style={[styles.sectionTitle, { color: colors.text }]}>Milestones Progress</Text>
 //               <TouchableOpacity onPress={() => navigation.navigate('Milestones')}>
-//                 <Text style={styles.viewAllText}>View All</Text>
+//                 <Text style={[styles.viewAllText, { color: colors.primary }]}>View All</Text>
 //               </TouchableOpacity>
 //             </View>
             
 //             {analytics.milestones.slice(0, 3).map((milestone, index) => (
-//               <View key={index} style={styles.milestoneItem}>
+//               <View key={index} style={[styles.milestoneItem, { backgroundColor: colors.backgroundSecondary }]}>
 //                 <View style={styles.milestoneHeader}>
 //                   <Icon name="star" size={18} color="#FFD700" />
-//                   <Text style={styles.milestoneTitle}>
+//                   <Text style={[styles.milestoneTitle, { color: colors.text }]}>
 //                     {milestone.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
 //                   </Text>
-//                   <Text style={styles.milestoneTarget}>
+//                   <Text style={[styles.milestoneTarget, { color: colors.textSecondary }]}>
 //                     ${formatNumber(milestone.target_value)}
 //                   </Text>
 //                 </View>
@@ -569,17 +527,19 @@
 //                 <View style={styles.progressContainer}>
 //                   <CustomProgressBar 
 //                     progress={milestone.progress_percentage / 100}
-//                     color={BRAND_COLOR}
+//                     color={colors.primary}
 //                     height={6}
+//                     isDark={isDark}
+//                     colors={colors}
 //                   />
-//                   <Text style={styles.progressText}>
+//                   <Text style={[styles.progressText, { color: colors.textSecondary }]}>
 //                     ${formatNumber(milestone.current_value)} / ${formatNumber(milestone.target_value)}
 //                   </Text>
 //                 </View>
                 
-//                 <View style={styles.milestoneReward}>
+//                 <View style={[styles.milestoneReward, { backgroundColor: isDark ? 'rgba(255, 215, 0, 0.15)' : 'rgba(255, 215, 0, 0.1)' }]}>
 //                   <Icon name="monetization-on" size={16} color="#FFD700" />
-//                   <Text style={styles.rewardText}>
+//                   <Text style={[styles.rewardText, { color: isDark ? '#FFD700' : '#FF9800' }]}>
 //                     Reward: +{formatNumber(milestone.reward_coins)} coins
 //                   </Text>
 //                 </View>
@@ -588,72 +548,46 @@
 //           </View>
 //         )}
 
-//         {/* Referral Section */}
-//         {/* <View style={styles.referralSection}>
-//           <LinearGradient
-//             colors={[BRAND_COLOR, '#0a53b9']}
-//             style={styles.referralCard}
-//           >
-//             <Icon name="share" size={40} color="#fff" />
-//             <Text style={styles.referralTitle}>Invite Friends & Earn More!</Text>
-//             <Text style={styles.referralText}>
-//               Get 50 coins for each friend who joins using your referral code
-//             </Text>
-//             <View style={styles.referralCodeContainer}>
-//               <Text style={styles.referralCode}>{wallet?.referral_code || 'SHOWA123'}</Text>
-//               <TouchableOpacity 
-//                 style={styles.copyButton}
-//                 onPress={() => {
-//                   // Implement copy to clipboard
-//                   Alert.alert('Copied!', 'Referral code copied to clipboard');
-//                 }}
-//               >
-//                 <Text style={styles.copyButtonText}>Copy</Text>
-//               </TouchableOpacity>
-//             </View>
-//           </LinearGradient>
-//         </View> */}
-
 //         {/* FAQ/Help Section */}
-//         <View style={styles.faqContainer}>
-//           <Text style={styles.sectionTitle}>How It Works</Text>
+//         <View style={[styles.faqContainer, { backgroundColor: colors.card }]}>
+//           <Text style={[styles.sectionTitle, { color: colors.text }]}>How It Works</Text>
           
-//           <View style={styles.faqItem}>
-//             <Icon name="help" size={18} color={BRAND_COLOR} />
-//             <Text style={styles.faqQuestion}>How do I withdraw money?</Text>
-//             <Text style={styles.faqAnswer}>
+//           <View style={[styles.faqItem, { borderBottomColor: colors.border }]}>
+//             <Icon name="help" size={18} color={colors.primary} />
+//             <Text style={[styles.faqQuestion, { color: colors.text }]}>How do I withdraw money?</Text>
+//             <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>
 //               Go to Withdraw section, enter amount, choose payment method. Minimum ${(wallet?.withdrawal_info?.minimum_usd || 1).toFixed(2)}.
 //             </Text>
 //           </View>
           
-//           <View style={styles.faqItem}>
-//             <Icon name="help" size={18} color={BRAND_COLOR} />
-//             <Text style={styles.faqQuestion}>Are there any fees?</Text>
-//             <Text style={styles.faqAnswer}>
+//           <View style={[styles.faqItem, { borderBottomColor: colors.border }]}>
+//             <Icon name="help" size={18} color={colors.primary} />
+//             <Text style={[styles.faqQuestion, { color: colors.text }]}>Are there any fees?</Text>
+//             <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>
 //               Withdrawal fee: {wallet?.withdrawal_info?.fee_percent || 5}%. No fees for earning coins.
 //             </Text>
 //           </View>
           
-//           <View style={styles.faqItem}>
-//             <Icon name="help" size={18} color={BRAND_COLOR} />
-//             <Text style={styles.faqQuestion}>When will I get paid?</Text>
-//             <Text style={styles.faqAnswer}>
+//           <View style={[styles.faqItem, { borderBottomColor: colors.border }]}>
+//             <Icon name="help" size={18} color={colors.primary} />
+//             <Text style={[styles.faqQuestion, { color: colors.text }]}>When will I get paid?</Text>
+//             <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>
 //               Withdrawals processed within 24-48 hours. You'll be notified when completed.
 //             </Text>
 //           </View>
 //         </View>
 
 //         {/* Footer */}
-//         <View style={styles.footer}>
+//         <View style={[styles.footer, { backgroundColor: colors.card }]}>
 //           <View style={styles.footerInfo}>
 //             <Icon name="security" size={18} color="#4CAF50" />
-//             <Text style={styles.footerText}>Secure & Encrypted Transactions</Text>
+//             <Text style={[styles.footerText, { color: colors.textSecondary }]}>Secure & Encrypted Transactions</Text>
 //           </View>
 //           <View style={styles.footerInfo}>
-//             <Icon name="autorenew" size={18} color="#2196F3" />
-//             <Text style={styles.footerText}>Real-time Balance Updates</Text>
+//             <Icon name="autorenew" size={18} color={colors.primary} />
+//             <Text style={[styles.footerText, { color: colors.textSecondary }]}>Real-time Balance Updates</Text>
 //           </View>
-//           <Text style={styles.footerNote}>
+//           <Text style={[styles.footerNote, { color: colors.textSecondary }]}>
 //             Last updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
 //           </Text>
 //         </View>
@@ -666,26 +600,26 @@
 //         visible={modalVisible}
 //         onRequestClose={() => setModalVisible(false)}
 //       >
-//         <View style={styles.modalOverlay}>
-//           <View style={styles.modalContent}>
+//         <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+//           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
 //             {selectedTransaction && (
 //               <>
-//                 <View style={styles.modalHeader}>
+//                 <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
 //                   <View style={[
 //                     styles.modalIcon,
-//                     { backgroundColor: getTransactionColor(selectedTransaction.coins) + '20' }
+//                     { backgroundColor: getTransactionColor(selectedTransaction.coins, isDark) + (isDark ? '30' : '20') }
 //                   ]}>
 //                     <Icon 
 //                       name={getTransactionIcon(selectedTransaction.action_type)} 
 //                       size={30} 
-//                       color={getTransactionColor(selectedTransaction.coins)} 
+//                       color={getTransactionColor(selectedTransaction.coins, isDark)} 
 //                     />
 //                   </View>
 //                   <View style={styles.modalTitleContainer}>
-//                     <Text style={styles.modalTitle}>
+//                     <Text style={[styles.modalTitle, { color: colors.text }]}>
 //                       {getTransactionTitle(selectedTransaction.action_type)}
 //                     </Text>
-//                     <Text style={styles.modalSubtitle}>
+//                     <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
 //                       {new Date(selectedTransaction.created_at).toLocaleString()}
 //                     </Text>
 //                   </View>
@@ -693,48 +627,48 @@
 //                     style={styles.closeButton}
 //                     onPress={() => setModalVisible(false)}
 //                   >
-//                     <Icon name="close" size={24} color="#999" />
+//                     <Icon name="close" size={24} color={colors.textSecondary} />
 //                   </TouchableOpacity>
 //                 </View>
                 
 //                 <ScrollView style={styles.modalBody}>
-//                   <View style={styles.modalRewardCard}>
-//                     <Text style={styles.modalRewardTitle}>Amount Earned</Text>
+//                   <View style={[styles.modalRewardCard, { backgroundColor: colors.backgroundSecondary }]}>
+//                     <Text style={[styles.modalRewardTitle, { color: colors.textSecondary }]}>Amount Earned</Text>
 //                     <Text style={[
 //                       styles.modalRewardAmount,
-//                       { color: getTransactionColor(selectedTransaction.coins) }
+//                       { color: getTransactionColor(selectedTransaction.coins, isDark) }
 //                     ]}>
 //                       {selectedTransaction.coins > 0 ? '+' : ''}{selectedTransaction.coins} coins
 //                     </Text>
-//                     <Text style={styles.modalRewardValue}>
+//                     <Text style={[styles.modalRewardValue, { color: colors.textSecondary }]}>
 //                       ≈ {formatCurrency(Math.abs(selectedTransaction.coins) * (wallet?.exchange_rate || 0.01))}
 //                     </Text>
 //                   </View>
                   
-//                   <View style={styles.modalInfoCard}>
-//                     <Text style={styles.modalInfoTitle}>Transaction Details</Text>
+//                   <View style={[styles.modalInfoCard, { borderColor: colors.border }]}>
+//                     <Text style={[styles.modalInfoTitle, { color: colors.text }]}>Transaction Details</Text>
 //                     <View style={styles.infoRow}>
-//                       <Text style={styles.infoLabel}>Type:</Text>
-//                       <Text style={styles.infoValue}>
+//                       <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Type:</Text>
+//                       <Text style={[styles.infoValue, { color: colors.text }]}>
 //                         {selectedTransaction.action_type?.replace(/_/g, ' ')}
 //                       </Text>
 //                     </View>
 //                     <View style={styles.infoRow}>
-//                       <Text style={styles.infoLabel}>Date:</Text>
-//                       <Text style={styles.infoValue}>
+//                       <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Date:</Text>
+//                       <Text style={[styles.infoValue, { color: colors.text }]}>
 //                         {new Date(selectedTransaction.created_at).toLocaleString()}
 //                       </Text>
 //                     </View>
 //                     <View style={styles.infoRow}>
-//                       <Text style={styles.infoLabel}>Description:</Text>
-//                       <Text style={styles.infoValue}>
+//                       <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Description:</Text>
+//                       <Text style={[styles.infoValue, { color: colors.text }]}>
 //                         {getTransactionDescription(selectedTransaction.action_type, selectedTransaction.metadata)}
 //                       </Text>
 //                     </View>
 //                     {selectedTransaction.reference_id && (
 //                       <View style={styles.infoRow}>
-//                         <Text style={styles.infoLabel}>Reference ID:</Text>
-//                         <Text style={styles.infoValue}>
+//                         <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Reference ID:</Text>
+//                         <Text style={[styles.infoValue, { color: colors.text }]}>
 //                           {selectedTransaction.reference_id}
 //                         </Text>
 //                       </View>
@@ -742,21 +676,21 @@
 //                   </View>
                   
 //                   {selectedTransaction.metadata && Object.keys(selectedTransaction.metadata).length > 0 && (
-//                     <View style={styles.modalMetadataCard}>
-//                       <Text style={styles.modalInfoTitle}>Additional Information</Text>
+//                     <View style={[styles.modalMetadataCard, { backgroundColor: colors.backgroundSecondary }]}>
+//                       <Text style={[styles.modalInfoTitle, { color: colors.text }]}>Additional Information</Text>
 //                       {Object.entries(selectedTransaction.metadata).map(([key, value], index) => (
 //                         <View key={index} style={styles.infoRow}>
-//                           <Text style={styles.infoLabel}>{key.replace(/_/g, ' ')}:</Text>
-//                           <Text style={styles.infoValue}>{String(value)}</Text>
+//                           <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{key.replace(/_/g, ' ')}:</Text>
+//                           <Text style={[styles.infoValue, { color: colors.text }]}>{String(value)}</Text>
 //                         </View>
 //                       ))}
 //                     </View>
 //                   )}
 //                 </ScrollView>
                 
-//                 <View style={styles.modalFooter}>
+//                 <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
 //                   <TouchableOpacity 
-//                     style={styles.modalCloseButton}
+//                     style={[styles.modalCloseButton, { backgroundColor: colors.primary }]}
 //                     onPress={() => setModalVisible(false)}
 //                   >
 //                     <Text style={styles.modalCloseButtonText}>Close</Text>
@@ -774,41 +708,34 @@
 // const styles = StyleSheet.create({
 //   container: {
 //     flex: 1,
-//     backgroundColor: '#f8f9fa',
 //   },
 //   loadingContainer: {
 //     flex: 1,
 //     justifyContent: 'center',
 //     alignItems: 'center',
-//     backgroundColor: '#f8f9fa',
 //   },
 //   loadingText: {
 //     marginTop: 10,
 //     fontSize: 16,
-//     color: BRAND_COLOR,
 //   },
 //   errorContainer: {
 //     flex: 1,
 //     justifyContent: 'center',
 //     alignItems: 'center',
-//     backgroundColor: '#f8f9fa',
 //     padding: 20,
 //   },
 //   errorText: {
 //     fontSize: 18,
 //     fontWeight: '600',
-//     color: '#333',
 //     marginTop: 20,
 //     marginBottom: 10,
 //   },
 //   errorSubtext: {
 //     fontSize: 14,
-//     color: '#666',
 //     textAlign: 'center',
 //     marginBottom: 20,
 //   },
 //   retryButton: {
-//     backgroundColor: BRAND_COLOR,
 //     paddingHorizontal: 30,
 //     paddingVertical: 12,
 //     borderRadius: 25,
@@ -820,20 +747,15 @@
 //   },
 //   header: {
 //     ...Platform.select({
-//       ios:{
-//         shadowColor:'#000',
-//         shadowOffset:{width:0,height:5},
-//         shadowOpacity:0.25,
-//         shadowRadius:3.84,
-//         marginBottom:10,
-
+//       ios: {
+//         shadowOffset: { width: 0, height: 3 },
+//         shadowRadius: 3.84,
+//         marginBottom: 10,
 //       },
-//     android:{
-//       elevation:5
-
-//   }
-// }),
-
+//       android: {
+//         elevation: 5
+//       }
+//     }),
 //     flexDirection: 'row',
 //     justifyContent: 'space-between',
 //     alignItems: 'center',
@@ -841,14 +763,13 @@
 //     paddingVertical: 0,
 //   },
 //   backButton: {
-//     padding: 5,
-//     paddingHorizontal:20
+//     padding: 2,
+//     paddingHorizontal: 20
 //   },
 //   headerTitle: {
-//     fontSize: 25,
+//     fontSize: 22,
 //     fontWeight: 'bold',
-//     color: '#000',
-//     paddingVertical:30
+//     paddingVertical: 25
 //   },
 //   notificationButton: {
 //     padding: 5,
@@ -864,14 +785,14 @@
 //     elevation: 10,
 //   },
 //   gradientCard: {
-//     padding:Platform.OS === 'android' ? 25 : 0,
+//     padding: Platform.OS === 'android' ? 25 : 0,
 //     borderRadius: 20,
 //   },
 //   balanceHeader: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
 //     marginBottom: 15,
-//     padding:20
+//     padding: 20
 //   },
 //   balanceTitle: {
 //     fontSize: 16,
@@ -883,20 +804,19 @@
 //     fontWeight: 'bold',
 //     color: '#fff',
 //     marginBottom: 5,
-//     paddingHorizontal:20
+//     paddingHorizontal: 20
 //   },
 //   coinBalance: {
 //     fontSize: 18,
 //     color: 'rgba(255,255,255,0.8)',
 //     marginBottom: 25,
-//       paddingHorizontal:20
+//     paddingHorizontal: 20
 //   },
 //   balanceBreakdown: {
 //     flexDirection: 'row',
 //     justifyContent: 'space-between',
 //     marginBottom: 25,
 //     paddingHorizontal: 5,
-    
 //   },
 //   balanceItem: {
 //     alignItems: 'center',
@@ -905,7 +825,6 @@
 //   balanceDivider: {
 //     width: 1,
 //     height: 40,
-//     backgroundColor: 'rgba(255,255,255,0.3)',
 //   },
 //   balanceLabel: {
 //     fontSize: 12,
@@ -922,8 +841,8 @@
 //     flexDirection: 'row',
 //     justifyContent: 'space-between',
 //     gap: 10,
-//       paddingHorizontal:20,
-//       marginBottom:30,
+//     paddingHorizontal: 20,
+//     marginBottom: 30,
 //   },
 //   actionButton: {
 //     flexDirection: 'row',
@@ -935,15 +854,12 @@
 //     flex: 1,
 //   },
 //   withdrawButton: {
-//     backgroundColor: 'rgba(255,255,255,0.2)',
 //     borderWidth: 1,
-//     borderColor: 'rgba(255,255,255,0.3)',
 //   },
 //   earnButton: {
-//     backgroundColor: '#fffffdff',
+//     // backgroundColor is set inline
 //   },
 //   actionButtonText: {
-//     color: '#fff',
 //     fontWeight: '600',
 //     marginLeft: 8,
 //     fontSize: 14,
@@ -957,7 +873,6 @@
 //   },
 //   statCard: {
 //     width: (width - 60) / 2,
-//     backgroundColor: '#fff',
 //     borderRadius: 15,
 //     padding: 15,
 //     alignItems: 'center',
@@ -978,133 +893,20 @@
 //   statValue: {
 //     fontSize: 20,
 //     fontWeight: 'bold',
-//     color: '#333',
 //     marginBottom: 5,
 //   },
 //   statLabel: {
 //     fontSize: 12,
-//     color: '#666',
-//   },
-//   chartContainer: {
-//     backgroundColor: '#fff',
-//     marginHorizontal: 20,
-//     marginTop: 20,
-//     borderRadius: 15,
-//     padding: 20,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.05,
-//     shadowRadius: 10,
-//     elevation: 5,
-//   },
-//   chartHeader: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     marginBottom: 15,
 //   },
 //   sectionTitle: {
 //     fontSize: 18,
 //     fontWeight: 'bold',
-//     color: '#333',
-//   },
-//   chartSubtitle: {
-//     fontSize: 14,
-//     color: '#666',
-//     marginBottom: 10,
 //   },
 //   viewAllText: {
 //     fontSize: 14,
-//     color: BRAND_COLOR,
 //     fontWeight: '600',
-//   },
-//   customChartContainer: {
-//     height: 150,
-//   },
-//   customChart: {
-//     flex: 1,
-//     flexDirection: 'row',
-//     justifyContent: 'space-around',
-//     alignItems: 'flex-end',
-//     paddingBottom: 20,
-//   },
-//   barContainer: {
-//     alignItems: 'center',
-//     width: 40,
-//   },
-//   barBackground: {
-//     height: 100,
-//     width: 20,
-//     backgroundColor: '#f0f0f0',
-//     borderRadius: 10,
-//     overflow: 'hidden',
-//     justifyContent: 'flex-end',
-//   },
-//   barFill: {
-//     width: '100%',
-//     borderTopLeftRadius: 10,
-//     borderTopRightRadius: 10,
-//   },
-//   barLabel: {
-//     fontSize: 10,
-//     color: '#666',
-//     marginTop: 5,
-//     textAlign: 'center',
-//   },
-//   chartAxis: {
-//     width: 50,
-//     justifyContent: 'space-between',
-//     paddingVertical: 10,
-//   },
-//   yAxis: {
-//     justifyContent: 'space-between',
-//     height: 100,
-//   },
-//   axisText: {
-//     fontSize: 10,
-//     color: '#999',
-//   },
-//   quickActionsContainer: {
-//     marginHorizontal: 20,
-//     marginTop: 20,
-//   },
-//   quickActionsGrid: {
-//     flexDirection: 'row',
-//     flexWrap: 'wrap',
-//     gap: 10,
-//   },
-//   quickAction: {
-//     width: (width - 60) / 2,
-//     backgroundColor: '#fff',
-//     borderRadius: 15,
-//     padding: 15,
-//     alignItems: 'center',
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.05,
-//     shadowRadius: 10,
-//     elevation: 5,
-//   },
-//   quickActionIcon: {
-//     width: 60,
-//     height: 60,
-//     borderRadius: 30,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     marginBottom: 10,
-//   },
-//   quickActionText: {
-//     fontSize: 14,
-//     fontWeight: '600',
-//     color: '#333',
-//     marginBottom: 2,
-//   },
-//   quickActionSubtext: {
-//     fontSize: 11,
-//     color: '#666',
 //   },
 //   transactionsContainer: {
-//     backgroundColor: '#fff',
 //     marginHorizontal: 20,
 //     marginTop: 20,
 //     borderRadius: 15,
@@ -1127,18 +929,15 @@
 //   },
 //   emptyText: {
 //     fontSize: 16,
-//     color: '#999',
 //     marginTop: 10,
 //     marginBottom: 5,
 //   },
 //   emptySubtext: {
 //     fontSize: 14,
-//     color: '#ccc',
 //     textAlign: 'center',
 //     marginBottom: 15,
 //   },
 //   earnNowButton: {
-//     backgroundColor: BRAND_COLOR,
 //     paddingHorizontal: 20,
 //     paddingVertical: 10,
 //     borderRadius: 20,
@@ -1153,7 +952,6 @@
 //     alignItems: 'center',
 //     paddingVertical: 12,
 //     borderBottomWidth: 1,
-//     borderBottomColor: '#f0f0f0',
 //   },
 //   transactionIconContainer: {
 //     marginRight: 15,
@@ -1171,12 +969,10 @@
 //   transactionTitle: {
 //     fontSize: 14,
 //     fontWeight: '600',
-//     color: '#333',
 //     marginBottom: 3,
 //   },
 //   transactionTime: {
 //     fontSize: 12,
-//     color: '#999',
 //   },
 //   transactionAmount: {
 //     alignItems: 'flex-end',
@@ -1188,10 +984,8 @@
 //   },
 //   usdAmount: {
 //     fontSize: 12,
-//     color: '#666',
 //   },
 //   milestonesContainer: {
-//     backgroundColor: '#fff',
 //     marginHorizontal: 20,
 //     marginTop: 20,
 //     borderRadius: 15,
@@ -1209,7 +1003,6 @@
 //     marginBottom: 15,
 //   },
 //   milestoneItem: {
-//     backgroundColor: '#f8f9fa',
 //     borderRadius: 10,
 //     padding: 15,
 //     marginBottom: 10,
@@ -1222,13 +1015,11 @@
 //   milestoneTitle: {
 //     fontSize: 14,
 //     fontWeight: '600',
-//     color: '#333',
 //     flex: 1,
 //     marginLeft: 8,
 //   },
 //   milestoneTarget: {
 //     fontSize: 12,
-//     color: '#666',
 //     fontWeight: '600',
 //   },
 //   progressContainer: {
@@ -1236,14 +1027,12 @@
 //   },
 //   progressText: {
 //     fontSize: 12,
-//     color: '#666',
 //     marginTop: 5,
 //     textAlign: 'right',
 //   },
 //   milestoneReward: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
-//     backgroundColor: 'rgba(255, 215, 0, 0.1)',
 //     paddingHorizontal: 10,
 //     paddingVertical: 5,
 //     borderRadius: 15,
@@ -1251,63 +1040,10 @@
 //   },
 //   rewardText: {
 //     fontSize: 11,
-//     color: '#FF9800',
 //     fontWeight: '600',
 //     marginLeft: 5,
 //   },
-//   referralSection: {
-//     marginHorizontal: 20,
-//     marginTop: 20,
-//     borderRadius: 15,
-//     overflow: 'hidden',
-//   },
-//   referralCard: {
-//     padding: 25,
-//     alignItems: 'center',
-//   },
-//   referralTitle: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//     color: '#fff',
-//     marginTop: 15,
-//     marginBottom: 10,
-//     textAlign: 'center',
-//   },
-//   referralText: {
-//     fontSize: 14,
-//     color: 'rgba(255,255,255,0.9)',
-//     textAlign: 'center',
-//     marginBottom: 20,
-//   },
-//   referralCodeContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     backgroundColor: 'rgba(255,255,255,0.2)',
-//     paddingHorizontal: 20,
-//     paddingVertical: 12,
-//     borderRadius: 25,
-//     width: '100%',
-//     justifyContent: 'space-between',
-//   },
-//   referralCode: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//     color: '#fff',
-//     letterSpacing: 2,
-//   },
-//   copyButton: {
-//     backgroundColor: '#fff',
-//     paddingHorizontal: 15,
-//     paddingVertical: 5,
-//     borderRadius: 15,
-//   },
-//   copyButtonText: {
-//     color: BRAND_COLOR,
-//     fontSize: 14,
-//     fontWeight: '600',
-//   },
 //   faqContainer: {
-//     backgroundColor: '#fff',
 //     marginHorizontal: 20,
 //     marginTop: 20,
 //     borderRadius: 15,
@@ -1322,18 +1058,15 @@
 //     marginBottom: 15,
 //     paddingBottom: 15,
 //     borderBottomWidth: 1,
-//     borderBottomColor: '#f0f0f0',
 //   },
 //   faqQuestion: {
 //     fontSize: 14,
 //     fontWeight: '600',
-//     color: '#333',
 //     marginTop: 5,
 //     marginBottom: 5,
 //   },
 //   faqAnswer: {
 //     fontSize: 13,
-//     color: '#666',
 //     lineHeight: 20,
 //   },
 //   footer: {
@@ -1341,7 +1074,6 @@
 //     marginTop: 20,
 //     marginBottom: 40,
 //     padding: 20,
-//     backgroundColor: '#fff',
 //     borderRadius: 15,
 //     alignItems: 'center',
 //     shadowColor: '#000',
@@ -1357,22 +1089,18 @@
 //   },
 //   footerText: {
 //     fontSize: 14,
-//     color: '#666',
 //     marginLeft: 10,
 //   },
 //   footerNote: {
 //     fontSize: 12,
-//     color: '#999',
 //     marginTop: 10,
 //     fontStyle: 'italic',
 //   },
 //   modalOverlay: {
 //     flex: 1,
-//     backgroundColor: 'rgba(0,0,0,0.5)',
 //     justifyContent: 'flex-end',
 //   },
 //   modalContent: {
-//     backgroundColor: '#fff',
 //     borderTopLeftRadius: 20,
 //     borderTopRightRadius: 20,
 //     maxHeight: '80%',
@@ -1382,7 +1110,6 @@
 //     alignItems: 'center',
 //     padding: 20,
 //     borderBottomWidth: 1,
-//     borderBottomColor: '#f0f0f0',
 //   },
 //   modalIcon: {
 //     width: 50,
@@ -1398,11 +1125,9 @@
 //   modalTitle: {
 //     fontSize: 18,
 //     fontWeight: 'bold',
-//     color: '#333',
 //   },
 //   modalSubtitle: {
 //     fontSize: 13,
-//     color: '#666',
 //     marginTop: 3,
 //   },
 //   closeButton: {
@@ -1412,7 +1137,6 @@
 //     padding: 20,
 //   },
 //   modalRewardCard: {
-//     backgroundColor: '#f8f9fa',
 //     borderRadius: 15,
 //     padding: 20,
 //     alignItems: 'center',
@@ -1420,7 +1144,6 @@
 //   },
 //   modalRewardTitle: {
 //     fontSize: 14,
-//     color: '#666',
 //     marginBottom: 10,
 //   },
 //   modalRewardAmount: {
@@ -1430,20 +1153,16 @@
 //   },
 //   modalRewardValue: {
 //     fontSize: 16,
-//     color: '#666',
 //   },
 //   modalInfoCard: {
-//     backgroundColor: '#fff',
 //     borderRadius: 10,
 //     padding: 15,
 //     marginBottom: 15,
 //     borderWidth: 1,
-//     borderColor: '#f0f0f0',
 //   },
 //   modalInfoTitle: {
 //     fontSize: 16,
 //     fontWeight: '600',
-//     color: '#333',
 //     marginBottom: 15,
 //   },
 //   infoRow: {
@@ -1452,17 +1171,14 @@
 //   },
 //   infoLabel: {
 //     fontSize: 14,
-//     color: '#666',
 //     width: 100,
 //   },
 //   infoValue: {
 //     fontSize: 14,
-//     color: '#333',
 //     flex: 1,
 //     fontWeight: '500',
 //   },
 //   modalMetadataCard: {
-//     backgroundColor: '#f8f9fa',
 //     borderRadius: 10,
 //     padding: 15,
 //     marginBottom: 15,
@@ -1470,10 +1186,8 @@
 //   modalFooter: {
 //     padding: 20,
 //     borderTopWidth: 1,
-//     borderTopColor: '#f0f0f0',
 //   },
 //   modalCloseButton: {
-//     backgroundColor: BRAND_COLOR,
 //     paddingVertical: 15,
 //     borderRadius: 25,
 //     alignItems: 'center',
@@ -1484,7 +1198,6 @@
 //     fontWeight: 'bold',
 //   },
 //   customProgressBarContainer: {
-//     backgroundColor: '#e0e0e0',
 //     borderRadius: 3,
 //     overflow: 'hidden',
 //   },
@@ -1496,12 +1209,12 @@
 
 // export default WalletDashboard;
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, 
   TouchableOpacity, RefreshControl, ActivityIndicator,
   Image, Animated, Dimensions, Modal, Alert,
-  Platform, StatusBar
+  Platform, StatusBar, FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -1511,7 +1224,7 @@ import { API_ROUTE } from '../../api_routing/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../src/context/ThemeContext';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const createApiService = () => {
   const baseURL = `${API_ROUTE}`;
@@ -1585,10 +1298,14 @@ const WalletDashboard = ({ navigation }) => {
   const [wallet, setWallet] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [recentTransactions, setRecentTransactions] = useState([]);
+  const [allTransactions, setAllTransactions] = useState([]);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const [bottomSheetAnim] = useState(new Animated.Value(0));
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     fetchWalletData();
@@ -1618,9 +1335,11 @@ const WalletDashboard = ({ navigation }) => {
       const analyticsResponse = await api.get('/analytics/');
       setAnalytics(analyticsResponse.data);
       
-      // Fetch recent transactions
-      const transactionsResponse = await api.get('/rewards/history/?limit=5');
-      setRecentTransactions(transactionsResponse.data.results || transactionsResponse.data);
+      // Fetch recent transactions (max 10)
+      const transactionsResponse = await api.get('/rewards/history/?limit=50');
+      const transactions = transactionsResponse.data.results || transactionsResponse.data || [];
+      setRecentTransactions(transactions.slice(0, 5));
+      setAllTransactions(transactions);
       
     } catch (error) {
       console.error('Error fetching wallet data:', error);
@@ -1628,6 +1347,20 @@ const WalletDashboard = ({ navigation }) => {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const fetchAllTransactions = async () => {
+    try {
+      setLoadingMore(true);
+      const response = await api.get('/rewards/history/?limit=50');
+      const transactions = response.data.results || response.data || [];
+      setAllTransactions(transactions);
+    } catch (error) {
+      console.error('Error fetching all transactions:', error);
+      Alert.alert('Error', 'Failed to load transaction history.');
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -1759,6 +1492,79 @@ const WalletDashboard = ({ navigation }) => {
     setSelectedTransaction(transaction);
     setModalVisible(true);
   };
+
+  const openBottomSheet = async () => {
+    if (allTransactions.length === 0) {
+      await fetchAllTransactions();
+    }
+    setBottomSheetVisible(true);
+    Animated.spring(bottomSheetAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
+
+  const closeBottomSheet = () => {
+    Animated.timing(bottomSheetAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setBottomSheetVisible(false);
+    });
+  };
+
+  const renderTransactionItem = ({ item, index }) => (
+    <TouchableOpacity 
+      key={item.id || index}
+      style={[styles.transactionItem, { borderBottomColor: colors.border }]}
+      onPress={() => {
+        closeBottomSheet();
+        setTimeout(() => handleTransactionPress(item), 300);
+      }}
+    >
+      <View style={styles.transactionIconContainer}>
+        <View style={[
+          styles.transactionIcon,
+          { backgroundColor: getTransactionColor(item.coins, isDark) + (isDark ? '30' : '20') }
+        ]}>
+          <Icon 
+            name={getTransactionIcon(item.action_type)} 
+            size={20} 
+            color={getTransactionColor(item.coins, isDark)} 
+          />
+        </View>
+      </View>
+      
+      <View style={styles.transactionInfo}>
+        <Text style={[styles.transactionTitle, { color: colors.text }]}>
+          {getTransactionTitle(item.action_type)}
+        </Text>
+        <Text style={[styles.transactionTime, { color: colors.textSecondary }]}>
+          {new Date(item.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </Text>
+      </View>
+      
+      <View style={styles.transactionAmount}>
+        <Text style={[
+          styles.amountText,
+          { color: getTransactionColor(item.coins, isDark) }
+        ]}>
+          {item.coins > 0 ? '+' : ''}{item.coins}
+        </Text>
+        <Text style={[styles.usdAmount, { color: colors.textSecondary }]}>
+          {formatCurrency(Math.abs(item.coins) * (wallet?.exchange_rate || 0.01))}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 
   if (loading) {
     return (
@@ -1927,13 +1733,15 @@ const WalletDashboard = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Recent Transactions */}
+        {/* Recent Transactions - UPDATED */}
         <View style={[styles.transactionsContainer, { backgroundColor: colors.card }]}>
           <View style={styles.transactionsHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Earnings</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('TransactionHistory')}>
-              <Text style={[styles.viewAllText, { color: colors.primary }]}>View All</Text>
-            </TouchableOpacity>
+            {recentTransactions.length > 0 && (
+              <TouchableOpacity onPress={openBottomSheet}>
+                <Text style={[styles.viewAllText, { color: colors.primary }]}>View All</Text>
+              </TouchableOpacity>
+            )}
           </View>
           
           {recentTransactions.length === 0 ? (
@@ -1949,52 +1757,66 @@ const WalletDashboard = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           ) : (
-            recentTransactions.map((transaction, index) => (
-              <TouchableOpacity 
-                key={transaction.id || index}
-                style={[styles.transactionItem, { borderBottomColor: colors.border }]}
-                onPress={() => handleTransactionPress(transaction)}
-              >
-                <View style={styles.transactionIconContainer}>
-                  <View style={[
-                    styles.transactionIcon,
-                    { backgroundColor: getTransactionColor(transaction.coins, isDark) + (isDark ? '30' : '20') }
-                  ]}>
-                    <Icon 
-                      name={getTransactionIcon(transaction.action_type)} 
-                      size={20} 
-                      color={getTransactionColor(transaction.coins, isDark)} 
-                    />
+            <>
+              {recentTransactions.map((transaction, index) => (
+                <TouchableOpacity 
+                  key={transaction.id || index}
+                  style={[styles.transactionItem, { borderBottomColor: colors.border }]}
+                  onPress={() => handleTransactionPress(transaction)}
+                >
+                  <View style={styles.transactionIconContainer}>
+                    <View style={[
+                      styles.transactionIcon,
+                      { backgroundColor: getTransactionColor(transaction.coins, isDark) + (isDark ? '30' : '20') }
+                    ]}>
+                      <Icon 
+                        name={getTransactionIcon(transaction.action_type)} 
+                        size={20} 
+                        color={getTransactionColor(transaction.coins, isDark)} 
+                      />
+                    </View>
                   </View>
-                </View>
-                
-                <View style={styles.transactionInfo}>
-                  <Text style={[styles.transactionTitle, { color: colors.text }]}>
-                    {getTransactionTitle(transaction.action_type)}
+                  
+                  <View style={styles.transactionInfo}>
+                    <Text style={[styles.transactionTitle, { color: colors.text }]}>
+                      {getTransactionTitle(transaction.action_type)}
+                    </Text>
+                    <Text style={[styles.transactionTime, { color: colors.textSecondary }]}>
+                      {new Date(transaction.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.transactionAmount}>
+                    <Text style={[
+                      styles.amountText,
+                      { color: getTransactionColor(transaction.coins, isDark) }
+                    ]}>
+                      {transaction.coins > 0 ? '+' : ''}{transaction.coins}
+                    </Text>
+                    <Text style={[styles.usdAmount, { color: colors.textSecondary }]}>
+                      {formatCurrency(Math.abs(transaction.coins) * (wallet?.exchange_rate || 0.01))}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+              
+              {recentTransactions.length === 5 && (
+                <TouchableOpacity 
+                  style={[styles.viewAllButton, { borderTopColor: colors.border }]}
+                  onPress={openBottomSheet}
+                >
+                  <Text style={[styles.viewAllButtonText, { color: colors.primary }]}>
+                    View All Transactions
                   </Text>
-                  <Text style={[styles.transactionTime, { color: colors.textSecondary }]}>
-                    {new Date(transaction.created_at).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </Text>
-                </View>
-                
-                <View style={styles.transactionAmount}>
-                  <Text style={[
-                    styles.amountText,
-                    { color: getTransactionColor(transaction.coins, isDark) }
-                  ]}>
-                    {transaction.coins > 0 ? '+' : ''}{transaction.coins}
-                  </Text>
-                  <Text style={[styles.usdAmount, { color: colors.textSecondary }]}>
-                    {formatCurrency(Math.abs(transaction.coins) * (wallet?.exchange_rate || 0.01))}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))
+                  <Icon name="arrow-forward" size={18} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+            </>
           )}
         </View>
 
@@ -2003,15 +1825,15 @@ const WalletDashboard = ({ navigation }) => {
           <View style={[styles.milestonesContainer, { backgroundColor: colors.card }]}>
             <View style={styles.milestonesHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Milestones Progress</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Milestones')}>
+              {/* <TouchableOpacity onPress={() => navigation.navigate('Milestones')}>
                 <Text style={[styles.viewAllText, { color: colors.primary }]}>View All</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
             
             {analytics.milestones.slice(0, 3).map((milestone, index) => (
               <View key={index} style={[styles.milestoneItem, { backgroundColor: colors.backgroundSecondary }]}>
                 <View style={styles.milestoneHeader}>
-                  <Icon name="star" size={18} color="#FFD700" />
+                  {/* <Icon name="star" size={18} color="#FFD700" /> */}
                   <Text style={[styles.milestoneTitle, { color: colors.text }]}>
                     {milestone.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </Text>
@@ -2197,6 +2019,97 @@ const WalletDashboard = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Bottom Sheet for All Transactions */}
+      <Modal
+        visible={bottomSheetVisible}
+        transparent={true}
+        animationType="none"
+        onRequestClose={closeBottomSheet}
+      >
+        <View style={styles.bottomSheetOverlay}>
+          <TouchableOpacity 
+            style={styles.bottomSheetBackdrop} 
+            activeOpacity={1}
+            onPress={closeBottomSheet}
+          />
+          <Animated.View 
+            style={[
+              styles.bottomSheetContainer,
+              {
+                backgroundColor: colors.card,
+                transform: [{
+                  translateY: bottomSheetAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [height, 0],
+                  })
+                }]
+              }
+            ]}
+          >
+            {/* Drag Handle */}
+            <View style={styles.bottomSheetHandle}>
+              <View style={[styles.bottomSheetHandleBar, { backgroundColor: colors.border }]} />
+            </View>
+
+            {/* Header */}
+            <View style={[styles.bottomSheetHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>
+                All Transactions
+              </Text>
+              <Text style={[styles.bottomSheetSubtitle, { color: colors.textSecondary }]}>
+                {allTransactions.length} transactions
+              </Text>
+              <TouchableOpacity 
+                style={styles.bottomSheetClose}
+                onPress={closeBottomSheet}
+              >
+                <Icon name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Summary Cards */}
+            {/* <View style={styles.bottomSheetSummary}>
+              <View style={[styles.summaryCard, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total Earned</Text>
+                <Text style={[styles.summaryValue, { color: '#4CAF50' }]}>
+                  {formatCurrency(allTransactions.reduce((sum, t) => sum + (t.coins > 0 ? t.coins * (wallet?.exchange_rate || 0.01) : 0), 0))}
+                </Text>
+              </View>
+              <View style={[styles.summaryCard, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total Coins</Text>
+                <Text style={[styles.summaryValue, { color: colors.primary }]}>
+                  {formatCoins(allTransactions.reduce((sum, t) => sum + (t.coins > 0 ? t.coins : 0), 0))}
+                </Text>
+              </View>
+            </View> */}
+
+            {/* Transaction List */}
+            {loadingMore ? (
+              <View style={styles.bottomSheetLoading}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading transactions...</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={allTransactions}
+                renderItem={renderTransactionItem}
+                keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
+                contentContainerStyle={styles.bottomSheetList}
+                showsVerticalScrollIndicator={false}
+                initialNumToRender={15}
+                maxToRenderPerBatch={20}
+                ListEmptyComponent={() => (
+                  <View style={styles.emptyTransactions}>
+                    <Icon2 name="receipt" size={40} color={colors.textSecondary} />
+                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No transactions found</Text>
+                  </View>
+                )}
+              />
+            )}
+          </Animated.View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -2271,7 +2184,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   balanceCard: {
-    marginHorizontal: 20,
+    marginHorizontal: 10,
     marginTop: 20,
     borderRadius: 20,
     shadowColor: '#000',
@@ -2288,7 +2201,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 15,
-    padding: 20
+    padding: 10
   },
   balanceTitle: {
     fontSize: 16,
@@ -2480,6 +2393,19 @@ const styles = StyleSheet.create({
   },
   usdAmount: {
     fontSize: 12,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 15,
+    marginTop: 5,
+    borderTopWidth: 1,
+  },
+  viewAllButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginRight: 5,
   },
   milestonesContainer: {
     marginHorizontal: 20,
@@ -2700,6 +2626,80 @@ const styles = StyleSheet.create({
   customProgressBarFill: {
     height: '100%',
     borderRadius: 3,
+  },
+  // Bottom Sheet Styles
+  bottomSheetOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  bottomSheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  bottomSheetContainer: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '85%',
+    minHeight: '50%',
+  },
+  bottomSheetHandle: {
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 5,
+  },
+  bottomSheetHandleBar: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+  },
+  bottomSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+  },
+  bottomSheetTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    flex: 1,
+  },
+  bottomSheetSubtitle: {
+    fontSize: 14,
+    marginRight: 10,
+  },
+  bottomSheetClose: {
+    padding: 5,
+  },
+  bottomSheetSummary: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    gap: 12,
+  },
+  summaryCard: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 15,
+    alignItems: 'center',
+  },
+  summaryLabel: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  bottomSheetList: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+  bottomSheetLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
   },
 });
 

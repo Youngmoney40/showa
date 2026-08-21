@@ -2207,8 +2207,8 @@ const getCommentUserImage = (profilePicture) => {
       badge: '💎 NEW',
       title: 'Earn Up to ₦5 Million',
       subtitle: 'Join the Showa reward system and start earning today!',
-      buttonText: 'Get Started Now →',
-      screen: 'EarningDashboard'
+      buttonText: 'Get Started',
+      screen: 'EarningDashbord' 
     },
     {
       id: 2,
@@ -2216,8 +2216,8 @@ const getCommentUserImage = (profilePicture) => {
       badge: '🔥 HOT',
       title: 'Make Money',
       subtitle: 'make money on Showa',
-      buttonText: 'Start Now →',
-      screen: 'EarningDashboard'
+      buttonText: 'Start Now',
+      screen: 'EarningDashbord'
     },
     {
       id: 3,
@@ -2225,7 +2225,7 @@ const getCommentUserImage = (profilePicture) => {
       badge: 'LIMITED',
       title: 'Daily Challenges',
       subtitle: 'Complete daily tasks and earn rewards every day!',
-      buttonText: 'Get Started Now →',
+      buttonText: 'Get Started',
       screen: 'EarningDashbord'
     }
   ];

@@ -2392,11 +2392,11 @@ const EarnTasksScreen = ({ navigation }) => {
         {/* How It Works Section */}
         <View style={[styles.infoSection, { backgroundColor: colors.surface }]}>
           <View style={styles.infoHeader}>
-            <Icon2 name="lightbulb" size={22} color={colors.primary} />
+            
             <Text style={[styles.infoTitle, { color: colors.text }]}>How Earning Works</Text>
           </View>
           <Text style={[styles.infoText, { color: colors.text }]}>
-            💡 <Text style={[styles.infoBold, { color: colors.primary }]}>Earn automatically</Text> while using Showa! Coins are awarded in the background when you:
+            <Text style={[styles.infoBold, { color: colors.primary }]}>Earn automatically</Text> while using Showa! Coins are awarded in the background when you:
           </Text>
           
           <View style={styles.infoPoints}>
@@ -3411,7 +3411,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   infoTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginLeft: 10,
   },

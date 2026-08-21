@@ -16,33 +16,45 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
-   
+    <!-- 🔴 ADDED: some OEM Telecom stacks expect this alongside MANAGE_OWN_CALLS
+         even for self-managed ConnectionService calls -->
+    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
+    <!-- 🔴 ADDED: fallback lock-screen dismissal for older/OEM devices where
+         showWhenLocked + turnScreenOn alone isn't fully honored -->
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <!-- 🔴 ADDED: lets you prompt the user to exempt the app from Samsung/
+         Xiaomi/Huawei/OnePlus battery optimization, which otherwise kills
+         your CallForegroundService mid-call on those devices. Permission
+         alone doesn't do this — you must also fire the runtime intent
+         (see note below the manifest). -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <!-- ========== CAMERA & MICROPHONE ========== -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    
+
     <!-- ========== CONTACTS ========== -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
-    
+
     <!-- ========== LOCATION ========== -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    
+
     <!-- ========== BLUETOOTH - ALL ANDROID VERSIONS ========== -->
     <!-- Android 11 and below -->
-    <uses-permission 
-        android:name="android.permission.BLUETOOTH" 
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
         android:maxSdkVersion="30" />
-    <uses-permission 
-        android:name="android.permission.BLUETOOTH_ADMIN" 
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30" />
-    
+
     <!-- Android 12 and above -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-    
+
     <!-- ========== STORAGE - COMPATIBLE WITH ALL VERSIONS ========== -->
     <!-- Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -50,25 +62,32 @@
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
-    
+
     <!-- Android 12 and below (maxSdkVersion 32) -->
-    <uses-permission 
-        android:name="android.permission.READ_EXTERNAL_STORAGE" 
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    
+
     <!-- Android 9 and below (maxSdkVersion 28) -->
-    <uses-permission 
+    <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" 
+        android:maxSdkVersion="28"
         tools:ignore="ScopedStorage" />
-    
+
     <!-- ========== FOREGROUND SERVICES (Android 14+) ========== -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE" />
+    <!-- 🔴 FIXED: FOREGROUND_SERVICE_PHONE is not a real Android permission.
+         The correct permission required to run a service with
+         foregroundServiceType="phoneCall" on Android 14+ (API 34) is
+         FOREGROUND_SERVICE_PHONE_CALL. Without the correct permission name,
+         CallForegroundService can throw a SecurityException and fail to
+         start on Android 14+ devices — this is very likely the reason your
+         ringtone/notification behaves inconsistently across different
+         phones/OS versions. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
 
@@ -110,7 +129,7 @@
             <action android:name="android.intent.action.PICK" />
             <data android:mimeType="video/*" />
         </intent>
-        
+
         <!-- DEEP LINKS -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -144,7 +163,7 @@
         android:supportsRtl="true"
         android:requestLegacyExternalStorage="true"
         tools:targetApi="35">
-        
+
         <!-- Conditionally enable edge-to-edge -->
         <meta-data
             android:name="android.edge_to_edge_enable"
@@ -160,19 +179,21 @@
             android:exported="true"
             android:screenOrientation="portrait"
             android:showWhenLocked="true"
-            android:showOnLockScreen="true"
             android:turnScreenOn="true"
             android:resizeableActivity="false"
             android:hardwareAccelerated="true"
             android:supportsPictureInPicture="false"
             android:excludeFromRecents="false">
-            
+            <!-- 🔴 REMOVED: android:showOnLockScreen="true" — not a real
+                 Android manifest attribute. showWhenLocked (already present
+                 above) is the correct, valid equivalent. -->
+
             <!-- LAUNCHER -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            
+
             <!-- DEEP LINKS -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -182,7 +203,7 @@
                 <data android:host="post" />
                 <data android:pathPattern="/.*" />
             </intent-filter>
-            
+
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -194,7 +215,7 @@
                 <data android:pathPrefix="/post" />
                 <data android:pathPrefix="/p" />
             </intent-filter>
-            
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -203,7 +224,7 @@
                 <data android:host="user" />
                 <data android:pathPattern="/.*" />
             </intent-filter>
-            
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -212,7 +233,7 @@
                 <data android:host="short" />
                 <data android:pathPattern="/.*" />
             </intent-filter>
-            
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -221,15 +242,13 @@
                 <data android:host="s" />
                 <data android:pathPattern="/.*" />
             </intent-filter>
-            
+
         </activity>
-        
+
         <!-- ========== INCOMING CALL ACTIVITY ========== -->
-        <!-- FIXED: Removed invalid android:excludeTaskFromRecents -->
         <activity
             android:name=".IncomingCallActivity"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:showOnLockScreen="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:launchMode="singleTop"
@@ -237,6 +256,11 @@
             android:excludeFromRecents="true"
             android:taskAffinity=""
             android:noHistory="true" />
+        <!-- 🔴 REMOVED: android:showOnLockScreen="true" — same invalid
+             attribute as above. showWhenLocked is the correct one and is
+             kept; your Kotlin code already handles the runtime
+             KeyguardManager.requestDismissKeyguard() fallback for pre-8.1
+             devices, so this is fully covered. -->
 
         <!-- ========== FILE PROVIDER ========== -->
         <provider
@@ -279,24 +303,14 @@
             android:name=".CallForegroundService"
             android:foregroundServiceType="phoneCall|camera|microphone"
             android:exported="false" />
-        
+
         <!-- ========== BACKGROUND SYNC SERVICE ========== -->
         <service
             android:name=".BackgroundSyncService"
             android:foregroundServiceType="dataSync"
             android:exported="false" />
 
-        <!-- ========== CONNECTION SERVICE (Android 14+) ========== -->
-        <!-- <service
-            android:name=".ConnectionService"
-            android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE"
-            android:foregroundServiceType="phoneCall|camera|microphone"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.telecom.ConnectionService" />
-            </intent-filter>
-        </service> -->
-        
+
     </application>
 
 </manifest>

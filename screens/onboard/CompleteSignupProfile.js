@@ -173,7 +173,7 @@ const EditProfileScreen = ({ navigation, route }) => {
       const parsed = json ? JSON.parse(json) : null;
 
       if (!token) {
-        navigation.navigate('Login');
+        navigation.navigate('EmailLogin');
         return;
       }
 
