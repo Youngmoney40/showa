@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+
+
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,19 +14,53 @@ import {
   Animated,
   StatusBar,
   TextInput,
+  LayoutAnimation,
   RefreshControl,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { useTheme } from '../src/context/ThemeContext';
+import LinearGradient from 'react-native-linear-gradient';
+import { useTheme } from '../src/context/ThemeContext'; 
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2;
+const CARD_WIDTH = (width - 48) / 2; 
+
+// Auto-refresh interval: 5 minutes (300,000 ms)
+const AUTO_REFRESH_INTERVAL = 300000; // 5 minutes
+
+const getCategoryIcon = (categoryName) => {
+  const iconMap = {
+    'Laptops & Computers': 'laptop',
+    'Home & Furniture': 'home',
+    'Beauty & Health': 'heartbeat',
+    'Fashion': 'shopping-bag',
+    'Vehicles': 'car',
+    'Electronics': 'tv',
+    'Other': 'ellipsis-h',
+  };
+  return iconMap[categoryName] || 'tag';
+};
+
+const getCategoryColor = (categoryName) => {
+  const colorMap = {
+    'Laptops & Computers': '#4A90E2',
+    'Home & Furniture': '#9C64A6',
+    'Beauty & Health': '#FF6B6B',
+    'Fashion': '#FFA502',
+    'Vehicles': '#45B7D1',
+    'Electronics': '#7ED321',
+    'Other': '#95A5A6',
+  };
+  return colorMap[categoryName] || '#4A90E2';
+};
+
+const promoBanners = [
+  require('../assets/images/8555e2167169969.Y3JvcCwxMTAzLDg2MiwwLDM2OA.png'),
+  require('../assets/images/infinixhot605g2-1752219518.png'), 
+];
 
 export default function HomeScreen({ navigation }) {
   const { colors, isDark } = useTheme();
@@ -32,59 +68,132 @@ export default function HomeScreen({ navigation }) {
   const [filteredListings, setFilteredListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const fadeAnim = useState(new Animated.Value(1))[0];
   const [searchFocused, setSearchFocused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchContainerWidth, setSearchContainerWidth] = useState('85%');
+  const [categories, setCategories] = useState([]);
+  const isMounted = useRef(true);
+  const isRefreshingRef = useRef(false);
+  
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
+  // Auto-refresh in background every 5 minutes
+  const autoRefreshInterval = useRef(null);
 
   useEffect(() => {
+    isMounted.current = true;
     fetchListings();
+    
+    // Banner rotation
+    const bannerInterval = setInterval(rotateBanner, 5000);
+    
+    // Auto-refresh in background every 5 minutes
+    autoRefreshInterval.current = setInterval(() => {
+      if (isMounted.current && !isRefreshingRef.current) {
+        console.log('🔄 Auto-refreshing listings in background...');
+        fetchListings(true); // Silent refresh
+      }
+    }, AUTO_REFRESH_INTERVAL);
+
+    return () => {
+      isMounted.current = false;
+      clearInterval(bannerInterval);
+      if (autoRefreshInterval.current) {
+        clearInterval(autoRefreshInterval.current);
+      }
+    };
   }, []);
 
-  const fetchListings = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_ROUTE}/listings/`);
-      console.log('📦 Listings fetched:', response.data.length);
-      setListings(response.data);
-      setFilteredListings(response.data);
-    } catch (err) {
-      console.log('Error fetching listings:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  useEffect(() => {
+    filterListings();
+  }, [searchQuery, selectedCategory, listings]);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchListings();
-  };
-
-  const handleSearch = useCallback((text) => {
-    setSearchQuery(text);
-    if (text.trim() === '') {
-      setFilteredListings(listings);
-    } else {
-      const searchLower = text.toLowerCase().trim();
-      const filtered = listings.filter((item) => {
-        // Safely check each field
-        const titleMatch = item.title?.toLowerCase().includes(searchLower) || false;
-        const locationMatch = item.location?.toLowerCase().includes(searchLower) || false;
-        const descriptionMatch = item.description?.toLowerCase().includes(searchLower) || false;
-        // Safely check category - handle both string and object
-        let categoryMatch = false;
-        if (item.category) {
-          if (typeof item.category === 'string') {
-            categoryMatch = item.category.toLowerCase().includes(searchLower);
-          } else if (typeof item.category === 'object' && item.category.name) {
-            categoryMatch = item.category.name.toLowerCase().includes(searchLower);
-          }
-        }
-        return titleMatch || locationMatch || descriptionMatch || categoryMatch;
-      });
-      setFilteredListings(filtered);
+  // Extract unique categories from listings
+  useEffect(() => {
+    if (listings.length > 0) {
+      const uniqueCategories = ['All', ...new Set(listings.map(item => item.category_name))];
+      setCategories(uniqueCategories);
     }
   }, [listings]);
+
+  const fetchListings = async (silent = false) => {
+    // Prevent multiple simultaneous refreshes
+    if (isRefreshingRef.current) return;
+    
+    try {
+      isRefreshingRef.current = true;
+      if (!silent) {
+        setLoading(true);
+      }
+      const res = await axios.get(`${API_ROUTE}/listings/`);
+      if (isMounted.current) {
+        setListings(res.data);
+        setFilteredListings(res.data);
+        console.log(`📦 Fetched ${res.data.length} listings ${silent ? '(background)' : ''}`);
+      }
+    } catch (err) {
+      console.log('❌ Error fetching listings:', err);
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+        setRefreshing(false);
+        isRefreshingRef.current = false;
+      }
+    }
+  };
+
+  // Pull to refresh handler
+  const onRefresh = useCallback(() => {
+    if (isRefreshingRef.current) return; // Prevent double refresh
+    setRefreshing(true);
+    fetchListings(false);
+  }, []);
+
+  const rotateBanner = () => {
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+        delay: 100,
+      })
+    ]).start(() => {
+      setCurrentBannerIndex((prevIndex) => 
+        (prevIndex + 1) % promoBanners.length
+      );
+    });
+  };
+
+  const filterListings = () => {
+    let filtered = [...listings];
+
+    // Filter by category using category_name from DB
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter(listing => 
+        listing.category_name === selectedCategory
+      );
+    }
+
+    // Filter by search query
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(listing =>
+        listing.title?.toLowerCase().includes(query) ||
+        listing.description?.toLowerCase().includes(query) ||
+        listing.location?.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredListings(filtered);
+  };
 
   const handleSearchFocus = () => {
     setSearchFocused(true);
@@ -96,236 +205,239 @@ export default function HomeScreen({ navigation }) {
     setSearchContainerWidth('85%');
   };
 
-  const clearSearch = () => {
-    setSearchQuery('');
-    setFilteredListings(listings);
+  const handleCategorySelect = (categoryName) => {
+    setSelectedCategory(categoryName);
   };
 
-  const renderCard = useCallback(({ item }) => {
-    const imageUrl = item.images && item.images.length > 0 
-      ? `${API_ROUTE_IMAGE}${item.images[0].image}` 
-      : null;
-    
-    // Safely get category name
-    let categoryName = '';
-    if (item.category) {
-      if (typeof item.category === 'string') {
-        categoryName = item.category;
-      } else if (typeof item.category === 'object' && item.category.name) {
-        categoryName = item.category.name;
-      }
-    }
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('All');
+  };
 
-    return (
-      <TouchableOpacity
-        style={[styles.card, { 
-          backgroundColor: colors.surface,
-          shadowColor: isDark ? 'transparent' : '#000',
-        }]}
-        onPress={() => navigation.navigate('ListingDetails', { item: item.id })}
-        activeOpacity={0.7}
-      >
-        <View style={styles.cardImageContainer}>
-          {imageUrl ? (
-            <Image 
-              source={{ uri: imageUrl }} 
-              style={styles.cardImage} 
-              resizeMode="cover"
-              onError={(e) => console.log('Image error:', e.nativeEvent.error)}
-            />
-          ) : (
-            <View style={[styles.noImageContainer, { backgroundColor: isDark ? colors.surfaceSecondary : '#f5f5f5' }]}>
-              <Icon name="image" size={40} color={isDark ? '#555' : '#ccc'} />
-            </View>
-          )}
+  const renderCard = ({ item }) => (
+    <TouchableOpacity
+      style={[styles.card, { 
+        backgroundColor: colors.card,
+        shadowColor: isDark ? '#000' : '#000',
+        shadowOpacity: isDark ? 0.1 : 0.05,
+      }]}
+      onPress={() => navigation.navigate('ListingDetails', { item: item.id })}
+      activeOpacity={0.7}
+    >
+      <View style={styles.cardImageContainer}>
+        {item.images && item.images.length > 0 && (
+          <Image 
+            source={{ uri: `${API_ROUTE_IMAGE}${item.images[0].image}` }} 
+            style={styles.cardImage} 
+            resizeMode="cover"
+          />
+        )}
+      </View>
+      <View style={styles.cardContent}>
+        <Text style={[styles.cardPrice, { color: colors.text }]}>₦{parseFloat(item.price).toLocaleString()}</Text>
+        <Text style={[styles.cardTitle, { color: colors.textSecondary }]} numberOfLines={1}>{item.title}</Text>
+        {/* Show category name */}
+        <View style={styles.categoryTag}>
+          <Text style={[styles.categoryTagText, { color: colors.primary }]}>{item.category_name}</Text>
         </View>
-        <View style={styles.cardContent}>
-          <Text style={[styles.cardPrice, { color: colors.primary }]}>
-            ₦{item.price?.toLocaleString() || '0'}
-          </Text>
-          <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
-            {item.title || 'Untitled'}
-          </Text>
-          <View style={styles.cardFooter}>
-            <View style={styles.locationContainer}>
-              <Icon name="location-on" size={14} color={colors.textTertiary} />
-              <Text style={[styles.cardLocation, { color: colors.textSecondary }]}>
-                {item.location || 'Lagos'}
-              </Text>
-            </View>
-            {categoryName ? (
-              <View style={[styles.categoryBadge, { backgroundColor: isDark ? colors.surfaceSecondary : '#f0f0f0' }]}>
-                <Text style={[styles.categoryBadgeText, { color: colors.textSecondary }]}>
-                  {categoryName}
-                </Text>
-              </View>
-            ) : null}
+        <View style={styles.cardFooter}>
+          <View style={styles.locationContainer}>
+            <Icon name="location-on" size={14} color={colors.textSecondary} />
+            <Text style={[styles.cardLocation, { color: colors.textSecondary }]}>{item.location || 'Available on request'}</Text>
           </View>
         </View>
-      </TouchableOpacity>
-    );
-  }, [colors, isDark, navigation]);
+      </View>
+    </TouchableOpacity>
+  );
 
-  const keyExtractor = useCallback((item) => item.id?.toString() || Math.random().toString(), []);
+  const renderHorizontalCard = ({ item }) => (
+    <TouchableOpacity 
+      style={[styles.horizontalCard, { 
+        backgroundColor: colors.card,
+        shadowColor: isDark ? '#000' : '#000',
+        shadowOpacity: isDark ? 0.1 : 0.05,
+      }]}
+      onPress={() => navigation.navigate('ListingDetails', { item: item.id })}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.discountBadge, { backgroundColor: colors.primary }]}>
+        <Text style={styles.discountText}>-20%</Text>
+      </View>
+      <Image 
+        source={{ uri: `${API_ROUTE_IMAGE}${item.images?.[0]?.image}` }} 
+        style={styles.horizontalImage}
+      />
+      <View style={styles.horizontalContent}>
+        <Text style={[styles.horizontalPrice, { color: colors.text }]}>₦{(parseFloat(item.price) * 0.8).toLocaleString()}</Text>
+        <Text style={[styles.originalPrice, { color: colors.textSecondary }]}>₦{parseFloat(item.price).toLocaleString()}</Text>
+        <Text style={[styles.horizontalTitle, { color: colors.textSecondary }]} numberOfLines={2}>{item.title}</Text>
+        <Text style={[styles.categoryTagText, { color: colors.primary, fontSize: 12, marginTop: 4 }]}>{item.category_name}</Text>
+      </View>
+    </TouchableOpacity>
+  );
 
-  const renderEmptyState = useCallback(() => (
-    <View style={styles.emptyState}>
-      <Icon name="search-off" size={60} color={colors.textTertiary} />
-      <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
-        {searchQuery ? 'No results found' : 'No listings available'}
-      </Text>
-      <Text style={[styles.emptyStateSubtitle, { color: colors.textSecondary }]}>
-        {searchQuery ? 'Try adjusting your search' : 'Check back later for new listings'}
-      </Text>
-    </View>
-  ), [colors, searchQuery]);
+  // Calculate display listings
+  const featuredProducts = useMemo(() => 
+    filteredListings.slice(0, 6), [filteredListings]
+  );
 
-  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const dailyDeals = useMemo(() => 
+    filteredListings.slice(0, 4), [filteredListings]
+  );
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <StatusBar
-        barStyle={isDark ? "light-content" : "dark-content"}
-        translucent={Platform.OS === 'android'}
-        backgroundColor={Platform.OS === 'android' ? colors.primary : undefined}
-      />
-
-      {/* Navbar */}
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()} 
-          style={styles.backButton}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="arrow-back-outline" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Marketplace</Text>
-        <TouchableOpacity 
-          style={styles.addButtonHeader}
-          onPress={() => navigation.navigate('CreateListing')}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="add-outline" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Search Bar */}
-        <View style={styles.searchWrapper}>
-          <View style={[styles.searchContainer, { 
-            backgroundColor: isDark ? colors.surface : '#f5f5f5',
-            borderColor: searchFocused ? colors.primary : 'transparent',
-            borderWidth: searchFocused ? 2 : 0,
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.card} />
+      <ScrollView 
+        style={[styles.container, { backgroundColor: colors.background }]} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+            progressBackgroundColor={colors.card}
+          />
+        }
+      >
+     
+        <View style={{display:'flex',flexDirection:'row', alignContent:'center',alignItems:'center', justifyContent:'flex-start'}}>
+           <TouchableOpacity onPress={()=>navigation.goBack()} activeOpacity={0.7}>
+             <Icon style={{marginTop:20}} name="arrow-back" size={28} color={colors.primary} />
+           </TouchableOpacity>
+           
+         <Text style={[styles.sectionHeader,{
+           fontSize:30,
+           fontWeight:'bold',
+           marginTop:20,
+           marginLeft:10,
+           color: colors.text
+         }]}>Listing</Text>
+        </View>
+         
+        <View style={styles.headerContainer}>
+          <Animated.View style={[styles.searchContainer, { 
+            width: searchContainerWidth,
+            backgroundColor: colors.backgroundSecondary 
           }]}>
-            <Icon name="search" size={20} color={colors.textTertiary} style={styles.searchIcon} />
+            <Icon name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
             <TextInput
               placeholder="Search products..."
-              placeholderTextColor={colors.textTertiary}
+              placeholderTextColor={colors.textSecondary}
               style={[styles.searchInput, { color: colors.text }]}
               value={searchQuery}
-              onChangeText={handleSearch}
+              onChangeText={setSearchQuery}
               onFocus={handleSearchFocus}
               onBlur={handleSearchBlur}
-              returnKeyType="search"
-              clearButtonMode="while-editing"
             />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-                <Icon name="close" size={18} color={colors.textTertiary} />
+            {searchQuery !== '' && (
+              <TouchableOpacity 
+                style={styles.clearButton}
+                onPress={() => setSearchQuery('')}
+              >
+                <Icon name="close" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
-          </View>
+            
+          </Animated.View>
+          
+          <TouchableOpacity 
+            style={styles.notificationButton}
+            onPress={() => navigation.navigate('CreateListing')}
+          >
+            <Icon name="add" size={24} color={colors.primary} />
+            
+          </TouchableOpacity>
         </View>
 
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-              Loading listings...
+        {/* Filter Status */}
+        {(searchQuery !== '' || selectedCategory !== 'All') && (
+          <View style={[styles.filterStatusContainer, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.filterStatusText, { color: colors.text }]}>
+              Showing {filteredListings.length} results
+              {searchQuery !== '' && ` for "${searchQuery}"`}
+              {selectedCategory !== 'All' && ` in ${selectedCategory}`}
             </Text>
+            <TouchableOpacity onPress={clearFilters}>
+              <Text style={[styles.clearFiltersText, { color: colors.primary }]}>
+                Clear filters
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        
+
+        
+
+        {/* Featured Products */}
+        
+
+        {loading ? (
+          <ActivityIndicator size="large" color={colors.primary} style={styles.loading} />
+        ) : featuredProducts.length === 0 ? (
+          <View style={styles.noResultsContainer}>
+            <Icon name="search-off" size={50} color={colors.textSecondary} />
+            <Text style={[styles.noResultsText, { color: colors.text }]}>
+              No products found {searchQuery ? `for "${searchQuery}"` : ''}
+            </Text>
+           
           </View>
         ) : (
           <FlatList
-            data={filteredListings}
-            keyExtractor={keyExtractor}
+            data={featuredProducts}
+            keyExtractor={(item) => item.id.toString()}
             renderItem={renderCard}
             numColumns={2}
             columnWrapperStyle={styles.row}
             contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                colors={[colors.primary]}
-                tintColor={colors.primary}
-              />
-            }
-            ListEmptyComponent={renderEmptyState}
-            initialNumToRender={6}
-            maxToRenderPerBatch={6}
-            windowSize={5}
-            removeClippedSubviews={Platform.OS === 'android'}
+            scrollEnabled={false}
           />
         )}
-      </View>
+
+       
+        
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-const createStyles = (colors, isDark) => StyleSheet.create({
+function lightenColor(color, percent) {
+  const num = parseInt(color.replace("#", ""), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = (num >> 16) + amt;
+  const G = (num >> 8 & 0x00FF) + amt;
+  const B = (num & 0x0000FF) + amt;
+  return `#${(
+    0x1000000 +
+    (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 +
+    (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 +
+    (B < 255 ? (B < 1 ? 0 : B) : 255)
+  ).toString(16).slice(1)}`;
+}
+
+const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 14,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    zIndex: 10,
-  },
-  backButton: {
-    padding: 5,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#ffffff',
-    flex: 1,
-    textAlign: 'center',
-  },
-  addButtonHeader: {
-    padding: 5,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   container: {
     flex: 1,
     paddingHorizontal: 16,
   },
-  searchWrapper: {
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 16,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 16,
     height: 48,
-    flex: 1,
+    marginRight: 12,
   },
   searchIcon: {
     marginRight: 10,
@@ -333,11 +445,150 @@ const createStyles = (colors, isDark) => StyleSheet.create({
   searchInput: {
     flex: 1,
     height: '100%',
-    fontSize: 15,
-    padding: 0,
+    fontSize: 16,
   },
   clearButton: {
-    padding: 4,
+    padding: 8,
+  },
+  cameraButton: {
+    padding: 8,
+  },
+  notificationButton: {
+    padding: 8,
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  filterStatusContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  filterStatusText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  clearFiltersText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  sectionHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginTop: 24,
+  },
+  sectionHeader: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  seeAll: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  categoriesContainer: {
+    paddingBottom: 8,
+  },
+  categoryItem: {
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  categoryIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  selectedCategoryIcon: {
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+  categoryText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  promoContainer: {
+    height: 160,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 8,
+    position: 'relative',
+  },
+  promoBanner: {
+    width: '100%',
+    height: '100%',
+  },
+  promoContent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: 20,
+    justifyContent: 'center',
+  },
+  promoTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 4,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  promoSubtitle: {
+    fontSize: 16,
+    color: '#fff',
+    marginBottom: 12,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 12,
+  },
+  promoButton: {
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    alignSelf: 'flex-start',
+  },
+  promoButtonText: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  bannerIndicators: {
+    position: 'absolute',
+    bottom: 16,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  indicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  activeIndicator: {
+    backgroundColor: '#fff',
+    width: 16,
   },
   listContent: {
     paddingBottom: 16,
@@ -350,7 +601,6 @@ const createStyles = (colors, isDark) => StyleSheet.create({
     borderRadius: 12,
     width: CARD_WIDTH,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
     overflow: 'hidden',
@@ -365,9 +615,13 @@ const createStyles = (colors, isDark) => StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  noImageContainer: {
-    width: '100%',
-    height: '100%',
+  favoriteButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -381,7 +635,14 @@ const createStyles = (colors, isDark) => StyleSheet.create({
   },
   cardTitle: {
     fontSize: 14,
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  categoryTag: {
     marginBottom: 8,
+  },
+  categoryTagText: {
+    fontSize: 12,
     fontWeight: '500',
   },
   cardFooter: {
@@ -397,37 +658,96 @@ const createStyles = (colors, isDark) => StyleSheet.create({
     fontSize: 12,
     marginLeft: 4,
   },
-  categoryBadge: {
-    paddingHorizontal: 8,
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
   },
-  categoryBadgeText: {
-    fontSize: 10,
+  ratingText: {
+    fontSize: 12,
+    marginLeft: 2,
     fontWeight: '500',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  loading: {
+    marginVertical: 40,
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-  },
-  emptyState: {
+  noResultsContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    padding: 40,
   },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+  noResultsText: {
+    fontSize: 16,
     marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateSubtitle: {
-    fontSize: 14,
     textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  timerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  horizontalScroll: {},
+  horizontalCard: {
+    width: width * 0.6,
+    borderRadius: 12,
+    marginRight: 16,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    zIndex: 1,
+  },
+  discountText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  horizontalImage: {
+    width: '100%',
+    height: width * 0.5,
+  },
+  horizontalContent: {
+    padding: 12,
+  },
+  horizontalPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  originalPrice: {
+    fontSize: 12,
+    textDecorationLine: 'line-through',
+    marginBottom: 4,
+  },
+  horizontalTitle: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

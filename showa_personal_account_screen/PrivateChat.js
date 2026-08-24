@@ -24,7 +24,8 @@ import {
   LogBox,
   Alert,
   PermissionsAndroid,
-  AppState
+  AppState,
+  InteractionManager
 } from 'react-native';
 import Icoon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from '@react-navigation/native';
@@ -37,10 +38,10 @@ import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { pick } from '@react-native-documents/picker';
 import EmojiSelector from 'react-native-emoji-selector';
 import { ScrollView, Swipeable } from 'react-native-gesture-handler';
-import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import RNFS from 'react-native-fs';
 import { useBackHandler } from '../src/hooks/useBackHandler';
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 
 const CACHE_KEY_PREFIX = 'chat_cache_';
 
@@ -1173,37 +1174,97 @@ ws.current.onmessage = (event) => {
     }
   };
 
-  const checkCameraPermission = async () => {
-    const permission = Platform.OS === 'ios' ? PERMISSIONS.IOS.CAMERA : PERMISSIONS.ANDROID.CAMERA;
-    const result = await check(permission);
-    if (result === RESULTS.GRANTED) return true;
-    const requestResult = await request(permission);
-    return requestResult === RESULTS.GRANTED;
-  };
+  // const checkCameraPermission = async () => {
+  //   const permission = Platform.OS === 'ios' ? PERMISSIONS.IOS.CAMERA : PERMISSIONS.ANDROID.CAMERA;
+  //   const result = await check(permission);
+  //   if (result === RESULTS.GRANTED) return true;
+  //   const requestResult = await request(permission);
+  //   return requestResult === RESULTS.GRANTED;
+  // };
+
+ const checkCameraPermission = async () => {
+  if (Platform.OS === 'android') {
+    try {
+      // First check if we already have permission
+      const cameraStatus = await check(PERMISSIONS.ANDROID.CAMERA);
+      
+      if (cameraStatus === RESULTS.GRANTED) {
+        return true;
+      }
+      
+      // Request permission
+      const result = await request(PERMISSIONS.ANDROID.CAMERA);
+      
+      // Handle different results
+      if (result === RESULTS.GRANTED) {
+        return true;
+      } else if (result === RESULTS.DENIED) {
+        Alert.alert(
+          'Camera Access',
+          'Please grant camera permission to take photos.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Settings', onPress: () => Linking.openSettings() }
+          ]
+        );
+        return false;
+      } else if (result === RESULTS.BLOCKED) {
+        Alert.alert(
+          'Permission Blocked',
+          'Camera access is blocked. Please enable it in Settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() }
+          ]
+        );
+        return false;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Camera permission error:', error);
+      return false;
+    }
+  }
+  return true;
+};
 
   const checkPhotoPermission = async () => {
-    if (Platform.OS === 'ios') {
-      const permission = PERMISSIONS.IOS.PHOTO_LIBRARY;
-      const result = await check(permission);
-      if (result === RESULTS.GRANTED) return true;
-      const requestResult = await request(permission);
-      return requestResult === RESULTS.GRANTED;
-    } else {
+  if (Platform.OS === 'android') {
+    try {
       if (Platform.Version >= 33) {
+        // Android 13+ uses READ_MEDIA_IMAGES
         const permission = PERMISSIONS.ANDROID.READ_MEDIA_IMAGES;
         const result = await check(permission);
         if (result === RESULTS.GRANTED) return true;
         const requestResult = await request(permission);
         return requestResult === RESULTS.GRANTED;
       } else {
+        // Android 12 and below
         const permission = PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE;
         const result = await check(permission);
         if (result === RESULTS.GRANTED) return true;
         const requestResult = await request(permission);
         return requestResult === RESULTS.GRANTED;
       }
+    } catch (error) {
+      console.error('Photo permission error:', error);
+      return false;
     }
-  };
+  } else {
+    // iOS
+    try {
+      const permission = PERMISSIONS.IOS.PHOTO_LIBRARY;
+      const result = await check(permission);
+      if (result === RESULTS.GRANTED) return true;
+      const requestResult = await request(permission);
+      return requestResult === RESULTS.GRANTED;
+    } catch (error) {
+      console.error('iOS photo permission error:', error);
+      return false;
+    }
+  }
+};
 
   // ==================== SEND MESSAGE ====================
 // const sendMessage = async (caption = '', emoji = null) => {
@@ -1628,46 +1689,99 @@ const sendMessage = async (caption = '', emoji = null) => {
 
   // ==================== PICK IMAGE ====================
 
+  // const pickImage = async (useCamera = false) => {
+  //   setModalVisible(false);
+  //   try {
+  //     const hasPermission = useCamera ? await checkCameraPermission() : await checkPhotoPermission();
+  //     if (!hasPermission) {
+  //       Alert.alert('Permission Denied', 'Cannot access camera or gallery');
+  //       return;
+  //     }
+      
+  //     const options = {
+  //       mediaType: 'photo',
+  //       quality: 0.6,
+  //       includeBase64: false,
+  //       saveToPhotos: false,
+  //       maxWidth: 1024,
+  //       maxHeight: 1024,
+  //       selectionLimit: 1,
+  //     };
+      
+  //     const pickerFunction = useCamera ? launchCamera : launchImageLibrary;
+  //     const result = await pickerFunction(options);
+      
+  //     if (!result.didCancel && result.assets && result.assets[0]) {
+  //       const imageSize = await getFileSize(result.assets[0].uri);
+        
+  //       if (imageSize > MAX_IMAGE_SIZE) {
+  //         Alert.alert(
+  //           'File Too Large',
+  //           `Image size (${formatFileSize(imageSize)}) exceeds maximum allowed size (${formatFileSize(MAX_IMAGE_SIZE)}). Please choose a smaller image.`
+  //         );
+  //         return;
+  //       }
+        
+  //       setSelectedImage(result.assets[0]);
+  //       setImagePreviewModalVisible(true);
+  //     }
+  //   } catch (error) {
+  //     Alert.alert('Error', 'Failed to pick image');
+  //   }
+  // };
+
   const pickImage = async (useCamera = false) => {
-    setModalVisible(false);
-    try {
-      const hasPermission = useCamera ? await checkCameraPermission() : await checkPhotoPermission();
-      if (!hasPermission) {
-        Alert.alert('Permission Denied', 'Cannot access camera or gallery');
+  try {
+    const hasPermission = useCamera ? await checkCameraPermission() : await checkPhotoPermission();
+    if (!hasPermission) {
+      Alert.alert('Permission Denied', 'Cannot access camera or gallery');
+      return;
+    }
+
+    const options = {
+      mediaType: 'photo',
+      quality: 0.6,
+      includeBase64: false,
+      saveToPhotos: false,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      selectionLimit: 1,
+    };
+
+    const pickerFunction = useCamera ? launchCamera : launchImageLibrary;
+    const result = await pickerFunction(options);
+
+    if (result.didCancel) return;
+
+    if (result.errorCode) {
+      console.error('Picker error:', result.errorCode, result.errorMessage);
+      if (result.errorCode === 'camera_unavailable') {
+        Alert.alert('Camera Error', 'Camera is not available on this device.');
+      } else if (result.errorCode === 'permission') {
+        Alert.alert('Permission Error', 'Please grant camera permission in settings.');
+      } else {
+        Alert.alert('Error', result.errorMessage || 'Failed to open camera');
+      }
+      return;
+    }
+
+    if (result.assets && result.assets[0]) {
+      const imageSize = await getFileSize(result.assets[0].uri);
+      if (imageSize > MAX_IMAGE_SIZE) {
+        Alert.alert(
+          'File Too Large',
+          `Image size (${formatFileSize(imageSize)}) exceeds maximum allowed size (${formatFileSize(MAX_IMAGE_SIZE)}). Please choose a smaller image.`
+        );
         return;
       }
-      
-      const options = {
-        mediaType: 'photo',
-        quality: 0.6,
-        includeBase64: false,
-        saveToPhotos: false,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        selectionLimit: 1,
-      };
-      
-      const pickerFunction = useCamera ? launchCamera : launchImageLibrary;
-      const result = await pickerFunction(options);
-      
-      if (!result.didCancel && result.assets && result.assets[0]) {
-        const imageSize = await getFileSize(result.assets[0].uri);
-        
-        if (imageSize > MAX_IMAGE_SIZE) {
-          Alert.alert(
-            'File Too Large',
-            `Image size (${formatFileSize(imageSize)}) exceeds maximum allowed size (${formatFileSize(MAX_IMAGE_SIZE)}). Please choose a smaller image.`
-          );
-          return;
-        }
-        
-        setSelectedImage(result.assets[0]);
-        setImagePreviewModalVisible(true);
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to pick image');
+      setSelectedImage(result.assets[0]);
+      setImagePreviewModalVisible(true);
     }
-  };
+  } catch (error) {
+    console.error('Pick image error:', error);
+    Alert.alert('Error', 'Failed to pick image. Please try againhhh.');
+  }
+};
 
   // ==================== MESSAGE RENDER ====================
 
@@ -2090,9 +2204,19 @@ const sendMessage = async (caption = '', emoji = null) => {
                   <Icon name="send" size={24} color={isSending ? "#ccc" : "#0d64dd"} />
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity disabled style={styles.sendButton}>
+                 <TouchableOpacity disabled style={styles.sendButton}>
                   <Icon name="send" size={24} color="#ccc" />
                 </TouchableOpacity>
+
+              
+                // <View style={{display:'flex', flexDirection:'row'}}>
+                //    <TouchableOpacity  onPress={() => setEmojiPickerVisible(true)}   disabled style={styles.sendBdutton}>
+                //   <Icon name="emoji-emotions" size={24} color="#0d64dd" />
+                // </TouchableOpacity>
+               
+
+               // </View>
+               
               )}
             </View>
           </View>
@@ -2242,68 +2366,65 @@ const sendMessage = async (caption = '', emoji = null) => {
             </View>
           </KeyboardAvoidingView>
         )}
-        {/* Modals - keep your existing modals */}
-        <Modal
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-            <View style={styles.modalOverlay} />
-          </TouchableWithoutFeedback>
-          <View style={styles.modalContent}>
-            <FlatList
-              data={options}
-              keyExtractor={(item) => item.id}
-              numColumns={2}
-              contentContainerStyle={styles.modalOptions}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.optionButton}
-                  onPress={() => {
-                    if (item.label === 'Document') {
-                      setModalVisible(false);
-                      setTimeout(async () => {
-                        try {
-                          const result = await pick({ 
-                            type: ['*/*'],
-                            allowMultiSelection: false 
-                          });
-                          
-                          if (result && result.length > 0) {
-                            const file = result[0];
-                            setSelectedFile(file);
-                            setFilePreviewModalVisible(true);
-                          }
-                        } catch (e) {
-                          if (e.code !== 'DOCUMENT_PICKER_CANCELED' && 
-                              e.message !== 'User cancelled' && 
-                              !e.message?.includes('cancel')) {
-                            Alert.alert('Error', 'Failed to pick document. Please try again.');
-                          }
-                        }
-                      }, 250);
-                    } else if (item.label === 'Camera') {
-                      pickImage(true);
-                      setModalVisible(false);
-                    } else if (item.label === 'Gallery') {
-                      pickImage(false);
-                      setModalVisible(false);
-                    } else if (item.label === 'Emoji') {
-                      setEmojiPickerVisible(true);
-                      setModalVisible(false);
-                    }
-                  }}
-                >
-                  <View style={[styles.optionIconContainer, { backgroundColor: '#E8F5E9' }]}>
-                    <Icon name={item.icon} size={24} color={item.color} />
-                  </View>
-                  <Text style={styles.optionLabel}>{item.label}</Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </Modal>
+        {/* Modals - */}
+        {modalVisible && (
+  <View style={styles.attachOverlayContainer} pointerEvents="box-none">
+    <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+      <View style={styles.modalOverlay} />
+    </TouchableWithoutFeedback>
+    <View style={styles.modalContent}>
+      <FlatList
+        data={options}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        contentContainerStyle={styles.modalOptions}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.optionButton}
+            onPress={() => {
+  setModalVisible(false);
+
+  if (item.label === 'Document') {
+    InteractionManager.runAfterInteractions(async () => {
+      try {
+        const result = await pick({
+          type: ['*/*'],
+          allowMultiSelection: false,
+        });
+        if (result && result.length > 0) {
+          setSelectedFile(result[0]);
+          setFilePreviewModalVisible(true);
+        }
+      } catch (e) {
+        if (
+          e.code !== 'DOCUMENT_PICKER_CANCELED' &&
+          e.message !== 'User cancelled' &&
+          !e.message?.includes('cancel')
+        ) {
+          Alert.alert('Error', 'Failed to pick document. Please try againn.');
+        }
+      }
+    });
+  } else if (item.label === 'Camera') {
+  if (global.gc) global.gc();
+  InteractionManager.runAfterInteractions(() => pickImage(true));
+} else if (item.label === 'Gallery') {
+    InteractionManager.runAfterInteractions(() => pickImage(false));
+  } else if (item.label === 'Emoji') {
+    setEmojiPickerVisible(true);
+  }
+}}
+          >
+            <View style={[styles.optionIconContainer, { backgroundColor: '#E8F5E9' }]}>
+              <Icon name={item.icon} size={24} color={item.color} />
+            </View>
+            <Text style={styles.optionLabel}>{item.label}</Text>
+          </TouchableOpacity>
+        )}
+      />
+    </View>
+  </View>
+)}
 
         <Modal
           transparent={false}

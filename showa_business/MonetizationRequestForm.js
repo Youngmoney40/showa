@@ -455,6 +455,7 @@ const handleSubmit = async () => {
         />
       </View>
 
+
       <TouchableOpacity 
         style={[
           styles.stepContinueButton, 
@@ -692,7 +693,7 @@ const handleSubmit = async () => {
       </View>
       
       <View style={styles.inputContainer}>
-        <Text style={[styles.label, { color: colors.textSecondary }]}>Preferred Payment Method</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Payment Method</Text>
         <TouchableOpacity 
           style={[styles.selectInput, { 
             borderColor: colors.border,
@@ -701,7 +702,7 @@ const handleSubmit = async () => {
           onPress={() => {/* Open payment method picker */}}
         >
           <Text style={[styles.selectText, { color: colors.text }]}>{formData.paymentMethod}</Text>
-          <Icon name="keyboard-arrow-down" size={24} color={colors.textSecondary} />
+          {/* <Icon name="keyboard-arrow-down" size={24} color={colors.textSecondary} /> */}
         </TouchableOpacity>
       </View>
 
@@ -1078,6 +1079,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    marginBottom:130
   },
   sectionHeader: {
     flexDirection: 'row',

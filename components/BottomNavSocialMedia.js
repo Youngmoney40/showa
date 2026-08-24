@@ -1039,7 +1039,7 @@ const BottomNav = ({ navigation, setShowAccountModal, activeRoute }) => {
         if (hasBusinessProfile && userProfile && userProfile.id) {
           navigation.navigate('UserPersonalAccountProfile');
         } else {
-          navigation.navigate('BusinessSetup');
+          navigation.navigate('UserPersonalAccountProfile');
         }
       }
     } catch (error) {

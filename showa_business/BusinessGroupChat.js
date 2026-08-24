@@ -832,7 +832,7 @@
 //       console.error('Error sending message:', error.response?.data || error.message);
 //       setPendingMessages((prev) => prev.filter((msg) => msg.id !== tempId));
 //       alert(`Failed to send message: ${error.message}`);
-//     }
+//     }ggg
 //   };
 
 //   // const onStartRecord = async () => {
@@ -1961,6 +1961,52 @@ export default function PersonalPrivateChatScreen({ route, navigation }) {
   const pollInterval = useRef(null);
   const [isDownloadingImage, setIsDownloadingImage] = useState(false);
 
+
+  // Add a function to fetch user profile picture
+const fetchUserProfilePicture = async (userId) => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    const response = await axios.get(`${API_ROUTE}/user/${userId}/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data.profile_picture || null;
+  } catch (error) {
+    return null;
+  }
+};
+
+// In your useEffect when messages load, fetch missing avatars
+useEffect(() => {
+  const fetchMissingAvatars = async () => {
+    const updatedMessages = [...messages];
+    let hasChanges = false;
+    
+    for (let i = 0; i < updatedMessages.length; i++) {
+      const msg = updatedMessages[i];
+      if (!msg.user_profile_picture && msg.user_id) {
+        const avatar = await fetchUserProfilePicture(msg.user_id);
+        if (avatar) {
+          updatedMessages[i] = { 
+            ...msg, 
+            user_profile_picture: avatar,
+            avatar: avatar 
+          };
+          hasChanges = true;
+        }
+      }
+    }
+    
+    if (hasChanges) {
+      setMessages(updatedMessages);
+      saveMessagesToCache(updatedMessages);
+    }
+  };
+  
+  if (messages.length > 0) {
+    fetchMissingAvatars();
+  }
+}, [messages]);
+
   LogBox.ignoreLogs([
     'VirtualizedLists should never be nested inside plain ScrollViews with the same orientation',
   ]);
@@ -2119,75 +2165,88 @@ useEffect(() => {
   // ==================== FETCH CHAT HISTORY (Background) ====================
 
   const fetchChatHistory = useCallback(async (userIdParam) => {
-    const id = userIdParam || userId;
-    if (!id) return;
-    
-    const token = await AsyncStorage.getItem('userToken');
-    if (!token) return;
-    
-    try {
-      let url = `/api/chat/?chat_type=${chatType}&account_mode=${accountMode}`;
-      if (chatType === 'single' && receiverId) {
-        url += `&receiver=${receiverId}`;
-      } else if (chatType === 'group' && groupSlug) {
-        url += `&group_slug=${groupSlug}`;
-      } else {
-        return;
-      }
-      
-      const response = await axiosInstance.get(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 15000,
-      });
-      
-      const history = response.data.results.map((msg) => ({
-        id: msg.id.toString(),
-        user: msg.user_name || msg.name || 'Unknown',
-        user_id: msg.user_id || msg.user,
-        content: msg.content || '',
-        image: msg.image ? `${API_ROUTE_IMAGE}${msg.image}` : null,
-        file: msg.file ? `${API_ROUTE_IMAGE}${msg.file}` : null,
-        file_name: msg.file_name || (msg.file ? msg.file.split('/').pop() : null),
-        file_size: msg.file_size || null,
-        emoji: msg.emoji || null,
-        reply_to: msg.reply_to ? msg.reply_to.toString() : null,
-        is_deleted: msg.is_deleted || false,
-        is_sending: false,
-        is_error: false,
-        timestamp: msg.timestamp,
-        time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        avatar: msg.avatar ? `${API_ROUTE_IMAGE}${msg.avatar}` : null,
-        uploadProgress: undefined,
-      }));
-      
-      setMessages((prev) => {
-        const sending = prev.filter((m) => m.is_sending || m.is_error);
-        const freshIds = new Set(history.map((m) => m.id));
-        
-        const merged = [
-          ...sending.filter((s) => !freshIds.has(s.id)),
-          ...history,
-        ];
-        
-        const seen = new Set();
-        const unique = merged.filter((msg) => {
-          if (seen.has(msg.id)) return false;
-          seen.add(msg.id);
-          return true;
-        });
-        
-        const sorted = sortByTimestampDesc(unique);
-        saveMessagesToCache(sorted);
-        return sorted;
-      });
-    } catch (error) {
-      // Silent fail
+  const id = userIdParam || userId;
+  if (!id) return;
+  
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) return;
+  
+  try {
+    let url = `/api/chat/?chat_type=${chatType}&account_mode=${accountMode}`;
+    if (chatType === 'single' && receiverId) {
+      url += `&receiver=${receiverId}`;
+    } else if (chatType === 'group' && groupSlug) {
+      url += `&group_slug=${groupSlug}`;
+    } else {
+      return;
     }
-  }, [chatType, receiverId, groupSlug, accountMode, userId, saveMessagesToCache]);
+    
+    const response = await axiosInstance.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: 15000,
+    });
 
+    console.log('RAW API RESPONSE:', JSON.stringify(response.data.results[0], null, 2));
+console.log('Available fields in first message:', Object.keys(response.data.results[0] || {}));
+
+  
+    
+    const history = response.data.results.map((msg) => ({
+  id: msg.id.toString(),
+  user: msg.user_name || msg.name || 'Unknown',
+  user_id: msg.user_id || msg.user,
+  content: msg.content || '',
+  image: msg.image ? `${API_ROUTE_IMAGE}${msg.image}` : null,
+  file: msg.file ? `${API_ROUTE_IMAGE}${msg.file}` : null,
+  file_name: msg.file_name || (msg.file ? msg.file.split('/').pop() : null),
+  file_size: msg.file_size || null,
+  emoji: msg.emoji || null,
+  reply_to: msg.reply_to ? msg.reply_to.toString() : null,
+  is_deleted: msg.is_deleted || false,
+  is_sending: false,
+  is_error: false,
+  timestamp: msg.timestamp,
+  time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  avatar: msg.avatar || msg.user_profile_picture || null,
+  // ✅ IMPORTANT: Map from both possible field names
+  user_profile_picture: msg.user_profile_picture || msg.avatar || null,
+  uploadProgress: undefined,
+}));
+    
+    // Debug: log the mapped messages
+    console.log('Mapped messages:', history.map(m => ({
+      id: m.id,
+      user: m.user,
+      user_profile_picture: m.user_profile_picture
+    })));
+    
+    setMessages((prev) => {
+      const sending = prev.filter((m) => m.is_sending || m.is_error);
+      const freshIds = new Set(history.map((m) => m.id));
+      
+      const merged = [
+        ...sending.filter((s) => !freshIds.has(s.id)),
+        ...history,
+      ];
+      
+      const seen = new Set();
+      const unique = merged.filter((msg) => {
+        if (seen.has(msg.id)) return false;
+        seen.add(msg.id);
+        return true;
+      });
+      
+      const sorted = sortByTimestampDesc(unique);
+      saveMessagesToCache(sorted);
+      return sorted;
+    });
+  } catch (error) {
+    console.error('Fetch chat history error:', error);
+  }
+}, [chatType, receiverId, groupSlug, accountMode, userId, saveMessagesToCache]);
   // ==================== POLLING FOR NEW MESSAGES ====================
 
   // const pollNewMessages = useCallback(async () => {
@@ -2263,7 +2322,7 @@ useEffect(() => {
   //   }
   // }, [userId, chatType, receiverId, groupSlug, accountMode, lastMessageTimestamp, saveMessagesToCache]);
 
-  const pollNewMessages = useCallback(async () => {
+ const pollNewMessages = useCallback(async () => {
   if (!userId || !lastMessageTimestamp) return;
   
   try {
@@ -2279,7 +2338,6 @@ useEffect(() => {
       return;
     }
     
-    // Only fetch messages newer than the last one we have
     if (lastMessageTimestamp) {
       url += `&after=${encodeURIComponent(lastMessageTimestamp)}`;
     }
@@ -2309,12 +2367,13 @@ useEffect(() => {
       timestamp: msg.timestamp,
       time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       avatar: msg.avatar ? `${API_ROUTE_IMAGE}${msg.avatar}` : null,
+      // ✅ CRITICAL FIX: Add user_profile_picture
+      user_profile_picture: msg.user_profile_picture || null,
       uploadProgress: undefined,
     }));
     
     if (newMessages.length > 0) {
       setMessages((prev) => {
-        // Filter out messages that are already in the list (by ID)
         const existingIds = new Set(prev.map(msg => msg.id));
         const filteredNew = newMessages.filter(msg => !existingIds.has(msg.id));
         
@@ -2323,24 +2382,7 @@ useEffect(() => {
         }
         
         const all = [...filteredNew, ...prev];
-        // Remove any temp messages that were replaced by real ones
-        const finalMessages = all.filter(msg => {
-          // If it's a temp message, check if we have a real version with same content
-          if (msg.id && msg.id.toString().startsWith('temp_')) {
-            // Check if there's a real message with same content
-            const hasRealVersion = all.some(realMsg => 
-              !realMsg.id.toString().startsWith('temp_') &&
-              realMsg.user_id === msg.user_id &&
-              realMsg.content === msg.content &&
-              realMsg.emoji === msg.emoji
-            );
-            // Keep the temp if no real version exists
-            return !hasRealVersion;
-          }
-          return true;
-        });
-        
-        const sorted = sortByTimestampDesc(finalMessages);
+        const sorted = sortByTimestampDesc(all);
         saveMessagesToCache(sorted);
         return sorted;
       });
@@ -2354,7 +2396,6 @@ useEffect(() => {
     // Silent fail
   }
 }, [userId, chatType, receiverId, groupSlug, accountMode, lastMessageTimestamp, saveMessagesToCache]);
-  // ==================== INSTANT LOAD (CACHE FIRST) ====================
 
   useEffect(() => {
     const instantLoad = async () => {
@@ -2468,175 +2509,18 @@ useEffect(() => {
         setReconnectAttempts(0);
       };
 
-      // ==================== WEBSOCKET MESSAGE HANDLER ====================
-// ws.current.onmessage = (event) => {
-//   try {
-//     const data = JSON.parse(event.data);
-//     if (data.message) {
-//       const newMessage = {
-//         id: data.message.id.toString(),
-//         user: data.message.user_name || username,
-//         user_id: data.message.user_id || userId,
-//         content: data.message.content || '',
-//         image: data.message.image ? `${API_ROUTE_IMAGE}${data.message.image}` : null,
-//         file: data.message.file ? `${API_ROUTE_IMAGE}${data.message.file}` : null,
-//         file_name: data.message.file_name || (data.message.file ? data.message.file.split('/').pop() : null),
-//         file_size: data.message.file_size || null,
-//         emoji: data.message.emoji || null,
-//         reply_to: data.message.reply_to ? data.message.reply_to.toString() : null,
-//         is_deleted: data.message.is_deleted || false,
-//         is_sending: false,
-//         is_error: false,
-//         timestamp: data.message.timestamp,
-//         time: new Date(data.message.timestamp).toLocaleTimeString([], {
-//           hour: '2-digit',
-//           minute: '2-digit',
-//         }),
-//         avatar: data.message.avatar ? `${API_ROUTE_IMAGE}${data.message.avatar}` : userProfileImage || null,
-//         uploadProgress: undefined,
-//         _isFromWebSocket: true,
-//       };
-      
-//       setMessages((prev) => {
-//         // 1. Check if message already exists by real ID
-//         if (prev.some((msg) => msg.id === newMessage.id)) {
-//           return prev;
-//         }
-        
-//         // 2. Check if this is our own message (sent by current user)
-//         const isOwnMessage = newMessage.user_id === userId;
-        
-//         if (isOwnMessage) {
-//           // 3. Find and replace temp message
-//           const tempIndex = prev.findIndex((msg) => {
-//             // Must be a temp message
-//             if (!msg.id || !msg.id.toString().startsWith('temp_')) return false;
-            
-//             // Must be from the same user
-//             if (msg.user_id !== newMessage.user_id) return false;
-            
-//             // Check content match (if both have content)
-//             if (msg.content && newMessage.content) {
-//               // Exact content match
-//               if (msg.content.trim() === newMessage.content.trim()) {
-//                 return true;
-//               }
-//             }
-            
-//             // Check emoji match
-//             if (msg.emoji && newMessage.emoji) {
-//               if (msg.emoji === newMessage.emoji) {
-//                 return true;
-//               }
-//             }
-            
-//             // Check image match (compare by filename)
-//             if (msg.image && newMessage.image) {
-//               const msgImageName = msg.image.split('/').pop();
-//               const newImageName = newMessage.image.split('/').pop();
-//               if (msgImageName === newImageName) {
-//                 return true;
-//               }
-//             }
-            
-//             // Check file match (compare by filename)
-//             if (msg.file && newMessage.file) {
-//               const msgFileName = msg.file.split('/').pop();
-//               const newFileName = newMessage.file.split('/').pop();
-//               if (msgFileName === newFileName) {
-//                 return true;
-//               }
-//             }
-            
-//             // Check reply_to match
-//             if (msg.reply_to && newMessage.reply_to) {
-//               if (msg.reply_to === newMessage.reply_to) {
-//                 return true;
-//               }
-//             }
-            
-//             // If no content, emoji, image, or file, check timestamp proximity
-//             if (!msg.content && !newMessage.content && 
-//                 !msg.emoji && !newMessage.emoji &&
-//                 !msg.image && !newMessage.image &&
-//                 !msg.file && !newMessage.file) {
-//               // Check if timestamps are within 2 seconds
-//               const msgTime = new Date(msg.timestamp).getTime();
-//               const newTime = new Date(newMessage.timestamp).getTime();
-//               if (Math.abs(msgTime - newTime) < 2000) {
-//                 return true;
-//               }
-//             }
-            
-//             return false;
-//           });
-          
-//           if (tempIndex !== -1) {
-//             // Replace temp message with real one
-//             const updatedMessages = [...prev];
-//             // Preserve the position of the temp message
-//             const tempMessage = updatedMessages[tempIndex];
-//             updatedMessages[tempIndex] = {
-//               ...newMessage,
-//               // Keep any fields that might not be in the new message
-//               _tempId: undefined,
-//               _contentSignature: undefined,
-//               // Preserve the original temp message's position
-//               _wasTemp: true,
-//             };
-            
-//             // Remove any duplicate real messages that might exist
-//             const finalMessages = updatedMessages.filter((msg, index) => {
-//               if (index === tempIndex) return true;
-//               return msg.id !== newMessage.id;
-//             });
-            
-//             saveMessagesToCache(finalMessages);
-//             return finalMessages;
-//           }
-          
-//           // If no temp message found but it's our own message from another device
-//           // Check if we already have this message
-//           if (prev.some((msg) => msg.id === newMessage.id)) {
-//             return prev;
-//           }
-          
-//           // Add the message (but this shouldn't happen for own messages)
-//           const updated = sortByTimestampDesc([newMessage, ...prev]);
-//           saveMessagesToCache(updated);
-//           return updated;
-//         }
-        
-//         // 4. It's a message from another user - add it to the top
-//         // Check if we already have this message
-//         if (prev.some((msg) => msg.id === newMessage.id)) {
-//           return prev;
-//         }
-        
-//         const updated = sortByTimestampDesc([newMessage, ...prev]);
-
-//         // Keep polling in sync so it never re-fetches / re-inserts this
-//         // same message a moment later (that re-insert was the "jump" bug)
-//         if (newMessage.timestamp) {
-//           setLastMessageTimestamp(newMessage.timestamp);
-//         }
-
-//         saveMessagesToCache(updated);
-//         setTimeout(() => flatListRef.current?.scrollToOffset({ offset: 0, animated: false }), 50);
-//         return updated;
-//       });
-//     }
-//   } catch (e) {
-//     console.error('WebSocket message error:', e);
-//   }
-// };
-
-
 // ==================== WEBSOCKET MESSAGE HANDLER ====================
 ws.current.onmessage = (event) => {
   try {
     const data = JSON.parse(event.data);
     if (data.message) {
+      // Debug: log incoming WebSocket message
+      console.log('WebSocket message received:', {
+        id: data.message.id,
+        user_profile_picture: data.message.user_profile_picture,
+        user_name: data.message.user_name
+      });
+      
       const newMessage = {
         id: data.message.id.toString(),
         user: data.message.user_name || username,
@@ -2652,19 +2536,16 @@ ws.current.onmessage = (event) => {
         is_sending: false,
         is_error: false,
         timestamp: data.message.timestamp,
-        time: new Date(data.message.timestamp).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        avatar: data.message.avatar ? `${API_ROUTE_IMAGE}${data.message.avatar}` : userProfileImage || null,
+        time: new Date(data.message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        avatar: data.message.avatar ? `${API_ROUTE_IMAGE}${data.message.avatar}` : null,
+        // ✅ CRITICAL FIX: Add user_profile_picture
+        user_profile_picture: data.message.user_profile_picture || null,
         uploadProgress: undefined,
         _isFromWebSocket: true,
       };
       
-      // CRITICAL: Only process messages that came from other users
-      // Skip messages from current user - they'll be handled by API response
+      // Skip messages from current user
       if (newMessage.user_id === userId) {
-        // Still update lastMessageTimestamp to keep polling in sync
         if (newMessage.timestamp) {
           setLastMessageTimestamp(newMessage.timestamp);
         }
@@ -2672,9 +2553,7 @@ ws.current.onmessage = (event) => {
       }
       
       setMessages((prev) => {
-        // Check if message already exists (prevents duplicates from polling)
         if (prev.some((msg) => msg.id === newMessage.id)) {
-          // Update lastMessageTimestamp to keep polling in sync
           if (newMessage.timestamp) {
             setLastMessageTimestamp(newMessage.timestamp);
           }
@@ -2682,12 +2561,9 @@ ws.current.onmessage = (event) => {
         }
         
         const updated = sortByTimestampDesc([newMessage, ...prev]);
-
-        // Keep polling in sync so it never re-fetches / re-inserts this
         if (newMessage.timestamp) {
           setLastMessageTimestamp(newMessage.timestamp);
         }
-
         saveMessagesToCache(updated);
         setTimeout(() => flatListRef.current?.scrollToOffset({ offset: 0, animated: false }), 50);
         return updated;
@@ -3086,8 +2962,9 @@ const sendMessage = async (caption = '', emoji = null) => {
     if (selectedFile.size) formData.append('file_size', selectedFile.size.toString());
   }
   
-  formData.append('chat_type', chatType);
-  formData.append('account_mode', accountMode);
+  // formData.append('group_name', name);
+  formData.append('chat_type', 'group');
+  formData.append('account_mode', 'business');
   
   if (chatType === 'single') {
     formData.append('receiver', receiverId);
@@ -3095,30 +2972,31 @@ const sendMessage = async (caption = '', emoji = null) => {
     formData.append('group_slug', groupSlug);
   }
   
-  // Generate unique temp ID
+  // Generate unique temp IDhh
   const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   
   // Create message with temp ID
   const newMessage = {
-    id: tempId,
-    user: username,
-    user_id: userId,
-    content: caption.trim() || null,
-    image: selectedImage ? selectedImage.uri : null,
-    file: selectedFile ? selectedFile.uri : null,
-    file_name: selectedFile ? selectedFile.name : null,
-    file_size: selectedFile ? selectedFile.size : null,
-    emoji: emojiToSend || null,
-    reply_to: replyToMessage ? replyToMessage.id : null,
-    is_deleted: false,
-    is_sending: true,
-    is_error: false,
-    timestamp: new Date().toISOString(),
-    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    avatar: userProfileImage || null,
-    uploadProgress: undefined,
-    _tempId: tempId,
-  };
+  id: tempId,
+  user: username,
+  user_id: userId,
+  content: caption.trim() || null,
+  image: selectedImage ? selectedImage.uri : null,
+  file: selectedFile ? selectedFile.uri : null,
+  file_name: selectedFile ? selectedFile.name : null,
+  file_size: selectedFile ? selectedFile.size : null,
+  emoji: emojiToSend || null,
+  reply_to: replyToMessage ? replyToMessage.id : null,
+  is_deleted: false,
+  is_sending: true,
+  is_error: false,
+  timestamp: new Date().toISOString(),
+  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  avatar: userProfileImage || null,
+  user_profile_picture: userProfileImage || null,
+  uploadProgress: undefined,
+  _tempId: tempId,
+};
 
   // Add message to UI immediately
   setMessages((prev) => {
@@ -3130,14 +3008,14 @@ const sendMessage = async (caption = '', emoji = null) => {
     return updatedMessages;
   });
 
-  // Scroll to bottom
+  // Scroll to bottomdd
   setTimeout(() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true }), 100);
 
   try {
     const token = await AsyncStorage.getItem('userToken');
     if (!token) throw new Error('No access token found');
     
-    // SEND VIA API - ALWAYS (for ALL message types including text)
+   
     let lastProgress = 0;
     
     const response = await axiosInstance.post(`/api/chat/`, formData, {
@@ -3163,7 +3041,7 @@ const sendMessage = async (caption = '', emoji = null) => {
       },
     });
     
-    // Replace temp message with real one from API response
+    
     if (response.data && response.data.id) {
       setMessages((prev) => {
         const tempIndex = prev.findIndex(msg => msg.id === tempId);
@@ -3382,6 +3260,14 @@ const sendMessage = async (caption = '', emoji = null) => {
   };
 
   const renderMessage = ({ item, index }) => {
+    console.log("messages",item)
+
+    console.log('Rendering message:', {
+  id: item.id,
+  user: item.user,
+  user_profile_picture: item.user_profile_picture,
+  hasAvatar: !!item.user_profile_picture
+});
     if (!userId) return null;
     
     const isMyMessage = item.user_id === userId;
@@ -3429,7 +3315,7 @@ const sendMessage = async (caption = '', emoji = null) => {
               isMyMessage ? { justifyContent: 'flex-end' } : { justifyContent: 'flex-start' },
             ]}
           >
-            {!isMyMessage && (
+            {/* {!isMyMessage && (
   <TouchableOpacity onPress={() => navigation.navigate('OtherUserProfile', { userId: item.user_id })}>
     <Image
       source={
@@ -3439,8 +3325,41 @@ const sendMessage = async (caption = '', emoji = null) => {
       }
       style={styles.avatar}
     />
+    <Text style={styles.replyUsername}>1,{profile_image}</Text>
+    <Text style={styles.replyUsername}>,{item.avatar}</Text>
+  
+  </TouchableOpacity>
+)} */}
+
+{!isMyMessage && (
+  <TouchableOpacity 
+    onPress={() => {
+      // Debug: log what's available
+      console.log('Avatar debug:', {
+        chatType,
+        profile_image,
+        item_user_profile_picture: item.user_profile_picture,
+        full_url: item.user_profile_picture ? `${API_ROUTE_IMAGE}${item.user_profile_picture}` : null
+      });
+      
+      navigation.navigate('OtherUserProfile', { userId: item.user_id });
+    }}
+  >
+    <Image
+      source={
+        chatType === 'single'
+          ? (profile_image ? { uri: profile_image } : FALLBACK_AVATAR)
+          : (item.user_profile_picture 
+              ? { uri: `${API_ROUTE_IMAGE}${item.user_profile_picture}` } 
+              : FALLBACK_AVATAR)
+      }
+      style={styles.avatar}
+    />
   </TouchableOpacity>
 )}
+
+
+
             <View style={[getBubbleStyle(item, index, messages), item.is_sending && styles.sendingMessage]}>
               {repliedToMessage && (
                 <View style={styles.replyContainer}>
@@ -3627,13 +3546,13 @@ const sendMessage = async (caption = '', emoji = null) => {
                 style={styles.headerAvatar}
               /> */}
               <Image
-  source={
-    chatType === 'single' 
-      ? (profile_image ? { uri: `${profile_image}` } : FALLBACK_AVATAR)
-      : (chatType === 'group' && profile_image ? { uri: `${API_ROUTE_IMAGE}${profile_image}` } : FALLBACK_AVATAR)
-  }
-  style={styles.headerAvatar}
-/>
+                  source={
+                    chatType === 'single' 
+                      ? (profile_image ? { uri: `${profile_image}` } : FALLBACK_AVATAR)
+                      : (chatType === 'group' && profile_image ? { uri: `${profile_image}` } : FALLBACK_AVATAR)
+                  }
+                  style={styles.headerAvatar}
+                />
 
               
             
@@ -3860,14 +3779,14 @@ const sendMessage = async (caption = '', emoji = null) => {
                 })}
               
             >
-              <Image
-  source={
-    chatType === 'single' 
-      ? (profile_image ? { uri: `${profile_image}` } : FALLBACK_AVATAR)
-      : (chatType === 'group' && profile_image ? { uri: `${API_ROUTE_IMAGE}${profile_image}` } : FALLBACK_AVATAR)
-  }
-  style={styles.headerAvatar}
-/>
+                <Image
+                  source={
+                    chatType === 'single' 
+                      ? (profile_image ? { uri: `${profile_image}` } : FALLBACK_AVATAR)
+                      : (chatType === 'group' && profile_image ? { uri: `${profile_image}` } : FALLBACK_AVATAR)
+                  }
+                  style={styles.headerAvatar}
+                />
             
               <View>
                   <Text style={[styles.headerName,{marginTop:10}]}>{name}</Text>

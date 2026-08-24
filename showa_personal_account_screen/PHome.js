@@ -2789,6 +2789,2546 @@
 // export default PersonalChatHomeScreen;
 
 
+// import React, { useState, useEffect, useCallback, useRef } from 'react';
+// import {
+//   View,
+//   Text,
+//   TextInput,
+//   StyleSheet,
+//   FlatList,
+//   TouchableOpacity,
+//   TouchableWithoutFeedback,
+//   Image,
+//   Modal,
+//   Animated,
+//   RefreshControl,
+//   StatusBar,
+//   Alert,
+//   ActivityIndicator,
+//   PermissionsAndroid,
+//   Platform,
+//   Keyboard,
+//   Linking,
+//   Vibration,
+//   NativeModules,
+//   AppState,
+//   KeyboardAvoidingView,
+//   Dimensions
+// } from 'react-native';
+// import { useBackHandler } from '../src/hooks/useBackHandler';
+// import { useFocusEffect } from '@react-navigation/native';
+// import LinearGradient from 'react-native-linear-gradient';
+// import Icon from 'react-native-vector-icons/Ionicons';
+// import axios from 'axios';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+// import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
+// import BottomNav from '../components/BottomNavSocialMedia';
+// import { Divider } from 'react-native-paper';
+// import { launchCamera } from 'react-native-image-picker';
+// import SwitchAccountSheet from '../components/SwitchAccountSheet';
+// import IncomingCallModal from '../components/IncomingCallModal';
+// import InCallManager from 'react-native-incall-manager';
+// import NotificationService from '../src/services/PushNotifications';
+// import Video from 'react-native-video';
+// import { useTheme } from '../src/context/ThemeContext';
+// import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// import PinUnlockModal from '../screens/PinUnlockModal';
+// import EarningsSlideInManager from '../components/EarningsSlideInManager';
+// import OnlineStatusBadge from '../components/OnlineStatusBadge';
+// import CallKeepService from '../src/services/CallKeepService';
+// import { createMMKV } from 'react-native-mmkv';
+// import { forceStopAllCallAudio } from '../src/utils/callAudio';
+
+// const windowWidth = Dimensions.get('window').width;
+
+// // Initialize MMKV instances for caching
+// const personalChatStorage = createMMKV({
+//   id: 'personal-chats-cache'
+// });
+
+// const readChatsStorage = createMMKV({
+//   id: 'read-chats-cache'
+// });
+
+// const PersonalChatHomeScreen = ({ navigation, route }) => {
+//   useBackHandler(navigation, 'BroadcastHome');
+
+//   const { colors, theme, toggleTheme, isDark } = useTheme();
+//   const [tab, setTab] = useState('Chats');
+//   const [modalVisible, setModalVisible] = useState(false);
+//   const [userData, setUserData] = useState([]);
+//   const [chatList, setChatList] = useState([]);
+//   const [showStartChatModal, setShowStartChatModal] = useState(false);
+//   const [hasDismissedModal, setHasDismissedModal] = useState(false);
+//   const [showAccountModal, setShowAccountModal] = useState(false);
+//   const [fadeAnim] = useState(new Animated.Value(0));
+//   const [showDropdown, setShowDropdown] = useState(false);
+//   const [accountMode, setAccountMode] = useState('personal');
+//   const [showConfirmSwitch, setShowConfirmSwitch] = useState(false);
+//   const [pendingSwitchTo, setPendingSwitchTo] = useState(null);
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [error, setError] = useState(null);
+//   const [filteredChatList, setFilteredChatList] = useState([]);
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [isInitialLoading, setIsInitialLoading] = useState(true);
+//   const [media, setMedia] = useState(null);
+//   const [caption, setCaption] = useState('');
+//   const [showMediaModal, setShowMediaModal] = useState(false);
+//   const [hasCompletedSync, setHasCompletedSync] = useState(false);
+//   const [isSyncing, setIsSyncing] = useState(false);
+//   const [syncComplete, setSyncComplete] = useState(false);
+//   const [readChats, setReadChats] = useState(new Map());
+//   const [callerInfo, setCallerInfo] = useState({ profileImage: '', name: 'Incoming Call' });
+//   const [showIncomingCallModal, setShowIncomingCallModal] = useState(false);
+//   const [isVideoCall, setIsVideoCall] = useState(false);
+
+//   const isCallBeingHandledRef = useRef(false);
+//   const currentCallIdRef = useRef(null);
+
+//   const [isSearchFocused, setIsSearchFocused] = useState(false);
+//   const [searchText, setSearchText] = useState('');
+//   const searchInputRef = useRef(null);
+ 
+
+//   const [notificationSettings, setNotificationSettings] = useState({
+//     showNotifications: true,
+//     doNotDisturb: false,
+//   });
+
+//   // ---- "Latest value" refs -----------------------------------------------
+//   const readChatsRef = useRef(new Map());
+//   const chatListRef = useRef([]);
+//   const filteredChatListRef = useRef([]);
+//   const searchQueryRef = useRef('');
+//   const notificationSettingsRef = useRef({ showNotifications: true, doNotDisturb: false });
+  // const wsConnectedRef = useRef(false);
+//    const intentionalCloseRef = useRef(false); 
+//   const isFocusedRef = useRef(true);
+//   const pendingUpdatesRef = useRef(null);
+//   const updateTimeoutRef = useRef(null);
+
+//   useEffect(() => { readChatsRef.current = readChats; }, [readChats]);
+//   useEffect(() => { chatListRef.current = chatList; }, [chatList]);
+//   useEffect(() => { filteredChatListRef.current = filteredChatList; }, [filteredChatList]);
+//   useEffect(() => { searchQueryRef.current = searchQuery; }, [searchQuery]);
+//   useEffect(() => { notificationSettingsRef.current = notificationSettings; }, [notificationSettings]);
+//   // --------------------------------------------------------------------------
+
+//   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+//   const insets = useSafeAreaInsets();
+//   const styles = createStyles(colors, insets, isDark);
+
+//   const [userName, setUserName] = useState('');
+//   const [userId, setUserId] = useState(null);
+
+//   // ---- Get the actual unread count for a chat ----
+//   const getActualUnreadCount = (chat) => {
+//     if (!chat) return 0;
+//     const chatKey = `${chat.id}-${chat.type}`;
+//     const readAt = readChatsRef.current.get(chatKey);
+
+//     if (readAt == null) {
+//       return chat.unread_count || 0;
+//     }
+
+//     const msgTime = chat.timestamp ? new Date(chat.timestamp).getTime() : 0;
+//     if (msgTime > readAt) {
+//       return chat.unread_count || 0;
+//     }
+
+//     return 0;
+//   };
+
+//   const resolveUnreadCount = (chatKey, serverUnreadCount, chatTimestamp) => {
+//     const count = serverUnreadCount || 0;
+//     const readAt = readChatsRef.current.get(chatKey);
+
+//     if (readAt == null) {
+//       return count;
+//     }
+
+//     const msgTime = chatTimestamp ? new Date(chatTimestamp).getTime() : 0;
+//     if (msgTime > readAt) {
+//       return count;
+//     }
+
+//     return 0;
+//   };
+
+//   // ---- Load read chats from MMKV ----
+//   const loadReadChats = () => {
+//     try {
+//       const stored = readChatsStorage.getString('readChats');
+//       if (stored) {
+//         const parsedObject = JSON.parse(stored);
+//         const parsedMap = new Map(Object.entries(parsedObject));
+//         setReadChats(parsedMap);
+//         return parsedMap;
+//       }
+//       return new Map();
+//     } catch (e) {
+//       console.error('Load read chats error:', e);
+//       return new Map();
+//     }
+//   };
+
+//   const saveReadChats = (readChatsMap) => {
+//     try {
+//       const obj = Object.fromEntries(readChatsMap);
+//       readChatsStorage.set('readChats', JSON.stringify(obj));
+//     } catch (e) {
+//       console.error('Save read chats error:', e);
+//     }
+//   };
+
+//   useEffect(() => {
+//     if (readChats && readChats.size > 0) {
+//       saveReadChats(readChats);
+//     }
+//   }, [readChats]);
+
+//   // ---- Cache functions ----
+//   const cachePersonalChats = (chats) => {
+//     try {
+//       personalChatStorage.set('personalChats', JSON.stringify(chats));
+//     } catch (e) {
+//       console.error('Cache personal chats error:', e);
+//     }
+//   };
+
+//   const loadCachedPersonalChats = () => {
+//     try {
+//       const cached = personalChatStorage.getString('personalChats');
+//       if (cached) {
+//         const parsed = JSON.parse(cached);
+//         setChatList(parsed);
+//         return parsed;
+//       }
+//     } catch (e) {
+//       console.error('Load cached personal chats error:', e);
+//     }
+//     return null;
+//   };
+
+//   // ---- Fetch functions ----
+//   const fetchUnreadNotificationCount = async () => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       const response = await axios.get(`${API_ROUTE}/notifications/unread-count/`, {
+//         headers: {
+//           'Authorization': `Bearer ${token}`,
+//         },
+//       });
+
+//       if (response.data.success) {
+//         setUnreadNotificationCount(response.data.unread_count);
+//       }
+//     } catch (error) {
+//       console.error('Error fetching unread count:', error);
+//     }
+//   };
+
+//   // ---- Fetch personal chats from API ----
+//   const fetchPersonalChats = async () => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       if (!token) return [];
+
+//       const response = await axios.get(
+//         `${API_ROUTE}/api/chat/list/?account_mode=personal`,
+//         {
+//           headers: {
+//             'Authorization': `Bearer ${token}`,
+//           },
+//         }
+//       );
+
+//       const filteredChats = response.data.chats.filter(chat => chat.type !== 'channel');
+//       const uniqueChats = [];
+//       const seenIds = new Set();
+
+//       filteredChats.forEach((chat) => {
+//         const chatIdentifier = chat.type === 'single'
+//           ? chat.participants?.find(id => id !== chat.current_user_id) || chat.id
+//           : chat.group_slug || chat.id;
+
+//         if (!seenIds.has(chatIdentifier)) {
+//           seenIds.add(chatIdentifier);
+//           const chatKey = `${chatIdentifier}-${chat.type}`;
+//           const actualUnread = resolveUnreadCount(chatKey, chat.unread_count, chat.timestamp);
+//           uniqueChats.push({
+//             ...chat,
+//             id: chatIdentifier,
+//             unread_count: actualUnread,
+//             name: chat.name || 'Unknown',
+//             content: chat.content || '[media]',
+//             time: new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+//             avatar: chat.avatar ? `${API_ROUTE_IMAGE}${chat.avatar}` : null,
+//             type: chat.type,
+//             members_count: chat.members_count,
+//             receiverId: chat.type === 'single' ? chatIdentifier : null,
+//             group_slug: chat.group_slug || null,
+//             key: `${chat.id}-${chat.type}`,
+//             timestamp: chat.timestamp,
+//             creator_id: chat.creator_id,
+//           });
+//         }
+//       });
+
+//       setChatList(uniqueChats);
+//       cachePersonalChats(uniqueChats);
+
+//       return uniqueChats;
+//     } catch (err) {
+//       console.error('Failed to load personal chats:', err.response?.data || err.message);
+//       return [];
+//     }
+//   };
+
+//   // ---- Fetch all chats ----
+//   const fetchAllChats = async () => {
+//     setIsLoading(true);
+//     setError(null);
+
+//     try {
+//       const personalChats = await fetchPersonalChats();
+//       setFilteredChatList(personalChats);
+//       return personalChats;
+//     } catch (err) {
+//       console.error('Failed to load chats:', err);
+//       setError('Failed to load chats. Please try again.');
+//       return [];
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   // ---- Apply chat update to state ----
+//   const applyChatUpdate = (updatedList) => {
+//     setChatList(updatedList);
+//     cachePersonalChats(updatedList);
+
+//     // Update filtered list
+//     const currentSearch = searchQueryRef.current;
+//     if (currentSearch.trim() === '') {
+//       setFilteredChatList(updatedList);
+//     } else {
+//       const filtered = updatedList.filter(chat =>
+//         chat.name.toLowerCase().includes(currentSearch.toLowerCase()) ||
+//         (chat.content && chat.content.toLowerCase().includes(currentSearch.toLowerCase()))
+//       );
+//       setFilteredChatList(filtered);
+//     }
+//   };
+
+//   // ---- Update filtered list ----
+//   const updateFilteredList = (personal) => {
+//     const currentSearch = searchQueryRef.current;
+//     if (currentSearch.trim() === '') {
+//       setFilteredChatList(personal);
+//     } else {
+//       const filtered = personal.filter(chat =>
+//         chat.name.toLowerCase().includes(currentSearch.toLowerCase()) ||
+//         (chat.content && chat.content.toLowerCase().includes(currentSearch.toLowerCase()))
+//       );
+//       setFilteredChatList(filtered);
+//     }
+//   };
+
+//   // ---- Handle new message from WebSocket ----
+//   const handleNewMessage = (data) => {
+//     const { chat_id, chat_type, content, timestamp, sender_name, account_mode } = data;
+
+//     // Only process personal messages
+//     if (account_mode && account_mode !== 'personal') return;
+
+//     const currentList = chatListRef.current;
+//     const existingIndex = currentList.findIndex(chat =>
+//       chat.id === chat_id && chat.type === chat_type
+//     );
+
+//     let updatedList = [...currentList];
+
+//     if (existingIndex !== -1) {
+//       const existingChat = updatedList[existingIndex];
+//       const currentUnread = existingChat.unread_count || 0;
+
+//       updatedList[existingIndex] = {
+//         ...existingChat,
+//         content: content || '[media]',
+//         time: new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+//         unread_count: currentUnread + 1,
+//         timestamp: timestamp,
+//         name: sender_name || existingChat.name
+//       };
+
+//       const [item] = updatedList.splice(existingIndex, 1);
+//       updatedList.unshift(item);
+//     } else {
+//       // New chat - fetch full list
+//       fetchAllChats();
+//       return;
+//     }
+
+//     // Store the update for later if not focused
+//     if (!isFocusedRef.current) {
+//       pendingUpdatesRef.current = updatedList;
+//       return;
+//     }
+
+//     // Apply update immediately if focused
+//     applyChatUpdate(updatedList);
+//   };
+
+//   // ---- Apply pending updates ----
+//   const applyPendingUpdates = () => {
+//     const pendingUpdate = pendingUpdatesRef.current;
+//     if (!pendingUpdate) return;
+
+//     applyChatUpdate(pendingUpdate);
+//     pendingUpdatesRef.current = null;
+//   };
+
+//   // ---- Process new chats silently ----
+//   const processNewChatsSilently = (newChats) => {
+//     const filteredChats = newChats.filter(chat => chat.type !== 'channel');
+//     let hasChanges = false;
+
+//     const processedChats = filteredChats.map(newChat => {
+//       const chatIdentifier = newChat.type === 'single'
+//         ? newChat.participants?.find(id => id !== newChat.current_user_id) || newChat.id
+//         : newChat.group_slug || newChat.id;
+
+//       const chatKey = `${chatIdentifier}-${newChat.type}`;
+//       const actualUnread = resolveUnreadCount(chatKey, newChat.unread_count, newChat.timestamp);
+
+//       return {
+//         ...newChat,
+//         id: chatIdentifier,
+//         unread_count: actualUnread,
+//         name: newChat.name || 'Unknown',
+//         content: newChat.content || '[media]',
+//         time: new Date(newChat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+//         avatar: newChat.avatar ? `${API_ROUTE_IMAGE}${newChat.avatar}` : null,
+//         type: newChat.type,
+//         members_count: newChat.members_count,
+//         receiverId: newChat.type === 'single' ? chatIdentifier : null,
+//         group_slug: newChat.group_slug || null,
+//         timestamp: newChat.timestamp,
+//         creator_id: newChat.creator_id,
+//       };
+//     });
+
+//     // Check if there are actual changes
+//     const currentList = chatListRef.current;
+
+//     if (currentList.length !== processedChats.length) {
+//       hasChanges = true;
+//     } else {
+//       for (let i = 0; i < currentList.length; i++) {
+//         const current = currentList[i];
+//         const processed = processedChats.find(c => c.id === current.id && c.type === current.type);
+//         if (!processed ||
+//           processed.unread_count !== current.unread_count ||
+//           processed.content !== current.content ||
+//           processed.timestamp !== current.timestamp) {
+//           hasChanges = true;
+//           break;
+//         }
+//       }
+//     }
+
+//     if (!hasChanges) return;
+
+//     // Store the update
+//     pendingUpdatesRef.current = processedChats;
+
+//     // If focused, apply updates immediately
+//     if (isFocusedRef.current) {
+//       applyPendingUpdates();
+//     }
+//   };
+
+//   // ---- Silent background refresh ----
+//   const fetchChatListSilently = async () => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       if (!token) return;
+
+//       const response = await axios.get(
+//         `${API_ROUTE}/api/chat/list/?account_mode=personal`,
+//         {
+//           headers: {
+//             'Authorization': `Bearer ${token}`,
+//           },
+//         }
+//       );
+
+//       processNewChatsSilently(response.data.chats);
+
+//     } catch (err) {
+//       console.error('Silent refresh error:', err);
+//     }
+//   };
+
+//   // ---- Chat WebSocket + polling state ----
+//   const [wsConnected, setWsConnected] = useState(false);
+//   const [wsError, setWsError] = useState(null);
+//   const chatWs = useRef(null);
+//   const pollingInterval = useRef(null);
+
+//   const connectChatWebSocket = async () => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       const retrieveUserId = await AsyncStorage.getItem('userData');
+
+//       if (!token || !retrieveUserId) {
+//         //console.log('[Chat WS] Missing auth data');
+//         return;
+//       }
+
+//       const userData = JSON.parse(retrieveUserId);
+//       const currentUserId = userData.id;
+
+//       const CHAT_SERVER = 'wss://api.showapp.ng';
+//       const url = `${CHAT_SERVER}/ws/chat/${currentUserId}/?token=${token}`;
+
+//       if (chatWs.current) {
+//         chatWs.current.close();
+//         chatWs.current = null;
+//       }
+
+//       chatWs.current = new WebSocket(url);
+
+//       const connectionTimeout = setTimeout(() => {
+//         if (chatWs.current && chatWs.current.readyState !== WebSocket.OPEN) {
+//          // console.log('[Chat WS] Connection timeout');
+//           chatWs.current.close();
+//           setWsConnected(false);
+//         }
+//       }, 10000);
+
+//       chatWs.current.onopen = () => {
+//         clearTimeout(connectionTimeout);
+//         //console.log('[Chat WS] Connected successfully');
+//         setWsConnected(true);
+//         //setWsError(null);
+//       };
+
+//       chatWs.current.onmessage = (evt) => {
+//         try {
+//           const data = JSON.parse(evt.data);
+//           //console.log('[Chat WS] Message received:', data.type);
+
+//           if (data.type === 'new_message') {
+//             handleNewMessage(data);
+//           } else if (data.type === 'message_read') {
+//             //console.log('[Chat WS] Message read confirmation:', data);
+//           } else if (data.type === 'typing') {
+//            // console.log('[Chat WS] Typing indicator:', data);
+//           }
+//         } catch (error) {
+//          // console.error('[Chat WS] Error parsing message:', error);
+//         }
+//       };
+
+//       // chatWs.current.onerror = (error) => {
+//       //   clearTimeout(connectionTimeout);
+//       //   console.error('[Chat WS] Error:', error);
+//       //   setWsConnected(false);
+//       //   setWsError('WebSocket connection error');
+//       // };
+
+//       chatWs.current.onclose = (event) => {
+//         clearTimeout(connectionTimeout);
+//         //console.log(`[Chat WS] Disconnected - Code: ${event.code}, Reason: ${event.reason}`);
+//         setWsConnected(false);
+
+//         if (event.code !== 1000) {
+//           setTimeout(() => {
+//             console.log('[Chat WS] Attempting to reconnect...');
+//             connectChatWebSocket();
+//           }, 5000);
+//         }
+//       };
+
+//     } catch (error) {
+//       console.error('[Chat WS] Failed to connect:', error);
+//       setWsConnected(false);
+//       //setWsError(error.message);
+//     }
+//   };
+
+//   const startPolling = () => {
+//     if (pollingInterval.current) {
+//       clearInterval(pollingInterval.current);
+//     }
+
+//     pollingInterval.current = setInterval(async () => {
+//       try {
+//         const appState = AppState.currentState;
+//         if (appState !== 'active') return;
+//         if (isLoading) return;
+
+//         const token = await AsyncStorage.getItem('userToken');
+//         if (!token) return;
+
+//         const response = await axios.get(
+//           `${API_ROUTE}/api/chat/list/?account_mode=personal`,
+//           {
+//             headers: { 'Authorization': `Bearer ${token}` },
+//             timeout: 5000,
+//           }
+//         );
+
+//         processNewChatsSilently(response.data.chats);
+
+//       } catch (error) {
+//         // Silent fail for polling
+//       }
+//     }, 5000);
+//   };
+
+//   // ---- Single consolidated real-time setup effect ----
+//   useEffect(() => {
+//     connectChatWebSocket();
+//     startPolling();
+
+//     const subscription = AppState.addEventListener('change', (nextAppState) => {
+//       if (nextAppState === 'active') {
+//         console.log('[Chat] App foregrounded');
+//         isFocusedRef.current = true;
+
+//         if (pendingUpdatesRef.current) {
+//           applyPendingUpdates();
+//         }
+
+//         fetchChatListSilently();
+//         fetchUnreadNotificationCount();
+
+//         if (!wsConnectedRef.current) {
+//           connectChatWebSocket();
+//         }
+//         if (!pollingInterval.current) {
+//           startPolling();
+//         }
+//       } else {
+//         isFocusedRef.current = false;
+//         if (pollingInterval.current) {
+//           clearInterval(pollingInterval.current);
+//           pollingInterval.current = null;
+//         }
+//       }
+//     });
+
+//     return () => {
+//       if (pollingInterval.current) {
+//         clearInterval(pollingInterval.current);
+//         pollingInterval.current = null;
+//       }
+//       if (chatWs.current) {
+//         chatWs.current.close(1000, 'component unmount');
+//         chatWs.current = null;
+//       }
+//       subscription.remove();
+//       if (updateTimeoutRef.current) {
+//         clearTimeout(updateTimeoutRef.current);
+//       }
+//     };
+//   }, []);
+
+//   // ---- Load initial data from MMKV cache ----
+//   useEffect(() => {
+//     async function loadInitialData() {
+//       setIsInitialLoading(true);
+
+//       const loadedReadChats = loadReadChats();
+//       const cachedPersonal = loadCachedPersonalChats();
+
+//       let personal = [];
+
+//       if (cachedPersonal) {
+//         personal = cachedPersonal.map(chat => {
+//           const chatKey = `${chat.id}-${chat.type}`;
+//           const readAt = loadedReadChats.get(chatKey);
+//           if (readAt) {
+//             const msgTime = chat.timestamp ? new Date(chat.timestamp).getTime() : 0;
+//             if (msgTime > readAt) {
+//               return chat;
+//             } else {
+//               return { ...chat, unread_count: 0 };
+//             }
+//           }
+//           return chat;
+//         });
+//         setChatList(personal);
+//         setFilteredChatList(personal);
+//       }
+
+//       setReadChats(loadedReadChats);
+//       readChatsRef.current = loadedReadChats;
+//       saveReadChats(loadedReadChats);
+
+//       setIsInitialLoading(false);
+//     }
+
+//     loadInitialData();
+//   }, []);
+
+//   // ---- Mark messages as read ----
+//   const markMessagesAsRead = async (chatId, chatType) => {
+//     const chatKey = `${chatId}-${chatType}`;
+//     const now = Date.now();
+
+//     setReadChats(prev => {
+//       const newMap = new Map(prev);
+//       newMap.set(chatKey, now);
+//       try {
+//         const obj = Object.fromEntries(newMap);
+//         readChatsStorage.set('readChats', JSON.stringify(obj));
+//       } catch (e) {
+//         console.error('Save read chats error:', e);
+//       }
+//       return newMap;
+//     });
+
+//     const updateList = (list) =>
+//       list.map(chat => {
+//         if (chat.id === chatId && chat.type === chatType) {
+//           return { ...chat, unread_count: 0 };
+//         }
+//         return chat;
+//       });
+
+//     setChatList(prev => updateList(prev));
+//     setFilteredChatList(prev => updateList(prev));
+
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       const res = await axios.post(
+//         `${API_ROUTE}/chatmessage/mark-read/`,
+//         {
+//           chat_id: chatId,
+//           chat_type: chatType,
+//         },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//           },
+//         }
+//       );
+
+//       if (res.status !== 200 && res.status !== 201) {
+//         throw new Error('API call failed');
+//       }
+
+//       if (wsConnected && chatWs.current) {
+//         chatWs.current.send(JSON.stringify({
+//           type: 'mark_read',
+//           chat_id: chatId,
+//           chat_type: chatType
+//         }));
+//       }
+
+//     } catch (error) {
+//       console.error('Error marking messages as read:', error);
+//       setReadChats(prev => {
+//         const newMap = new Map(prev);
+//         newMap.delete(chatKey);
+//         saveReadChats(newMap);
+//         return newMap;
+//       });
+//     }
+//   };
+
+//   // ---- Use focus effect ----
+//   useFocusEffect(
+//     useCallback(() => {
+//       isFocusedRef.current = true;
+
+//       if (pendingUpdatesRef.current) {
+//         applyPendingUpdates();
+//       }
+
+//       fetchAllChats();
+//       fetchUserData();
+//       fetchUnreadNotificationCount();
+
+//       return () => {
+//         isFocusedRef.current = false;
+//       };
+//     }, [])
+//   );
+
+//   // ---- Fetch user data ----
+//   const fetchUserData = async () => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       const response = await axios.get(`${API_ROUTE}/get-users/`, {
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'Authorization': `Bearer ${token}`,
+//         },
+//       });
+
+//       if (response.status === 200 || response.status === 201) {
+//         const uniqueUsers = response.data.filter(
+//           (user, index, self) => index === self.findIndex((u) => u.id === user.id)
+//         );
+//         setUserData(uniqueUsers);
+
+//         const currentUserData = await AsyncStorage.getItem('userData');
+//         if (currentUserData) {
+//           const currentUser = JSON.parse(currentUserData);
+//           const currentUserInResponse = response.data.find(user => user.id === currentUser.id);
+//           if (currentUserInResponse) {
+//             setUserName(currentUserInResponse.name);
+//             setUserId(currentUserInResponse.id);
+//           }
+//         }
+//       }
+//     } catch (error) {
+//       console.log('Error fetching users:', error.message);
+//     }
+//   };
+
+//   // ---- Notification settings ----
+//   const loadNotificationSettings = async () => {
+//     try {
+//       const settings = await AsyncStorage.getItem('notificationSettings');
+//       if (settings) {
+//         setNotificationSettings(JSON.parse(settings));
+//       }
+//     } catch (error) {
+//       console.log('Error loading notification settings:', error);
+//     }
+//   };
+
+//   useEffect(() => {
+//     loadNotificationSettings();
+//   }, []);
+
+//   // ---- Search effect ----
+//   useEffect(() => {
+//     const timeoutId = setTimeout(() => {
+//       if (searchText !== searchQuery) {
+//         setSearchQuery(searchText);
+//       }
+//     }, 300);
+
+//     return () => clearTimeout(timeoutId);
+//   }, [searchText]);
+
+//   // ---- Filter chats based on search ----
+//   useEffect(() => {
+//     const currentList = chatList;
+//     if (searchQuery.trim() === '') {
+//       setFilteredChatList(currentList);
+//     } else {
+//       const filtered = currentList.filter(chat =>
+//         chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//         (chat.content && chat.content.toLowerCase().includes(searchQuery.toLowerCase()))
+//       );
+//       setFilteredChatList(filtered);
+//     }
+//   }, [searchQuery, chatList]);
+
+//   // ---- App state change for notification count ----
+//   useEffect(() => {
+//     const handleAppStateChange = (nextAppState) => {
+//       if (nextAppState === 'active') {
+//         fetchUnreadNotificationCount();
+//         fetchChatListSilently();
+//       }
+//     };
+
+//     const subscription = AppState.addEventListener('change', handleAppStateChange);
+//     fetchUnreadNotificationCount();
+
+//     return () => {
+//       subscription.remove();
+//     };
+//   }, []);
+
+//   // ---- Check for new messages and show notifications ----
+//   const checkForNewMessages = (newChats) => {
+//     if (!notificationSettingsRef.current.showNotifications || notificationSettingsRef.current.doNotDisturb) {
+//       return;
+//     }
+
+//     newChats.forEach(chat => {
+//       if (chat.unread_count > 0) {
+//         const notificationKey = `notified_${chat.id}_${chat.unread_count}`;
+//         AsyncStorage.getItem(notificationKey).then(alreadyNotified => {
+//           if (!alreadyNotified) {
+//             const chatKey = `${chat.id}-${chat.type}`;
+//             if (!readChatsRef.current.has(chatKey)) {
+//               NotificationService.localNotification(
+//                 chat.name,
+//                 chat.content || 'New message',
+//                 {
+//                   chatId: chat.id,
+//                   chatType: chat.type,
+//                   name: chat.name,
+//                 }
+//               );
+//               AsyncStorage.setItem(notificationKey, 'true');
+//             }
+//           }
+//         });
+//       }
+//     });
+//   };
+
+//   // ========== CALL HANDLING ==========
+//   // Handle incoming call from route params
+//   useEffect(() => {
+//     const p = route?.params;
+//     if (!p?.isIncomingCall) return;
+
+//     console.log('[PHome] Incoming call via route params:', p);
+
+//     currentCallIdRef.current = p.callId || currentCallIdRef.current;
+
+//     setCallerInfo({
+//       profileImage: p.profile_image || '',
+//       name: p.name || 'Unknown Caller',
+//       offer: p.incomingOffer || null,
+//     });
+//     setIsVideoCall(p.isVideoCall || false);
+
+//     if (p.incomingOffer?.sdp) {
+//       setShowIncomingCallModal(true);
+//     }
+
+//     // Clear the params so re-focusing PHome later doesn't re-trigger this
+//     navigation.setParams({
+//       isIncomingCall: undefined,
+//       incomingOffer: undefined,
+//       callId: undefined,
+//     });
+//   }, [route?.params?.callId]);
+
+//   // Global call notification handler
+//   useEffect(() => {
+//     global.__callNotificationHandler = (callData) => {
+//       console.log('📞 Call notification received in HomeScreen:', callData);
+
+//       const profileImagePath =
+//         callData.profileImage ||
+//         callData.callerInfo?.profileImage ||
+//         '';
+
+//       if (global.__onCallScreen) {
+//         console.log('Already on call screen, ignoring');
+//         return;
+//       }
+
+//       InCallManager.stopRingtone();
+//       Vibration.cancel();
+
+//       currentCallIdRef.current = callData.callId || currentCallIdRef.current;
+
+//       setCallerInfo(prev => {
+//         if (prev?.offer?.sdp) {
+//           return {
+//             ...prev,
+//             profileImage: profileImagePath || prev.profileImage,
+//             name: callData.callerName || callData.callerInfo?.name || prev.name,
+//           };
+//         }
+//         return {
+//           profileImage: profileImagePath,
+//           name: callData.callerName || callData.callerInfo?.name || 'Unknown Caller',
+//           offer: null,
+//         };
+//       });
+
+//       setIsVideoCall(callData.callType === 'video' || callData.isVideoCall || false);
+//     };
+
+//     return () => {
+//       global.__callNotificationHandler = null;
+//     };
+//   }, [navigation]);
+
+//   // Global call accept handler
+//   useEffect(() => {
+//     global.__callAcceptHandler = async (callData) => {
+//       console.log('📞 Call acceptance from notification:', callData);
+
+//       setShowIncomingCallModal(false);
+//       InCallManager.stopRingtone();
+//       Vibration.cancel();
+
+//       setTimeout(() => {
+//         navigation.navigate('VoiceCalls', {
+//           profile_image: '',
+//           name: callData.callerName,
+//           targetUserId: callData.callerId,
+//           incomingOffer: null,
+//           isIncomingCall: true,
+//           isInitiator: false,
+//           autoAnswerOnOffer: true,
+//         });
+//       }, 100);
+//     };
+
+//     const checkForPendingCallAccept = async () => {
+//       try {
+//         const acceptPending = await AsyncStorage.getItem('accept_pending_call');
+//         if (acceptPending) {
+//           const callData = JSON.parse(acceptPending);
+//           await AsyncStorage.removeItem('accept_pending_call');
+//           if (callData?.roomId) {
+//             global.__callAcceptHandler(callData);
+//           }
+//         }
+//       } catch (error) {
+//         console.error('Error checking pending call accept:', error);
+//       }
+//     };
+
+//     checkForPendingCallAccept();
+
+//     return () => {
+//       global.__callAcceptHandler = null;
+//     };
+//   }, [navigation]);
+
+//   // Home screen WebSocket for incoming offers
+//   const ws = useRef(null);
+
+//   // useEffect(() => {
+//   //   const connectCallWebSocket = async () => {
+//   //     try {
+//   //       const token = await AsyncStorage.getItem('userToken');
+//   //       const retrieveUserId = await AsyncStorage.getItem('userData');
+
+//   //       if (!token || !retrieveUserId) {
+//   //         console.warn('Missing auth data, websocket not started');
+//   //         return;
+//   //       }
+
+//   //       const userDataObj = JSON.parse(retrieveUserId);
+//   //       const currentUserId = userDataObj.id;
+//   //       const ROOM_ID = `user-${currentUserId}`;
+//   //       const SIGNALING_SERVER = 'wss://api.showapp.ng';
+//   //       const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
+
+//   //       if (ws.current?.readyState === WebSocket.OPEN) {
+//   //         console.log('[Call WS] Already connected');
+//   //         return;
+//   //       }
+
+//   //       ws.current = new WebSocket(url);
+//   //       ws.current.binaryType = 'arraybuffer';
+
+//   //       ws.current.onopen = () => {
+//   //         console.log('[Call WS] Connected');
+//   //       };
+
+//   //       ws.current.onmessage = (evt) => {
+//   //         let data;
+//   //         try {
+//   //           data = JSON.parse(evt.data);
+//   //         } catch {
+//   //           return;
+//   //         }
+
+//   //         console.log("========== HOME WS RECEIVED ==========");
+//   //         console.log("Full data:", JSON.stringify(data, null, 2));
+
+//   //         if (data.type === 'incoming_call' && data.offer?.sdp) {
+//   //           if (isCallBeingHandledRef.current) {
+//   //             console.log('[Call WS] Already handling a call, ignoring duplicate');
+//   //             return;
+//   //           }
+
+//   //           const profileImagePath =
+//   //             data.offer?.callerInfo?.profileImage ||
+//   //             data.callerInfo?.profileImage ||
+//   //             data.profileImage ||
+//   //             data.profile_image ||
+//   //             '';
+
+//   //           const callerName =
+//   //             data.offer?.callerInfo?.name ||
+//   //             data.callerInfo?.name ||
+//   //             data.caller_name ||
+//   //             'Unknown Caller';
+
+//   //           console.log('[Call WS Home] ✅ Extracted Profile Image Path:', profileImagePath);
+//   //           console.log('[Call WS Home] ✅ Extracted Caller Name:', callerName);
+
+//   //           isCallBeingHandledRef.current = true;
+
+//   //           setCallerInfo({
+//   //             profileImage: profileImagePath,
+//   //             name: callerName,
+//   //             offer: data.offer,
+//   //           });
+
+//   //           setIsVideoCall(data.offer.isVideoCall || false);
+//   //           setShowIncomingCallModal(true);
+//   //           return;
+//   //         }
+//   //       };
+
+//   //       ws.current.onerror = (e) => {
+//   //         //console.error('[Call WS] Error', e);
+//   //       };
+
+//   //       ws.current.onclose = (e) => {
+//   //         //console.log('[Call WS] Closed', e.code, e.reason);
+//   //         setTimeout(() => {
+//   //           if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
+//   //             connectCallWebSocket();
+//   //           }
+//   //         }, 5000);
+//   //       };
+
+//   //     } catch (err) {
+//   //       //console.error('[Call WS] Failed to connect', err);
+//   //     }
+//   //   };
+
+//   //   connectCallWebSocket();
+
+//   //   return () => {
+//   //     if (ws.current) {
+//   //       ws.current.close();
+//   //       ws.current = null;
+//   //     }
+//   //   };
+//   // }, [navigation]);
+
+
+// useEffect(() => {
+//   const connectCallWebSocket = async () => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       const retrieveUserId = await AsyncStorage.getItem('userData');
+
+//       if (!token || !retrieveUserId) {
+//         console.warn('Missing auth data, websocket not started');
+//         return;
+//       }
+
+//       const userDataObj = JSON.parse(retrieveUserId);
+//       const currentUserId = userDataObj.id;
+//       const ROOM_ID = `user-${currentUserId}`;
+//       const SIGNALING_SERVER = 'wss://api.showapp.ng';
+//       const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
+
+//       if (ws.current?.readyState === WebSocket.OPEN) {
+//         console.log('[Call WS] Already connected');
+//         return;
+//       }
+
+//       intentionalCloseRef.current = false; // reset — a fresh connect means future closes are "real" unless we say otherwise
+
+//       ws.current = new WebSocket(url);
+//       ws.current.binaryType = 'arraybuffer';
+
+//       ws.current.onopen = () => {
+//         console.log('[Call WS] Connected');
+//         wsConnectedRef.current = true;
+//       };
+
+//       ws.current.onmessage = (evt) => {
+//         let data;
+//         try {
+//           data = JSON.parse(evt.data);
+//         } catch {
+//           return;
+//         }
+
+//         console.log("========== HOME WS RECEIVED ==========");
+//         console.log("Full data:", JSON.stringify(data, null, 2));
+
+//         if (data.type === 'incoming_call' && data.offer?.sdp) {
+
+//           // 🔴 FIX: if a call screen is already mounted and handling its
+//           // own signaling socket, PHome must NOT also react to this
+//           // message — prevents two independent ringtone/UI flows for the
+//           // same call room.
+//           if (global.__onCallScreen) {
+//             console.log('[Call WS Home] Ignoring incoming_call — already on call screen');
+//             return;
+//           }
+
+//           if (isCallBeingHandledRef.current) {
+//             console.log('[Call WS] Already handling a call, ignoring duplicate');
+//             return;
+//           }
+
+//           const profileImagePath =
+//             data.offer?.callerInfo?.profileImage ||
+//             data.callerInfo?.profileImage ||
+//             data.profileImage ||
+//             data.profile_image ||
+//             '';
+
+//           const callerName =
+//             data.offer?.callerInfo?.name ||
+//             data.callerInfo?.name ||
+//             data.caller_name ||
+//             'Unknown Caller';
+
+//           console.log('[Call WS Home] ✅ Extracted Profile Image Path:', profileImagePath);
+//           console.log('[Call WS Home] ✅ Extracted Caller Name:', callerName);
+
+//           isCallBeingHandledRef.current = true;
+
+//           setCallerInfo({
+//             profileImage: profileImagePath,
+//             name: callerName,
+//             offer: data.offer,
+//           });
+
+//           setIsVideoCall(data.offer.isVideoCall || false);
+//           setShowIncomingCallModal(true);
+//           return;
+//         }
+//       };
+
+//       ws.current.onerror = (e) => {
+//         //console.error('[Call WS] Error', e);
+//       };
+
+//       ws.current.onclose = (e) => {
+//         wsConnectedRef.current = false;
+
+//         // 🔴 FIX: don't auto-reconnect if WE deliberately closed this
+//         // socket (e.g. because we navigated into VoiceVideoCallScreen,
+//         // which opens its own socket for the same room). Without this
+//         // guard, the existing 5s reconnect timer would silently reopen a
+//         // duplicate connection and reintroduce the exact bug we're fixing.
+//         if (intentionalCloseRef.current) {
+//           console.log('[Call WS] Closed intentionally, not reconnecting');
+//           intentionalCloseRef.current = false;
+//           return;
+//         }
+
+//         setTimeout(() => {
+//           if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
+//             connectCallWebSocket();
+//           }
+//         }, 5000);
+//       };
+
+//     } catch (err) {
+//       //console.error('[Call WS] Failed to connect', err);
+//     }
+//   };
+
+//   connectCallWebSocket();
+
+//   return () => {
+//     if (ws.current) {
+//       intentionalCloseRef.current = true;
+//       ws.current.close(1000, 'component unmount');
+//       ws.current = null;
+//     }
+//   };
+// }, [navigation]);
+
+// // 🔴 NEW: pause this socket whenever PHome loses focus (i.e. user
+// // navigated into a call screen which opens its own signaling socket for
+// // the same room), and resume it when PHome regains focus.
+// useFocusEffect(
+//   useCallback(() => {
+//     // PHome regained focus — reconnect if we don't already have a live socket
+//     if (!wsConnectedRef.current && (!ws.current || ws.current.readyState === WebSocket.CLOSED)) {
+//       (async () => {
+//         const token = await AsyncStorage.getItem('userToken');
+//         const retrieveUserId = await AsyncStorage.getItem('userData');
+//         if (!token || !retrieveUserId) return;
+
+//         const userDataObj = JSON.parse(retrieveUserId);
+//         const currentUserId = userDataObj.id;
+//         const ROOM_ID = `user-${currentUserId}`;
+//         const SIGNALING_SERVER = 'wss://api.showapp.ng';
+//         const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
+
+//         if (ws.current?.readyState === WebSocket.OPEN) return;
+
+//         console.log('[Call WS] Reconnecting on PHome focus');
+//         intentionalCloseRef.current = false;
+//         ws.current = new WebSocket(url);
+//         ws.current.binaryType = 'arraybuffer';
+//         // NOTE: onopen/onmessage/onerror/onclose handlers are reattached by
+//         // the main effect above the next time it fires. This focus-effect
+//         // reconnect uses the SAME onmessage/onclose bindings only if you
+//         // keep this block simple — see the note below.
+//       })();
+//     }
+
+//     return () => {
+//       // PHome losing focus — close this socket so the call screen's own
+//       // socket is the only one connected to this room.
+//       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+//         console.log('[Call WS] Closing on PHome blur (navigating to call screen)');
+//         intentionalCloseRef.current = true;
+//         ws.current.close(1000, 'navigating away from PHome');
+//       }
+//     };
+//   }, [])
+// );
+
+//   const sendMessage = (msg) => {
+//     if (ws.current?.readyState === WebSocket.OPEN) {
+//       ws.current.send(JSON.stringify(msg));
+//     }
+//   };
+
+//   const handleAcceptCall = () => {
+//     console.log("========== ACCEPT ==========");
+//     // forceStopAllCallAudio();
+//     forceStopAllCallAudio(currentCallIdRef.current);
+//     isCallBeingHandledRef.current = false;
+
+//     setShowIncomingCallModal(false);
+//     InCallManager.stopRingtone();
+//     Vibration.cancel();
+//     try { NativeModules.CallModule?.stopCallService(); } catch (e) {}
+
+//     if (currentCallIdRef.current) {
+//       CallKeepService.endCall(currentCallIdRef.current);
+//     }
+//     currentCallIdRef.current = null;
+
+//     if (!callerInfo?.offer?.sdp) {
+//       console.error('[Accept] Offer has no SDP!');
+//       Alert.alert('Error', 'Call offer expired. Please ask them to call again.');
+//       return;
+//     }
+
+//     if (ws.current) {
+//       ws.current.close();
+//       ws.current = null;
+//     }
+
+//     const targetScreen = callerInfo.offer?.isVideoCall ? 'VideoCalls' : 'VoiceCalls';
+
+//     navigation.navigate(targetScreen, {
+//       profile_image: callerInfo.profileImage || '',
+//       name: callerInfo.name || 'Unknown',
+//       targetUserId: callerInfo.offer?.targetUserId || callerInfo.offer?.callerId || '',
+//       incomingOffer: callerInfo.offer,
+//       isIncomingCall: true,
+//       isInitiator: false,
+//       autoAnswerOnOffer: false,
+//     });
+//   };
+
+//   const handleRejectCall = () => {
+//     //  forceStopAllCallAudio();
+//     forceStopAllCallAudio(currentCallIdRef.current);
+//     isCallBeingHandledRef.current = false;
+
+//     InCallManager.stopRingtone();
+//     Vibration.cancel();
+//     try { NativeModules.CallModule?.stopCallService(); } catch (e) {}
+
+//     if (currentCallIdRef.current) {
+//       CallKeepService.endCall(currentCallIdRef.current);
+//     }
+//     currentCallIdRef.current = null;
+
+//     if (ws.current?.readyState === WebSocket.OPEN) {
+//       ws.current.send(JSON.stringify({
+//         type: 'reject_call',
+//         caller_id: callerInfo.offer?.targetUserId,
+//         room_id: callerInfo.offer?.roomId
+//       }));
+//     }
+
+//     setShowIncomingCallModal(false);
+//     setCallerInfo({ profileImage: '', name: 'Unknown', offer: null });
+//   };
+
+//   // ========== CAMERA HANDLING ==========
+//   const handleCameraLaunch = async () => {
+//     try {
+//       if (Platform.OS === 'android') {
+//         const cameraPermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.CAMERA);
+//         if (!cameraPermission) {
+//           const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA, {
+//             title: 'Camera Permission',
+//             message: 'App needs access to your camera',
+//             buttonPositive: 'OK',
+//             buttonNegative: 'Cancel',
+//           });
+
+//           if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+//             Alert.alert(
+//               'Permission Required',
+//               'Camera permission is required to take photos',
+//               [
+//                 { text: 'Cancel', style: 'cancel' },
+//                 { text: 'Open Settings', onPress: () => Linking.openSettings() },
+//               ]
+//             );
+//             return;
+//           }
+//         }
+
+//         const storagePermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE);
+//         if (!storagePermission) {
+//           const storageGranted = await PermissionsAndroid.request(
+//             PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+//             {
+//               title: 'Storage Permission',
+//               message: 'App needs access to storage to save photos',
+//               buttonPositive: 'OK',
+//               buttonNegative: 'Cancel',
+//             }
+//           );
+
+//           if (storageGranted !== PermissionsAndroid.RESULTS.GRANTED) {
+//             Alert.alert(
+//               'Permission Required',
+//               'Storage permission is required to save photos',
+//               [
+//                 { text: 'Cancel', style: 'cancel' },
+//                 { text: 'Open Settings', onPress: () => Linking.openSettings() },
+//               ]
+//             );
+//             return;
+//           }
+//         }
+//       }
+
+//       const response = await launchCamera({
+//         mediaType: 'photo',
+//         quality: 0.7,
+//         includeBase64: false,
+//         saveToPhotos: true,
+//         cameraType: 'back',
+//         presentationStyle: 'fullScreen',
+//         maxWidth: 1024,
+//         maxHeight: 1024,
+//         durationLimit: 30,
+//         videoQuality: 'high',
+//         permissionDenied: {
+//           title: 'Permission Denied',
+//           text: 'To take photos with your camera, please enable camera permissions in your device settings.',
+//           reTryTitle: 'Retry',
+//           okTitle: 'I\'m sure',
+//         },
+//       });
+
+//       if (response.didCancel) {
+//         // User cancelled
+//       } else if (response.errorCode) {
+//         let errorMessage = response.errorMessage || 'Failed to access camera';
+
+//         if (response.errorCode === 'camera_unavailable') {
+//           errorMessage = 'Camera is not available on this device';
+//         } else if (response.errorCode === 'permission') {
+//           errorMessage = 'Camera permission was denied';
+//           if (Platform.OS === 'ios') {
+//             Alert.alert(
+//               'Camera Permission Required',
+//               'Please enable camera access in Settings to take photos',
+//               [
+//                 { text: 'Cancel', style: 'cancel' },
+//                 { text: 'Open Settings', onPress: () => Linking.openURL('app-settings:') },
+//               ]
+//             );
+//             return;
+//           }
+//         }
+
+//         Alert.alert('Error', errorMessage);
+//       } else if (response.assets?.[0]) {
+//         const asset = response.assets[0];
+//         const mediaData = {
+//           uri: asset.uri,
+//           type: asset.type || 'image/jpeg',
+//           fileName: asset.fileName || `photo_${Date.now()}.jpg`,
+//           width: asset.width,
+//           height: asset.height,
+//           fileSize: asset.fileSize,
+//           timestamp: asset.timestamp,
+//           originalPath: asset.originalPath,
+//         };
+//         setMedia(mediaData);
+//         setShowMediaModal(true);
+//       }
+//     } catch (error) {
+//       console.error('Camera launch error:', error);
+//       Alert.alert('Error', 'Failed to launch camera. Please try again.');
+//     }
+//   };
+
+//   const handlePostStatus = async (media, caption) => {
+//     if (!media) {
+//       Alert.alert('Error', 'No media selected');
+//       return;
+//     }
+
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       const formData = new FormData();
+//       let fileExt = media.uri.split('.').pop().toLowerCase();
+//       let type = media.type;
+
+//       if (!type) {
+//         if (['jpg', 'jpeg', 'png'].includes(fileExt)) {
+//           type = 'image/jpeg';
+//         } else if (['mp4', 'mov'].includes(fileExt)) {
+//           type = 'video/mp4';
+//         }
+//       }
+
+//       formData.append('media', {
+//         uri: media.uri,
+//         type: type,
+//         name: `status_${Date.now()}.${fileExt}`,
+//       });
+
+//       if (caption) {
+//         formData.append('text', caption);
+//       }
+
+//       const response = await axios.post(`${API_ROUTE}/status/`, formData, {
+//         headers: {
+//           'Content-Type': 'multipart/form-data',
+//           'Authorization': `Bearer ${token}`,
+//         },
+//       });
+
+//       Alert.alert('Success', 'Status posted successfully!');
+//       return response.data;
+//     } catch (error) {
+//       Alert.alert('Error', 'Failed to post status');
+//       throw error;
+//     }
+//   };
+
+//   // ========== UTILITY FUNCTIONS ==========
+//   const highlightSearchText = (text = '', query) => {
+//     if (!query || !text || typeof text !== 'string') return text;
+//     const index = text.toLowerCase().indexOf(query.toLowerCase());
+//     if (index === -1) return text;
+
+//     return (
+//       <Text>
+//         {text.substring(0, index)}
+//         <Text style={{ backgroundColor: isDark ? '#fbbf24' : '#FFEB3B', color: '#000' }}>
+//           {text.substring(index, index + query.length)}
+//         </Text>
+//         {text.substring(index + query.length)}
+//       </Text>
+//     );
+//   };
+
+//   // ========== DROPDOWN FUNCTIONS ==========
+//   const renderDropdownContent = () => (
+//     <>
+//       <Text style={[styles.dropdownItem, { fontWeight: 'bold', color: colors.text }]}>
+//         Personal Account
+//       </Text>
+//       <Divider style={{ backgroundColor: colors.border }} />
+//       <TouchableOpacity
+//         onPress={() => {
+//           setShowDropdown(false);
+//           navigation.navigate('Settings');
+//         }}
+//         style={styles.dropdownTouchable}
+//       >
+//         <Text style={[styles.dropdownItem, { color: colors.text }]}>Profile</Text>
+//       </TouchableOpacity>
+
+//       <TouchableOpacity
+//         onPress={() => {
+//           setShowDropdown(false);
+//           navigation.navigate('Broadcaster', {
+//             roomName: 'match-123',
+//             streamId: 'stream-1',
+//             userName: userData?.name || 'User',
+//             userId: userId
+//           });
+//         }}
+//         style={styles.dropdownTouchable}
+//       >
+//         <Text style={[styles.dropdownItem, { color: colors.text }]}>Go Live</Text>
+//       </TouchableOpacity>
+
+//       <TouchableOpacity
+//         onPress={() => {
+//           setShowDropdown(false);
+//           navigation.navigate('LiveStreaming');
+//         }}
+//         style={styles.dropdownTouchable}
+//       >
+//         <Text style={[styles.dropdownItem, { color: colors.text }]}>Watch Live</Text>
+//       </TouchableOpacity>
+
+//       <TouchableOpacity
+//         onPress={() => {
+//           setShowDropdown(false);
+//           navigation.navigate('ManagePost');
+//         }}
+//         style={styles.dropdownTouchable}
+//       >
+//         <Text style={[styles.dropdownItem, { color: colors.text }]}>Manage Posts</Text>
+//       </TouchableOpacity>
+
+//       <TouchableOpacity
+//         onPress={() => {
+//           setShowDropdown(false);
+//           navigation.navigate('EarningDashbord');
+//         }}
+//         style={styles.dropdownTouchable}
+//       >
+//         <Text style={[styles.dropdownItem, { color: colors.text }]}>Earn Money</Text>
+//       </TouchableOpacity>
+
+//       <TouchableOpacity
+//         onPress={() => {
+//           setShowDropdown(false);
+//           navigation.navigate('GlobalIssueReport');
+//         }}
+//         style={styles.dropdownTouchable}
+//       >
+//         <Text style={[styles.dropdownItem, { color: colors.text }]}>Global Report</Text>
+//       </TouchableOpacity>
+
+//       <TouchableOpacity
+//         onPress={() => {
+//           setShowDropdown(false);
+//           navigation.navigate('NewsList');
+//         }}
+//         style={styles.dropdownTouchable}
+//       >
+//         <Text style={[styles.dropdownItem, { color: colors.text }]}>Latest News</Text>
+//       </TouchableOpacity>
+
+//       <TouchableOpacity
+//         onPress={() => {
+//           setShowDropdown(false);
+//           navigation.navigate('Settings');
+//         }}
+//         style={styles.dropdownTouchable}
+//       >
+//         <Text style={[styles.dropdownItem, { color: colors.text }]}>Settings</Text>
+//       </TouchableOpacity>
+
+//       <TouchableOpacity
+//         onPress={() => {
+//           setShowDropdown(false);
+//           setPendingSwitchTo('business');
+//           setShowConfirmSwitch(true);
+//         }}
+//         style={styles.dropdownTouchable}
+//       >
+//         <Text style={[styles.dropdownItem, { color: colors.text, fontWeight: 'bold' }]}>Switch Account</Text>
+//       </TouchableOpacity>
+//     </>
+//   );
+
+//   // ========== SWITCH ACCOUNT ==========
+//   const switchAccount = async (account) => {
+//     setIsLoading(true);
+//     try {
+//       await AsyncStorage.setItem('accountMode', account);
+//       setAccountMode(account);
+
+//       if (account === 'personal') {
+//         fetchAllChats();
+//       } else {
+//         const profile = await fetchProfile();
+//         if (profile && profile.name && profile.name.trim() !== '') {
+//           navigation.navigate('BusinessHome');
+//         } else {
+//           navigation.navigate('BusinessSetup');
+//         }
+//       }
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   const fetchProfile = async () => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       const response = await axios.get(`${API_ROUTE}/profiles/`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+
+//       if (response.status === 200 || response.status === 201) {
+//         return response.data;
+//       }
+//       return null;
+//     } catch (err) {
+//       return null;
+//     }
+//   };
+
+//   // ========== MAIN RENDER ==========
+//   return (
+//     <View style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
+//       <StatusBar
+//         barStyle={Platform.OS === 'android' ? 'light-content' : 'light-content'}
+//         translucent={Platform.OS === 'android'}
+//         backgroundColor={Platform.OS === 'android' ? '#0750b5' : undefined}
+//       />
+
+//       <LinearGradient
+//         colors={['#0d64dd', '#0d64dd', '#0d64dd']}
+//         style={styles.header}
+//       >
+//         <View style={styles.headerTop}>
+//           <Text style={styles.headerTitle}>Chat</Text>
+//           <View style={styles.headerIcons}>
+//             <TouchableOpacity
+//               style={styles.exploreIconContainer}
+//               onPress={toggleTheme}
+//             >
+//               <Icon
+//                 style={{ marginRight: 15 }}
+//                 name={isDark ? 'moon' : 'sunny'}
+//                 size={25}
+//                 color="#FFFFFF"
+//               />
+//             </TouchableOpacity>
+//             <TouchableOpacity
+//               onPress={() => navigation.navigate('EssentialPlatforms')}
+//               style={styles.exploreIconContainer}
+//             >
+//               <Icon name="compass-outline" size={27} color="#fff" style={{ marginRight: 31 }} />
+//               <View style={styles.exploreBadge}>
+//                 <Text style={[styles.exploreBadgeText, { fontWeight: '800' }]}>Explore</Text>
+//               </View>
+//             </TouchableOpacity>
+//             <TouchableOpacity onPress={() => setShowDropdown(!showDropdown)}>
+//               <Icon name="ellipsis-vertical" size={25} color="#fff" />
+//             </TouchableOpacity>
+//           </View>
+//         </View>
+
+//         {/* Dropdown Modal */}
+//         <Modal
+//           visible={showDropdown}
+//           transparent
+//           animationType="fade"
+//           onRequestClose={() => setShowDropdown(false)}
+//           statusBarTranslucent
+//         >
+//           <TouchableWithoutFeedback onPress={() => setShowDropdown(false)}>
+//             <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} />
+//           </TouchableWithoutFeedback>
+
+//           <View style={[
+//             styles.dropdownMenu,
+//             {
+//               backgroundColor: colors.backgroundSecondary,
+//               borderColor: colors.border,
+//               position: 'absolute',
+//               top: 80 + (insets.top || 0),
+//               right: 20,
+//               zIndex: 10000,
+//             }
+//           ]}>
+//             {renderDropdownContent()}
+//           </View>
+//         </Modal>
+
+//         <SwitchAccountSheet
+//           showConfirmSwitch={showConfirmSwitch}
+//           setShowConfirmSwitch={setShowConfirmSwitch}
+//           pendingSwitchTo={pendingSwitchTo}
+//           switchAccount={switchAccount}
+//           isLoading={isLoading}
+//           setIsLoading={setIsLoading}
+//         />
+
+//         <View style={styles.tabRow}>
+//           {['Chats', 'Status', 'Calls'].map((item) => (
+//             <TouchableOpacity
+//               key={item}
+//               onPress={() => {
+//                 if (item === 'Status') {
+//                   navigation.navigate('PStatusBar');
+//                 } else if (item === 'Calls') {
+//                   navigation.navigate('BCalls');
+//                 } else {
+//                   setTab(item);
+//                 }
+//               }}
+//             >
+//               <Text style={[styles.tabText, tab === item && styles.tabTextActive]}>{item}</Text>
+//               {tab === item && <View style={styles.tabUnderline} />}
+//             </TouchableOpacity>
+//           ))}
+//         </View>
+//       </LinearGradient>
+
+//       <View style={[styles.searchBox, { backgroundColor: colors.card }]}>
+//         <Icon name="search" size={20} color={colors.textTertiary} style={{ marginRight: 12 }} />
+//         <TextInput
+//           ref={searchInputRef}
+//           placeholder="Search or start new chat"
+//           style={[styles.searchInput, { color: colors.text }]}
+//           placeholderTextColor={colors.placeholder || '#888'}
+//           value={searchText}
+//           onChangeText={(text) => setSearchText(text)}
+//           clearButtonMode="while-editing"
+//           onFocus={() => setIsSearchFocused(true)}
+//           onBlur={() => setIsSearchFocused(false)}
+//           keyboardType="default"
+//           returnKeyType="search"
+//           onSubmitEditing={() => {
+//             setSearchQuery(searchText);
+//             Keyboard.dismiss();
+//           }}
+//         />
+//         {searchText.length > 0 && (
+//           <TouchableOpacity
+//             onPress={() => {
+//               setSearchText('');
+//               setSearchQuery('');
+//               searchInputRef.current?.focus();
+//             }}
+//           >
+//             <Icon name="close-circle" size={20} color={colors.textTertiary} />
+//           </TouchableOpacity>
+//         )}
+//       </View>
+
+//       <FlatList
+//         data={filteredChatList}
+//         keyExtractor={(item) => `${item.id}-${item.type}-${item.source || 'personal'}`}
+//         extraData={filteredChatList}
+//         initialNumToRender={10}
+//         keyboardShouldPersistTaps="handled"
+//         maxToRenderPerBatch={10}
+//         windowSize={21}
+//         ListHeaderComponent={() => (
+//           <View style={styles.sectionTabs}>
+//             <Text style={[styles.sectionTab, { fontWeight: '600', color: '#0d64dd' }]}>
+//               {searchQuery ? 'SEARCH RESULTS' : 'ALL PERSONAL CHATS'}
+//             </Text>
+//             {userId && (
+//               <View style={styles.yourStatusContainer}>
+//                 <OnlineStatusBadge
+//                   userId={userId}
+//                   showText={true}
+//                   showDot={true}
+//                   showLastSeen={true}
+//                   showDetailedTime={true}
+//                   textStyle={styles.yourStatusText}
+//                   dotSize={8}
+//                 />
+//               </View>
+//             )}
+//           </View>
+//         )}
+//         renderItem={({ item }) => {
+//           const actualUnread = getActualUnreadCount(item);
+
+//           return (
+//             <TouchableOpacity
+//               onPress={() => {
+//                 markMessagesAsRead(item.id, item.type);
+//                 if (item.type === 'group') {
+//                   navigation.navigate('PrivateChat', {
+//                     groupId: item.id,
+//                     groupSlug: item.group_slug,
+//                     name: item.name,
+//                     chatType: 'group',
+//                     profile_image: item.avatar,
+//                     members_count: item.members_count,
+//                     creator_id: item.creator_id,
+//                   });
+//                 } else {
+//                   navigation.navigate('PrivateChat', {
+//                     receiverId: item.receiverId || item.id,
+//                     name: item.name,
+//                     chatType: 'single',
+//                     profile_image: item.avatar,
+//                     userIdd: item.receiverId || item.id,
+//                   });
+//                 }
+//               }}
+//               style={[styles.chatItem, { backgroundColor: colors.card }]}
+//             >
+//               <View style={styles.avatarContainer}>
+//                 <Image
+//                   source={
+//                     item.avatar
+//                       ? { uri: item.avatar }
+//                       : item.type === 'group'
+//                       ? { uri: 'https://cdn2.iconfinder.com/data/icons/facebook-51/32/FACEBOOK-11-1024.png' }
+//                       : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+//                   }
+//                   style={[styles.avatar, { borderColor: colors.border, backgroundColor: colors.surface }]}
+//                 />
+//                 {item.type === 'single' && (
+//                   <OnlineStatusBadge
+//                     userId={item.receiverId || item.id}
+//                     showDot={true}
+//                     dotSize={14}
+//                     position="bottom-right"
+//                     avatarSize={48}
+//                     borderWidth={2}
+//                     borderColor={colors.card}
+//                   />
+//                 )}
+//                 {item.type === 'group' && (
+//                   <View style={[styles.groupBadge, { backgroundColor: colors.primary }]}>
+//                     <Icon name="people" size={12} color="#fff" />
+//                   </View>
+//                 )}
+//               </View>
+
+//               <View style={styles.chatContent}>
+//                 <View style={styles.chatHeaderRow}>
+//                   <Text style={[styles.chatName, { color: colors.text }]} numberOfLines={1}>
+//                     {highlightSearchText(item.name, searchQuery) ||
+//                       (item.type === 'group' ? 'Group Chat' : 'Unnamed Chat')}
+//                   </Text>
+//                   {item.type === 'group' && (
+//                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+//                       <Text style={[styles.memberCountText, { color: colors.textSecondary }]}>
+//                         {item.members_count || 0}
+//                       </Text>
+//                       {item.is_creator && (
+//                         <Icon name="star" size={14} color="#FFD700" style={{ marginLeft: 4 }} />
+//                       )}
+//                     </View>
+//                   )}
+//                 </View>
+//                 <Text style={[styles.chatMessage, { color: colors.textSecondary }]} numberOfLines={1}>
+//                   {highlightSearchText(
+//                     item.content ||
+//                     (item.type === 'group'
+//                       ? item.is_creator
+//                         ? 'You created this group'
+//                         : 'No messages yet'
+//                       : '[No message]'),
+//                     searchQuery
+//                   )}
+//                 </Text>
+//               </View>
+
+//               <View style={styles.timeBadgeContainer}>
+//                 <Text style={[styles.chatTime, { color: colors.textTertiary }]}>{item.time || ''}</Text>
+//                 {actualUnread > 0 && (
+//                   <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+//                     <Text style={styles.badgeText}>
+//                       {actualUnread > 9 ? '9+' : actualUnread}
+//                     </Text>
+//                   </View>
+//                 )}
+//               </View>
+//             </TouchableOpacity>
+//           );
+//         }}
+//         ListEmptyComponent={() => (
+//           isInitialLoading ? (
+//             <Text style={[styles.emptyText, { marginTop: 80, textAlign: 'center', color: colors.textSecondary }]}>
+//               Loading chats...
+//             </Text>
+//           ) : error ? (
+//             <View style={styles.emptyList}>
+//               <Text style={[styles.emptyText, { color: 'red' }]}>{error}</Text>
+//               <TouchableOpacity onPress={fetchAllChats}>
+//                 <Text style={[styles.emptyText, { color: colors.primary }]}>Retry</Text>
+//               </TouchableOpacity>
+//             </View>
+//           ) : (
+//             <View style={styles.emptyList}>
+//               {searchQuery ? (
+//                 <View style={{ alignItems: "center" }}>
+//                   <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No matching found</Text>
+//                   <TouchableOpacity onPress={() => navigation.navigate("ChatAi")}>
+//                     <Text style={[styles.emptyText, { marginTop: 10, color: colors.primary }]}>Ask Showa Ai</Text>
+//                   </TouchableOpacity>
+//                 </View>
+//               ) : (
+//                 <View style={{ alignItems: "center" }}>
+//                   <Icon name="chatbubbles-outline" size={60} color={colors.textTertiary} style={{ marginBottom: 10 }} />
+//                   <Text style={[styles.emptyText, { color: colors.textSecondary }]}>You have no chats available</Text>
+//                   <TouchableOpacity
+//                     style={styles.startChatButton}
+//                     onPress={() => navigation.navigate('UserContactListPersonalAccount')}
+//                   >
+//                     <Text style={[styles.emptyText, { marginTop: 15, color: colors.primary }]}>Start New Chat</Text>
+//                   </TouchableOpacity>
+//                 </View>
+//               )}
+//             </View>
+//           )
+//         )}
+//         contentContainerStyle={{
+//           paddingBottom: insets.bottom + 120,
+//         }}
+//       />
+
+//       <BottomNav
+//         navigation={navigation}
+//         setShowAccountModal={setShowAccountModal}
+//         activeRoute="Home"
+//         style={{ zIndex: 9999 }}
+//       />
+
+//       <IncomingCallModal
+//         visible={showIncomingCallModal}
+//         onAccept={handleAcceptCall}
+//         onReject={handleRejectCall}
+//         profileImage={callerInfo.profileImage}
+//         callerName={callerInfo.name}
+//         isVideoCall={isVideoCall}
+//       />
+
+//       {/* Switch Account Modal */}
+//       <Modal
+//         visible={showAccountModal}
+//         transparent
+//         animationType="fade"
+//         onRequestClose={() => setShowAccountModal(false)}
+//       >
+//         <Animated.View
+//           style={{
+//             flex: 1,
+//             backgroundColor: 'rgba(0,0,0,0.6)',
+//             justifyContent: 'center',
+//             alignItems: 'center',
+//             opacity: fadeAnim,
+//           }}
+//         >
+//           <View
+//             style={{
+//               width: '88%',
+//               backgroundColor: colors.backgroundSecondary,
+//               borderRadius: 18,
+//               paddingVertical: 28,
+//               paddingHorizontal: 22,
+//               alignItems: 'center',
+//               shadowColor: '#000',
+//               shadowOpacity: 0.25,
+//               shadowRadius: 10,
+//               elevation: 8,
+//               borderWidth: 1,
+//               borderColor: colors.border,
+//             }}
+//           >
+//             <TouchableOpacity
+//               onPress={() => setShowAccountModal(false)}
+//               style={{
+//                 position: 'absolute',
+//                 top: 12,
+//                 right: 12,
+//                 backgroundColor: isDark ? colors.background : '#f5f5f5',
+//                 borderRadius: 50,
+//                 padding: 8,
+//               }}
+//             >
+//               <Icon name="close" size={22} color={isDark ? colors.text : '#333'} />
+//             </TouchableOpacity>
+
+//             <Text
+//               style={{
+//                 fontSize: 22,
+//                 fontWeight: '700',
+//                 color: colors.text,
+//                 marginBottom: 8,
+//                 textAlign: 'center',
+//                 padding: 20
+//               }}
+//             >
+//               Choose Your Showa Experience
+//             </Text>
+
+//             <Text
+//               style={{
+//                 fontSize: 14,
+//                 color: colors.textSecondary,
+//                 textAlign: 'center',
+//                 lineHeight: 20,
+//                 marginBottom: 25,
+//               }}
+//             >
+//               Switch between <Text style={{ fontWeight: '600', color: '#9704e0' }}>e-Vibbz</Text> (short videos)
+//               and <Text style={{ fontWeight: '600', color: '#0d6efd' }}>e-Broadcast</Text> (posts & updates)
+//             </Text>
+
+//             <TouchableOpacity
+//               style={{
+//                 width: '100%',
+//                 paddingVertical: 14,
+//                 borderRadius: 12,
+//                 alignItems: 'center',
+//                 backgroundColor: '#9704e0',
+//                 marginBottom: 12,
+//               }}
+//               onPress={() => {
+//                 navigation.navigate('SocialHome');
+//                 setShowAccountModal(false);
+//               }}
+//             >
+//               <Text style={{ fontSize: 16, fontWeight: '600', color: '#fff' }}>e-Vibbz</Text>
+//             </TouchableOpacity>
+
+//             <TouchableOpacity
+//               style={{
+//                 width: '100%',
+//                 paddingVertical: 14,
+//                 borderRadius: 12,
+//                 alignItems: 'center',
+//                 backgroundColor: '#0d6efd',
+//                 marginBottom: 12,
+//               }}
+//               onPress={() => {
+//                 navigation.navigate('BroadcastHome');
+//                 setShowAccountModal(false);
+//               }}
+//             >
+//               <Text style={{ fontSize: 16, fontWeight: '600', color: '#fff' }}>e-Broadcast</Text>
+//             </TouchableOpacity>
+
+//             <TouchableOpacity
+//               style={{
+//                 width: '100%',
+//                 paddingVertical: 14,
+//                 borderRadius: 12,
+//                 alignItems: 'center',
+//                 backgroundColor: isDark ? colors.background : '#f1f1f1',
+//               }}
+//               onPress={() => {
+//                 setShowDropdown(false);
+//                 setPendingSwitchTo('business');
+//                 setShowConfirmSwitch(true);
+//                 setShowAccountModal(false);
+//               }}
+//             >
+//               <Text style={{
+//                 fontSize: 16,
+//                 fontWeight: '600',
+//                 color: isDark ? colors.text : '#333'
+//               }}>
+//                 Switch Account
+//               </Text>
+//             </TouchableOpacity>
+//           </View>
+//         </Animated.View>
+//       </Modal>
+
+//       {/* Media Modal */}
+//       <Modal
+//         visible={showMediaModal}
+//         transparent={true}
+//         animationType="slide"
+//         onRequestClose={() => setShowMediaModal(false)}
+//       >
+//         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+//           <KeyboardAvoidingView
+//             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+//             style={styles.mediaModalContainer}
+//             keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+//           >
+//             <View style={[styles.mediaPreviewContainer, { backgroundColor: colors.background }]}>
+//               {media?.type?.includes('video') ? (
+//                 <Video
+//                   source={{ uri: media.uri }}
+//                   style={styles.mediaPreview}
+//                   resizeMode="cover"
+//                   repeat
+//                   muted
+//                 />
+//               ) : (
+//                 <Image source={{ uri: media?.uri }} style={styles.mediaPreview} />
+//               )}
+
+//               <TextInput
+//                 style={[styles.captionInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBackground }]}
+//                 placeholder="Add caption to your status (optional)"
+//                 placeholderTextColor={colors.placeholder || '#777'}
+//                 value={caption}
+//                 onChangeText={setCaption}
+//                 multiline
+//                 returnKeyType="done"
+//                 blurOnSubmit={true}
+//               />
+
+//               <View style={styles.mediaActionButtons}>
+//                 <TouchableOpacity
+//                   style={[styles.mediaButton, styles.cancelButton, { backgroundColor: colors.buttonSecondary }]}
+//                   onPress={() => {
+//                     setMedia(null);
+//                     setCaption('');
+//                     setShowMediaModal(false);
+//                     Keyboard.dismiss();
+//                   }}
+//                 >
+//                   <Text style={[styles.buttonText, { color: colors.text }]}>Cancel</Text>
+//                 </TouchableOpacity>
+//                 <TouchableOpacity
+//                   style={[styles.mediaButton, styles.postButton, { backgroundColor: colors.primary }]}
+//                   onPress={() => {
+//                     Keyboard.dismiss();
+//                     handlePostStatus(media, caption);
+//                     setShowMediaModal(false);
+//                   }}
+//                 >
+//                   <Text style={[styles.buttonText, { color: colors.textInverse }]}>Post</Text>
+//                 </TouchableOpacity>
+//               </View>
+//             </View>
+//           </KeyboardAvoidingView>
+//         </TouchableWithoutFeedback>
+//       </Modal>
+
+//       <TouchableOpacity
+//         style={[styles.fab, { backgroundColor: colors.buttonSecondary, borderColor: colors.border }]}
+//         onPress={() => navigation.navigate('UserContactListPersonalAccount')}
+//       >
+//         <Icon name="add" size={24} color={colors.primary} />
+//       </TouchableOpacity>
+
+//       <EarningsSlideInManager />
+//       <PinUnlockModal navigation={navigation} />
+//     </View>
+//   );
+// };
+
+// // ========== STYLES ==========
+// const createStyles = (colors, insets, isDark) => StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: colors.backgroundSecondary,
+//   },
+//   fab: {
+//     position: 'absolute',
+//     bottom: 125,
+//     right: 20,
+//     width: 60,
+//     height: 60,
+//     borderRadius: 8,
+//     backgroundColor: colors.backgroundSecondary,
+//     alignItems: 'center',
+//     elevation: 10,
+//     shadowColor: '#000',
+//     shadowOpacity: 0.3,
+//     shadowRadius: 4,
+//     justifyContent: 'center',
+//     alignSelf: 'center',
+//     zIndex: 1000,
+//     borderColor: colors.border,
+//     borderStyle: 'solid',
+//   },
+//   header: {
+//     paddingBottom: Platform.OS === 'android' ? 0 : 0,
+//     paddingTop: Platform.OS === 'android' ? 14 : 0,
+//     borderBottomLeftRadius: Platform.OS === 'android' ? 0 : 0,
+//     borderBottomRightRadius: Platform.OS === 'android' ? 0 : 0,
+//     backgroundColor: '#0d64dd',
+//     elevation: 2,
+//     zIndex: 1000,
+//   },
+//   headerTop: {
+//     paddingTop: insets.top,
+//     height: insets.top + 60,
+//     paddingHorizontal: Platform.OS === 'android' ? 20 : 20,
+//     paddingVertical: Platform.OS === 'android' ? 0 : 10,
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//   },
+//   headerTitle: {
+//     color: '#fff',
+//     fontSize: Platform.OS === 'android' ? 28 : 35,
+//     fontWeight: 'bold',
+//     letterSpacing: 0.5,
+//   },
+//   headerIcons: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//   },
+//   tabRow: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-around',
+//     marginTop: 16,
+//   },
+//   tabText: {
+//     color: '#e6e6e6',
+//     fontSize: 16,
+//     fontFamily: 'SourceSansPro-Regular',
+//     paddingVertical: 6,
+//   },
+//   tabTextActive: {
+//     color: '#fff',
+//     fontFamily: 'SourceSansPro-SemiBold',
+//     fontWeight: '600',
+//   },
+//   tabUnderline: {
+//     height: 3,
+//     backgroundColor: '#fff',
+//     borderRadius: 2,
+//     marginTop: 4,
+//   },
+//   searchBox: {
+//     flexDirection: 'row',
+//     backgroundColor: colors.card,
+//     margin: 16,
+//     borderRadius: 12,
+//     paddingHorizontal: 12,
+//     alignItems: 'center',
+//     height: 48,
+//     elevation: 0.5,
+//     shadowColor: '#000',
+//     shadowOpacity: isDark ? 0.2 : 0.1,
+//     shadowRadius: 6,
+//     zIndex: 500,
+//     borderWidth: 0.2,
+//     borderColor: colors.border,
+//   },
+//   searchInput: {
+//     flex: 1,
+//     fontSize: 15,
+//     fontFamily: 'SourceSansPro-Regular',
+//     paddingRight: 8,
+//     color: colors.text,
+//   },
+//   sectionTabs: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     marginHorizontal: 20,
+//     marginVertical: 12,
+//   },
+//   sectionTab: {
+//     fontSize: 14,
+//     fontFamily: 'SourceSansPro-SemiBold',
+//     color: colors.textSecondary,
+//   },
+//   chatItem: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     paddingVertical: 12,
+//     paddingHorizontal: 20,
+//     backgroundColor: colors.card,
+//     marginHorizontal: 12,
+//     marginVertical: 4,
+//     borderRadius: 12,
+//     elevation: 0.5,
+//     shadowColor: '#000',
+//     shadowOpacity: isDark ? 0.2 : 0.1,
+//     shadowRadius: 6,
+//     borderWidth: 0.2,
+//     borderColor: colors.border,
+//   },
+//   avatarContainer: {
+//     position: 'relative',
+//     marginRight: 12,
+//   },
+//   avatar: {
+//     width: 48,
+//     height: 48,
+//     borderRadius: 24,
+//     backgroundColor: colors.surface || '#e0e0e0',
+//   },
+//   groupBadge: {
+//     position: 'absolute',
+//     bottom: 0,
+//     right: 0,
+//     borderRadius: 10,
+//     width: 20,
+//     height: 20,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     borderWidth: 2,
+//     borderColor: colors.card,
+//   },
+//   chatContent: {
+//     flex: 1,
+//   },
+//   chatName: {
+//     fontFamily: 'SourceSansPro-SemiBold',
+//     fontSize: 16,
+//     color: colors.text,
+//   },
+//   chatMessage: {
+//     fontFamily: 'SourceSansPro-Regular',
+//     fontSize: 14,
+//     color: colors.textSecondary,
+//   },
+//   chatTime: {
+//     fontFamily: 'SourceSansPro-Regular',
+//     fontSize: 12,
+//     color: colors.textTertiary,
+//   },
+//   timeBadgeContainer: {
+//     alignItems: 'flex-end',
+//     minWidth: 50,
+//   },
+//   badge: {
+//     borderRadius: 50,
+//     minWidth: 20,
+//     height: 20,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginTop: 4,
+//     paddingHorizontal: 4,
+//   },
+//   badgeText: {
+//     color: 'white',
+//     fontSize: 12,
+//     fontWeight: 'bold',
+//     textAlign: 'center',
+//   },
+//   emptyList: {
+//     padding: 20,
+//     alignItems: 'center',
+//   },
+//   emptyText: {
+//     fontFamily: 'SourceSansPro-Regular',
+//     fontSize: 16,
+//     color: colors.textSecondary,
+//   },
+//   dropdownMenu: {
+//     position: 'absolute',
+//     top: 40,
+//     right: 10,
+//     backgroundColor: colors.backgroundSecondary,
+//     borderRadius: 8,
+//     paddingVertical: 8,
+//     paddingHorizontal: 16,
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowOpacity: 0.2,
+//     shadowRadius: 4,
+//     elevation: 5,
+//     zIndex: 1000,
+//     borderWidth: 0.5,
+//     borderColor: colors.border,
+//     minWidth: 180,
+//   },
+//   dropdownItem: {
+//     paddingVertical: 10,
+//     paddingHorizontal: 8,
+//     fontSize: 16,
+//     color: colors.text,
+//     fontFamily: 'SourceSansPro-Regular',
+//   },
+//   dropdownTouchable: {
+//     paddingVertical: 0,
+//   },
+//   memberCountText: {
+//     fontSize: 12,
+//     color: colors.textSecondary,
+//     marginLeft: 2,
+//   },
+//   mediaModalContainer: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     backgroundColor: 'rgba(0,0,0,0.8)',
+//   },
+//   mediaPreviewContainer: {
+//     width: '90%',
+//     backgroundColor: colors.background,
+//     borderRadius: 10,
+//     padding: 15,
+//   },
+//   mediaPreview: {
+//     width: '100%',
+//     height: 300,
+//     borderRadius: 5,
+//     marginBottom: 15,
+//   },
+//   captionInput: {
+//     borderWidth: 1,
+//     borderColor: colors.border,
+//     borderRadius: 5,
+//     padding: 10,
+//     minHeight: 50,
+//     marginBottom: 15,
+//   },
+//   mediaActionButtons: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//   },
+//   mediaButton: {
+//     padding: 12,
+//     borderRadius: 5,
+//     width: '48%',
+//     alignItems: 'center',
+//   },
+//   cancelButton: {
+//     backgroundColor: colors.buttonSecondary,
+//   },
+//   postButton: {
+//     backgroundColor: colors.primary,
+//   },
+//   buttonText: {
+//     fontWeight: 'bold',
+//     color: colors.text,
+//   },
+//   yourStatusContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: colors.card,
+//     paddingHorizontal: 10,
+//     paddingVertical: 4,
+//     borderRadius: 20,
+//     borderWidth: 0.5,
+//     borderColor: colors.border,
+//   },
+//   yourStatusText: {
+//     fontSize: 12,
+//     fontWeight: '500',
+//     color: colors.text,
+//   },
+//   chatHeaderRow: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//     width: '100%',
+//   },
+//   exploreIconContainer: {
+//     position: 'relative',
+//     marginRight: 15,
+//   },
+//   exploreBadge: {
+//     position: 'absolute',
+//     top: -9,
+//     right: -4,
+//     backgroundColor: '#fff',
+//     borderRadius: 8,
+//     paddingHorizontal: 5,
+//     paddingVertical: 2,
+//     minWidth: 55,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: 1 },
+//     shadowOpacity: 0.2,
+//     shadowRadius: 2,
+//     elevation: 2,
+//     borderWidth: 1,
+//     borderColor: '#e0e0e0',
+//   },
+//   exploreBadgeText: {
+//     color: '#0d64dd',
+//     fontSize: 9,
+//     textTransform: 'uppercase',
+//     fontFamily: 'Lato-Black',
+//     letterSpacing: 0.3,
+//   },
+//   startChatButton: {
+//     marginTop: 15,
+//     padding: 10,
+//   },
+// });
+
+// export default PersonalChatHomeScreen;
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
@@ -2809,8 +5349,6 @@ import {
   Platform,
   Keyboard,
   Linking,
-  Vibration,
-  NativeModules,
   AppState,
   KeyboardAvoidingView,
   Dimensions
@@ -2826,8 +5364,6 @@ import BottomNav from '../components/BottomNavSocialMedia';
 import { Divider } from 'react-native-paper';
 import { launchCamera } from 'react-native-image-picker';
 import SwitchAccountSheet from '../components/SwitchAccountSheet';
-import IncomingCallModal from '../components/IncomingCallModal';
-import InCallManager from 'react-native-incall-manager';
 import NotificationService from '../src/services/PushNotifications';
 import Video from 'react-native-video';
 import { useTheme } from '../src/context/ThemeContext';
@@ -2835,9 +5371,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PinUnlockModal from '../screens/PinUnlockModal';
 import EarningsSlideInManager from '../components/EarningsSlideInManager';
 import OnlineStatusBadge from '../components/OnlineStatusBadge';
-import CallKeepService from '../src/services/CallKeepService';
 import { createMMKV } from 'react-native-mmkv';
-import { forceStopAllCallAudio } from '../src/utils/callAudio';
 
 const windowWidth = Dimensions.get('window').width;
 
@@ -2878,12 +5412,6 @@ const PersonalChatHomeScreen = ({ navigation, route }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncComplete, setSyncComplete] = useState(false);
   const [readChats, setReadChats] = useState(new Map());
-  const [callerInfo, setCallerInfo] = useState({ profileImage: '', name: 'Incoming Call' });
-  const [showIncomingCallModal, setShowIncomingCallModal] = useState(false);
-  const [isVideoCall, setIsVideoCall] = useState(false);
-
-  const isCallBeingHandledRef = useRef(false);
-  const currentCallIdRef = useRef(null);
 
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -2901,11 +5429,10 @@ const PersonalChatHomeScreen = ({ navigation, route }) => {
   const filteredChatListRef = useRef([]);
   const searchQueryRef = useRef('');
   const notificationSettingsRef = useRef({ showNotifications: true, doNotDisturb: false });
-  const wsConnectedRef = useRef(false);
-   const intentionalCloseRef = useRef(false); 
   const isFocusedRef = useRef(true);
   const pendingUpdatesRef = useRef(null);
   const updateTimeoutRef = useRef(null);
+    const wsConnectedRef = useRef(false);
 
   useEffect(() => { readChatsRef.current = readChats; }, [readChats]);
   useEffect(() => { chatListRef.current = chatList; }, [chatList]);
@@ -3680,475 +6207,6 @@ const PersonalChatHomeScreen = ({ navigation, route }) => {
     });
   };
 
-  // ========== CALL HANDLING ==========
-  // Handle incoming call from route params
-  useEffect(() => {
-    const p = route?.params;
-    if (!p?.isIncomingCall) return;
-
-    console.log('[PHome] Incoming call via route params:', p);
-
-    currentCallIdRef.current = p.callId || currentCallIdRef.current;
-
-    setCallerInfo({
-      profileImage: p.profile_image || '',
-      name: p.name || 'Unknown Caller',
-      offer: p.incomingOffer || null,
-    });
-    setIsVideoCall(p.isVideoCall || false);
-
-    if (p.incomingOffer?.sdp) {
-      setShowIncomingCallModal(true);
-    }
-
-    // Clear the params so re-focusing PHome later doesn't re-trigger this
-    navigation.setParams({
-      isIncomingCall: undefined,
-      incomingOffer: undefined,
-      callId: undefined,
-    });
-  }, [route?.params?.callId]);
-
-  // Global call notification handler
-  useEffect(() => {
-    global.__callNotificationHandler = (callData) => {
-      console.log('📞 Call notification received in HomeScreen:', callData);
-
-      const profileImagePath =
-        callData.profileImage ||
-        callData.callerInfo?.profileImage ||
-        '';
-
-      if (global.__onCallScreen) {
-        console.log('Already on call screen, ignoring');
-        return;
-      }
-
-      InCallManager.stopRingtone();
-      Vibration.cancel();
-
-      currentCallIdRef.current = callData.callId || currentCallIdRef.current;
-
-      setCallerInfo(prev => {
-        if (prev?.offer?.sdp) {
-          return {
-            ...prev,
-            profileImage: profileImagePath || prev.profileImage,
-            name: callData.callerName || callData.callerInfo?.name || prev.name,
-          };
-        }
-        return {
-          profileImage: profileImagePath,
-          name: callData.callerName || callData.callerInfo?.name || 'Unknown Caller',
-          offer: null,
-        };
-      });
-
-      setIsVideoCall(callData.callType === 'video' || callData.isVideoCall || false);
-    };
-
-    return () => {
-      global.__callNotificationHandler = null;
-    };
-  }, [navigation]);
-
-  // Global call accept handler
-  useEffect(() => {
-    global.__callAcceptHandler = async (callData) => {
-      console.log('📞 Call acceptance from notification:', callData);
-
-      setShowIncomingCallModal(false);
-      InCallManager.stopRingtone();
-      Vibration.cancel();
-
-      setTimeout(() => {
-        navigation.navigate('VoiceCalls', {
-          profile_image: '',
-          name: callData.callerName,
-          targetUserId: callData.callerId,
-          incomingOffer: null,
-          isIncomingCall: true,
-          isInitiator: false,
-          autoAnswerOnOffer: true,
-        });
-      }, 100);
-    };
-
-    const checkForPendingCallAccept = async () => {
-      try {
-        const acceptPending = await AsyncStorage.getItem('accept_pending_call');
-        if (acceptPending) {
-          const callData = JSON.parse(acceptPending);
-          await AsyncStorage.removeItem('accept_pending_call');
-          if (callData?.roomId) {
-            global.__callAcceptHandler(callData);
-          }
-        }
-      } catch (error) {
-        console.error('Error checking pending call accept:', error);
-      }
-    };
-
-    checkForPendingCallAccept();
-
-    return () => {
-      global.__callAcceptHandler = null;
-    };
-  }, [navigation]);
-
-  // Home screen WebSocket for incoming offers
-  const ws = useRef(null);
-
-  // useEffect(() => {
-  //   const connectCallWebSocket = async () => {
-  //     try {
-  //       const token = await AsyncStorage.getItem('userToken');
-  //       const retrieveUserId = await AsyncStorage.getItem('userData');
-
-  //       if (!token || !retrieveUserId) {
-  //         console.warn('Missing auth data, websocket not started');
-  //         return;
-  //       }
-
-  //       const userDataObj = JSON.parse(retrieveUserId);
-  //       const currentUserId = userDataObj.id;
-  //       const ROOM_ID = `user-${currentUserId}`;
-  //       const SIGNALING_SERVER = 'wss://api.showapp.ng';
-  //       const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
-
-  //       if (ws.current?.readyState === WebSocket.OPEN) {
-  //         console.log('[Call WS] Already connected');
-  //         return;
-  //       }
-
-  //       ws.current = new WebSocket(url);
-  //       ws.current.binaryType = 'arraybuffer';
-
-  //       ws.current.onopen = () => {
-  //         console.log('[Call WS] Connected');
-  //       };
-
-  //       ws.current.onmessage = (evt) => {
-  //         let data;
-  //         try {
-  //           data = JSON.parse(evt.data);
-  //         } catch {
-  //           return;
-  //         }
-
-  //         console.log("========== HOME WS RECEIVED ==========");
-  //         console.log("Full data:", JSON.stringify(data, null, 2));
-
-  //         if (data.type === 'incoming_call' && data.offer?.sdp) {
-  //           if (isCallBeingHandledRef.current) {
-  //             console.log('[Call WS] Already handling a call, ignoring duplicate');
-  //             return;
-  //           }
-
-  //           const profileImagePath =
-  //             data.offer?.callerInfo?.profileImage ||
-  //             data.callerInfo?.profileImage ||
-  //             data.profileImage ||
-  //             data.profile_image ||
-  //             '';
-
-  //           const callerName =
-  //             data.offer?.callerInfo?.name ||
-  //             data.callerInfo?.name ||
-  //             data.caller_name ||
-  //             'Unknown Caller';
-
-  //           console.log('[Call WS Home] ✅ Extracted Profile Image Path:', profileImagePath);
-  //           console.log('[Call WS Home] ✅ Extracted Caller Name:', callerName);
-
-  //           isCallBeingHandledRef.current = true;
-
-  //           setCallerInfo({
-  //             profileImage: profileImagePath,
-  //             name: callerName,
-  //             offer: data.offer,
-  //           });
-
-  //           setIsVideoCall(data.offer.isVideoCall || false);
-  //           setShowIncomingCallModal(true);
-  //           return;
-  //         }
-  //       };
-
-  //       ws.current.onerror = (e) => {
-  //         //console.error('[Call WS] Error', e);
-  //       };
-
-  //       ws.current.onclose = (e) => {
-  //         //console.log('[Call WS] Closed', e.code, e.reason);
-  //         setTimeout(() => {
-  //           if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
-  //             connectCallWebSocket();
-  //           }
-  //         }, 5000);
-  //       };
-
-  //     } catch (err) {
-  //       //console.error('[Call WS] Failed to connect', err);
-  //     }
-  //   };
-
-  //   connectCallWebSocket();
-
-  //   return () => {
-  //     if (ws.current) {
-  //       ws.current.close();
-  //       ws.current = null;
-  //     }
-  //   };
-  // }, [navigation]);
-
-
-useEffect(() => {
-  const connectCallWebSocket = async () => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      const retrieveUserId = await AsyncStorage.getItem('userData');
-
-      if (!token || !retrieveUserId) {
-        console.warn('Missing auth data, websocket not started');
-        return;
-      }
-
-      const userDataObj = JSON.parse(retrieveUserId);
-      const currentUserId = userDataObj.id;
-      const ROOM_ID = `user-${currentUserId}`;
-      const SIGNALING_SERVER = 'wss://api.showapp.ng';
-      const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
-
-      if (ws.current?.readyState === WebSocket.OPEN) {
-        console.log('[Call WS] Already connected');
-        return;
-      }
-
-      intentionalCloseRef.current = false; // reset — a fresh connect means future closes are "real" unless we say otherwise
-
-      ws.current = new WebSocket(url);
-      ws.current.binaryType = 'arraybuffer';
-
-      ws.current.onopen = () => {
-        console.log('[Call WS] Connected');
-        wsConnectedRef.current = true;
-      };
-
-      ws.current.onmessage = (evt) => {
-        let data;
-        try {
-          data = JSON.parse(evt.data);
-        } catch {
-          return;
-        }
-
-        console.log("========== HOME WS RECEIVED ==========");
-        console.log("Full data:", JSON.stringify(data, null, 2));
-
-        if (data.type === 'incoming_call' && data.offer?.sdp) {
-
-          // 🔴 FIX: if a call screen is already mounted and handling its
-          // own signaling socket, PHome must NOT also react to this
-          // message — prevents two independent ringtone/UI flows for the
-          // same call room.
-          if (global.__onCallScreen) {
-            console.log('[Call WS Home] Ignoring incoming_call — already on call screen');
-            return;
-          }
-
-          if (isCallBeingHandledRef.current) {
-            console.log('[Call WS] Already handling a call, ignoring duplicate');
-            return;
-          }
-
-          const profileImagePath =
-            data.offer?.callerInfo?.profileImage ||
-            data.callerInfo?.profileImage ||
-            data.profileImage ||
-            data.profile_image ||
-            '';
-
-          const callerName =
-            data.offer?.callerInfo?.name ||
-            data.callerInfo?.name ||
-            data.caller_name ||
-            'Unknown Caller';
-
-          console.log('[Call WS Home] ✅ Extracted Profile Image Path:', profileImagePath);
-          console.log('[Call WS Home] ✅ Extracted Caller Name:', callerName);
-
-          isCallBeingHandledRef.current = true;
-
-          setCallerInfo({
-            profileImage: profileImagePath,
-            name: callerName,
-            offer: data.offer,
-          });
-
-          setIsVideoCall(data.offer.isVideoCall || false);
-          setShowIncomingCallModal(true);
-          return;
-        }
-      };
-
-      ws.current.onerror = (e) => {
-        //console.error('[Call WS] Error', e);
-      };
-
-      ws.current.onclose = (e) => {
-        wsConnectedRef.current = false;
-
-        // 🔴 FIX: don't auto-reconnect if WE deliberately closed this
-        // socket (e.g. because we navigated into VoiceVideoCallScreen,
-        // which opens its own socket for the same room). Without this
-        // guard, the existing 5s reconnect timer would silently reopen a
-        // duplicate connection and reintroduce the exact bug we're fixing.
-        if (intentionalCloseRef.current) {
-          console.log('[Call WS] Closed intentionally, not reconnecting');
-          intentionalCloseRef.current = false;
-          return;
-        }
-
-        setTimeout(() => {
-          if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
-            connectCallWebSocket();
-          }
-        }, 5000);
-      };
-
-    } catch (err) {
-      //console.error('[Call WS] Failed to connect', err);
-    }
-  };
-
-  connectCallWebSocket();
-
-  return () => {
-    if (ws.current) {
-      intentionalCloseRef.current = true;
-      ws.current.close(1000, 'component unmount');
-      ws.current = null;
-    }
-  };
-}, [navigation]);
-
-// 🔴 NEW: pause this socket whenever PHome loses focus (i.e. user
-// navigated into a call screen which opens its own signaling socket for
-// the same room), and resume it when PHome regains focus.
-useFocusEffect(
-  useCallback(() => {
-    // PHome regained focus — reconnect if we don't already have a live socket
-    if (!wsConnectedRef.current && (!ws.current || ws.current.readyState === WebSocket.CLOSED)) {
-      (async () => {
-        const token = await AsyncStorage.getItem('userToken');
-        const retrieveUserId = await AsyncStorage.getItem('userData');
-        if (!token || !retrieveUserId) return;
-
-        const userDataObj = JSON.parse(retrieveUserId);
-        const currentUserId = userDataObj.id;
-        const ROOM_ID = `user-${currentUserId}`;
-        const SIGNALING_SERVER = 'wss://api.showapp.ng';
-        const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
-
-        if (ws.current?.readyState === WebSocket.OPEN) return;
-
-        console.log('[Call WS] Reconnecting on PHome focus');
-        intentionalCloseRef.current = false;
-        ws.current = new WebSocket(url);
-        ws.current.binaryType = 'arraybuffer';
-        // NOTE: onopen/onmessage/onerror/onclose handlers are reattached by
-        // the main effect above the next time it fires. This focus-effect
-        // reconnect uses the SAME onmessage/onclose bindings only if you
-        // keep this block simple — see the note below.
-      })();
-    }
-
-    return () => {
-      // PHome losing focus — close this socket so the call screen's own
-      // socket is the only one connected to this room.
-      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        console.log('[Call WS] Closing on PHome blur (navigating to call screen)');
-        intentionalCloseRef.current = true;
-        ws.current.close(1000, 'navigating away from PHome');
-      }
-    };
-  }, [])
-);
-
-  const sendMessage = (msg) => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify(msg));
-    }
-  };
-
-  const handleAcceptCall = () => {
-    console.log("========== ACCEPT ==========");
-    // forceStopAllCallAudio();
-    forceStopAllCallAudio(currentCallIdRef.current);
-    isCallBeingHandledRef.current = false;
-
-    setShowIncomingCallModal(false);
-    InCallManager.stopRingtone();
-    Vibration.cancel();
-    try { NativeModules.CallModule?.stopCallService(); } catch (e) {}
-
-    if (currentCallIdRef.current) {
-      CallKeepService.endCall(currentCallIdRef.current);
-    }
-    currentCallIdRef.current = null;
-
-    if (!callerInfo?.offer?.sdp) {
-      console.error('[Accept] Offer has no SDP!');
-      Alert.alert('Error', 'Call offer expired. Please ask them to call again.');
-      return;
-    }
-
-    if (ws.current) {
-      ws.current.close();
-      ws.current = null;
-    }
-
-    const targetScreen = callerInfo.offer?.isVideoCall ? 'VideoCalls' : 'VoiceCalls';
-
-    navigation.navigate(targetScreen, {
-      profile_image: callerInfo.profileImage || '',
-      name: callerInfo.name || 'Unknown',
-      targetUserId: callerInfo.offer?.targetUserId || callerInfo.offer?.callerId || '',
-      incomingOffer: callerInfo.offer,
-      isIncomingCall: true,
-      isInitiator: false,
-      autoAnswerOnOffer: false,
-    });
-  };
-
-  const handleRejectCall = () => {
-    //  forceStopAllCallAudio();
-    forceStopAllCallAudio(currentCallIdRef.current);
-    isCallBeingHandledRef.current = false;
-
-    InCallManager.stopRingtone();
-    Vibration.cancel();
-    try { NativeModules.CallModule?.stopCallService(); } catch (e) {}
-
-    if (currentCallIdRef.current) {
-      CallKeepService.endCall(currentCallIdRef.current);
-    }
-    currentCallIdRef.current = null;
-
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({
-        type: 'reject_call',
-        caller_id: callerInfo.offer?.targetUserId,
-        room_id: callerInfo.offer?.roomId
-      }));
-    }
-
-    setShowIncomingCallModal(false);
-    setCallerInfo({ profileImage: '', name: 'Unknown', offer: null });
-  };
-
   // ========== CAMERA HANDLING ==========
   const handleCameraLaunch = async () => {
     try {
@@ -4777,15 +6835,6 @@ useFocusEffect(
         style={{ zIndex: 9999 }}
       />
 
-      <IncomingCallModal
-        visible={showIncomingCallModal}
-        onAccept={handleAcceptCall}
-        onReject={handleRejectCall}
-        profileImage={callerInfo.profileImage}
-        callerName={callerInfo.name}
-        isVideoCall={isVideoCall}
-      />
-
       {/* Switch Account Modal */}
       <Modal
         visible={showAccountModal}
@@ -5327,8 +7376,6 @@ const createStyles = (colors, insets, isDark) => StyleSheet.create({
 });
 
 export default PersonalChatHomeScreen;
-
-
 
 
 

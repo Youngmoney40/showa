@@ -1,0 +1,316 @@
+
+
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import { NativeModules, Vibration, AppState } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import InCallManager from 'react-native-incall-manager';
+import CallKeepService from '../src/services/CallKeepService';
+import IncomingCallModal from '../components/IncomingCallModal';
+import { forceStopAllCallAudio } from '../src/utils/callAudio';
+
+const SIGNALING_SERVER = 'wss://api.showapp.ng';
+
+const CallContext = createContext(null);
+export const useGlobalCall = () => useContext(CallContext);
+
+/**
+ * Mounted ONCE at the app root (see App.js). Owns:g
+ * - the single, app-wide call-signaling WebSocket that listens for
+ *   incoming calls (replaces the PHome-only version)
+ * - the incoming-call UI state
+ * - the IncomingCallModal itself, rendered here so it overlays whatever
+ *   screen the user is currently on
+ *
+ * navigationRef is the SAME module-level ref already created in App.js —
+ * passed in as a prop so accept/reject can navigate regardless of which
+ * screen is currently focused.
+ */
+export const CallProvider = ({ children, navigationRef, isAuthenticated }) => {
+  const [callerInfo, setCallerInfo] = useState({ profileImage: '', name: 'Incoming Call', offer: null });
+  const [showIncomingCallModal, setShowIncomingCallModal] = useState(false);
+  const [isVideoCall, setIsVideoCall] = useState(false);
+
+  const ws = useRef(null);
+  const isCallBeingHandledRef = useRef(false);
+  const currentCallIdRef = useRef(null);
+  const wsConnectedRef = useRef(false);
+  const intentionalCloseRef = useRef(false);
+  const reconnectTimeoutRef = useRef(null);
+
+  const connectCallWebSocket = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const retrieveUserId = await AsyncStorage.getItem('userData');
+      if (!token || !retrieveUserId) return;
+      if (ws.current?.readyState === WebSocket.OPEN) return;
+
+      const userDataObj = JSON.parse(retrieveUserId);
+      const currentUserId = userDataObj.id;
+      const ROOM_ID = `user-${currentUserId}`;
+      const url = `${SIGNALING_SERVER}/ws/call/${ROOM_ID}/?token=${token}`;
+
+      intentionalCloseRef.current = false;
+
+      ws.current = new WebSocket(url);
+      ws.current.binaryType = 'arraybuffer';
+
+      ws.current.onopen = () => {
+        console.log('[GlobalCall WS] Connected');
+        wsConnectedRef.current = true;
+      };
+
+      ws.current.onmessage = (evt) => {
+        let data;
+        try { data = JSON.parse(evt.data); } catch { return; }
+
+        if (data.type === 'incoming_call' && data.offer?.sdp) {
+          // A call screen is already open and handling its OWN signaling
+          // socket for the active call — never show a second incoming-call
+          // UI on top of that (this is the same guard that fixed the
+          // duplicate-ringtone bug previously).
+          // if (global.__onCallScreen) {
+          //   console.log('[GlobalCall WS] Ignoring incoming_call — already on call screen');
+          //   return;
+          // }
+
+          if (global.__onCallScreen) {
+            console.log('[GlobalCall WS] Already on call screen — sending busy response');
+            if (ws.current?.readyState === WebSocket.OPEN) {
+              try {
+                ws.current.send(JSON.stringify({
+                  type: 'call-busy',
+                  receiver_id: data.offer?.callerId || data.offer?.targetUserId,
+                  caller_id: data.offer?.targetUserId,
+                }));
+              } catch (e) {}
+            }
+            return;
+          }
+
+          if (isCallBeingHandledRef.current) {
+            console.log('[GlobalCall WS] Already handling a call, ignoring duplicate');
+            return;
+          }
+
+          const profileImagePath =
+            data.offer?.callerInfo?.profileImage ||
+            data.callerInfo?.profileImage ||
+            data.profileImage ||
+            data.profile_image ||
+            '';
+
+          const callerName =
+            data.offer?.callerInfo?.name ||
+            data.callerInfo?.name ||
+            data.caller_name ||
+            'Unknown Caller';
+
+          isCallBeingHandledRef.current = true;
+          currentCallIdRef.current = data.callId || currentCallIdRef.current;
+
+          setCallerInfo({ profileImage: profileImagePath, name: callerName, offer: data.offer });
+          setIsVideoCall(data.offer.isVideoCall || false);
+          setShowIncomingCallModal(true);
+        }
+      };
+
+      ws.current.onerror = () => {};
+
+      ws.current.onclose = () => {
+        wsConnectedRef.current = false;
+
+        if (intentionalCloseRef.current) {
+          intentionalCloseRef.current = false;
+          return;
+        }
+
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
+            connectCallWebSocket();
+          }
+        }, 5000);
+      };
+    } catch (err) {
+      console.log('[GlobalCall WS] connect error:', err?.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    connectCallWebSocket();
+
+    const sub = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active' && !wsConnectedRef.current) {
+        connectCallWebSocket();
+      }
+    });
+
+    return () => {
+      sub.remove();
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      if (ws.current) {
+        intentionalCloseRef.current = true;
+        ws.current.close(1000, 'provider unmount');
+        ws.current = null;
+      }
+    };
+  }, [isAuthenticated, connectCallWebSocket]);
+
+  // ---- Handles calls arriving via native notification tap / CallKeep ----
+  // (moved here from PHome.js — these are set as globals because the
+  // native side and IncomingCallModal-adjacent code call them by that name)
+  useEffect(() => {
+    global.__callNotificationHandler = (callData) => {
+      console.log('📞 Call notification received (global):', callData);
+
+      const profileImagePath =
+        callData.profileImage || callData.callerInfo?.profileImage || '';
+
+      if (global.__onCallScreen) {
+        console.log('Already on call screen, ignoring');
+        return;
+      }
+
+      InCallManager.stopRingtone();
+      Vibration.cancel();
+
+      currentCallIdRef.current = callData.callId || currentCallIdRef.current;
+
+      setCallerInfo((prev) => {
+        if (prev?.offer?.sdp) {
+          return {
+            ...prev,
+            profileImage: profileImagePath || prev.profileImage,
+            name: callData.callerName || callData.callerInfo?.name || prev.name,
+          };
+        }
+        return {
+          profileImage: profileImagePath,
+          name: callData.callerName || callData.callerInfo?.name || 'Unknown Caller',
+          offer: null,
+        };
+      });
+
+      setIsVideoCall(callData.callType === 'video' || callData.isVideoCall || false);
+    };
+
+    return () => {
+      global.__callNotificationHandler = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    global.__callAcceptHandler = async (callData) => {
+      console.log('📞 Call acceptance from notification (global):', callData);
+
+      setShowIncomingCallModal(false);
+      InCallManager.stopRingtone();
+      Vibration.cancel();
+
+      setTimeout(() => {
+        navigationRef.current?.navigate('VoiceCalls', {
+          profile_image: '',
+          name: callData.callerName,
+          targetUserId: callData.callerId,
+          incomingOffer: null,
+          isIncomingCall: true,
+          isInitiator: false,
+          autoAnswerOnOffer: true,
+        });
+      }, 100);
+    };
+
+    const checkForPendingCallAccept = async () => {
+      try {
+        const acceptPending = await AsyncStorage.getItem('accept_pending_call');
+        if (acceptPending) {
+          const callData = JSON.parse(acceptPending);
+          await AsyncStorage.removeItem('accept_pending_call');
+          if (callData?.roomId) {
+            global.__callAcceptHandler(callData);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking pending call accept:', error);
+      }
+    };
+
+    checkForPendingCallAccept();
+
+    return () => {
+      global.__callAcceptHandler = null;
+    };
+  }, [navigationRef]);
+
+  const handleAcceptCall = useCallback(() => {
+    forceStopAllCallAudio(currentCallIdRef.current);
+    isCallBeingHandledRef.current = false;
+
+    setShowIncomingCallModal(false);
+    InCallManager.stopRingtone();
+    Vibration.cancel();
+    try { NativeModules.CallModule?.stopCallService(); } catch (e) {}
+
+    if (currentCallIdRef.current) {
+      CallKeepService.endCall(currentCallIdRef.current);
+    }
+    currentCallIdRef.current = null;
+
+    if (!callerInfo?.offer?.sdp) {
+      console.error('[GlobalCall Accept] Offer has no SDP!');
+      return;
+    }
+
+    const targetScreen = callerInfo.offer?.isVideoCall ? 'VideoCalls' : 'VoiceCalls';
+
+    navigationRef.current?.navigate(targetScreen, {
+      profile_image: callerInfo.profileImage || '',
+      name: callerInfo.name || 'Unknown',
+      targetUserId: callerInfo.offer?.targetUserId || callerInfo.offer?.callerId || '',
+      incomingOffer: callerInfo.offer,
+      isIncomingCall: true,
+      isInitiator: false,
+      autoAnswerOnOffer: false,
+    });
+  }, [callerInfo, navigationRef]);
+
+  const handleRejectCall = useCallback(() => {
+    forceStopAllCallAudio(currentCallIdRef.current);
+    isCallBeingHandledRef.current = false;
+
+    InCallManager.stopRingtone();
+    Vibration.cancel();
+    try { NativeModules.CallModule?.stopCallService(); } catch (e) {}
+
+    if (currentCallIdRef.current) {
+      CallKeepService.endCall(currentCallIdRef.current);
+    }
+    currentCallIdRef.current = null;
+
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({
+        type: 'reject_call',
+        caller_id: callerInfo.offer?.targetUserId,
+        room_id: callerInfo.offer?.roomId,
+      }));
+    }
+
+    setShowIncomingCallModal(false);
+    setCallerInfo({ profileImage: '', name: 'Unknown', offer: null });
+  }, [callerInfo]);
+
+  return (
+    <CallContext.Provider value={{ currentCallIdRef, isCallBeingHandledRef }}>
+      {children}
+      <IncomingCallModal
+        visible={showIncomingCallModal}
+        onAccept={handleAcceptCall}
+        onReject={handleRejectCall}
+        profileImage={callerInfo.profileImage}
+        callerName={callerInfo.name}
+        isVideoCall={isVideoCall}
+      />
+    </CallContext.Provider>
+  );
+};

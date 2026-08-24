@@ -813,10 +813,7 @@ const IncomingCallModal = ({
     }
   };
 
-  // =========================
-  // SINGLE consolidated visible-effect (previously duplicated twice)
-  // =========================
-
+ 
   useEffect(() => {
     if (visible && !hasStartedRef.current) {
       console.log('[IncomingCallModal] OPENING');
@@ -1030,7 +1027,7 @@ const IncomingCallModal = ({
               <Image
                 source={{
                   uri: profileImage
-                    ? `${profileImage}`
+                    ? `${API_ROUTE_IMAGE}${profileImage}`
                     : 'https://via.placeholder.com/150',
                 }}
                 style={styles.avatar}

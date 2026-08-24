@@ -2976,7 +2976,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { Snackbar } from 'react-native-paper';
 import { API_ROUTE, API_ROUTE_IMAGE } from '../api_routing/api';
 import BottomNav from '../components/BottomSocialNav';
-import Share from 'react-native-share';
+import { Share } from 'react-native';
 import videoBackgroundfetch from '../src/services/VideoBackgroundFetch';
 import { AppState } from 'react-native';
 import { useTheme } from '../src/context/ThemeContext';
@@ -4695,29 +4695,114 @@ const ShortFeedScreen = ({ navigation, route }) => {
     }
   };
 
-  const shareShort = async (id, videoUrl, caption) => {
-    try {
-      const webUrl = `https://showapp.ng/short/${id}`;
+  // const shareShort = async (id, videoUrl, caption) => {
+  //   try {
+  //     const webUrl = `https://showapp.ng/short/${id}`;
 
-      const shareOptions = {
-        title: 'Check out this short video! on Showa',
-        message: `${caption || 'Watch this amazing short video'}\n\n${webUrl}`,
-        url: webUrl,
-      };
+  //     const shareOptions = {
+  //       title: 'Check out this short video! on Showa',
+  //       message: `${caption || 'Watch this amazing short video'}\n\n${webUrl}`,
+  //       url: webUrl,
+  //     };
 
-      await Share.open(shareOptions);
+  //     await Share.open(shareOptions);
 
-      const headers = await getAuthHeader();
-      await axios.post(`${API_ROUTE}/shorts/${id}/share/`, { shared_to: 'external' }, { headers });
+  //     const headers = await getAuthHeader();
+  //     await axios.post(`${API_ROUTE}/shorts/${id}/share/`, { shared_to: 'external' }, { headers });
 
-      setSnackbarMessage('Shared successfully!');
-      setSnackbarVisible(true);
-    } catch (error) {
-      if (error.message !== 'User did not share') {
-        console.error('Share Error:', error.message);
-      }
+  //     setSnackbarMessage('Shared successfully!');
+  //     setSnackbarVisible(true);
+  //   } catch (error) {
+  //     if (error.message !== 'User did not share') {
+  //       console.error('Share Error:', error.message);
+  //     }
+  //   }
+  // };
+
+  const shareShort = useCallback(async (id, videoUrl, caption) => {
+  try {
+    const short = shorts.find(s => s.id === id);
+    
+    if (!short && !videoUrl) {
+      console.error('Short not found for sharing:', id);
+      return;
     }
-  };
+
+    const shareUrl = `https://showapp.ng/short/${id}`;
+
+    const cleanCaption = (caption || short?.caption || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const preview = cleanCaption.length > 120
+      ? `${cleanCaption.substring(0, 120)}…`
+      : cleanCaption;
+
+    const username = short?.user?.name || short?.user?.username || 'Someone';
+
+    const shareMessage = `${username} shared a short video on Showa App.
+
+${preview ? `"${preview}"\n\n` : ''}Watch the full video and join the community:
+
+${shareUrl}`;
+
+    // Use react-native's Share
+    const result = await Share.share({
+      title: `Showa • ${username}'s Short Video`,
+      message: shareMessage,
+      url: shareUrl,
+    });
+
+    if (result.action === Share.sharedAction) {
+      const token = await AsyncStorage.getItem('userToken');
+      if (token) {
+        try {
+          await axios.post(
+            `${API_ROUTE}/shorts/${id}/share/`,
+            { 
+              shared_to: 'external',
+              platform: result.activityType || 'unknown'
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          
+          // Update share count
+          setShorts(prevShorts => 
+            prevShorts.map(s => 
+              s.id === id 
+                ? { ...s, share_count: (s.share_count || 0) + 1 } 
+                : s
+            )
+          );
+          
+          setFilteredShorts(prevFiltered => 
+            prevFiltered.map(s => 
+              s.id === id 
+                ? { ...s, share_count: (s.share_count || 0) + 1 } 
+                : s
+            )
+          );
+        } catch (trackError) {
+          console.error('Error tracking short share:', trackError);
+        }
+      }
+
+      setSnackbarMessage('📤 Shared successfully!');
+      setSnackbarVisible(true);
+    }
+  } catch (error) {
+    if (error.message !== 'User did not share') {
+      console.error('Share Error:', error);
+      setSnackbarMessage('Failed to share. Please try again.');
+      setSnackbarVisible(true);
+    }
+  }
+}, [shorts]);
 
   const onRefresh = async () => {
     setRefreshing(true);

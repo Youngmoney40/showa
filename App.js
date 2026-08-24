@@ -1653,12 +1653,7 @@ const BLOCKED_AUTO_NAVIGATION_SCREENS = [
 const navigationRef = React.createRef();
 const NAVIGATION_STATE_KEY = "NAVIGATION_STATE";
 
-// ⚡ CHANGED: Don't save navigation state at all (removes auto-navigation)
-const saveNavigationState = (state) => {
-  // Intentionally disabled - we don't want to save navigation state
-  console.log("🔒 Navigation state saving is disabled");
-  return;
-};
+
 
 const loadNavigationState = async () => {
   // Intentionally disabled - we don't want to restore navigation state
@@ -1679,9 +1674,7 @@ import PinUnlockModal from "./screens/PinUnlockModal";
 import videoBackgroundfetch from "./src/services/VideoBackgroundFetch";
 import { ThemeProvider } from "./src/context/ThemeContext";
 import { useTheme } from "./src/context/ThemeContext";
-import { GlobalCallProvider } from './components/GlobalCallProvider';
-import CallSignalListener from "./components/CallSignalListener";
-import IncomingCallModal from "./components/IncomingCallModal";
+import { CallProvider } from './components/CallProvider';
 import NetworkStatusBanner from "./components/Networkstatusbanner";
 import {
   startBackgroundContactSync,
@@ -1801,6 +1794,7 @@ import EdateProfile from "./screens/EdateProfile";
 import GroupConnect from "./screens/GroupConnect";
 import UserContactListPersonalAccount from "./components/UserContactListPersonalAccount";
 import UpdateModal from "./components/UpdateModal";
+import SwipeBackWrapper from "./components/SwipeBackWrapper";
 import Music from "./components/Music";
 import UserContactList from "./components/UserContactList";
 import SyncMessagePersonal from "./components/SyncMessagePersonal";
@@ -1857,7 +1851,7 @@ const linking = {
         parse: {
           shortId: (shortId) => {
             console.log("Linking - Parsing shortId:", shortId);
-            return shortId;
+            return parseInt(shortId, 10);
           }
         }
       },
@@ -1866,14 +1860,33 @@ const linking = {
         parse: {
           postId: (postId) => {
             console.log("📱 Linking - Parsing postId:", postId);
-            return postId;
+            return parseInt(postId, 10);
           }
         }
       },
       OtherUserProfile: {
         path: "user/:userId",
         parse: {
-          userId: (userId) => userId
+          userId: (userId) => parseInt(userId, 10)
+        }
+      },
+      
+      ShortDetailAlt: {
+        path: "s/:shortId",
+        parse: {
+          shortId: (shortId) => parseInt(shortId, 10)
+        }
+      },
+      ExplorePostDetailsAlt: {
+        path: "p/:postId",
+        parse: {
+          postId: (postId) => parseInt(postId, 10)
+        }
+      },
+      OtherUserProfileAlt: {
+        path: "u/:userId",
+        parse: {
+          userId: (userId) => parseInt(userId, 10)
         }
       },
       NotFound: "*",
@@ -1881,152 +1894,224 @@ const linking = {
   },
   getInitialURL: async () => {
     try {
+      // Check for pending deep link first
+      const pendingLink = await AsyncStorage.getItem('pendingDeepLink');
+      if (pendingLink) {
+        console.log('📨 Pending deep link found:', pendingLink);
+        await AsyncStorage.removeItem('pendingDeepLink');
+        return pendingLink;
+      }
+
       const url = await Linking.getInitialURL();
-      console.log("Linking.getInitialURL:", url);
-      return url;
+      console.log("🔗 getInitialURL:", url);
+      
+      if (url) {
+        // Check if it's a deep link we should handle
+        if (url.startsWith('showa://') || url.includes('showapp.ng')) {
+          console.log("✅ Deep link detected:", url);
+          return url;
+        }
+      }
+      return null;
     } catch (err) {
-      console.error("Error in getInitialURL:", err);
+      console.error("❌ Error in getInitialURL:", err);
       return null;
     }
   },
   subscribe: (listener) => {
+    console.log("🔔 Setting up deep link subscription");
+    
     const onReceiveURL = ({ url }) => {
       console.log("🔔 Linking.subscribe received:", url);
-      listener(url);
+      
+      // Process all deep links
+      if (url) {
+        listener(url);
+      }
     };
+    
     const subscription = Linking.addEventListener("url", onReceiveURL);
-    return () => subscription.remove();
+    
+    return () => {
+      console.log("Removing deep link subscription");
+      subscription.remove();
+    };
   },
 };
 
+
+
+
 const useDeepLinkHandler = () => {
+  const [initialDeepLink, setInitialDeepLink] = useState(null);
+  const isProcessingRef = useRef(false);
+  const hasNavigatedRef = useRef(false);
+
   useEffect(() => {
-    const handleDeepLinkFromNative = async (url) => {
-      console.log('🔗 Processing native deep link:', url);
-      
-      if (!navigationRef.current) {
-        console.log('Navigation not ready');
+    const handleDeepLink = async (url) => {
+      // Prevent duplicate processing
+      if (isProcessingRef.current) {
+        console.log('⏳ Already processing a deep link, skipping...');
         return;
       }
+
+      console.log('🔗 Processing deep link:', url);
       
-      if (!navigationRef.current.isReady()) {
-        console.log(' Navigation not ready, waiting...');
+      if (!url) {
+        console.log('⚠️ No URL provided');
+        return;
+      }
+
+      // Check if navigation is ready
+      if (!navigationRef.current || !navigationRef.current.isReady()) {
+        console.log('⏳ Navigation not ready, waiting...');
         setTimeout(() => {
-          handleDeepLinkFromNative(url);
+          handleDeepLink(url);
         }, 500);
         return;
       }
-      
-      const postMatch = url.match(/\/(?:post|p)\/(\d+)/);
-      if (postMatch) {
-        const postId = postMatch[1];
-        console.log('📝 Navigating to ExplorePostDetails with ID:', postId);
-        
-        try {
+
+      try {
+        isProcessingRef.current = true;
+
+        // Check if user is authenticated
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) {
+          console.log('🔒 User not authenticated, storing deep link for later');
+          await AsyncStorage.setItem('pendingDeepLink', url);
           navigationRef.current.dispatch(
             CommonActions.reset({
               index: 0,
-              routes: [
-                { 
-                  name: 'ExplorePostDetails',
-                  params: { 
-                    postId: parseInt(postId, 10),
-                    id: parseInt(postId, 10),
-                    post_id: parseInt(postId, 10)
-                  }
-                }
-              ],
+              routes: [{ name: 'Loginscreen' }],
             })
           );
-          console.log('ExplorePostDetails navigation dispatched');
-        } catch (error) {
-          console.error(' Failed to navigate:', error);
+          isProcessingRef.current = false;
+          return;
         }
-        return;
-      }
-      
-      const shortMatch = url.match(/\/(?:short|s)\/(\d+)/);
-      if (shortMatch) {
-        const shortId = shortMatch[1];
-        console.log('🎬 Navigating to ShortDetail with ID:', shortId);
-        
-        try {
+
+        // Parse URL to extract ID - support multiple formats
+        let match;
+        let postId, shortId, userId;
+
+        // Check for post ID (supports /post/123, /p/123)
+        match = url.match(/\/(?:post|p)\/(\d+)/);
+        if (match) {
+          postId = parseInt(match[1], 10);
+          console.log('📝 Navigating to ExplorePostDetails with ID:', postId);
+          
+          // Navigate directly without resetting the entire stack
           navigationRef.current.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [
-                { 
-                  name: 'ShortDetail',
-                  params: { 
-                    shortId: parseInt(shortId, 10),
-                    id: parseInt(shortId, 10),
-                    short_id: parseInt(shortId, 10)
-                  }
-                }
-              ],
+            CommonActions.navigate('ExplorePostDetails', { 
+              postId: postId,
+              id: postId,
+              post_id: postId
+            })
+          );
+          console.log('✅ ExplorePostDetails navigation dispatched');
+          hasNavigatedRef.current = true;
+          isProcessingRef.current = false;
+          return;
+        }
+        
+        // Check for short ID
+        match = url.match(/\/(?:short|s)\/(\d+)/);
+        if (match) {
+          shortId = parseInt(match[1], 10);
+          console.log('🎬 Navigating to ShortDetail with ID:', shortId);
+          
+          navigationRef.current.dispatch(
+            CommonActions.navigate('ShortDetail', { 
+              shortId: shortId,
+              id: shortId,
+              short_id: shortId
             })
           );
           console.log('✅ ShortDetail navigation dispatched');
-        } catch (error) {
-          console.error('Failed to navigate:', error);
+          hasNavigatedRef.current = true;
+          isProcessingRef.current = false;
+          return;
         }
-        return;
-      }
-      
-      const userMatch = url.match(/\/(?:user|u)\/(\d+)/);
-      if (userMatch) {
-        const userId = userMatch[1];
-        console.log('👤 Navigating to OtherUserProfile with ID:', userId);
         
-        try {
+        // Check for user ID
+        match = url.match(/\/(?:user|u)\/(\d+)/);
+        if (match) {
+          userId = parseInt(match[1], 10);
+          console.log('👤 Navigating to OtherUserProfile with ID:', userId);
+          
           navigationRef.current.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [
-                { 
-                  name: 'OtherUserProfile',
-                  params: { userId: parseInt(userId, 10) }
-                }
-              ],
+            CommonActions.navigate('OtherUserProfile', { 
+              userId: userId,
+              id: userId,
+              user_id: userId
             })
           );
           console.log('✅ OtherUserProfile navigation dispatched');
-        } catch (error) {
-          console.error('❌ Failed to navigate:', error);
+          hasNavigatedRef.current = true;
+          isProcessingRef.current = false;
+          return;
         }
-        return;
-      }
-      
-      console.log('⚠️ No matching pattern found for URL:', url);
-    };
-
-    const checkInitialUrl = async () => {
-      try {
-        const url = await Linking.getInitialURL();
-        if (url) {
-          console.log("Initial deep link detected:", url);
-          setTimeout(() => {
-            handleDeepLinkFromNative(url);
-          }, 500);
-        } else {
-          console.log("No initial deep link detected");
+        
+        console.log('⚠️ No matching pattern found for URL:', url);
+        // Only navigate to home if NO match was found and we haven't navigated yet
+        if (!hasNavigatedRef.current) {
+          console.log('🏠 No match found, staying on current screen');
+          // Don't navigate to home automatically - let the user stay where they are
         }
       } catch (error) {
-        console.error("Error checking initial URL:", error);
+        console.error('❌ Navigation error:', error);
+      } finally {
+        isProcessingRef.current = false;
+      }
+    };
+
+    // Check for initial URL
+    const checkInitialUrl = async () => {
+      try {
+        // Check if there's a pending deep link from a previous session
+        const pendingLink = await AsyncStorage.getItem('pendingDeepLink');
+        if (pendingLink) {
+          console.log('📨 Pending deep link found:', pendingLink);
+          // Don't remove it immediately - process it first
+          setTimeout(() => {
+            handleDeepLink(pendingLink);
+            // Remove after processing
+            AsyncStorage.removeItem('pendingDeepLink');
+          }, 1000);
+          return;
+        }
+        
+        // Check for initial URL
+        const url = await Linking.getInitialURL();
+        if (url) {
+          console.log("📨 Initial deep link detected:", url);
+          setInitialDeepLink(url);
+          setTimeout(() => {
+            handleDeepLink(url);
+          }, 500);
+        } else {
+          console.log("ℹ️ No initial deep link detected");
+        }
+      } catch (error) {
+        console.error("❌ Error checking initial URL:", error);
       }
     };
     
-    checkInitialUrl();
+    // Run initial check after a small delay to ensure navigation is ready
+    setTimeout(checkInitialUrl, 300);
     
+    // Set up event listener for deep links
     const subscription = Linking.addEventListener('url', (event) => {
       console.log("🔔 Deep link event received:", event.url);
-      handleDeepLinkFromNative(event.url);
+      hasNavigatedRef.current = false; // Reset for new navigation
+      handleDeepLink(event.url);
     });
     
     return () => {
       subscription.remove();
     };
   }, []);
+
+  return { initialDeepLink };
 };
 
 // ─── Android permission helper ───────────────────────────────────────────────
@@ -2128,11 +2213,22 @@ const stopBackgroundServices = () => {
 const Stack = createNativeStackNavigator();
 
 // ─── ScreenWrapper ────────────────────────────────────────────────────────────
-const ScreenWrapper = ({ children }) => {
+// const ScreenWrapper = ({ children }) => {
+//   const { colors } = useTheme();
+//   return (
+//     <View style={{ flex: 1, backgroundColor: colors.background }}>
+//       {children}
+//     </View>
+//   );
+// };
+
+const ScreenWrapper = ({ children, swipeEnabled = true }) => {
   const { colors } = useTheme();
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {children}
+      <SwipeBackWrapper enabled={swipeEnabled}>
+        {children}
+      </SwipeBackWrapper>
     </View>
   );
 };
@@ -2167,6 +2263,46 @@ function AppContent() {
     dismissModal: dismissUpdateModal,
     checkForUpdate,
   } = useAppUpdate(false);
+
+  useEffect(() => {
+  // Listen for initial deep link from native
+  const subscription = DeviceEventEmitter.addListener('initialDeepLink', (event) => {
+    console.log('📱 Initial deep link from native:', event.url);
+    if (event.url) {
+      // Process the deep link
+      setTimeout(() => {
+        const handleDeepLink = async () => {
+          // Check authentication
+          const token = await AsyncStorage.getItem('userToken');
+          if (!token) {
+            await AsyncStorage.setItem('pendingDeepLink', event.url);
+            return;
+          }
+          
+          // Navigate to the post
+          const match = event.url.match(/\/(?:post|p)\/(\d+)/);
+          if (match) {
+            const postId = parseInt(match[1], 10);
+            if (navigationRef.current?.isReady()) {
+              navigationRef.current.dispatch(
+                CommonActions.navigate('ExplorePostDetails', { 
+                  postId: postId,
+                  id: postId,
+                  post_id: postId
+                })
+              );
+            }
+          }
+        };
+        handleDeepLink();
+      }, 1000);
+    }
+  });
+
+  return () => {
+    subscription.remove();
+  };
+}, []);
 
   // ── Deep link handler ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -2480,13 +2616,18 @@ function AppContent() {
       if (prev === "active" && nextAppState === "background") {
         console.log("📱 → background");
 
+        // if (Platform.OS === "android") {
+        //   pauseAllVideos();
+        //   stopWebRTCConnections();
+
+        //   if (backgroundTimerRef.current)
+        //     clearTimeout(backgroundTimerRef.current);
+        //   backgroundTimerRef.current = setTimeout(freeMemory, 30_000);
+        // }
         if (Platform.OS === "android") {
           pauseAllVideos();
           stopWebRTCConnections();
-
-          if (backgroundTimerRef.current)
-            clearTimeout(backgroundTimerRef.current);
-          backgroundTimerRef.current = setTimeout(freeMemory, 30_000);
+          freeMemory(); // ⬅️ immediate, not setTimeout — this is exactly the moment it matters
         }
       } else if (prev === "background" && nextAppState === "active") {
         console.log("→ foreground");
@@ -2520,8 +2661,23 @@ function AppContent() {
     };
   }, [userId, isAuthenticated]);
 
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+  // return (
+  //   <GestureHandlerRootView style={{ flex: 1 }}>
+  //     <ThemedNavigator isAuthenticated={isAuthenticated} userId={userId} />
+  //     <NetworkStatusBanner />
+
+  //     {updateInfo?.update_available && (
+  //       <UpdateModal
+  //         visible={showUpdateModal}
+  //         updateInfo={updateInfo}
+  //         onClose={dismissUpdateModal}
+  //       />
+  //     )}
+  //   </GestureHandlerRootView>
+  // );
+return (
+  <GestureHandlerRootView style={{ flex: 1 }}>
+    <CallProvider navigationRef={navigationRef} isAuthenticated={isAuthenticated}>
       <ThemedNavigator isAuthenticated={isAuthenticated} userId={userId} />
       <NetworkStatusBanner />
 
@@ -2532,8 +2688,9 @@ function AppContent() {
           onClose={dismissUpdateModal}
         />
       )}
-    </GestureHandlerRootView>
-  );
+    </CallProvider>
+  </GestureHandlerRootView>
+);
 }
 
 // ─── OnlineStatusManager ──────────────────────────────────────────────────────
@@ -2843,10 +3000,9 @@ function ThemedNavigator({ isAuthenticated, userId }) {
           {(p) => <ScreenWrapper><AddQuickReply {...p} /></ScreenWrapper>}
         </Stack.Screen>
 
-        {/* ── Brand App ──────────────────────────────────────────────────── */}
-        {/* <Stack.Screen 
-          name="BrandApp" 
-          component={E}
+        
+
+        <Stack.Screen
           options={{
             gestureEnabled: true,
             gestureDirection: 'horizontal',
@@ -2854,22 +3010,9 @@ function ThemedNavigator({ isAuthenticated, userId }) {
             gestureResponseDistance: {
               horizontal: 200,
             },
+            // Prevent the app from closing on back gesture
+            gestureVelocityImpact: 0.3,
           }}
-        />
-        import EssentialPlatformsScreen from "./showa_business/EssentialPlatformsScreen"; */}
-
-
-        <Stack.Screen
-          options={{
-    gestureEnabled: true,
-    gestureDirection: 'horizontal',
-    fullScreenGestureEnabled: false,
-    gestureResponseDistance: {
-      horizontal: 200,
-    },
-    // Prevent the app from closing on back gesture
-    gestureVelocityImpact: 0.3,
-  }}
          name="EssentialPlatforms">
           {(p) => <ScreenWrapper><EssentialPlatformsScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
@@ -3202,10 +3345,6 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         <Stack.Screen name="EarningWallet">
           {(p) => <ScreenWrapper><EarningWallet {...p} /></ScreenWrapper>}
         </Stack.Screen>
-
-
-
-        
       </Stack.Navigator>
     </NavigationContainer>
   );
