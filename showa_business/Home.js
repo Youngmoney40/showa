@@ -4209,7 +4209,7 @@ const fetchBusinessChats = async () => {
         </View>
       </Modal>
       
-       <Modal
+       {/* <Modal
         visible={showAccountModal}
         transparent
         animationType="fade"
@@ -4333,7 +4333,7 @@ const fetchBusinessChats = async () => {
           </View>
         </Animated.View>
       </Modal> 
-     
+      */}
       <TouchableOpacity
         style={[styles.fab2, { backgroundColor: colors.buttonSecondary, borderColor: colors.border }]}
         onPress={() => {
@@ -4467,13 +4467,13 @@ const fetchBusinessChats = async () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-      {/* <AccountSwitchBottomSheet
+      <AccountSwitchBottomSheet
                 visible={showAccountModal}
                 onClose={() => setShowAccountModal(false)}
                 navigation={navigation}
                 colors={colors}
                 isDark={isDark}
-              /> */}
+              />
       <EarningsSlideInManager />
       <IncomingCallHandler navigation={navigation} route={route} />
     </View>

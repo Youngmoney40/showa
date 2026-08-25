@@ -2963,6 +2963,7 @@ import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import RNFS from 'react-native-fs';
 import { useBackHandler } from '../src/hooks/useBackHandler';
+import IncomingCallHandler from '../components/Incomingcallhandler';
 
 const CACHE_KEY_PREFIX = 'chat_cache_';
 
@@ -5544,6 +5545,7 @@ const sendMessage = async (caption = '', emoji = null) => {
           </TouchableWithoutFeedback>
         </Modal>
       </ImageBackground>
+      <IncomingCallHandler navigation={navigation} route={route} />
     </SafeAreaView>
   );
 }
