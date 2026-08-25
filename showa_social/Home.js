@@ -2980,6 +2980,7 @@ import { Share } from 'react-native';
 import videoBackgroundfetch from '../src/services/VideoBackgroundFetch';
 import { AppState } from 'react-native';
 import { useTheme } from '../src/context/ThemeContext';
+import AdInterstitial from '../showa_business/ads/AdInterstitial';
 
 const videoPlaceholder = require('../assets/images/dad.jpg');
 
@@ -3927,6 +3928,11 @@ const ShortFeedScreen = ({ navigation, route }) => {
   const videoRefs = useRef({});
   const flatListRef = useRef();
   const preloaderRef = useRef({});
+
+
+  const [showAdInterstitial, setShowAdInterstitial] = useState(false);
+  const shortsWatchedSinceAdRef = useRef(0);
+  const AD_FREQUENCY = 5;
 
   // Signature of (tab + sortBy + set-of-ids) used to decide whether the
   // feed genuinely needs to be re-sorted/rebuilt, vs. just patching fields
@@ -4882,14 +4888,42 @@ ${shareUrl}`;
     }
   };
 
+  // const onViewableItemsChanged = useRef(({ viewableItems }) => {
+  //   if (viewableItems.length > 0) {
+  //     const newIndex = viewableItems[0].index;
+  //     setCurrentIndex(newIndex);
+  //     setIsCurrentPaused(false); // always autoplay the newly-focused video
+  //     preloadNextVideos(newIndex);
+  //   }
+  // }).current;
+
+  const handleAdFinish = useCallback(() => {
+  setShowAdInterstitial(false);
+  setIsCurrentPaused(false);
+}, []);
+
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
-    if (viewableItems.length > 0) {
-      const newIndex = viewableItems[0].index;
-      setCurrentIndex(newIndex);
-      setIsCurrentPaused(false); // always autoplay the newly-focused video
-      preloadNextVideos(newIndex);
+  if (viewableItems.length > 0) {
+    const newIndex = viewableItems[0].index;
+
+    // Only count forward progress (avoid double-counting on scroll jitter)
+    if (newIndex > currentIndex) {
+      shortsWatchedSinceAdRef.current += 1;
+
+      if (shortsWatchedSinceAdRef.current >= AD_FREQUENCY) {
+        shortsWatchedSinceAdRef.current = 0;
+        setIsCurrentPaused(true);
+        setShowAdInterstitial(true);
+      }
     }
-  }).current;
+
+    setCurrentIndex(newIndex);
+    if (!showAdInterstitial) {
+      setIsCurrentPaused(false);
+    }
+    preloadNextVideos(newIndex);
+  }
+}).current;
 
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 10,
@@ -5673,6 +5707,7 @@ ${shareUrl}`;
       >
         <Text style={[styles.snackbarText, { color: colors.text || '#fff' }]}>{snackbarMessage}</Text>
       </Snackbar>
+      <AdInterstitial visible={showAdInterstitial} onFinish={handleAdFinish} />
     </SafeAreaView>
   );
 };

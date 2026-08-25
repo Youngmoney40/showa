@@ -2118,6 +2118,8 @@ import { useTheme } from '../src/context/ThemeContext';
 import EarningsSlideInManager from '../components/EarningsSlideInManager';
 import OnlineStatusBadge from '../components/OnlineStatusBadge';
 import { createMMKV } from 'react-native-mmkv';
+import AccountSwitchBottomSheet from '../components/AccountSwitchBottomSheet';
+import IncomingCallHandler from '../components/Incomingcallhandler';
 
 const windowWidth = Dimensions.get('window').width;
 
@@ -2134,7 +2136,7 @@ const readChatsStorage = createMMKV({
   id: 'read-chats-cache'
 });
 
-const BusinessHomeScreen = ({ navigation }) => {
+const BusinessHomeScreen = ({ navigation, route }) => {
   const { colors, theme, toggleTheme, isDark  } = useTheme(); 
   
   // Mode filter state - 'all', 'business', or 'personal'
@@ -4207,7 +4209,7 @@ const fetchBusinessChats = async () => {
         </View>
       </Modal>
       
-      <Modal
+       <Modal
         visible={showAccountModal}
         transparent
         animationType="fade"
@@ -4330,7 +4332,7 @@ const fetchBusinessChats = async () => {
             </TouchableOpacity>
           </View>
         </Animated.View>
-      </Modal>
+      </Modal> 
      
       <TouchableOpacity
         style={[styles.fab2, { backgroundColor: colors.buttonSecondary, borderColor: colors.border }]}
@@ -4465,7 +4467,15 @@ const fetchBusinessChats = async () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+      {/* <AccountSwitchBottomSheet
+                visible={showAccountModal}
+                onClose={() => setShowAccountModal(false)}
+                navigation={navigation}
+                colors={colors}
+                isDark={isDark}
+              /> */}
       <EarningsSlideInManager />
+      <IncomingCallHandler navigation={navigation} route={route} />
     </View>
   );
 };

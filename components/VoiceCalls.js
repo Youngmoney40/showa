@@ -2392,7 +2392,7 @@ export default function VoiceVideoCallScreen({ navigation, route }) {
     isIncomingCall,
     targetUserId,
     isInitiator,
-    autoAnswerOnOffer, // ← NEW: from notification accept
+    autoAnswerOnOffer, 
   } = route.params || {};
 
   // --- refs
@@ -3718,7 +3718,8 @@ setTimeout(() => applyAudioRoute(isSpeakerOn), 250);
   // 1. Navigate immediately
   try {
     if (navigation.canGoBack()) {
-      navigation.goBack();
+      // navigation.goBack();
+      navigation.navigate("BroadcastHome");
     } else {
       navigation.navigate("BroadcastHome");
     }
@@ -4093,7 +4094,7 @@ const rejectCall = async () => {
       <View style={styles.audioCallContainer}>
         {/* Background with blur effect */}
         <ImageBackground
-          source={{ uri: `${profile_image}` }}
+          source={{ uri: `${API_ROUTE_IMAGE}${profile_image}`  || `${profile_image}` }}
           style={styles.audioBackground}
           blurRadius={50}
         >
@@ -4104,7 +4105,7 @@ const rejectCall = async () => {
           {/* caler Avatar =============================*/}
           <View style={styles.audioAvatarContainer}>
             <Image
-              source={{ uri: `${profile_image}` }}
+              source={{ uri: `${API_ROUTE_IMAGE}${profile_image}` || `${profile_image}` }}
               style={styles.audioAvatar}
               resizeMode="cover"
             />

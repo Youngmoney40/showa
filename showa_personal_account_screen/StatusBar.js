@@ -2364,6 +2364,7 @@ import SwitchAccountSheet from '../components/SwitchAccountSheet';
 import { useTheme } from '../src/context/ThemeContext';
 import { Snackbar } from 'react-native-paper';
 import StatusSection from '../components/StatusSection';
+import AccountSwitchBottomSheet from '../components/AccountSwitchBottomSheet';
 
 const { width, height } = Dimensions.get('window');
 
@@ -4097,14 +4098,14 @@ const StatusScreen = () => {
         </View>
       </Modal>
         
-      <SwitchAccountSheet
+      {/* <SwitchAccountSheet
         showConfirmSwitch={showConfirmSwitch}
         setShowConfirmSwitch={setShowConfirmSwitch}
         pendingSwitchTo={pendingSwitchTo}
         switchAccount={switchAccount}
         isLoading={isLoading}
         setIsLoading={setIsLoading}
-      />
+      /> */}
 
       {renderCommentsModal()}
 
@@ -4189,6 +4190,13 @@ const StatusScreen = () => {
         activeRoute="Home" 
         style={{ zIndex: 9999 }}
       />
+       <AccountSwitchBottomSheet
+                visible={showAccountModal}
+                onClose={() => setShowAccountModal(false)}
+                navigation={navigation}
+                colors={colors}
+                isDark={isDark}
+              />
     </View>
   );
 };

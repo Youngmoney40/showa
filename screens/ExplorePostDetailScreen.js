@@ -1432,7 +1432,7 @@ const renderCommentItem = useCallback(({ item }) => {
           </View>
         )}
       </View>
-      <View style={styles.userMetaRow}>
+      {/* <View style={styles.userMetaRow}>
         <Text style={[styles.postTime, { color: colors.textSecondary }]}>
           {dayjs(post.created_at).fromNow()}
         </Text>
@@ -1441,12 +1441,12 @@ const renderCommentItem = useCallback(({ item }) => {
             • {followerCount} {followerCount === 1 ? 'follower' : 'followers'}
           </Text>
         )}
-      </View>
+      </View> */}
     </View>
   </TouchableOpacity>
   
   {/* Follow/Delete Button Section */}
-  <View style={styles.userActions}>
+  {/* <View style={styles.userActions}>
     {!isOwnPost ? (
       <TouchableOpacity 
         style={[
@@ -1484,7 +1484,7 @@ const renderCommentItem = useCallback(({ item }) => {
         )}
       </TouchableOpacity>
     )}
-  </View>
+  </View> */}
 </View>
 
             {/* Post Content */}
@@ -1497,7 +1497,7 @@ const renderCommentItem = useCallback(({ item }) => {
             {/* Image Carousel */}
             {renderImageCarousel()}
 
-            {/* Post Stats - FIXED HEART ICON */}
+         
             <View style={[styles.postStats, { borderBottomColor: colors.border }]}>
               <View style={styles.statsLeft}>
                 <TouchableOpacity style={styles.statButton} onPress={handleLike}>

@@ -2334,7 +2334,7 @@ function AppContent() {
     }
     
     if (!navigationRef.current.isReady()) {
-      console.log('⏳ Navigation not ready, waiting...');
+      console.log('Navigation not ready, waiting...');
       setTimeout(() => {
         handleDeepLinkFromNative(url);
       }, 500);
@@ -2616,19 +2616,20 @@ function AppContent() {
       if (prev === "active" && nextAppState === "background") {
         console.log("📱 → background");
 
-        // if (Platform.OS === "android") {
-        //   pauseAllVideos();
-        //   stopWebRTCConnections();
-
-        //   if (backgroundTimerRef.current)
-        //     clearTimeout(backgroundTimerRef.current);
-        //   backgroundTimerRef.current = setTimeout(freeMemory, 30_000);
-        // }
         if (Platform.OS === "android") {
           pauseAllVideos();
           stopWebRTCConnections();
-          freeMemory(); // ⬅️ immediate, not setTimeout — this is exactly the moment it matters
+
+          if (backgroundTimerRef.current)
+            clearTimeout(backgroundTimerRef.current);
+          backgroundTimerRef.current = setTimeout(freeMemory, 30_000);
         }
+
+        // if (Platform.OS === "android") {
+        //   pauseAllVideos();
+        //   stopWebRTCConnections();
+        //   freeMemory(); // ⬅️ immediate, not setTimeout — this is exactly the moment it matters
+        // }
       } else if (prev === "background" && nextAppState === "active") {
         console.log("→ foreground");
 
@@ -2661,23 +2662,8 @@ function AppContent() {
     };
   }, [userId, isAuthenticated]);
 
-  // return (
-  //   <GestureHandlerRootView style={{ flex: 1 }}>
-  //     <ThemedNavigator isAuthenticated={isAuthenticated} userId={userId} />
-  //     <NetworkStatusBanner />
-
-  //     {updateInfo?.update_available && (
-  //       <UpdateModal
-  //         visible={showUpdateModal}
-  //         updateInfo={updateInfo}
-  //         onClose={dismissUpdateModal}
-  //       />
-  //     )}
-  //   </GestureHandlerRootView>
-  // );
-return (
-  <GestureHandlerRootView style={{ flex: 1 }}>
-    <CallProvider navigationRef={navigationRef} isAuthenticated={isAuthenticated}>
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemedNavigator isAuthenticated={isAuthenticated} userId={userId} />
       <NetworkStatusBanner />
 
@@ -2688,9 +2674,25 @@ return (
           onClose={dismissUpdateModal}
         />
       )}
-    </CallProvider>
-  </GestureHandlerRootView>
-);
+    </GestureHandlerRootView>
+  );
+
+// return (
+//   <GestureHandlerRootView style={{ flex: 1 }}>
+//     <CallProvider navigationRef={navigationRef} isAuthenticated={isAuthenticated}>
+//       <ThemedNavigator isAuthenticated={isAuthenticated} userId={userId} />
+//       <NetworkStatusBanner />
+
+//       {updateInfo?.update_available && (
+//         <UpdateModal
+//           visible={showUpdateModal}
+//           updateInfo={updateInfo}
+//           onClose={dismissUpdateModal}
+//         />
+//       )}
+//     </CallProvider>
+//   </GestureHandlerRootView>
+// );
 }
 
 // ─── OnlineStatusManager ──────────────────────────────────────────────────────
@@ -2996,13 +2998,17 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         <Stack.Screen name="ShortDetail">
           {(p) => <ScreenWrapper><ShortDetail {...p} /></ScreenWrapper>}
         </Stack.Screen>
+
         <Stack.Screen name="AddQuickReply">
           {(p) => <ScreenWrapper><AddQuickReply {...p} /></ScreenWrapper>}
+        </Stack.Screen>
+        <Stack.Screen name="EssentialPlatformsScreen">
+          {(p) => <ScreenWrapper><EssentialPlatformsScreen {...p} /></ScreenWrapper>}
         </Stack.Screen>
 
         
 
-        <Stack.Screen
+        {/* <Stack.Screen
           options={{
             gestureEnabled: true,
             gestureDirection: 'horizontal',
@@ -3015,7 +3021,7 @@ function ThemedNavigator({ isAuthenticated, userId }) {
           }}
          name="EssentialPlatforms">
           {(p) => <ScreenWrapper><EssentialPlatformsScreen {...p} /></ScreenWrapper>}
-        </Stack.Screen>
+        </Stack.Screen> */}
 
 
         <Stack.Screen name="LoginMethod">

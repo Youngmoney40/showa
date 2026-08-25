@@ -53,6 +53,7 @@ import EarningsSlideInManager from '../components/EarningsSlideInManager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import StatusSection from '../components/StatusSection';
 import Feather from 'react-native-vector-icons/Feather';
+import IncomingCallHandler from '../components/Incomingcallhandler';
 
 dayjs.extend(relativeTime);
 
@@ -897,7 +898,7 @@ const SuggestedFriendItem = memo(({ item, onFollow, colors }) => {
   );
 });
 
-export default function HomePage({ navigation }) {
+export default function HomePage({ navigation, route}) {
   const { colors, isDark,theme, toggleTheme, } = useTheme(); 
   const [reactionCounts, setReactionCounts] = useState({});
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
@@ -3709,12 +3710,14 @@ ${shareUrl}`;
           </Animated.View>
         )}
 
+
         <BottomNav 
           navigation={navigation} 
           setShowAccountModal={setShowAccountModal}
           activeRoute="Home" 
           style={{ zIndex: 9999 }}
         />
+          <IncomingCallHandler navigation={navigation} route={route} />
         <AccountSwitchBottomSheet
           visible={showAccountModal}
           onClose={() => setShowAccountModal(false)}
