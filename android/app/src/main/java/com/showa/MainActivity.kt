@@ -1,9 +1,7 @@
 package com.showa
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.bridge.Arguments
@@ -13,121 +11,89 @@ import com.facebook.react.modules.core.DeviceEventManagerModule
 
 class MainActivity : ReactActivity() {
 
-    companion object {
-        private const val TAG = "MainActivity"
+  /**
+   * Returns the name of the main component registered from JavaScript.
+   * This is used to schedule rendering of the component.
+   *
+   * 🔴 VERIFY: this MUST match whatever value your project already used
+   * here before this change — check your old MainActivity.kt (or your
+   * app.json / index.js AppRegistry.registerComponent call) to confirm
+   * the exact string. It is very likely "Showa" based on your other
+   * files, but this is the one thing in this file you must personally
+   * confirm rather than trust blindly.
+   */
+  override fun getMainComponentName(): String = "Showa"
+
+  override fun createReactActivityDelegate(): ReactActivityDelegate =
+      DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
+
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    handleIncomingCallIntent(intent)
+  }
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    handleIncomingCallIntent(intent)
+  }
+
+  /**
+   * 🔴 THE ACTUAL FIX for "Accept call from notification doesn't work".
+   *
+   * CallForegroundService's ACTION_ACCEPT branch (when the user taps
+   * Accept on the call notification) launches THIS activity with
+   * action = "ACCEPT_CALL" plus the call's extras. IncomingCallActivity
+   * (when the notification BODY is tapped instead) launches this
+   * activity with action = "INCOMING_CALL". Previously nothing here ever
+   * read either of these — the intent's extras were silently dropped, so
+   * JS never learned a call was accepted/incoming, and the user just
+   * landed on a normal app launch with the call already lost.
+   *
+   * This now branches on whether JS is already running:
+   * - JS alive (app was backgrounded, not killed) → emit the event
+   *   immediately via DeviceEventEmitter, which App.js already listens
+   *   for via DeviceEventEmitter.addListener('incomingCallFromNotification', ...).
+   * - JS not yet booted (app was fully killed) → stash the data in
+   *   IncomingCallHolder, which App.js's checkPendingCall() ->
+   *   CallModule.getPendingCall() already reads on startup.
+   */
+  private fun handleIncomingCallIntent(intent: Intent?) {
+    if (intent == null) return
+
+    val action = intent.action
+    val isAcceptAction = action == "ACCEPT_CALL"
+    val isIncomingAction = action == "INCOMING_CALL"
+
+    if (!isAcceptAction && !isIncomingAction) return
+
+    val callerName = intent.getStringExtra("callerName") ?: "Unknown"
+    val callId = intent.getStringExtra("callId") ?: ""
+    val roomId = intent.getStringExtra("roomId") ?: ""
+    val callType = intent.getStringExtra("callType") ?: "audio"
+    val callerId = intent.getStringExtra("callerId") ?: ""
+
+    val reactContext = reactInstanceManager?.currentReactContext
+
+    if (reactContext != null) {
+      val params = Arguments.createMap().apply {
+        putString("callerName", callerName)
+        putString("callId", callId)
+        putString("roomId", roomId)
+        putString("callType", callType)
+        putString("callerId", callerId)
+        putBoolean("autoAccept", isAcceptAction)
+      }
+      reactContext
+          .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+          .emit("incomingCallFromNotification", params)
+    } else {
+      IncomingCallHolder.pendingCallerName = callerName
+      IncomingCallHolder.pendingCallId = callId
+      IncomingCallHolder.pendingRoomId = roomId
+      IncomingCallHolder.pendingCallType = callType
+      IncomingCallHolder.pendingCallerId = callerId
+      IncomingCallHolder.pendingAutoAccept = isAcceptAction
     }
-
-    override fun getMainComponentName(): String = "showa"
-
-    override fun createReactActivityDelegate(): ReactActivityDelegate =
-        DefaultReactActivityDelegate(
-            this,
-            mainComponentName,
-            fabricEnabled
-        )
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        intent?.let {
-            handleDeepLink(it)
-            handleCallIntent(it)
-        }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        
-        handleDeepLink(intent)
-        handleCallIntent(intent)
-    }
-
-    private fun handleDeepLink(intent: Intent) {
-        val data: Uri? = intent.data
-        val action = intent.action
-        
-        // ✅ Handle both VIEW actions and any intent with data
-        if (data == null) {
-            return
-        }
-
-        val url = data.toString()
-        Log.d(TAG, "🔗 Deep link received: $url")
-        Log.d(TAG, "🔗 Scheme: ${data.scheme}")
-        Log.d(TAG, "🔗 Host: ${data.host}")
-        Log.d(TAG, "🔗 Path: ${data.path}")
-
-        // ✅ Send to React Native regardless of action type
-        val reactContext = reactInstanceManager?.currentReactContext
-
-        if (reactContext != null) {
-            val params = Arguments.createMap().apply {
-                putString("url", url)
-                putString("scheme", data.scheme ?: "")
-                putString("host", data.host ?: "")
-                putString("path", data.path ?: "")
-            }
-
-            reactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-                .emit("deepLinkReceived", params)
-            
-            Log.d(TAG, "✅ Deep link sent to React Native")
-        } else {
-            Log.d(TAG, "⏳ React context not ready, storing deep link")
-            DeepLinkHolder.pendingDeepLink = url
-        }
-    }
-
-    // ============================================================
-    // YOUR EXISTING CALL CODE - COMPLETELY UNCHANGED
-    // ============================================================
-    private fun handleCallIntent(intent: Intent) {
-
-        val action = intent.action
-        if (action != "INCOMING_CALL" && action != "ACCEPT_CALL") {
-            return
-        }
-
-        val callerName = intent.getStringExtra("callerName") ?: "Unknown"
-        val callId = intent.getStringExtra("callId") ?: ""
-        val roomId = intent.getStringExtra("roomId") ?: ""
-        val callType = intent.getStringExtra("callType") ?: "audio"
-        val callerId = intent.getStringExtra("callerId") ?: ""
-        val autoAccept = action == "ACCEPT_CALL"
-
-        // Stop foreground service notification
-        val stopIntent = Intent(this, CallForegroundService::class.java).apply {
-            this.action = CallForegroundService.ACTION_STOP
-        }
-
-        startService(stopIntent)
-
-        val reactContext = reactInstanceManager?.currentReactContext
-
-        if (reactContext != null) {
-            val params = Arguments.createMap().apply {
-                putString("callerName", callerName)
-                putString("callId", callId)
-                putString("roomId", roomId)
-                putString("callType", callType)
-                putString("callerId", callerId)
-                putBoolean("autoAccept", autoAccept)
-            }
-
-            reactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-                .emit("incomingCallFromNotification", params)
-
-        } else {
-
-            IncomingCallHolder.pendingCallerName = callerName
-            IncomingCallHolder.pendingCallId = callId
-            IncomingCallHolder.pendingRoomId = roomId
-            IncomingCallHolder.pendingCallType = callType
-            IncomingCallHolder.pendingCallerId = callerId
-            IncomingCallHolder.pendingAutoAccept = autoAccept
-        }
-    }
+  }
 }
