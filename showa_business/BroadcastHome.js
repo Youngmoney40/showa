@@ -407,6 +407,376 @@ const ImageModal = memo(({ visible, post, onClose, onView, colors, isDark }) => 
 });
 
 
+// const MemoizedTweetItem = memo(({ 
+//   post, 
+//   type, 
+//   onReaction, 
+//   onComment, 
+//   onShare, 
+//   onFollow, 
+//   onOptions, 
+//   onViewImage,
+//   colors,
+//   currentUserId,
+//   isDark 
+// }) => {
+//   const [isReadMore, setIsReadMore] = useState(true);
+//   const [isFollowing, setIsFollowing] = useState(post.is_followed_by_current_user || false);
+//   const [imageLoading, setImageLoading] = useState({});
+//   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+//   const [isReacting, setIsReacting] = useState(false);
+//   const [localLikeCount, setLocalLikeCount] = useState(post.like_count || 0);
+//   const [localIsLiked, setLocalIsLiked] = useState(post.reactions?.user_reaction === 'like');
+//   const [showNetworkModal, setShowNetworkModal] = useState(false);
+
+//   const isInitialMount = useRef(true);
+
+//   const displayImages = post.all_images || 
+//     (post.image_url ? [{ url: post.image_url, is_main: true }] : []);
+
+//   const navigation = useNavigation();
+
+//   const isPostTrending = useMemo(() => {
+//     const postAge = dayjs().diff(dayjs(post.created_at), 'hour');
+//     const engagement = (post.like_count + post.comment_count) / (post.views || 1);
+//     return postAge < 24 && post.views > 50 && engagement > 0.1;
+//   }, [post.created_at, post.like_count, post.comment_count, post.views]);
+
+//   const handleFollowPress = () => {
+//     const newFollowingState = !isFollowing;
+//     setIsFollowing(newFollowingState);
+//     onFollow(post.user_id);
+//   };
+
+//   const handleSharePress = async () => {
+//     await onShare(post.id);
+//   };
+
+//   const handleImagePress = (index) => {
+//     setSelectedImageIndex(index);
+//     onViewImage({ ...post, images: displayImages, selectedIndex: index });
+//   };
+
+//   const calculateNetworkScore = useCallback(() => {
+//     const likeWeight = 1;
+//     const commentWeight = 3;
+//     const shareWeight = 5;
+//     const viewWeight = 0.1;
+    
+//     const score = (
+//       (localLikeCount || 0) * likeWeight +
+//       (post.comment_count || 0) * commentWeight +
+//       (post.share_count || 0) * shareWeight +
+//       (post.views || 0) * viewWeight
+//     );
+    
+//     return Math.round(score);
+//   }, [localLikeCount, post.comment_count, post.share_count, post.views]);
+
+//   const getViralStatus = useCallback((score) => {
+//     if (score >= 1000) return { label: '🔥 Viral', color: '#FF6B35', emoji: '🚀' };
+//     if (score >= 500) return { label: '⭐ Trending', color: '#FFA500', emoji: '⭐' };
+//     if (score >= 200) return { label: '📈 Growing', color: '#4CAF50', emoji: '📈' };
+//     if (score >= 50) return { label: '👀 Getting Attention', color: '#2196F3', emoji: '👀' };
+//     if (score >= 10) return { label: '🌱 Starting', color: '#9E9E9E', emoji: '🌱' };
+//     return { label: '💤 Quiet', color: '#9E9E9E', emoji: '💤' };
+//   }, []);
+
+//   const networkScore = calculateNetworkScore();
+//   const viralStatus = getViralStatus(networkScore);
+
+//   const isOwnPost = post.user_id === currentUserId;
+
+//   // ONLY sync on initial mount - NEVER sync on updates
+//   // This prevents the props from overriding the local state after API calls
+//   // useEffect(() => {
+//   //   if (isInitialMount.current) {
+//   //     setLocalLikeCount(post.like_count || 0);
+//   //     setLocalIsLiked(post.reactions?.user_reaction === 'like');
+//   //     isInitialMount.current = false;
+//   //   }
+//   //   // Intentionally empty dependency array - only runs once on mount
+//   // }, []);
+
+  
+
+//   // Optimized reaction handler with INSTANT local update
+//   const handleReactionPress = useCallback(() => {
+//     if (isReacting) return;
+    
+//     // INSTANT local update
+//     const newLikedState = !localIsLiked;
+//     setLocalIsLiked(newLikedState);
+//     setLocalLikeCount(prev => newLikedState ? prev + 1 : Math.max(0, prev - 1));
+    
+//     setIsReacting(true);
+//     onReaction(post.id, 'like');
+    
+//     // Keep the reacting state true for a moment
+//     setTimeout(() => {
+//       setIsReacting(false);
+//     }, 300);
+//   }, [post.id, onReaction, isReacting, localIsLiked]);
+
+//   const renderImageGrid = () => {
+//     if (displayImages.length === 0) return null;
+
+//     const imageCount = displayImages.length;
+
+//     if (imageCount === 1) {
+//       return (
+//         <TouchableOpacity 
+//           onPress={() => handleImagePress(0)}
+//           style={styles.singleImageContainer}
+//         >
+//           <Image
+//             source={{ uri: displayImages[0].url }}
+//             style={styles.singleImage}
+//             resizeMode="cover"
+//           />
+//         </TouchableOpacity>
+//       );
+//     }
+
+//     if (imageCount === 2) {
+//       return (
+//         <View style={styles.doubleImageContainer}>
+//           {displayImages.map((img, index) => (
+//             <TouchableOpacity 
+//               key={index}
+//               onPress={() => handleImagePress(index)}
+//               style={styles.doubleImageWrapper}
+//             >
+//               <Image
+//                 source={{ uri: img.url }}
+//                 style={styles.doubleImage}
+//                 resizeMode="cover"
+//               />
+//             </TouchableOpacity>
+//           ))}
+//         </View>
+//       );
+//     }
+
+//     if (imageCount === 3) {
+//       return (
+//         <View style={styles.tripleImageContainer}>
+//           <TouchableOpacity 
+//             onPress={() => handleImagePress(0)}
+//             style={styles.tripleMainImageWrapper}
+//           >
+//             <Image
+//               source={{ uri: displayImages[0].url }}
+//               style={styles.tripleMainImage}
+//               resizeMode="cover"
+//             />
+//           </TouchableOpacity>
+          
+//           <View style={styles.tripleSideContainer}>
+//             {[1, 2].map((idx) => (
+//               <TouchableOpacity 
+//                 key={idx}
+//                 onPress={() => handleImagePress(idx)}
+//                 style={styles.tripleSideImageWrapper}
+//               >
+//                 <Image
+//                   source={{ uri: displayImages[idx].url }}
+//                   style={styles.tripleSideImage}
+//                   resizeMode="cover"
+//                 />
+//               </TouchableOpacity>
+//             ))}
+//           </View>
+//         </View>
+//       );
+//     }
+
+//     return (
+//       <View style={styles.quadImageContainer}>
+//         {displayImages.slice(0, 4).map((img, index) => (
+//           <TouchableOpacity 
+//             key={index}
+//             onPress={() => handleImagePress(index)}
+//             style={styles.quadImageWrapper}
+//           >
+//             <Image
+//               source={{ uri: img.url }}
+//               style={styles.quadImage}
+//               resizeMode="cover"
+//             />
+//             {index === 3 && displayImages.length > 4 && (
+//               <View style={styles.moreImagesOverlay}>
+//                 <Text style={styles.moreImagesText}>+{displayImages.length - 4}</Text>
+//               </View>
+//             )}
+//           </TouchableOpacity>
+//         ))}
+//       </View>
+//     );
+//   };
+
+//   return (
+//     <View style={[styles.tweetContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+//       <View style={styles.tweetContent}>
+//         <View style={styles.tweetHeader}>
+//           <TouchableOpacity onPress={() => navigation.navigate('OtherUserProfile', { userId: post.user_id })}>
+//             <View style={styles.avatarContainer}>
+//               <Image
+//                 source={
+//                   post.user_profile_picture
+//                     ? { uri: post.user_profile_picture }
+//                     : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+//                 }
+//                 style={[styles.avatar, { borderColor: colors.border }]}
+//               />
+//             </View>
+//           </TouchableOpacity>
+          
+//           <View style={styles.userInfoContainer}>
+//             <TouchableOpacity 
+//               onPress={() => navigation.navigate('OtherUserProfile', { userId: post.user_id })}
+//               style={styles.userNameContainer}
+//             >
+//               <Text style={[styles.name, { color: colors.text }]}>{post.username}</Text>
+//               {post.is_verified && (
+//                 <View style={styles.verifiedBadge}>
+//                   <Icontt name="check-bold" size={11} color="#fff" />
+//                 </View>
+//               )}
+//             </TouchableOpacity>
+//             <Text style={[styles.time, { color: colors.textSecondary }]}>
+//               {dayjs(post.created_at).fromNow()}
+//             </Text>
+//           </View>
+          
+//           {type === 'allposts' && !isOwnPost ? (
+//             <TouchableOpacity
+//               style={[styles.followButton, isFollowing && styles.followingButton]}
+//               onPress={handleFollowPress}
+//             >
+//               <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
+//                 {isFollowing ? 'Following' : 'Follow'}
+//               </Text>
+//             </TouchableOpacity>
+//           ) : (
+//             <TouchableOpacity
+//               style={styles.optionsButton}
+//               onPress={() => onOptions(post.id, post.user_id)}
+//             >
+//               <Icon name="ellipsis-horizontal" size={18} color={colors.textSecondary} />
+//             </TouchableOpacity>
+//           )}
+//         </View>
+        
+//         <Text style={[styles.tweetText, { color: colors.text }]}>
+//           {post.content.length > 150 ? (
+//             <>
+//               {isReadMore ? post.content.slice(0, 150) + '...' : post.content}
+//               <Text 
+//                 style={[styles.readMore, { color: colors.primary }]} 
+//                 onPress={() => setIsReadMore(!isReadMore)}
+//               >
+//                 {isReadMore ? ' Read more' : ' Show less'}
+//               </Text>
+//             </>
+//           ) : (
+//             post.content
+//           )}
+//         </Text>
+        
+//         {isPostTrending && (
+//           <View style={styles.trendingContainer}>
+//             <View style={styles.trendingBadge}>
+//               <Text style={styles.trendingIcon}>🔥</Text>
+//               <Text style={styles.trendingText}>Trending</Text>
+//             </View>
+//           </View>
+//         )}
+        
+//         {renderImageGrid()}
+        
+//         {/* 3-Button Actions Row - Responsive */}
+//         <View style={styles.actionsContainer}>
+//           <View style={styles.actionsRow}>
+//             {/* Like Button */}
+//             <TouchableOpacity
+//               style={styles.actionButton}
+//               onPress={handleReactionPress}
+//               activeOpacity={0.7}
+//               disabled={isReacting}
+//             >
+//               <View style={styles.actionButtonContent}>
+//                 <Ionicons
+//                   name={localIsLiked ? 'heart' : 'heart-outline'}
+//                   size={24}
+//                   color={localIsLiked ? '#0d64dd' : colors.textSecondary}
+//                 />
+//                 <Text style={[
+//                   styles.actionLabel,
+//                   { color: localIsLiked ? '#0d64dd' : colors.textSecondary }
+//                 ]}>
+//                   Like
+//                 </Text>
+//                 {localLikeCount > 0 && (
+//                   <Text style={[
+//                     styles.actionCount,
+//                     { color: localIsLiked ? '#0d64dd' : colors.textSecondary }
+//                   ]}>
+//                     {localLikeCount}
+//                   </Text>
+//                 )}
+//               </View>
+//             </TouchableOpacity>
+
+//             {/* Comment Button */}
+//             <TouchableOpacity
+//               style={styles.actionButton}
+//               onPress={() => {
+//                 navigation.navigate('ExplorePostDetails', {
+//                   postId: post.id,
+//                   postData: post
+//                 });
+//               }}
+//               activeOpacity={0.7}
+//             >
+//               <View style={styles.actionButtonContent}>
+//                 <Ionicons name="chatbubble-outline" size={22} color={colors.textSecondary} />
+//                 <Text style={[styles.actionLabel, { color: colors.textSecondary }]}>
+//                   Comment
+//                 </Text>
+//                 {post.comment_count > 0 && (
+//                   <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
+//                     {post.comment_count}
+//                   </Text>
+//                 )}
+//               </View>
+//             </TouchableOpacity>
+
+//             {/* Share Button */}
+//             <TouchableOpacity
+//               style={styles.actionButton}
+//               onPress={handleSharePress}
+//               activeOpacity={0.7}
+//             >
+//               <View style={styles.actionButtonContent}>
+//                 <Feather name="send" size={22} color={colors.textSecondary} />
+//                 <Text style={[styles.actionLabel, { color: colors.textSecondary }]}>
+//                   Share
+//                 </Text>
+//                 {post.share_count > 0 && (
+//                   <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
+//                     {post.share_count}
+//                   </Text>
+//                 )}
+//               </View>
+//             </TouchableOpacity>
+//           </View>
+//         </View>
+//       </View>
+//     </View>
+//   );
+// });
+
 const MemoizedTweetItem = memo(({ 
   post, 
   type, 
@@ -425,14 +795,38 @@ const MemoizedTweetItem = memo(({
   const [imageLoading, setImageLoading] = useState({});
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isReacting, setIsReacting] = useState(false);
-  const [localLikeCount, setLocalLikeCount] = useState(post.like_count || 0);
-  const [localIsLiked, setLocalIsLiked] = useState(post.reactions?.user_reaction === 'like');
-  const [showNetworkModal, setShowNetworkModal] = useState(false);
+  
+  // ===== useMemo for derived state - ALWAYS in sync with props =====
+  const isLiked = useMemo(() => {
+    return post.reactions?.user_reaction === 'like';
+  }, [post.reactions]);
 
-  const isInitialMount = useRef(true);
+  const likeCount = useMemo(() => {
+    return post.like_count || 0;
+  }, [post.like_count]);
 
-  const displayImages = post.all_images || 
-    (post.image_url ? [{ url: post.image_url, is_main: true }] : []);
+  // ===== Optimistic update state (temporary) =====
+  const [optimisticState, setOptimisticState] = useState(null);
+
+  // Display values - use optimistic if available, otherwise use props
+  const displayIsLiked = useMemo(() => {
+    if (optimisticState !== null) {
+      return optimisticState.isLiked;
+    }
+    return isLiked;
+  }, [optimisticState, isLiked]);
+
+  const displayLikeCount = useMemo(() => {
+    if (optimisticState !== null) {
+      return optimisticState.count;
+    }
+    return likeCount;
+  }, [optimisticState, likeCount]);
+
+  const displayImages = useMemo(() => {
+    return post.all_images || 
+      (post.image_url ? [{ url: post.image_url, is_main: true }] : []);
+  }, [post.all_images, post.image_url]);
 
   const navigation = useNavigation();
 
@@ -442,81 +836,77 @@ const MemoizedTweetItem = memo(({
     return postAge < 24 && post.views > 50 && engagement > 0.1;
   }, [post.created_at, post.like_count, post.comment_count, post.views]);
 
-  const handleFollowPress = () => {
+  const isOwnPost = post.user_id === currentUserId;
+
+  // ===== Handle Reaction with Optimistic Update =====
+  const handleReactionPress = useCallback(() => {
+    if (isReacting) return;
+    
+    const newLikedState = !displayIsLiked;
+    const newCount = newLikedState ? displayLikeCount + 1 : Math.max(0, displayLikeCount - 1);
+    
+    // Set optimistic state
+    setOptimisticState({
+      isLiked: newLikedState,
+      count: newCount
+    });
+    setIsReacting(true);
+    
+    // Call parent handler
+    onReaction(post.id, 'like');
+    
+    // Clear optimistic state after API call completes
+    setTimeout(() => {
+      setOptimisticState(null);
+      setIsReacting(false);
+    }, 500);
+  }, [post.id, onReaction, isReacting, displayIsLiked, displayLikeCount]);
+
+  // ===== Handle Follow =====
+  const handleFollowPress = useCallback(() => {
     const newFollowingState = !isFollowing;
     setIsFollowing(newFollowingState);
     onFollow(post.user_id);
-  };
+  }, [isFollowing, onFollow, post.user_id]);
 
-  const handleSharePress = async () => {
+  // ===== Handle Share =====
+  const handleSharePress = useCallback(async () => {
     await onShare(post.id);
-  };
+  }, [onShare, post.id]);
 
-  const handleImagePress = (index) => {
+  // ===== Handle Image Press =====
+  const handleImagePress = useCallback((index) => {
     setSelectedImageIndex(index);
     onViewImage({ ...post, images: displayImages, selectedIndex: index });
-  };
+  }, [post, displayImages, onViewImage]);
 
-  const calculateNetworkScore = useCallback(() => {
+  // ===== Calculate Network Score =====
+  const networkScore = useMemo(() => {
     const likeWeight = 1;
     const commentWeight = 3;
     const shareWeight = 5;
     const viewWeight = 0.1;
     
-    const score = (
-      (localLikeCount || 0) * likeWeight +
+    return Math.round(
+      (displayLikeCount * likeWeight) +
       (post.comment_count || 0) * commentWeight +
       (post.share_count || 0) * shareWeight +
       (post.views || 0) * viewWeight
     );
-    
-    return Math.round(score);
-  }, [localLikeCount, post.comment_count, post.share_count, post.views]);
+  }, [displayLikeCount, post.comment_count, post.share_count, post.views]);
 
-  const getViralStatus = useCallback((score) => {
-    if (score >= 1000) return { label: '🔥 Viral', color: '#FF6B35', emoji: '🚀' };
-    if (score >= 500) return { label: '⭐ Trending', color: '#FFA500', emoji: '⭐' };
-    if (score >= 200) return { label: '📈 Growing', color: '#4CAF50', emoji: '📈' };
-    if (score >= 50) return { label: '👀 Getting Attention', color: '#2196F3', emoji: '👀' };
-    if (score >= 10) return { label: '🌱 Starting', color: '#9E9E9E', emoji: '🌱' };
+  // ===== Get Viral Status =====
+  const viralStatus = useMemo(() => {
+    if (networkScore >= 1000) return { label: '🔥 Viral', color: '#FF6B35', emoji: '🚀' };
+    if (networkScore >= 500) return { label: '⭐ Trending', color: '#FFA500', emoji: '⭐' };
+    if (networkScore >= 200) return { label: '📈 Growing', color: '#4CAF50', emoji: '📈' };
+    if (networkScore >= 50) return { label: '👀 Getting Attention', color: '#2196F3', emoji: '👀' };
+    if (networkScore >= 10) return { label: '🌱 Starting', color: '#9E9E9E', emoji: '🌱' };
     return { label: '💤 Quiet', color: '#9E9E9E', emoji: '💤' };
-  }, []);
+  }, [networkScore]);
 
-  const networkScore = calculateNetworkScore();
-  const viralStatus = getViralStatus(networkScore);
-
-  const isOwnPost = post.user_id === currentUserId;
-
-  // ONLY sync on initial mount - NEVER sync on updates
-  // This prevents the props from overriding the local state after API calls
-  useEffect(() => {
-    if (isInitialMount.current) {
-      setLocalLikeCount(post.like_count || 0);
-      setLocalIsLiked(post.reactions?.user_reaction === 'like');
-      isInitialMount.current = false;
-    }
-    // Intentionally empty dependency array - only runs once on mount
-  }, []);
-
-  // Optimized reaction handler with INSTANT local update
-  const handleReactionPress = useCallback(() => {
-    if (isReacting) return;
-    
-    // INSTANT local update
-    const newLikedState = !localIsLiked;
-    setLocalIsLiked(newLikedState);
-    setLocalLikeCount(prev => newLikedState ? prev + 1 : Math.max(0, prev - 1));
-    
-    setIsReacting(true);
-    onReaction(post.id, 'like');
-    
-    // Keep the reacting state true for a moment
-    setTimeout(() => {
-      setIsReacting(false);
-    }, 300);
-  }, [post.id, onReaction, isReacting, localIsLiked]);
-
-  const renderImageGrid = () => {
+  // ===== Render Image Grid =====
+  const renderImageGrid = useMemo(() => {
     if (displayImages.length === 0) return null;
 
     const imageCount = displayImages.length;
@@ -589,6 +979,7 @@ const MemoizedTweetItem = memo(({
       );
     }
 
+    // 4+ images
     return (
       <View style={styles.quadImageContainer}>
         {displayImages.slice(0, 4).map((img, index) => (
@@ -611,8 +1002,11 @@ const MemoizedTweetItem = memo(({
         ))}
       </View>
     );
-  };
+  }, [displayImages, handleImagePress]);
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
     <View style={[styles.tweetContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
       <View style={styles.tweetContent}>
@@ -691,9 +1085,9 @@ const MemoizedTweetItem = memo(({
           </View>
         )}
         
-        {renderImageGrid()}
+        {renderImageGrid}
         
-        {/* 3-Button Actions Row - Responsive */}
+        {/* ===== 3-Button Actions Row ===== */}
         <View style={styles.actionsContainer}>
           <View style={styles.actionsRow}>
             {/* Like Button */}
@@ -705,22 +1099,22 @@ const MemoizedTweetItem = memo(({
             >
               <View style={styles.actionButtonContent}>
                 <Ionicons
-                  name={localIsLiked ? 'heart' : 'heart-outline'}
+                  name={displayIsLiked ? 'heart' : 'heart-outline'}
                   size={24}
-                  color={localIsLiked ? '#0d64dd' : colors.textSecondary}
+                  color={displayIsLiked ? '#0d64dd' : colors.textSecondary}
                 />
                 <Text style={[
                   styles.actionLabel,
-                  { color: localIsLiked ? '#0d64dd' : colors.textSecondary }
+                  { color: displayIsLiked ? '#0d64dd' : colors.textSecondary }
                 ]}>
                   Like
                 </Text>
-                {localLikeCount > 0 && (
+                {displayLikeCount > 0 && (
                   <Text style={[
                     styles.actionCount,
-                    { color: localIsLiked ? '#0d64dd' : colors.textSecondary }
+                    { color: displayIsLiked ? '#0d64dd' : colors.textSecondary }
                   ]}>
-                    {localLikeCount}
+                    {displayLikeCount}
                   </Text>
                 )}
               </View>
@@ -741,6 +1135,7 @@ const MemoizedTweetItem = memo(({
                 <Ionicons name="chatbubble-outline" size={22} color={colors.textSecondary} />
                 <Text style={[styles.actionLabel, { color: colors.textSecondary }]}>
                   Comment
+                  
                 </Text>
                 {post.comment_count > 0 && (
                   <Text style={[styles.actionCount, { color: colors.textSecondary }]}>
@@ -770,10 +1165,35 @@ const MemoizedTweetItem = memo(({
             </TouchableOpacity>
           </View>
         </View>
+        
+        {/* ===== Network Score (optional) ===== */}
+        {networkScore > 10 && (
+          <View style={[styles.networkButton, { backgroundColor: colors.backgroundSecondary }]}>
+            <View style={styles.networkButtonContent}>
+              <View style={styles.networkIconContainer}>
+                <Text style={styles.networkStatusEmoji}>{viralStatus.emoji}</Text>
+              </View>
+              <View style={styles.networkInfo}>
+                <Text style={[styles.networkScore, { color: colors.text }]}>
+                  {networkScore}
+                </Text>
+                <Text style={[styles.networkLabel, { color: colors.textSecondary }]}>
+                  Network Score
+                </Text>
+              </View>
+              <View style={[styles.networkStatus, { backgroundColor: viralStatus.color + '20' }]}>
+                <Text style={[styles.networkStatusText, { color: viralStatus.color }]}>
+                  {viralStatus.label}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );
 });
+
 
 const MemoizedStatusPreview = memo(({ userStatus, currentUserPhone, onPress, onViewers, onDelete, colors, isDark }) => {
   const isVideo = userStatus.status_type === 'video';
@@ -4353,7 +4773,7 @@ modalImagePage: {
     fontWeight: '600',
     marginTop: 4,
   },
-  // Add to your styles object
+  
 actionsContainer: {
   paddingHorizontal: 12,
   paddingVertical: 4,

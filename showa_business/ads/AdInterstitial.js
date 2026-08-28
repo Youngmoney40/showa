@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/Feather';
 import { API_ROUTE } from '../../api_routing/api';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 const { width, height } = Dimensions.get('window');
@@ -125,7 +126,9 @@ const AdInterstitial = ({ visible, onFinish }) => {
   if (!visible) return null;
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+    <SafeAreaView style={[styles.container]}>
+
+        <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       {loading || !ad ? (
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading Ads...</Text>
@@ -175,6 +178,9 @@ const AdInterstitial = ({ visible, onFinish }) => {
         </TouchableOpacity>
       )}
     </Animated.View>
+
+    </SafeAreaView>
+    
   );
 };
 

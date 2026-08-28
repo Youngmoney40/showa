@@ -11427,8 +11427,7 @@ const PersonalChatHomeScreen = ({ navigation, route }) => {
         style={{ zIndex: 9999 }}
       />
 
-      {/* All incoming-call state, sockets and the modal now live in one
-          reusable component — see components/IncomingCallHandler.js */}
+      
       <IncomingCallHandler navigation={navigation} route={route} />
 
       {/* Switch Account Modal */}

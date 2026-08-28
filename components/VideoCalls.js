@@ -11522,6 +11522,19 @@ export default function VideoCallScreen({ navigation, route }) {
     setCurrentCallId(id);
   };
 
+  useEffect(() => {
+  if (!isInitiator || webrtcReady) return;
+
+  const noAnswerTimeout = setTimeout(() => {
+    if (!webrtcReady) {
+      console.log('[VoiceCall] No answer — auto-ending call');
+      endCall(true);
+    }
+  }, 45000);
+
+  return () => clearTimeout(noAnswerTimeout);
+}, [isInitiator, webrtcReady]);
+
   /////// this is only for ui draging the video stream 
   const pipPosition = useRef({ x: Dimensions.get('window').width - 116, y: Platform.OS === 'ios' ? 100 : 70 });
   const [pipVisible, setPipVisible] = useState(true);
@@ -13499,13 +13512,13 @@ const endCall = useCallback(async (notify = true) => {
     ? 'Call Declined'
     : 'Call Ended'}
 </Text>
-<Text style={styles.callEndedSubtitle}>
-  {callEndedReason === 'busy'
+<Text style={styles.callEndedSubtitle}>please wait ...</Text>
+  {/* {callEndedReason === 'busy'
     ? `${name || 'They'} are currently on another call`
     : callEndedReason === 'rejected'
     ? `${name || 'They'} declined your call`
-    : `${name || 'They'} ended the call`}
-</Text>
+    : `${name || 'They'} ended the call`} */}
+
             <ActivityIndicator size="small" color="rgba(255,255,255,0.7)" style={{ marginTop: 16 }} />
           </View>
         </View>

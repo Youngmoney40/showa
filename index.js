@@ -1,3 +1,4 @@
+
 import { AppRegistry } from 'react-native';
 import App from './App';
 import { name as appName } from './app.json';
@@ -110,7 +111,7 @@ AppRegistry.registerComponent('showa', () => App);
 //     }
 //   }
 
-//   onsole.log('Message handled in the background!', remoteMessage);
+//   console.log('Message handled in the background!', remoteMessage);
 //   PushNotification.localNotification({
 //     channelId: "showa-notifications",
 //     title: remoteMessage.notification.title,

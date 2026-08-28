@@ -22,7 +22,7 @@ class MainActivity : ReactActivity() {
    * files, but this is the one thing in this file you must personally
    * confirm rather than trust blindly.
    */
-  override fun getMainComponentName(): String = "Showa"
+  override fun getMainComponentName(): String = "showa"
 
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)

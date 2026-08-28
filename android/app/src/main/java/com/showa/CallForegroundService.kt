@@ -8,7 +8,9 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -18,6 +20,8 @@ import androidx.core.app.NotificationManagerCompat
 class CallForegroundService : Service() {
 
     private var vibrator: Vibrator? = null
+    private val timeoutHandler = Handler(Looper.getMainLooper())
+    private var timeoutRunnable: Runnable? = null
 
     companion object {
         const val CHANNEL_ID      = "showa_call_channel"
@@ -26,6 +30,14 @@ class CallForegroundService : Service() {
         const val ACTION_ACCEPT   = "ACCEPT_CALL"
         const val ACTION_DECLINE  = "DECLINE_CALL"
         const val NOTIFICATION_ID = 1001
+
+        // 🔴 NEW: real, independent timeout that guarantees ringing stops.
+        // setTimeoutAfter() on the notification only hides the notification
+        // visually — it never stops the foreground service or the looping
+        // vibration. Without this, an unanswered call (caller's cancel
+        // message lost, caller's app killed, etc.) rings forever with no
+        // way to stop it short of force-closing the app.
+        const val RING_TIMEOUT_MS = 45000L
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -44,12 +56,14 @@ class CallForegroundService : Service() {
 
                 showCallNotification(callerName, callId, roomId, callType, callerId)
                 startVibration()
+                scheduleRingTimeout() // 🔴 NEW
             }
 
             // 🔴 NEW: Accept is now handled by the service FIRST, so the
             // ringtone/vibration die instantly — before we ever hand off
             // to MainActivity / the RN bridge.
             ACTION_ACCEPT -> {
+                cancelRingTimeout() // 🔴 NEW
                 silenceCall()
 
                 val callerName = intent.getStringExtra("callerName") ?: "Unknown"
@@ -81,6 +95,7 @@ class CallForegroundService : Service() {
             }
 
             ACTION_STOP, ACTION_DECLINE -> {
+                cancelRingTimeout() // 🔴 NEW
                 silenceCall()
                 stopSelf()
             }
@@ -89,12 +104,31 @@ class CallForegroundService : Service() {
         return START_NOT_STICKY
     }
 
+    // 🔴 NEW: schedules the hard stop. If nothing else (accept/decline/stop)
+    // has cancelled it by RING_TIMEOUT_MS, this fires and forcibly silences
+    // + stops the service — guaranteeing the phone can never ring forever.
+    private fun scheduleRingTimeout() {
+        cancelRingTimeout()
+        timeoutRunnable = Runnable {
+            silenceCall()
+            stopSelf()
+        }
+        timeoutHandler.postDelayed(timeoutRunnable!!, RING_TIMEOUT_MS)
+    }
+
+    // 🔴 NEW
+    private fun cancelRingTimeout() {
+        timeoutRunnable?.let { timeoutHandler.removeCallbacks(it) }
+        timeoutRunnable = null
+    }
+
     /**
      * Stops vibration AND force-removes the notification (including its
      * looping FLAG_INSISTENT sound). Idempotent — safe to call repeatedly
      * from any of the accept/decline/stop paths.
      */
     private fun silenceCall() {
+        cancelRingTimeout() // 🔴 NEW — belt-and-braces if silenceCall() is ever called directly elsewhere
         try { stopVibration() } catch (e: Exception) {}
         try { stopForeground(STOP_FOREGROUND_REMOVE) } catch (e: Exception) {}
 
@@ -229,6 +263,7 @@ class CallForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        cancelRingTimeout() // 🔴 NEW
         silenceCall()
         super.onDestroy()
     }

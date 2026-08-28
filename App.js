@@ -1680,6 +1680,7 @@ import {
   startBackgroundContactSync,
   setupContactSyncListener,
 } from "./components/BackgroundSync";
+import IncomingCallHandler from './components/Incomingcallhandler';
 import backgroundFetchService from "./src/services/BackgroundFetchService";
 import Loginscreen from "./screens/Loginscreen";
 import ExplorePostDetails from "./screens/ExplorePostDetailScreen";
@@ -2416,7 +2417,7 @@ function AppContent() {
         );
         console.log('✅ OtherUserProfile navigation dispatched');
       } catch (error) {
-        console.error('❌ Failed to navigate:', error);
+        console.error('Failed to navigate:', error);
       }
       return;
     }
@@ -2480,52 +2481,75 @@ function AppContent() {
     };
   }, []);
 
-  const handleIncomingCallNavigation = (callData) => {
-    console.log("========== APP.JS NAVIGATION ==========");
-    console.log("callData:", JSON.stringify(callData, null, 2));
+const handleIncomingCallNavigation = (callData) => {
+  console.log("========== APP.JS NAVIGATION ==========");
+  console.log("callData:", JSON.stringify(callData, null, 2));
 
-    try {
-      NativeModules.CallModule?.stopCallService();
-    } catch (e) {}
+  try {
+    NativeModules.CallModule?.stopCallService();
+  } catch (e) {}
 
-    if (callData.autoAccept && navigationRef.current) {
-      try {
-        const fullOffer = callData.offer || {
-          type: 'offer',
-          sdp: callData.sdp,
-          callerInfo: {
-            name: callData.callerName,
-            profileImage: callData.profileImage || ''
-          },
-          isVideoCall: callData.callType === 'video',
-          targetUserId: callData.callerId,
-          roomId: callData.roomId
-        };
+  // Delegate to CallProvider's accept handler — it owns the persistent
+  // socket and may already have the real offer captured for this call.
+  if (callData.autoAccept && global.__callAcceptHandler) {
+    global.__callAcceptHandler(callData);
+    return;
+  }
 
-        navigationRef.current.dispatch(
-          CommonActions.navigate('PHome', {
-            name: callData.callerName,
-            profile_image: callData.profileImage || '',
-            targetUserId: callData.callerId,
-            isIncomingCall: true,
-            isInitiator: false,
-            incomingOffer: fullOffer,
-            isVideoCall: callData.callType === 'video',
-            callType: callData.callType,
-            roomId: callData.roomId,
-            callId: callData.callId,
-            autoAnswerOnOffer: false, 
-          }));
-      } catch (error) {
-        console.error('Failed to navigate to VoiceCalls:', error);
-        if (global.__callNotificationHandler) {
-          global.__callNotificationHandler(callData);
-        }
-      }
-    } else if (global.__callNotificationHandler) {
-      global.__callNotificationHandler(callData);
-    }
-  };
+  // Notification body tapped (not Accept) — just open the app to the call,
+  // don't auto-answer.
+  if (global.__callNotificationHandler) {
+    global.__callNotificationHandler(callData);
+  }
+};
+
+// const handleIncomingCallNavigation = (callData) => {
+//   try {
+//     NativeModules.CallModule?.stopCallService();
+
+    
+
+//   } catch (e) {}
+
+//   // Prefer the real offer CallProvider's persistent socket may already have
+//   if (callData.autoAccept && global.__callAcceptHandler) {
+    
+//     global.__callAcceptHandler(callData);
+//     return;
+//   }
+
+//   if (!navigationRef.current) return;
+
+//   const fullOffer = callData.offer || {
+//     type: 'offer',
+//     sdp: callData.sdp,
+//     callerInfo: {
+//       name: callData.callerName,
+//       profileImage: callData.profileImage || ''
+//     },
+//     isVideoCall: callData.callType === 'video',
+//     targetUserId: callData.callerId,
+//     roomId: callData.roomId
+//   };
+
+//   const targetScreen = callData.callType === 'video' ? 'VideoCalls' : 'VoiceCalls';
+
+//   navigationRef.current.dispatch(
+//     CommonActions.navigate(targetScreen, {
+//       name: callData.callerName,
+//       profile_image: callData.profileImage || '',
+//       targetUserId: callData.callerId,
+//       isIncomingCall: true,
+//       isInitiator: false,
+//       incomingOffer: fullOffer,
+//       isVideoCall: callData.callType === 'video',
+//       callType: callData.callType,
+//       roomId: callData.roomId,
+//       callId: callData.callId,
+//       autoAnswerOnOffer: !!callData.autoAccept,   
+//     })
+//   );
+// };
 
   // ── Sequenced boot ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -2578,9 +2602,9 @@ function AppContent() {
     }
   };
 
-  useEffect(() => {
-    CallKeepService.initialize();
-  }, []);
+  // useEffect(() => {
+  //   CallKeepService.initialize();
+  // }, []);
 
   // ── Video prefetch ────────────────────────────────────────────────────────
   // useEffect(() => {
@@ -2661,6 +2685,26 @@ function AppContent() {
       if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
     };
   }, [userId, isAuthenticated]);
+
+
+  // return (
+  //   <GestureHandlerRootView style={{ flex: 1 }}>
+  //     <ThemedNavigator isAuthenticated={isAuthenticated} userId={userId} />
+  //     <NetworkStatusBanner />
+  //     {isAuthenticated && (
+  //       <IncomingCallHandler navigation={navigationRef.current} route={{}} />
+  //     )}
+      
+
+  //     {updateInfo?.update_available && (
+  //       <UpdateModal
+  //         visible={showUpdateModal}
+  //         updateInfo={updateInfo}
+  //         onClose={dismissUpdateModal}
+  //       />
+  //     )}
+  //   </GestureHandlerRootView>
+  // );
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

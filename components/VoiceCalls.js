@@ -2380,6 +2380,7 @@ import InCallManager from "react-native-incall-manager";
 import CallKeepService from '../src/services/CallKeepService';
 import { useBackHandler } from '../src/hooks/useBackHandler';
 import { forceStopAllCallAudio } from '../src/utils/callAudio';
+import { CommonActions } from '@react-navigation/native';
 
 const SIGNALING_SERVER = "wss://api.showapp.ng";
 
@@ -2795,18 +2796,28 @@ const stopRinging = useCallback(() => {
   }
 }, []);
 
+// const applyAudioRoute = (speakerOn) => {
+//   try {
+//     InCallManager.setSpeakerphoneOn(speakerOn);
+//     InCallManager.setForceSpeakerphoneOn(speakerOn);
+
+//     // Newer react-native-incall-manager versions expose chooseAudioRoute,
+//     // which is the more reliable API on Android 12+ devices where
+//     // setSpeakerphoneOn alone doesn't always win against the system's
+//     // own audio-route selection (especially with Bluetooth paired).
+//     // if (typeof InCallManager.chooseAudioRoute === 'function') {
+//     //   InCallManager.chooseAudioRoute(speakerOn ? 'SPEAKER' : 'EARPIECE');
+//     // }
+//   } catch (e) {
+//     console.log('[Audio] applyAudioRoute error:', e?.message);
+//   }
+// };
+
 const applyAudioRoute = (speakerOn) => {
   try {
     InCallManager.setSpeakerphoneOn(speakerOn);
     InCallManager.setForceSpeakerphoneOn(speakerOn);
-
-    // Newer react-native-incall-manager versions expose chooseAudioRoute,
-    // which is the more reliable API on Android 12+ devices where
-    // setSpeakerphoneOn alone doesn't always win against the system's
-    // own audio-route selection (especially with Bluetooth paired).
-    if (typeof InCallManager.chooseAudioRoute === 'function') {
-      InCallManager.chooseAudioRoute(speakerOn ? 'SPEAKER' : 'EARPIECE');
-    }
+    console.log('[Audio] requested speakerOn:', speakerOn);
   } catch (e) {
     console.log('[Audio] applyAudioRoute error:', e?.message);
   }
@@ -3647,6 +3658,7 @@ setTimeout(() => applyAudioRoute(isSpeakerOn), 250);
     try { NativeModules.CallModule?.stopCallService(); } catch (e) {}
   } catch (error) {
     Alert.alert("Call Failed", error?.message || "Unknown error occurred");
+    global.__onCallScreen = false;
     rejectCall();
   }
 };
@@ -3701,15 +3713,157 @@ setTimeout(() => applyAudioRoute(isSpeakerOn), 250);
     await createAndSendInitialOffer();
   };
 
-  const endCall = useCallback(async (notify = true) => {
-  //   // forceStopAllCallAudio();
-  //   forceStopAllCallAudio(currentCallIdRef.current);
-  // console.log("[VideoCall] Ending call...");
+// const endCall = useCallback(async (notify = true) => {
+//   //   // forceStopAllCallAudio();
+//   //   forceStopAllCallAudio(currentCallIdRef.current);
+//   // console.log("[VideoCall] Ending call...");
 
+//   if (!isCallActiveRef.current) {
+//     console.log('[VoiceCall] endCall already in progress/done, ignoring');
+//     return;
+//   }
+
+//   forceStopAllCallAudio(currentCallIdRef.current);
+//   clearCallEndedTimeout();
+//   console.log("[VoiceCall] Ending call...");
+
+//   // 1. Navigate immediately
+//   // try {
+//   //   if (navigation.canGoBack()) {
+//   //     // navigation.goBack();
+//   //     navigation.navigate("BroadcastHome");
+//   //   } else {
+//   //     navigation.navigate("BroadcastHome");
+//   //   }
+//   // } catch (e) {
+//   //   navigation.navigate("BroadcastHome");
+//   // }
+
+
+//   try {
+//     navigation.dispatch(
+//       CommonActions.reset({ index: 0, routes: [{ name: "BroadcastHome" }] })
+//     );
+//   } catch (e) {
+//     navigation.navigate("BroadcastHome");
+//   }
+
+
+
+//   // 2. Cleanup in background
+//   setTimeout(() => {
+//     const callId = currentCallIdRef.current;
+    
+//     // Stop media
+//     if (localStream.current) {
+//       localStream.current.getTracks().forEach(t => t.stop());
+//       localStream.current = null;
+//     }
+    
+//     if (remoteStream.current) {
+//       remoteStream.current.getTracks().forEach(t => t.stop());
+//       remoteStream.current = null;
+//     }
+
+//     // Close peer connection
+//     if (pc.current) {
+//       try { pc.current.close(); } catch (e) {}
+//       pc.current = null;
+//     }
+
+//     // Notify other party
+//     if (notify && ws.current?.readyState === WebSocket.OPEN) {
+//       try {
+//         ws.current.send(JSON.stringify({ type: "call-ended" }));
+//       } catch (e) {}
+//     }
+
+//     try {
+//     if (ws.current) {
+//       ws.current.onopen = null;
+//       ws.current.onmessage = null;
+//       ws.current.onclose = null;
+//       ws.current.onerror = null;
+//       ws.current.close(1000, 'call ended');
+//     }
+//   } catch (e) {}
+//   ws.current = null;
+
+//     // Cleanup CallKeep - safe version
+//     try {
+//       if (callId) {
+//         CallKeepService.endCall(callId).catch(() => {});
+//       } else {
+//         // No callId, just cleanup
+//         if (Platform.OS === 'android') {
+//           try { NativeModules.CallModule?.stopCallService(); } catch (e) {}
+//         }
+//         CallKeepService.removeAllListeners();
+//       }
+//     } catch (e) {
+//       console.warn('[CallKeep] Cleanup error:', e);
+//     }
+
+//     // Cleanup audio
+//     try {
+//       InCallManager.stop();
+//       InCallManager.stopRingtone();
+//       InCallManager.setKeepScreenOn(false);
+//     } catch (e) {}
+
+//     // Clear timer
+//     if (callTimerRef.current) {
+//       clearInterval(callTimerRef.current);
+//       callTimerRef.current = null;
+//     }
+
+//     // Reset refs
+//     isCallActiveRef.current = false;
+//     hasInitialOfferRef.current = false;
+//     queuedRemoteCandidates.current = [];
+//     isCallerRef.current = false;
+//     isCleaningUpRef.current = false;
+//     hasSwitchedToVideoRef.current = false;
+//     global.__onCallScreen = false;
+
+//     // Reset state
+//     setWebrtcReady(false);
+//     setLocalURL(null);
+//     setRemoteURL(null);
+//     setCallDuration(0);
+//     setCurrentCallId(null);
+//     setShowIncomingModal(false);
+//     setIncomingSDP(null);
+    
+//     // Save history
+//     saveCallToHistory({
+//       contact: { name, profileImage: profile_image, userId: targetUserId },
+//       direction: isInitiator ? 'outgoing' : 'incoming',
+//       isVideoCall: isVideoCall || false,
+//       status: webrtcReady ? 'ended' : 'missed',
+//       duration: callDuration || 0,
+//     }).catch(() => {});
+
+//     console.log("[VideoCall] Cleanup complete");
+//   }, 0);
+
+// }, [isVideoCall, webrtcReady, callDuration, name, profile_image, targetUserId, isInitiator, navigation]);
+
+
+const endCall = useCallback(async (notify = true) => {
+  // 🔴 FIX: guard flag now set synchronously, at the very top, before any
+  // async/navigation work. Previously this was only set inside the
+  // setTimeout(...,0) at the bottom, which meant a second endCall() call
+  // (e.g. fired by the unmount cleanup of the connectSignaling effect,
+  // which runs `return () => { endCall(false); }`) could race past this
+  // guard before the first call's setTimeout had run — causing endCall to
+  // execute twice per call (confirmed in logs: duplicate
+  // CallKeepService.endCall with the same callId, back to back).
   if (!isCallActiveRef.current) {
     console.log('[VoiceCall] endCall already in progress/done, ignoring');
     return;
   }
+  isCallActiveRef.current = false;
 
   forceStopAllCallAudio(currentCallIdRef.current);
   clearCallEndedTimeout();
@@ -3717,12 +3871,9 @@ setTimeout(() => applyAudioRoute(isSpeakerOn), 250);
 
   // 1. Navigate immediately
   try {
-    if (navigation.canGoBack()) {
-      // navigation.goBack();
-      navigation.navigate("BroadcastHome");
-    } else {
-      navigation.navigate("BroadcastHome");
-    }
+    navigation.dispatch(
+      CommonActions.reset({ index: 0, routes: [{ name: "BroadcastHome" }] })
+    );
   } catch (e) {
     navigation.navigate("BroadcastHome");
   }
@@ -3730,13 +3881,13 @@ setTimeout(() => applyAudioRoute(isSpeakerOn), 250);
   // 2. Cleanup in background
   setTimeout(() => {
     const callId = currentCallIdRef.current;
-    
+
     // Stop media
     if (localStream.current) {
       localStream.current.getTracks().forEach(t => t.stop());
       localStream.current = null;
     }
-    
+
     if (remoteStream.current) {
       remoteStream.current.getTracks().forEach(t => t.stop());
       remoteStream.current = null;
@@ -3754,6 +3905,21 @@ setTimeout(() => applyAudioRoute(isSpeakerOn), 250);
         ws.current.send(JSON.stringify({ type: "call-ended" }));
       } catch (e) {}
     }
+
+    // 🔴 FIX: explicitly close the signaling socket. Previously `ws.current`
+    // was never closed anywhere in this file — it was just dropped, leaving
+    // the underlying connection potentially open server-side (still
+    // authenticated as this user) well after the call screen unmounted.
+    try {
+      if (ws.current) {
+        ws.current.onopen = null;
+        ws.current.onmessage = null;
+        ws.current.onclose = null;
+        ws.current.onerror = null;
+        ws.current.close(1000, 'call ended');
+      }
+    } catch (e) {}
+    ws.current = null;
 
     // Cleanup CallKeep - safe version
     try {
@@ -3784,12 +3950,14 @@ setTimeout(() => applyAudioRoute(isSpeakerOn), 250);
     }
 
     // Reset refs
-    isCallActiveRef.current = false;
+    // NOTE: isCallActiveRef.current = false already set synchronously above —
+    // removed the duplicate assignment that used to be here.
     hasInitialOfferRef.current = false;
     queuedRemoteCandidates.current = [];
     isCallerRef.current = false;
     isCleaningUpRef.current = false;
     hasSwitchedToVideoRef.current = false;
+    global.__onCallScreen = false;
 
     // Reset state
     setWebrtcReady(false);
@@ -3799,7 +3967,7 @@ setTimeout(() => applyAudioRoute(isSpeakerOn), 250);
     setCurrentCallId(null);
     setShowIncomingModal(false);
     setIncomingSDP(null);
-    
+
     // Save history
     saveCallToHistory({
       contact: { name, profileImage: profile_image, userId: targetUserId },
@@ -3813,6 +3981,7 @@ setTimeout(() => applyAudioRoute(isSpeakerOn), 250);
   }, 0);
 
 }, [isVideoCall, webrtcReady, callDuration, name, profile_image, targetUserId, isInitiator, navigation]);
+
 
 const rejectCall = async () => {
   // forceStopAllCallAudio();
@@ -3835,8 +4004,9 @@ const rejectCall = async () => {
   });
   setShowIncomingModal(false);
   setIncomingSDP(null);
-  //navigation.navigate("PHome");
+  global.__onCallScreen = false;
   navigation.goBack();
+  
 };
 
   // const startAudioSession = () => {
@@ -4266,14 +4436,22 @@ const rejectCall = async () => {
                 ? 'Call Declined'
                 : 'Call Ended'}
             </Text>
-            <Text style={styles.callEndedSubtitle}>
+            {/* <Text style={styles.callEndedSubtitle}>
               {callEndedReason === 'busy'
                 ? `${name || 'They'} are currently on another call`
                 : callEndedReason === 'rejected'
                 ? `${name || 'They'} declined your call`
                 : `${name || 'They'} ended the call`}
-            </Text>
-            <ActivityIndicator size="small" color="rgba(255,255,255,0.7)" style={{ marginTop: 16 }} />
+            </Text> */}
+          
+             <Text style={styles.callEndedSubtitle}> please wait...  </Text>
+              {/* {callEndedReason === 'busy'
+                ? `${name || 'They'} are currently on another call`
+                : callEndedReason === 'rejected'
+                ? `${name || 'They'} declined your call`
+                : `${name || 'They'} ended the call`} */}
+            {/* </Text> */}
+              <ActivityIndicator size="small" color="rgba(255,255,255,0.7)" style={{ marginTop: 16 }} />
           </View>
         </View>
       </Modal>

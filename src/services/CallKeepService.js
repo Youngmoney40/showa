@@ -10,7 +10,7 @@ class CallKeepService {
     this.initializationPromise = null;
     this.initialized = false;
     this._subscriptions = [];
-    this._manualListeners = []; // ← tracks handlers when addListener returns null
+    this._manualListeners = []; 
   }
 
   _getEventName(event) {
@@ -25,22 +25,52 @@ class CallKeepService {
     return map[event] || event;
   }
 
-  async requestAndroidPermissions() {
-    if (Platform.OS !== 'android') return true;
-    try {
-      const grants = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
-        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-      ]);
-      const granted = grants[PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE] ===
-        PermissionsAndroid.RESULTS.GRANTED;
-      console.log('[CallKeep] Android permissions granted:', granted);
-      return granted;
-    } catch (e) {
-      console.error('[CallKeep] Permission error:', e);
-      return false;
+  // async requestAndroidPermissions() {
+  //   if (Platform.OS !== 'android') return true;
+  //   try {
+  //     const grants = await PermissionsAndroid.requestMultiple([
+  //       PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
+  //       PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+  //     ]);
+  //     const granted = grants[PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE] ===
+  //       PermissionsAndroid.RESULTS.GRANTED;
+  //     console.log('[CallKeep] Android permissions granted:', granted);
+  //     return granted;
+  //   } catch (e) {
+  //     console.error('[CallKeep] Permission error:', e);
+  //     return false;
+  //   }
+  // }
+
+  async requestAndroidPermissions(retriesLeft = 5) {
+  if (Platform.OS !== 'android') return true;
+  try {
+    const grants = await PermissionsAndroid.requestMultiple([
+      PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+    ]);
+    const granted = grants[PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE] ===
+      PermissionsAndroid.RESULTS.GRANTED;
+    console.log('[CallKeep] Android permissions granted:', granted);
+    return granted;
+  } catch (e) {
+    // Cold start from the notification's Accept action can execute JS
+    // before MainActivity finishes attaching to the bridge — that's what
+    // throws "not attached to an Activity". It's transient, so retry
+    // with backoff instead of giving up permanently.
+    const notAttached = e?.message?.includes('not attached to an Activity');
+
+    if (notAttached && retriesLeft > 0) {
+      console.warn(`[CallKeep] Activity not attached yet, retrying (${retriesLeft} left)...`);
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      return this.requestAndroidPermissions(retriesLeft - 1);
     }
+
+    console.error('[CallKeep] Permission error............:', e);
+    console.log("call-keep error")
+    return false;
   }
+}
 
   async initialize() {
     if (this.initialized && this.isAvailable) return true;
@@ -191,7 +221,28 @@ class CallKeepService {
 
     console.log('[CallKeep] displayIncomingCall:', { callId, callerName, handle, isVideo, apiLevel });
 
-    if (Platform.OS === 'android') {
+    // if (Platform.OS === 'android') {
+    //   // Always start foreground service on Android (works all API levels)
+    //   this._startForegroundService({
+    //     callerName, callId, roomId,
+    //     callType: isVideo ? 'video' : 'audio',
+    //     callerId: handle,
+    //   });
+
+    //   // Also try ConnectionService (required for API 34+)
+    //   await this.initialize();
+    //   if (this.isAvailable) {
+    //     try {
+    //       RNCallKeep.displayIncomingCall(callId, handle, callerName, 'generic', isVideo);
+    //       console.log('[CallKeep] ConnectionService displayIncomingCall called ✅');
+    //     } catch (e) {
+    //       console.warn('[CallKeep] ConnectionService failed, foreground service is fallback:', e.message);
+    //     }
+    //   }
+    //   return true;
+    // }
+
+        if (Platform.OS === 'android') {
       // Always start foreground service on Android (works all API levels)
       this._startForegroundService({
         callerName, callId, roomId,
@@ -199,15 +250,23 @@ class CallKeepService {
         callerId: handle,
       });
 
-      // Also try ConnectionService (required for API 34+)
-      await this.initialize();
-      if (this.isAvailable) {
-        try {
-          RNCallKeep.displayIncomingCall(callId, handle, callerName, 'generic', isVideo);
-          console.log('[CallKeep] ConnectionService displayIncomingCall called ✅');
-        } catch (e) {
-          console.warn('[CallKeep] ConnectionService failed, foreground service is fallback:', e.message);
+      // Only engage Telecom ConnectionService on API 34+, where it's
+      // required to satisfy full-screen-intent restrictions. Below that,
+      // skip it entirely — RNCallKeep's self-managed Connection was fighting
+      // InCallManager for audio-route ownership on every Android device,
+      // which is why earpiece/speaker toggling wasn't working.
+      if (apiLevel >= 34) {
+        await this.initialize();
+        if (this.isAvailable) {
+          try {
+            RNCallKeep.displayIncomingCall(callId, handle, callerName, 'generic', isVideo);
+            console.log('[CallKeep] ConnectionService displayIncomingCall called ✅');
+          } catch (e) {
+            console.warn('[CallKeep] ConnectionService failed, foreground service is fallback:', e.message);
+          }
         }
+      } else {
+        console.log('[CallKeep] Skipping ConnectionService below API 34 — foreground service only');
       }
       return true;
     }

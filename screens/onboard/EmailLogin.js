@@ -92,17 +92,281 @@ class NetworkError extends Error {
 }
 
 
+// ─── FCM Service ────────────────────────────────────────────────────────────
+// class FCMService {
+//   static async getToken() {
+//     try {
+//       const token = await messaging().getToken();
+//       console.log('📱 FCM Token:', token);
+//       return token;
+//     } catch (error) {
+//       console.error('Failed to get FCM token:', error);
+//       return null;
+//     }
+//   }
 
+//   static async registerDevice(userId, userToken, retryCount = 0) {
+//     const maxRetries = 3;
+//     const baseDelay = 2000;
+
+//     try {
+//       const netState = await NetInfo.fetch();
+//       if (!netState.isConnected) {
+//         throw new NetworkError(
+//           'No internet connection. Please check your network.',
+//           'NO_NETWORK',
+//           true
+//         );
+//       }
+
+//       const registration_id = await this.getToken();
+//       if (!registration_id) {
+//         console.warn('No FCM token available - device registration skipped');
+//         return { success: false, error: 'No FCM token' };
+//       }
+
+//       console.log(`📱 Registering device (attempt ${retryCount + 1}/${maxRetries + 1})`);
+
+//       const platform = Platform.OS === 'ios' ? 'ios' : 'android';
+      
+//       // Get device name
+//       let deviceName = 'Unknown Device';
+//       try {
+//         const deviceInfo = await import('react-native-device-info');
+//         const brand = deviceInfo.getBrand ? deviceInfo.getBrand() : '';
+//         const model = deviceInfo.getModel ? deviceInfo.getModel() : '';
+//         deviceName = brand && model ? `${brand} ${model}` : (brand || model || 'Unknown Device');
+//       } catch {
+//         deviceName = Platform.OS === 'ios' ? 'iPhone' : 'Android Device';
+//       }
+
+//       const response = await axios.post(
+//         `${API_ROUTE}/notifications/register-device/`,
+//         {
+//           registration_id: registration_id,
+//           platform: platform,
+//           device_name: deviceName,
+//         },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${userToken}`,
+//             'Content-Type': 'application/json',
+//           },
+//           timeout: 15000,
+//         }
+//       );
+
+//       if (response.status === 200 || response.status === 201) {
+//         console.log('✅ Device registered successfully for FCM');
+//         return { success: true, data: response.data };
+//       }
+
+//       return { success: false, error: `Server error: ${response.status}` };
+      
+//     } catch (error) {
+//       console.error('Device registration failed (attempt', retryCount + 1, '):', error);
+
+//       const isRetryable = this.isRetryableError(error);
+      
+//       if (isRetryable && retryCount < maxRetries) {
+//         const delay = baseDelay * Math.pow(2, retryCount);
+//         console.log(`Retrying in ${delay}ms...`);
+//         await new Promise(resolve => setTimeout(resolve, delay));
+//         return this.registerDevice(userId, userToken, retryCount + 1);
+//       }
+
+//       return {
+//         success: false,
+//         error: error.message || 'Device registration failed',
+//         retryable: isRetryable,
+//         permanent: !isRetryable,
+//       };
+//     }
+//   }
+
+//   static async checkDeviceRegistration(userToken) {
+//     try {
+//       const registration_id = await this.getToken();
+//       if (!registration_id) {
+//         return { isRegistered: false, error: 'No FCM token' };
+//       }
+
+//       const response = await axios.post(
+//         `${API_ROUTE}/notifications/check-device/`,
+//         {
+//           registration_id: registration_id,
+//         },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${userToken}`,
+//             'Content-Type': 'application/json',
+//           },
+//         }
+//       );
+
+//       return {
+//         isRegistered: response.data.is_registered,
+//         isActive: response.data.is_active,
+//         deviceId: response.data.device_id,
+//       };
+//     } catch (error) {
+//       console.error('Failed to check device registration:', error);
+//       return { isRegistered: false, error: error.message };
+//     }
+//   }
+
+//   static isRetryableError(error) {
+//     if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+//       return true;
+//     }
+//     if (error.response) {
+//       if (error.response.status >= 500 && error.response.status < 600) {
+//         return true;
+//       }
+//       if (error.response.status === 429) {
+//         return true;
+//       }
+//     }
+//     if (error.message?.includes('network')) {
+//       return true;
+//     }
+//     return false;
+//   }
+
+//   static async requestPermissions() {
+//     // Android 13+ (API 33) needs POST_NOTIFICATIONS permission
+//     if (Platform.OS === 'android' && Platform.Version >= 33) {
+//       try {
+//         const { PermissionsAndroid } = require('react-native');
+//         const granted = await PermissionsAndroid.request(
+//           PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+//         );
+//         return granted === PermissionsAndroid.RESULTS.GRANTED;
+//       } catch (error) {
+//         console.error('Failed to request notification permission:', error);
+//         return false;
+//       }
+//     }
+    
+//     // iOS permission request
+//     if (Platform.OS === 'ios') {
+//       try {
+//         const authStatus = await messaging().requestPermission();
+//         const enabled = 
+//           authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+//           authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+//         console.log('iOS permission status:', authStatus);
+//         return enabled;
+//       } catch (error) {
+//         console.error('iOS permission request failed:', error);
+//         return false;
+//       }
+//     }
+    
+//     return true;
+//   }
+
+//   static async registerTokenRefreshListener() {
+//     return messaging().onTokenRefresh(async (token) => {
+//       console.log('🔄 FCM Token refreshed:', token);
+//       try {
+//         const userToken = await AsyncStorage.getItem('userToken');
+//         const userId = await AsyncStorage.getItem('userId');
+        
+//         if (userToken && userId) {
+//           console.log('User logged in, refreshing device registration');
+//           await this.registerDevice(parseInt(userId), userToken);
+//         } else {
+//           console.log('User not logged in, skipping token refresh');
+//         }
+//       } catch (error) {
+//         console.error('Failed to refresh FCM token registration:', error);
+//       }
+//     });
+//   }
+// }
+
+
+// ─── FCM Service ────────────────────────────────────────────────────────────
 class FCMService {
-  static async getToken() {
+  static async getToken(retryCount = 0) {
+    const maxRetries = 3;
+    const delay = 2000 * Math.pow(2, retryCount);
+    
     try {
+      // Check if Google Play Services are available
+      const isGooglePlayServicesAvailable = await this.checkGooglePlayServices();
+      if (!isGooglePlayServicesAvailable) {
+        console.warn('Google Play Services not available');
+        return null;
+      }
+
       const token = await messaging().getToken();
-      //console.log('FCM Token:', token);
+      console.log('📱 FCM Token:', token);
       return token;
+      
     } catch (error) {
-     // console.error(' Failed to get FCM token:', error);
+      console.error(`Failed to get FCM token (attempt ${retryCount + 1}):`, error);
+      
+      // Retry on certain errors
+      if (
+        retryCount < maxRetries &&
+        (error.code === 'messaging/unknown' || 
+         error.message?.includes('SERVICE_NOT_AVAILABLE') ||
+         error.message?.includes('PLAY_SERVICES'))
+      ) {
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.getToken(retryCount + 1);
+      }
+      
       return null;
     }
+  }
+
+  static async checkGooglePlayServices() {
+    try {
+      const { checkPlayServices } = require('react-native-google-play-services');
+      const isAvailable = await checkPlayServices();
+      return isAvailable;
+    } catch (error) {
+      console.warn('Google Play Services check failed:', error);
+      // Assume available if check fails (for emulators with Play Store)
+      return true;
+    }
+  }
+
+  static async requestPermissions() {
+    // Android 13+ (API 33) needs POST_NOTIFICATIONS permission
+    if (Platform.OS === 'android' && Platform.Version >= 33) {
+      try {
+        const { PermissionsAndroid } = require('react-native');
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+        );
+        console.log('Notification permission status:', granted);
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (error) {
+        console.error('Failed to request notification permission:', error);
+        return false;
+      }
+    }
+    
+    if (Platform.OS === 'ios') {
+      try {
+        const authStatus = await messaging().requestPermission();
+        const enabled = 
+          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        console.log('iOS permission status:', authStatus);
+        return enabled;
+      } catch (error) {
+        console.error('iOS permission request failed:', error);
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   static async registerDevice(userId, userToken, retryCount = 0) {
@@ -121,21 +385,31 @@ class FCMService {
 
       const registration_id = await this.getToken();
       if (!registration_id) {
-        //console.warn('No FCM token available - device registration skipped');
-        return { success: false, error: 'No FCM token' };
+        console.warn('No FCM token available - device registration skipped');
+        return { success: false, error: 'No FCM token', retryable: true };
       }
 
-      //console.log(` Registering device (attempt ${retryCount + 1}/${maxRetries + 1})`);
+      console.log(`📱 Registering device (attempt ${retryCount + 1}/${maxRetries + 1})`);
 
-      
       const platform = Platform.OS === 'ios' ? 'ios' : 'android';
+      
+      // Get device name
+      let deviceName = 'Unknown Device';
+      try {
+        const deviceInfo = await import('react-native-device-info');
+        const brand = deviceInfo.getBrand ? deviceInfo.getBrand() : '';
+        const model = deviceInfo.getModel ? deviceInfo.getModel() : '';
+        deviceName = brand && model ? `${brand} ${model}` : (brand || model || 'Unknown Device');
+      } catch {
+        deviceName = Platform.OS === 'ios' ? 'iPhone' : 'Android Device';
+      }
 
       const response = await axios.post(
         `${API_ROUTE}/notifications/register-device/`,
         {
-          registration_id: registration_id,  
-          platform: platform,               
-         
+          registration_id: registration_id,
+          platform: platform,
+          device_name: deviceName,
         },
         {
           headers: {
@@ -147,20 +421,20 @@ class FCMService {
       );
 
       if (response.status === 200 || response.status === 201) {
-        //console.log('Device registered successfully for FCM');
+        console.log('✅ Device registered successfully for FCM');
         return { success: true, data: response.data };
       }
 
       return { success: false, error: `Server error: ${response.status}` };
       
     } catch (error) {
-      //console.error('Device registration failed (attempt', retryCount + 1, '):', error);
+      console.error('Device registration failed (attempt', retryCount + 1, '):', error);
 
       const isRetryable = this.isRetryableError(error);
       
       if (isRetryable && retryCount < maxRetries) {
         const delay = baseDelay * Math.pow(2, retryCount);
-       // console.log(`Retrying in ${delay}ms...`);
+        console.log(`Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return this.registerDevice(userId, userToken, retryCount + 1);
       }
@@ -189,49 +463,174 @@ class FCMService {
     if (error.message?.includes('network')) {
       return true;
     }
-    return false;
-  }
-
-  static async getDeviceName() {
-    try {
-      const deviceInfo = await import('react-native-device-info');
-      return `${deviceInfo.getBrand()} ${deviceInfo.getModel()}`;
-    } catch {
-      return Platform.OS === 'ios' ? 'iPhone' : 'Android Device';
+    if (error.message?.includes('SERVICE_NOT_AVAILABLE')) {
+      return true;
     }
+    if (error.message?.includes('PLAY_SERVICES')) {
+      return true;
+    }
+    return false;
   }
 
   static async registerTokenRefreshListener() {
     return messaging().onTokenRefresh(async (token) => {
-      //console.log('FCM Token refreshed:', token);
+      console.log('🔄 FCM Token refreshed:', token);
       try {
         const userToken = await AsyncStorage.getItem('userToken');
         const userId = await AsyncStorage.getItem('userId');
+        
         if (userToken && userId) {
+          console.log('User logged in, refreshing device registration');
           await this.registerDevice(parseInt(userId), userToken);
+        } else {
+          console.log('User not logged in, skipping token refresh');
         }
       } catch (error) {
-        //console.error('Failed to refresh FCM token registration:', error);
+        console.error('Failed to refresh FCM token registration:', error);
       }
     });
   }
-
-  static async requestPermissions() {
-    if (Platform.OS === 'android' && Platform.Version >= 33) {
-      try {
-        const { PermissionsAndroid } = require('react-native');
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
-        );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (error) {
-        //console.error(' Failed to request notification permission:', error);
-        return false;
-      }
-    }
-    return true;
-  }
 }
+
+// class FCMService {
+//   static async getToken() {
+//     try {
+//       const token = await messaging().getToken();
+//       //console.log('FCM Token:', token);
+//       return token;
+//     } catch (error) {
+//      // console.error(' Failed to get FCM token:', error);
+//       return null;
+//     }
+//   }
+
+//   static async registerDevice(userId, userToken, retryCount = 0) {
+//     const maxRetries = 3;
+//     const baseDelay = 2000;
+
+//     try {
+//       const netState = await NetInfo.fetch();
+//       if (!netState.isConnected) {
+//         throw new NetworkError(
+//           'No internet connection. Please check your network.',
+//           'NO_NETWORK',
+//           true
+//         );
+//       }
+
+//       const registration_id = await this.getToken();
+//       if (!registration_id) {
+//         //console.warn('No FCM token available - device registration skipped');
+//         return { success: false, error: 'No FCM token' };
+//       }
+
+//       //console.log(` Registering device (attempt ${retryCount + 1}/${maxRetries + 1})`);
+
+      
+//       const platform = Platform.OS === 'ios' ? 'ios' : 'android';
+
+//       const response = await axios.post(
+//         `${API_ROUTE}/notifications/register-device/`,
+//         {
+//           registration_id: registration_id,  
+//           platform: platform,               
+         
+//         },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${userToken}`,
+//             'Content-Type': 'application/json',
+//           },
+//           timeout: 15000,
+//         }
+//       );
+
+//       if (response.status === 200 || response.status === 201) {
+//         //console.log('Device registered successfully for FCM');
+//         return { success: true, data: response.data };
+//       }
+
+//       return { success: false, error: `Server error: ${response.status}` };
+      
+//     } catch (error) {
+//       //console.error('Device registration failed (attempt', retryCount + 1, '):', error);
+
+//       const isRetryable = this.isRetryableError(error);
+      
+//       if (isRetryable && retryCount < maxRetries) {
+//         const delay = baseDelay * Math.pow(2, retryCount);
+//        // console.log(`Retrying in ${delay}ms...`);
+//         await new Promise(resolve => setTimeout(resolve, delay));
+//         return this.registerDevice(userId, userToken, retryCount + 1);
+//       }
+
+//       return {
+//         success: false,
+//         error: error.message || 'Device registration failed',
+//         retryable: isRetryable,
+//         permanent: !isRetryable,
+//       };
+//     }
+//   }
+
+//   static isRetryableError(error) {
+//     if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+//       return true;
+//     }
+//     if (error.response) {
+//       if (error.response.status >= 500 && error.response.status < 600) {
+//         return true;
+//       }
+//       if (error.response.status === 429) {
+//         return true;
+//       }
+//     }
+//     if (error.message?.includes('network')) {
+//       return true;
+//     }
+//     return false;
+//   }
+
+//   static async getDeviceName() {
+//     try {
+//       const deviceInfo = await import('react-native-device-info');
+//       return `${deviceInfo.getBrand()} ${deviceInfo.getModel()}`;
+//     } catch {
+//       return Platform.OS === 'ios' ? 'iPhone' : 'Android Device';
+//     }
+//   }
+
+//   static async registerTokenRefreshListener() {
+//     return messaging().onTokenRefresh(async (token) => {
+//       //console.log('FCM Token refreshed:', token);
+//       try {
+//         const userToken = await AsyncStorage.getItem('userToken');
+//         const userId = await AsyncStorage.getItem('userId');
+//         if (userToken && userId) {
+//           await this.registerDevice(parseInt(userId), userToken);
+//         }
+//       } catch (error) {
+//         //console.error('Failed to refresh FCM token registration:', error);
+//       }
+//     });
+//   }
+
+//   static async requestPermissions() {
+//     if (Platform.OS === 'android' && Platform.Version >= 33) {
+//       try {
+//         const { PermissionsAndroid } = require('react-native');
+//         const granted = await PermissionsAndroid.request(
+//           PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+//         );
+//         return granted === PermissionsAndroid.RESULTS.GRANTED;
+//       } catch (error) {
+//         //console.error(' Failed to request notification permission:', error);
+//         return false;
+//       }
+//     }
+//     return true;
+//   }
+// }
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function EmailLoginScreen({ navigation }) {
@@ -326,168 +725,306 @@ export default function EmailLoginScreen({ navigation }) {
   };
 
   // ─── Login Handler ──────────────────────────────────────────────────────
-  const handleLogin = async () => {
-    if (!validateForm()) return;
+  // const handleLogin = async () => {
+  //   if (!validateForm()) return;
     
-    const netState = await NetInfo.fetch();
-    if (!netState.isConnected) {
-      showNetworkError(
-        'No internet connection. Please check your network and try again.',
-        handleLogin
-      );
-      return;
-    }
+  //   const netState = await NetInfo.fetch();
+  //   if (!netState.isConnected) {
+  //     showNetworkError(
+  //       'No internet connection. Please check your network and try again.',
+  //       handleLogin
+  //     );
+  //     return;
+  //   }
 
-    const now = Date.now();
-    if (lastLoginAttempt && (now - lastLoginAttempt) < 3000) {
-      Alert.alert('Please wait', 'Please wait a moment before trying again.');
-      return;
-    }
-    setLastLoginAttempt(now);
+  //   const now = Date.now();
+  //   if (lastLoginAttempt && (now - lastLoginAttempt) < 3000) {
+  //     Alert.alert('Please wait', 'Please wait a moment before trying again.');
+  //     return;
+  //   }
+  //   setLastLoginAttempt(now);
 
-    setLoading(true);
-    let loginSuccess = false;
+  //   setLoading(true);
+  //   let loginSuccess = false;
     
-    try {
-      console.log('🔐 Attempting login...');
+  //   try {
+  //     console.log('🔐 Attempting login...');
       
-      const response = await axios.post(
-        `${API_ROUTE}/email-login/`,
-        {
-          email: email.trim().toLowerCase(),
-          password: password,
-        },
-        {
-          timeout: 20000,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+  //     const response = await axios.post(
+  //       `${API_ROUTE}/email-login/`,
+  //       {
+  //         email: email.trim().toLowerCase(),
+  //         password: password,
+  //       },
+  //       {
+  //         timeout: 20000,
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //         },
+  //       }
+  //     );
       
-      if (response.status === 200 && response.data.success) {
-        const { token, refresh, user, wallet } = response.data;
+  //     if (response.status === 200 && response.data.success) {
+  //       const { token, refresh, user, wallet } = response.data;
         
-        try {
-          await EncryptedStorage.setItem('userToken', token);
-          await EncryptedStorage.setItem('refreshToken', refresh);
-          await EncryptedStorage.setItem('userData', JSON.stringify(user));
+  //       try {
+  //         await EncryptedStorage.setItem('userToken', token);
+  //         await EncryptedStorage.setItem('refreshToken', refresh);
+  //         await EncryptedStorage.setItem('userData', JSON.stringify(user));
           
-          await AsyncStorage.multiSet([
-            ['userToken', token],
-            ['refreshToken', refresh],
-            ['userData', JSON.stringify(user)],
-            ['isVerified', 'true'],
-            ['userEmail', user.email],
-            ['userId', user.id.toString()],
-            ['loginMethod', 'email'],
-          ]);
-        } catch (storageError) {
-          console.error('❌ Storage error:', storageError);
-        }
+  //         await AsyncStorage.multiSet([
+  //           ['userToken', token],
+  //           ['refreshToken', refresh],
+  //           ['userData', JSON.stringify(user)],
+  //           ['isVerified', 'true'],
+  //           ['userEmail', user.email],
+  //           ['userId', user.id.toString()],
+  //           ['loginMethod', 'email'],
+  //         ]);
+  //       } catch (storageError) {
+  //         console.error('❌ Storage error:', storageError);
+  //       }
 
-        loginSuccess = true;
+  //       loginSuccess = true;
 
-        const registerDevice = async () => {
-          try {
-            console.log('📱 Starting device registration...');
-            const result = await FCMService.registerDevice(user.id, token);
+  //       const registerDevice = async () => {
+  //         try {
+  //           console.log('📱 Starting device registration...');
+  //           const result = await FCMService.registerDevice(user.id, token);
             
-            if (result.success) {
-              console.log('✅ Device registered for push notifications');
-            } else if (result.permanent) {
-              console.warn('⚠️ Permanent device registration failure:', result.error);
-            } else if (result.retryable) {
-              console.warn('⚠️ Retryable device registration failure:', result.error);
-              setTimeout(() => {
-                FCMService.registerDevice(user.id, token);
-              }, 30000);
-            }
-          } catch (fcmError) {
-            console.error('❌ FCM registration error (non-blocking):', fcmError);
-          }
-        };
+  //           if (result.success) {
+  //             console.log('✅ Device registered for push notifications');
+  //           } else if (result.permanent) {
+  //             console.warn('⚠️ Permanent device registration failure:', result.error);
+  //           } else if (result.retryable) {
+  //             console.warn('⚠️ Retryable device registration failure:', result.error);
+  //             setTimeout(() => {
+  //               FCMService.registerDevice(user.id, token);
+  //             }, 30000);
+  //           }
+  //         } catch (fcmError) {
+  //           console.error('❌ FCM registration error (non-blocking):', fcmError);
+  //         }
+  //       };
 
-        registerDevice();
-        navigation.replace('BroadcastHome');
+  //       registerDevice();
+  //       navigation.replace('BroadcastHome');
         
+  //     } else {
+  //       Alert.alert('Login Failed', response.data.error || 'Invalid credentials');
+  //     }
+      
+  //   } catch (error) {
+  //     console.error('❌ Login error:', error);
+      
+  //     if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+  //       showNetworkError(
+  //         'Connection timeout. Please check your network and try again.',
+  //         handleLogin
+  //       );
+  //       return;
+  //     }
+      
+  //     if (!error.response) {
+  //       showNetworkError(
+  //         'Cannot connect to server. Please check your internet connection.',
+  //         handleLogin
+  //       );
+  //       return;
+  //     }
+      
+  //     if (error.response.status >= 500 && error.response.status < 600) {
+  //       showNetworkError(
+  //         'Server is currently experiencing issues. Please try again later.',
+  //         handleLogin
+  //       );
+  //       return;
+  //     }
+      
+  //     if (error.response.status === 400 && error.response?.data?.login_method === 'phone') {
+  //       Alert.alert(
+  //         'Phone Account Detected',
+  //         'This account uses phone number login. Please use "Continue with Phone" option.',
+  //         [
+  //           { text: 'Cancel', style: 'cancel' },
+  //           { 
+  //             text: 'Use Phone Login', 
+  //             onPress: () => navigation.navigate('PhoneNumber') 
+  //           }
+  //         ]
+  //       );
+  //       return;
+  //     }
+      
+  //     if (error.response.status === 401) {
+  //       Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+  //       return;
+  //     }
+      
+  //     if (error.response.status === 403) {
+  //       Alert.alert('Account Locked', 'Your account has been locked. Please contact support.');
+  //       return;
+  //     }
+      
+  //     if (error.response.status === 429) {
+  //       Alert.alert('Too Many Attempts', 'Please wait a few minutes before trying again.');
+  //       return;
+  //     }
+      
+  //     Alert.alert(
+  //       'Login Error',
+  //       error.response?.data?.error || 'Unable to login. Please check your credentials.'
+  //     );
+      
+  //   } finally {
+  //     if (isMountedRef.current) {
+  //       setLoading(false);
+  //       setTimeout(() => {
+  //         if (isMountedRef.current) {
+  //           setLastLoginAttempt(null);
+  //         }
+  //       }, 5000);
+  //     }
+  //   }
+  // };
+
+
+  const handleLogin = async () => {
+  if (!validateForm()) return;
+  
+  const netState = await NetInfo.fetch();
+  if (!netState.isConnected) {
+    showNetworkError(
+      'No internet connection. Please check your network and try again.',
+      handleLogin
+    );
+    return;
+  }
+
+  const now = Date.now();
+  if (lastLoginAttempt && (now - lastLoginAttempt) < 3000) {
+    Alert.alert('Please wait', 'Please wait a moment before trying again.');
+    return;
+  }
+  setLastLoginAttempt(now);
+
+  setLoading(true);
+  
+  try {
+    console.log('🔐 Attempting login...');
+    
+    const response = await axios.post(
+      `${API_ROUTE}/email-login/`,
+      {
+        email: email.trim().toLowerCase(),
+        password: password,
+      },
+      {
+        timeout: 20000,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    if (response.status === 200 && response.data.success) {
+      const { token, refresh, user, wallet, fcm } = response.data;
+      
+      // Store tokens
+      await EncryptedStorage.setItem('userToken', token);
+      await EncryptedStorage.setItem('refreshToken', refresh);
+      await EncryptedStorage.setItem('userData', JSON.stringify(user));
+      
+      await AsyncStorage.multiSet([
+        ['userToken', token],
+        ['refreshToken', refresh],
+        ['userData', JSON.stringify(user)],
+        ['isVerified', 'true'],
+        ['userEmail', user.email],
+        ['userId', user.id.toString()],
+        ['loginMethod', 'email'],
+      ]);
+
+      // ===== FIX: Check if device needs registration =====
+      const fcmToken = await FCMService.getToken();
+      
+      if (fcmToken) {
+        // Check if device is already registered
+        const isRegistered = await checkDeviceRegistration(fcmToken, token);
+        
+        if (!isRegistered) {
+          console.log('📱 Device not registered. Registering...');
+          await registerDeviceWithRetry(user.id, token);
+        } else {
+          console.log('✅ Device already registered');
+          // Still update to ensure it's active
+          await FCMService.registerDevice(user.id, token);
+        }
       } else {
-        Alert.alert('Login Failed', response.data.error || 'Invalid credentials');
+        console.warn('⚠️ No FCM token available');
       }
+
+      navigation.replace('BroadcastHome');
       
-    } catch (error) {
-      console.error('❌ Login error:', error);
-      
-      if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-        showNetworkError(
-          'Connection timeout. Please check your network and try again.',
-          handleLogin
-        );
-        return;
-      }
-      
-      if (!error.response) {
-        showNetworkError(
-          'Cannot connect to server. Please check your internet connection.',
-          handleLogin
-        );
-        return;
-      }
-      
-      if (error.response.status >= 500 && error.response.status < 600) {
-        showNetworkError(
-          'Server is currently experiencing issues. Please try again later.',
-          handleLogin
-        );
-        return;
-      }
-      
-      if (error.response.status === 400 && error.response?.data?.login_method === 'phone') {
-        Alert.alert(
-          'Phone Account Detected',
-          'This account uses phone number login. Please use "Continue with Phone" option.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Use Phone Login', 
-              onPress: () => navigation.navigate('PhoneNumber') 
-            }
-          ]
-        );
-        return;
-      }
-      
-      if (error.response.status === 401) {
-        Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
-        return;
-      }
-      
-      if (error.response.status === 403) {
-        Alert.alert('Account Locked', 'Your account has been locked. Please contact support.');
-        return;
-      }
-      
-      if (error.response.status === 429) {
-        Alert.alert('Too Many Attempts', 'Please wait a few minutes before trying again.');
-        return;
-      }
-      
-      Alert.alert(
-        'Login Error',
-        error.response?.data?.error || 'Unable to login. Please check your credentials.'
-      );
-      
-    } finally {
-      if (isMountedRef.current) {
-        setLoading(false);
-        setTimeout(() => {
-          if (isMountedRef.current) {
-            setLastLoginAttempt(null);
-          }
-        }, 5000);
-      }
+    } else {
+      Alert.alert('Login Failed', response.data.error || 'Invalid credentials');
     }
-  };
+    
+  } catch (error) {
+    console.error('❌ Login error:', error);
+   
+    
+  } finally {
+    setLoading(false);
+  }
+};
+
+// ===== Helper function to check device registration =====
+const checkDeviceRegistration = async (fcmToken, authToken) => {
+  try {
+    const response = await axios.post(
+      `${API_ROUTE}/notifications/check-device/`,
+      {
+        registration_id: fcmToken,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    return response.data.is_registered;
+  } catch (error) {
+    console.error('Failed to check device registration:', error);
+    return false;
+  }
+};
+
+// ===== Helper function to register device with retry =====
+const registerDeviceWithRetry = async (userId, token, retryCount = 0) => {
+  const maxRetries = 3;
+  
+  try {
+    const result = await FCMService.registerDevice(userId, token);
+    
+    if (result.success) {
+      console.log('✅ Device registered successfully');
+      return true;
+    } else if (retryCount < maxRetries) {
+      console.log(`Retry ${retryCount + 1}/${maxRetries}...`);
+      await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
+      return registerDeviceWithRetry(userId, token, retryCount + 1);
+    } else {
+      console.error('❌ Failed to register device after max retries');
+      return false;
+    }
+  } catch (error) {
+    console.error('Device registration error:', error);
+    return false;
+  }
+};
 
   // ─── Navigation ────────────────────────────────────────────────────────────
   const navigateToRegister = () => {
