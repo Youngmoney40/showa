@@ -213,60 +213,9 @@ const handleDeleteComment = useCallback(async (commentId, isReply = false, paren
 }, []);
 
 
-  useFocusEffect(
-  useCallback(() => {
-    const syncLikeStatus = async () => {
-      if (!post?.id) {
-        console.log('🔄 syncLikeStatus: No post ID');
-        return;
-      }
-      
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        if (!token) {
-          console.log('🔄 syncLikeStatus: No token');
-          return;
-        }
+ 
 
-        console.log('🔄 FETCHING POST FOR SYNC:', post.id);
-        const response = await axios.get(`${API_ROUTE}/posts/${post.id}/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.status === 200) {
-          console.log('🔄 SYNC RESPONSE:', JSON.stringify(response.data, null, 2));
-          console.log('🔄 is_liked:', response.data.is_liked);
-          console.log('🔄 like_count:', response.data.like_count);
-          
-          // Only update if values are different
-          if (response.data.is_liked !== undefined) {
-            if (response.data.is_liked !== isLiked) {
-              console.log('🔄 Updating isLiked from', isLiked, 'to', response.data.is_liked);
-              setIsLiked(response.data.is_liked);
-            } else {
-              console.log('🔄 isLiked already in sync:', isLiked);
-            }
-          }
-          
-          if (response.data.like_count !== undefined) {
-            if (response.data.like_count !== likeCount) {
-              console.log('🔄 Updating likeCount from', likeCount, 'to', response.data.like_count);
-              setLikeCount(response.data.like_count);
-            } else {
-              console.log('🔄 likeCount already in sync:', likeCount);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('🔴 Error syncing like status on focus:', error);
-      }
-    };
-
-    syncLikeStatus();
-  }, [post?.id, isLiked, likeCount])
-);
-
-  // Fix image URLs
+ 
   const fixImageUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http://') || url.startsWith('https://')) {

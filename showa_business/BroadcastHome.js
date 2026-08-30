@@ -1076,14 +1076,7 @@ const MemoizedTweetItem = memo(({
           )}
         </Text>
         
-        {isPostTrending && (
-          <View style={styles.trendingContainer}>
-            <View style={styles.trendingBadge}>
-              <Text style={styles.trendingIcon}>🔥</Text>
-              <Text style={styles.trendingText}>Trending</Text>
-            </View>
-          </View>
-        )}
+       
         
         {renderImageGrid}
         
@@ -1166,29 +1159,7 @@ const MemoizedTweetItem = memo(({
           </View>
         </View>
         
-        {/* ===== Network Score (optional) ===== */}
-        {networkScore > 10 && (
-          <View style={[styles.networkButton, { backgroundColor: colors.backgroundSecondary }]}>
-            <View style={styles.networkButtonContent}>
-              <View style={styles.networkIconContainer}>
-                <Text style={styles.networkStatusEmoji}>{viralStatus.emoji}</Text>
-              </View>
-              <View style={styles.networkInfo}>
-                <Text style={[styles.networkScore, { color: colors.text }]}>
-                  {networkScore}
-                </Text>
-                <Text style={[styles.networkLabel, { color: colors.textSecondary }]}>
-                  Network Score
-                </Text>
-              </View>
-              <View style={[styles.networkStatus, { backgroundColor: viralStatus.color + '20' }]}>
-                <Text style={[styles.networkStatusText, { color: viralStatus.color }]}>
-                  {viralStatus.label}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
+       
       </View>
     </View>
   );
@@ -3411,25 +3382,54 @@ ${shareUrl}`;
     [groupedStatuses, currentUserPhone]
   );
 
-  const combinedPosts = React.useMemo(() => [
-    ...posts.map(post => ({ 
-      type: 'followed', 
-      post: {
-        ...post,
-        reactions: reactionCounts[post.id?.toString()] || {},
-        commentCount: commentsss.filter(c => c.post === post.id).length
-      }
-    })),
-    ...allposts.map(post => ({ 
-      type: 'allposts', 
-      post: {
-        ...post,
-        reactions: reactionCounts[post.id?.toString()] || {},
-        commentCount: commentsss.filter(c => c.post === post.id).length
-      }
-    }))
-  ].sort((a, b) => new Date(b.post.created_at) - new Date(a.post.created_at)), 
-  [posts, allposts, reactionCounts, commentsss]);
+  // const combinedPosts = React.useMemo(() => [
+  //   ...posts.map(post => ({ 
+  //     type: 'followed', 
+  //     post: {
+  //       ...post,
+  //       reactions: reactionCounts[post.id?.toString()] || {},
+  //       commentCount: commentsss.filter(c => c.post === post.id).length
+  //     }
+  //   })),
+  //   ...allposts.map(post => ({ 
+  //     type: 'allposts', 
+  //     post: {
+  //       ...post,
+  //       reactions: reactionCounts[post.id?.toString()] || {},
+  //       commentCount: commentsss.filter(c => c.post === post.id).length
+  //     }
+  //   }))
+  // ].sort((a, b) => new Date(b.post.created_at) - new Date(a.post.created_at)), 
+  // [posts, allposts, reactionCounts, commentsss]);
+
+const combinedPosts = React.useMemo(() => [
+  ...posts.map(post => ({ 
+    type: 'followed', 
+    post: {
+      ...post,
+      // Merge instead of overwrite: reactionCounts is only a stale initial
+      // snapshot from /all-post-reaction/. The post's own `reactions` field
+      // (kept fresh by handleReactionOptimized on every like/unlike) must win.
+      reactions: {
+        ...(reactionCounts[post.id?.toString()] || {}),
+        ...(post.reactions || {}),
+      },
+      commentCount: commentsss.filter(c => c.post === post.id).length
+    }
+  })),
+  ...allposts.map(post => ({ 
+    type: 'allposts', 
+    post: {
+      ...post,
+      reactions: {
+        ...(reactionCounts[post.id?.toString()] || {}),
+        ...(post.reactions || {}),
+      },
+      commentCount: commentsss.filter(c => c.post === post.id).length
+    }
+  }))
+].sort((a, b) => new Date(b.post.created_at) - new Date(a.post.created_at)), 
+[posts, allposts, reactionCounts, commentsss]);
 
   // ============================================================
   // RENDER CONTENT
