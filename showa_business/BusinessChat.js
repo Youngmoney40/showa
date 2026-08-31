@@ -5545,7 +5545,7 @@ const sendMessage = async (caption = '', emoji = null) => {
           </TouchableWithoutFeedback>
         </Modal>
       </ImageBackground>
-      // <IncomingCallHandler navigation={navigation} route={route} />
+      {/* <IncomingCallHandler navigation={navigation} route={route} /> */}
     </SafeAreaView>
   );
 }

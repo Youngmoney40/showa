@@ -2981,7 +2981,7 @@ import videoBackgroundfetch from '../src/services/VideoBackgroundFetch';
 import { AppState } from 'react-native';
 import { useTheme } from '../src/context/ThemeContext';
 import AdInterstitial from '../showa_business/ads/AdInterstitial';
-import IncomingCallHandler from '../components/Incomingcallhandler';
+//import IncomingCallHandler from '../components/Incomingcallhandler';
 
 
 const videoPlaceholder = require('../assets/images/dad.jpg');
@@ -5710,7 +5710,7 @@ ${shareUrl}`;
         <Text style={[styles.snackbarText, { color: colors.text || '#fff' }]}>{snackbarMessage}</Text>
       </Snackbar>
       <AdInterstitial visible={showAdInterstitial} onFinish={handleAdFinish} />
-      <IncomingCallHandler navigation={navigation} route={route} />
+      {/* <IncomingCallHandler navigation={navigation} route={route} /> */}
     </SafeAreaView>
   );
 };

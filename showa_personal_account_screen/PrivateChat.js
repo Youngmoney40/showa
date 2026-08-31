@@ -42,7 +42,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import RNFS from 'react-native-fs';
 import { useBackHandler } from '../src/hooks/useBackHandler';
 import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
-import IncomingCallHandler from '../components/Incomingcallhandler';
+//import IncomingCallHandler from '../components/Incomingcallhandler';
 
 const CACHE_KEY_PREFIX = 'chat_cache_';
 
@@ -2056,7 +2056,7 @@ const sendMessage = async (caption = '', emoji = null) => {
   // ==================== RENDER ====================
 
   const redirectBack = () => {
-    navigation.navigate('PHome');
+    navigation.goBack();
   };
 
   return (
@@ -2744,7 +2744,7 @@ const sendMessage = async (caption = '', emoji = null) => {
           </TouchableWithoutFeedback>
         </Modal>
       </ImageBackground>
-      <IncomingCallHandler navigation={navigation} route={route} />
+      {/* <IncomingCallHandler navigation={navigation} route={route} /> */}
     </SafeAreaView>
   );
 }

@@ -1,24 +1,16 @@
 import React from 'react';
+import { useNavigation } from '@react-navigation/native';
 import IncomingCallModal from '../components/IncomingCallModal';
 import { useCallManager } from '../components/Usecallmanager';
 
 /**
- * Drop this on any screen that needs to be able to receive an incoming
- * call (ring, show the modal, accept/reject) — it needs nothing from you
- * except navigation and route.
- *
- *   import IncomingCallHandler from '../components/IncomingCallHandler';
- *   ...
- *   <IncomingCallHandler navigation={navigation} route={route} />
- *
- * If a screen needs to send raw signaling messages too (rare — most
- * screens don't), use the hook directly instead:
- *
- *   import { useCallManager } from '../hooks/useCallManager';
- *   const call = useCallManager(navigation, route);
- *   call.sendMessage({ type: 'something' });
+ * Global incoming-call listener + modal. Mount this ONCE, inside
+ * <NavigationContainer>, guarded by isAuthenticated — see ThemedNavigator
+ * in App.js. It gets navigation itself via useNavigation(), so it needs
+ * no navigation/route props from its parent.
  */
-export default function IncomingCallHandler({ navigation, route }) {
+export default function IncomingCallHandler({ route = {} }) {
+  const navigation = useNavigation();
   const call = useCallManager(navigation, route);
 
   return (

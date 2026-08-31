@@ -2435,18 +2435,30 @@ function AppContent() {
       }
     );
 
-    const checkPendingCall = async () => {
+        const checkPendingCall = async () => {
       try {
         if (NativeModules.CallModule) {
           const pending = await NativeModules.CallModule.getPendingCall();
           if (pending) {
             console.log('[App] Pending call on startup:', pending);
-            setTimeout(() => handleIncomingCallNavigation(pending), 1000);
+            waitForHandlerAndNavigate(pending);
           }
         }
       } catch (e) {
         console.warn('[App] getPendingCall error:', e);
       }
+    };
+
+    const waitForHandlerAndNavigate = (callData, attempt = 0) => {
+      const ready = callData.autoAccept
+        ? !!global.__callAcceptHandler
+        : !!global.__callNotificationHandler;
+
+      if (ready || attempt >= 20) {   // ~10s max wait (20 × 500ms)
+        handleIncomingCallNavigation(callData);
+        return;
+      }
+      setTimeout(() => waitForHandlerAndNavigate(callData, attempt + 1), 500);
     };
 
     const setupCalling = async () => {
@@ -2687,14 +2699,29 @@ const handleIncomingCallNavigation = (callData) => {
   }, [userId, isAuthenticated]);
 
 
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemedNavigator isAuthenticated={isAuthenticated} userId={userId} />
+      <NetworkStatusBanner />
+     
+      
+
+      {updateInfo?.update_available && (
+        <UpdateModal
+          visible={showUpdateModal}
+          updateInfo={updateInfo}
+          onClose={dismissUpdateModal}
+        />
+         
+      )}
+     
+    </GestureHandlerRootView>
+  );
+
   // return (
   //   <GestureHandlerRootView style={{ flex: 1 }}>
   //     <ThemedNavigator isAuthenticated={isAuthenticated} userId={userId} />
   //     <NetworkStatusBanner />
-  //     {isAuthenticated && (
-  //       <IncomingCallHandler navigation={navigationRef.current} route={{}} />
-  //     )}
-      
 
   //     {updateInfo?.update_available && (
   //       <UpdateModal
@@ -2705,21 +2732,6 @@ const handleIncomingCallNavigation = (callData) => {
   //     )}
   //   </GestureHandlerRootView>
   // );
-
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemedNavigator isAuthenticated={isAuthenticated} userId={userId} />
-      <NetworkStatusBanner />
-
-      {updateInfo?.update_available && (
-        <UpdateModal
-          visible={showUpdateModal}
-          updateInfo={updateInfo}
-          onClose={dismissUpdateModal}
-        />
-      )}
-    </GestureHandlerRootView>
-  );
 
 // return (
 //   <GestureHandlerRootView style={{ flex: 1 }}>
@@ -2903,6 +2915,10 @@ function ThemedNavigator({ isAuthenticated, userId }) {
         onClose={() => setShowPinModal(false)}
         navigation={navigationRef.current}
       />
+      
+
+      {isAuthenticated && <IncomingCallHandler />}
+
 
       <Stack.Navigator
         initialRouteName="Loginscreen"

@@ -4007,112 +4007,244 @@ const fetchBusinessChats = async () => {
       <FlatList
         data={filteredChatList}
         keyExtractor={(item) => `${item.id}-${item.type}-${item.source || 'business'}`}
-        renderItem={({ item }) => {
-          // Get the actual unread count for this chat
-          const actualUnread = getActualUnreadCount(item);
+        // renderItem={({ item }) => {
+        //   // Get the actual unread count for this chat
+        //   const actualUnread = getActualUnreadCount(item);
           
-          return (
-            <TouchableOpacity
-              onPress={() => {
-                markMessagesAsRead(item.id, item.type);
-                if (item.type === 'group') {
-                  navigation.navigate('BusinessGroupChat', {
-                    groupId: item.id,
-                    groupSlug: item.group_slug,
-                    name: item.name,
-                    chatType: 'group',
-                    profile_image: item.avatar,
-                    members_count: item.members_count,
-                    creator_id: item.creator_id
-                  });
-                } else {
-                  navigation.navigate('BPrivateChat', {
-                    receiverId: item.receiverId || item.id,
-                    name: item.name,
-                    chatType: 'single',
-                    profile_image: item.avatar,
-                    userIdd: item.receiverId || item.id
-                  });
-                }
-              }}
-              style={[styles.chatItem, { backgroundColor: colors.card, marginTop: 10 }]}
-            >
-              <View style={styles.avatarContainer}>
-                <Image
-                  source={
-                    item.avatar
-                      ? { uri: item.avatar }
-                      : item.type === 'group'
-                      ? { uri: 'https://via.placeholder.com/50/cccccc/808080?text=G' }
-                      : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
-                  }
-                  style={[styles.avatar, { backgroundColor: colors.surface }]}
-                />
-                {item.type === 'single' && (
-                  <OnlineStatusBadge 
-                    userId={item.receiverId || item.id}
-                    dotSize={14}
-                    position="bottom-right"
-                    borderWidth={2}
-                    borderColor={colors.card}
-                  />
-                )}
-                {item.type === 'group' && (
-                  <View style={[styles.groupBadge, { backgroundColor: colors.primary }]}>
-                    <Icon name="people" size={12} color="#fff" />
-                  </View>
-                )}
-              </View>
+        //   return (
+        //     <TouchableOpacity
+        //       onPress={() => {
+        //         markMessagesAsRead(item.id, item.type);
+        //         if (item.type === 'group') {
+        //           navigation.navigate('BusinessGroupChat', {
+        //             groupId: item.id,
+        //             groupSlug: item.group_slug,
+        //             name: item.name,
+        //             chatType: 'group',
+        //             profile_image: item.avatar,
+        //             members_count: item.members_count,
+        //             creator_id: item.creator_id
+        //           });
+        //         } else {
+        //           navigation.navigate('BPrivateChat', {
+        //             receiverId: item.receiverId || item.id,
+        //             name: item.name,
+        //             chatType: 'single',
+        //             profile_image: item.avatar,
+        //             userIdd: item.receiverId || item.id
+        //           });
+        //         }
+        //       }}
+        //       style={[styles.chatItem, { backgroundColor: colors.card, marginTop: 10 }]}
+        //     >
+        //       <View style={styles.avatarContainer}>
+        //         <Image
+        //           source={
+        //             item.avatar
+        //               ? { uri: item.avatar }
+        //               : item.type === 'group'
+        //               ? { uri: 'https://via.placeholder.com/50/cccccc/808080?text=G' }
+        //               : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+        //           }
+        //           style={[styles.avatar, { backgroundColor: colors.surface }]}
+        //         />
+        //         {item.type === 'single' && (
+        //           <OnlineStatusBadge 
+        //             userId={item.receiverId || item.id}
+        //             dotSize={14}
+        //             position="bottom-right"
+        //             borderWidth={2}
+        //             borderColor={colors.card}
+        //           />
+        //         )}
+        //         {item.type === 'group' && (
+        //           <View style={[styles.groupBadge, { backgroundColor: colors.primary }]}>
+        //             <Icon name="people" size={12} color="#fff" />
+        //           </View>
+        //         )}
+        //       </View>
               
-              <View style={styles.chatContent}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <Text style={[styles.chatName, { color: colors.text }]}>
-                    {highlightSearchText(getDisplayName(item), searchQuery) ||
-                    (item.type === 'group' ? 'Group Chat' : 'Unnamed Chat')}
-                  </Text>
-                  {item.type === 'group' && (
-                    <>
-                      <Icon
-                        name="people-outline"
-                        size={16}
-                        color={colors.textSecondary}
-                        style={{marginLeft: 6}}
-                      />
-                      <Text style={[styles.memberCountText, { color: colors.textSecondary }]}>
-                        {item.members_count || 0}
-                      </Text>
-                      {item.is_creator && (
-                        <Icon
-                          name="star"
-                          size={14}
-                          color="#FFD700"
-                          style={{marginLeft: 4}}
-                        />
-                      )}
-                    </>
-                  )}
-                </View>
-                <Text style={[styles.chatMessage, { color: colors.textSecondary }]} numberOfLines={1}>
-                  {highlightSearchText(item.content ||
-                    (item.type === 'group'
-                      ? (item.is_creator ? 'You created this group' : 'No messages yet')
-                      : '[No message]'),
-                  searchQuery)}
-                </Text>
-              </View>
-              <View style={styles.timeBadgeContainer}>
-                <Text style={[styles.chatTime, { color: colors.textTertiary }]}>{item.time || ''}</Text>
-                {actualUnread > 0 && (
-                  <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.badgeText}>
-                      {actualUnread > 9 ? '9+' : actualUnread}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          );
-        }}
+        //       <View style={styles.chatContent}>
+        //         <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        //           <Text style={[styles.chatName, { color: colors.text }]}>
+        //             {highlightSearchText(getDisplayName(item), searchQuery) ||
+        //             (item.type === 'group' ? 'Group Chat' : 'Unnamed Chat')}
+        //           </Text>
+        //           {item.type === 'group' && (
+        //             <>
+        //               <Icon
+        //                 name="people-outline"
+        //                 size={16}
+        //                 color={colors.textSecondary}
+        //                 style={{marginLeft: 6}}
+        //               />
+        //               <Text style={[styles.memberCountText, { color: colors.textSecondary }]}>
+        //                 {item.members_count || 0}
+        //               </Text>
+        //               {item.is_creator && (
+        //                 <Icon
+        //                   name="star"
+        //                   size={14}
+        //                   color="#FFD700"
+        //                   style={{marginLeft: 4}}
+        //                 />
+        //               )}
+        //             </>
+        //           )}
+        //         </View>
+        //         <Text style={[styles.chatMessage, { color: colors.textSecondary }]} numberOfLines={1}>
+        //           {highlightSearchText(item.content ||
+        //             (item.type === 'group'
+        //               ? (item.is_creator ? 'You created this group' : 'No messages yet')
+        //               : '[No message]'),
+        //           searchQuery)}
+        //         </Text>
+        //       </View>
+        //       <View style={styles.timeBadgeContainer}>
+        //         <Text style={[styles.chatTime, { color: colors.textTertiary }]}>{item.time || ''}</Text>
+        //         {actualUnread > 0 && (
+        //           <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+        //             <Text style={styles.badgeText}>
+        //               {actualUnread > 9 ? '9+' : actualUnread}
+        //             </Text>
+        //           </View>
+        //         )}
+        //       </View>
+        //     </TouchableOpacity>
+        //   );
+        // }}
+
+        renderItem={({ item }) => {
+  // Get the actual unread count for this chat
+  const actualUnread = getActualUnreadCount(item);
+  
+  // Determine which navigation screen to use based on current filter
+  const getNavigationScreen = () => {
+    // If we're in personal mode, navigate to PrivateChat
+    if (chatModeFilter === 'personal') {
+      return 'PrivateChat';
+    }
+    // If we're in business mode or ALL mode with business source
+    if (chatModeFilter === 'business' || (chatModeFilter === 'all' && item.source === 'business')) {
+      return 'BPrivateChat';
+    }
+    // If we're in ALL mode and the item is from personal source
+    if (chatModeFilter === 'all' && item.source === 'personal') {
+      return 'PrivateChat';
+    }
+    // Default to business chat
+    return 'BPrivateChat';
+  };
+  
+  return (
+    <TouchableOpacity
+      onPress={() => {
+        markMessagesAsRead(item.id, item.type);
+        if (item.type === 'group') {
+          // For groups, navigate to group chat (could also make this conditional)
+          navigation.navigate('BusinessGroupChat', {
+            groupId: item.id,
+            groupSlug: item.group_slug,
+            name: item.name,
+            chatType: 'group',
+            profile_image: item.avatar,
+            members_count: item.members_count,
+            creator_id: item.creator_id
+          });
+        } else {
+          // For single chats, use the appropriate navigation based on tab
+          const screenName = getNavigationScreen();
+          navigation.navigate(screenName, {
+            receiverId: item.receiverId || item.id,
+            name: item.name,
+            chatType: 'single',
+            profile_image: item.avatar,
+            userIdd: item.receiverId || item.id
+          });
+        }
+      }}
+      style={[styles.chatItem, { backgroundColor: colors.card, marginTop: 10 }]}
+    >
+      <View style={styles.avatarContainer}>
+        <Image
+          source={
+            item.avatar
+              ? { uri: item.avatar }
+              : item.type === 'group'
+              ? { uri: 'https://via.placeholder.com/50/cccccc/808080?text=G' }
+              : require('../assets/images/avatar/blank-profile-picture-973460_1280.png')
+          }
+          style={[styles.avatar, { backgroundColor: colors.surface }]}
+        />
+        {item.type === 'single' && (
+          <OnlineStatusBadge 
+            userId={item.receiverId || item.id}
+            dotSize={14}
+            position="bottom-right"
+            borderWidth={2}
+            borderColor={colors.card}
+          />
+        )}
+        {item.type === 'group' && (
+          <View style={[styles.groupBadge, { backgroundColor: colors.primary }]}>
+            <Icon name="people" size={12} color="#fff" />
+          </View>
+        )}
+      </View>
+      
+      <View style={styles.chatContent}>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <Text style={[styles.chatName, { color: colors.text }]}>
+            {highlightSearchText(getDisplayName(item), searchQuery) ||
+            (item.type === 'group' ? 'Group Chat' : 'Unnamed Chat')}
+          </Text>
+          {item.type === 'group' && (
+            <>
+              <Icon
+                name="people-outline"
+                size={16}
+                color={colors.textSecondary}
+                style={{marginLeft: 6}}
+              />
+              <Text style={[styles.memberCountText, { color: colors.textSecondary }]}>
+                {item.members_count || 0}
+              </Text>
+              {item.is_creator && (
+                <Icon
+                  name="star"
+                  size={14}
+                  color="#FFD700"
+                  style={{marginLeft: 4}}
+                />
+              )}
+            </>
+          )}
+        </View>
+        <Text style={[styles.chatMessage, { color: colors.textSecondary }]} numberOfLines={1}>
+          {highlightSearchText(item.content ||
+            (item.type === 'group'
+              ? (item.is_creator ? 'You created this group' : 'No messages yet')
+              : '[No message]'),
+            searchQuery)}
+        </Text>
+      </View>
+      <View style={styles.timeBadgeContainer}>
+        <Text style={[styles.chatTime, { color: colors.textTertiary }]}>{item.time || ''}</Text>
+        {actualUnread > 0 && (
+          <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+            <Text style={styles.badgeText}>
+              {actualUnread > 9 ? '9+' : actualUnread}
+            </Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+}}
+
+
+
+
         ListEmptyComponent={() => (
           isLoading ? (
             <Text style={[styles.emptyText, { marginTop: 80, textAlign: 'center', color: colors.textSecondary }]}>
