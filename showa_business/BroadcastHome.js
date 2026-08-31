@@ -53,7 +53,7 @@ import EarningsSlideInManager from '../components/EarningsSlideInManager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import StatusSection from '../components/StatusSection';
 import Feather from 'react-native-vector-icons/Feather';
-import IncomingCallHandler from '../components/Incomingcallhandler';
+//import IncomingCallHandler from '../components/Incomingcallhandler';
 
 dayjs.extend(relativeTime);
 
@@ -4137,7 +4137,7 @@ const combinedPosts = React.useMemo(() => [
           activeRoute="Home" 
           style={{ zIndex: 9999 }}
         />
-          <IncomingCallHandler navigation={navigation} route={route} />
+          {/* <IncomingCallHandler navigation={navigation} route={route} /> */}
         <AccountSwitchBottomSheet
           visible={showAccountModal}
           onClose={() => setShowAccountModal(false)}

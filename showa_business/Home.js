@@ -2119,7 +2119,7 @@ import EarningsSlideInManager from '../components/EarningsSlideInManager';
 import OnlineStatusBadge from '../components/OnlineStatusBadge';
 import { createMMKV } from 'react-native-mmkv';
 import AccountSwitchBottomSheet from '../components/AccountSwitchBottomSheet';
-import IncomingCallHandler from '../components/Incomingcallhandler';
+//import IncomingCallHandler from '../components/Incomingcallhandler';
 
 const windowWidth = Dimensions.get('window').width;
 
@@ -4475,7 +4475,7 @@ const fetchBusinessChats = async () => {
                 isDark={isDark}
               />
       <EarningsSlideInManager />
-      <IncomingCallHandler navigation={navigation} route={route} />
+      {/* <IncomingCallHandler navigation={navigation} route={route} /> */}
     </View>
   );
 };
